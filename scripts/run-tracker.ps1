@@ -1,0 +1,5 @@
+& "$PSScriptRoot/sync-jira.ps1"
+& "$PSScriptRoot/sync-mail.ps1"
+& "$PSScriptRoot/update-state.ps1"
+& "$PSScriptRoot/bucket.ps1"
+& "$PSScriptRoot/render-board.ps1"
