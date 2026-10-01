@@ -1,0 +1,10 @@
+stateDiagram-v2
+  [*] --> Captured
+  Captured --> InProgress
+  InProgress --> Waiting
+  Waiting --> InProgress
+  InProgress --> Done
+  Captured --> Cancelled
+  InProgress --> Cancelled
+  Done --> Archived
+  Cancelled --> Archived
