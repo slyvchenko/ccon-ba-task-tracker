@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe -NoProfile -File scripts/*)",
+      "Bash(pwsh -NoProfile -File scripts/*)"
+    ]
+  }
+}
