@@ -1,0 +1,7 @@
+flowchart LR
+  User[BA] --> Tracker[Local BA Tracker]
+  Jira[Jira] --> Tracker
+  Mail[Outlook / OneDrive mail drop] --> Tracker
+  Tracker --> State[Local task state]
+  Tracker --> Analysis[Analysis outputs]
+  Tracker --> Board[Operating board]
