@@ -1,0 +1,27 @@
+# Runtime / generated data
+analysis/*
+!analysis/.gitkeep
+archive/*
+!archive/.gitkeep
+cases/*
+!cases/.gitkeep
+import/jira/*
+!import/jira/.gitkeep
+inbox/*
+!inbox/.gitkeep
+kb/*
+!kb/.gitkeep
+logs/*
+!logs/.gitkeep
+notes/*
+!notes/.gitkeep
+out/*
+!out/.gitkeep
+state/tasks/*
+!state/tasks/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
