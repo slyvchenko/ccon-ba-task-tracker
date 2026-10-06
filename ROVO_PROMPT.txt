@@ -62,7 +62,7 @@ Synthesize the current situation.
 
 LEVEL B - ACTIONABLE / IMPORTANT ISSUES
 
-For issues that are actionable, blocking, need a decision, have new meaningful activity, or are likely to be in today's Focus Queue, inspect deeper context:
+For issues that are actionable, blocking, need a decision, have new meaningful activity, are likely to be in today's Focus Queue, or are manually IN PROGRESS / TODO in an attached CCON_BA_State.json, inspect deeper context:
 - relevant comment thread;
 - linked issue state;
 - known PNR / Flow ID / request / API context;
@@ -73,11 +73,21 @@ For issues that are actionable, blocking, need a decision, have new meaningful a
 Do NOT perform expensive deep root-cause analysis for every task.
 The goal is a useful first-pass BA analysis and a precise next step.
 
+Set analysisDepth:
+- DEEP for Focus Queue tasks, meaningful CHANGED tasks, blocking tasks, and manually active tasks when local state is attached.
+- BRIEF for ordinary backlog/waiting tasks.
+
+For BRIEF tasks, keep output compact: taskBrief, currentSituation, latestChange, aiStatus, aiPriority, waiting/blocking fields, one nextAction, whyNextAction and definitionOfDone are still required. facts/hypotheses/unknowns/actionPlan/afterNextAction/readyOutput may be short or empty when they add no value.
+This is important to keep the complete JSON reliable even with many Jira issues.
+
 ==================================================
 3. BA BRIEF FOR EVERY TASK
 ==================================================
 
 For EVERY issue generate:
+
+analysisDepth
+- BRIEF | DEEP
 
 taskBrief
 - 1-2 short sentences;
@@ -299,8 +309,13 @@ readyOutputTitle:
   "Implementation To Do"
   "Deep-analysis prompt"
 
+readyOutputSubject:
+- for EMAIL only, exact subject line without "Subject:" prefix;
+- otherwise empty string.
+
 readyOutput:
 - full ready-to-use draft text;
+- for EMAIL this is BODY ONLY and starts with "Dear Team";
 - empty string only when no useful draft can be produced.
 
 Do not merely say "send an email".
@@ -319,7 +334,7 @@ EMAIL RULES
 Body starts with:
 Dear Team
 
-Subject:
+readyOutputSubject must be:
 AER. <descriptive subject> [<numeric Jira issue number>]
 
 Example:
@@ -411,6 +426,7 @@ Return:
       "url": "...",
       "jiraStatus": "...",
       "jiraPriority": "...",
+      "analysisDepth": "BRIEF | DEEP",
       "taskBrief": "...",
       "currentSituation": "...",
       "latestChange": {
@@ -441,6 +457,7 @@ Return:
       "contactPurpose": "",
       "readyOutputType": "EMAIL | JIRA_COMMENT | TODO | DECISION_REQUEST | ANALYSIS_PROMPT | NONE",
       "readyOutputTitle": "",
+      "readyOutputSubject": "",
       "readyOutput": "",
       "changedSinceLastReview": "NEW | CHANGED | NO_CHANGE | UNKNOWN",
       "changeSummary": "",
@@ -457,9 +474,12 @@ Before returning JSON, verify:
 
 - every JQL issue is present exactly once;
 - every task has a concise BA brief;
+- analysisDepth is DEEP only where extra analysis materially helps;
+- BRIEF tasks remain compact enough that the whole snapshot can complete reliably;
 - every task has exactly one concrete nextAction;
 - actionPlan is actionable, not generic;
 - if communication is the next step, a draft is prepared;
+- EMAIL output has a separate readyOutputSubject and body-only readyOutput;
 - if implementation is clear, a To Do is drafted;
 - if investigation is needed, exact checks are listed;
 - WAITING is used only when evidence shows a request/dependency is already in motion;
