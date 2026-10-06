@@ -1,4 +1,4 @@
-"""CCON BA Desk — Python standard library only. Local, single-user prototype."""
+"""CCON BA Desk — local, read-only toward Jira, persistent SQLite workspace."""
 import argparse
 import hashlib
 import json
@@ -13,11 +13,27 @@ from pathlib import Path
 from urllib.parse import urlparse, unquote
 
 ROOT = Path(__file__).resolve().parent
-STATUSES = ['AUTO', 'IN PROGRESS', 'WAITING INPUT', 'WAITING DEPENDENCY', 'NEEDS DECISION', 'DONE']
+STATUSES = ['AUTO', 'TODO', 'IN PROGRESS', 'WAITING', 'PARKED', 'DONE']
+WAITING_ON = ['', 'SUPPLIER', 'REPORTER', 'PO', 'INTERNAL', 'DEPENDENCY', 'OTHER']
 LIMIT = 5 * 1024 * 1024
+
 
 def now():
     return datetime.now(timezone.utc).isoformat()
+
+
+def meaningful_change(previous, current):
+    """Conservative signal for reopening attention on locally DONE work."""
+    if not previous:
+        return False
+    if current.get('changedSinceLastReview') in ('NEW', 'CHANGED'):
+        return True
+    if previous.get('jiraStatus') != current.get('jiraStatus'):
+        return True
+    if previous.get('latestChange') != current.get('latestChange'):
+        return True
+    return False
+
 
 class Desk:
     def __init__(self, root):
@@ -30,16 +46,34 @@ class Desk:
         with self.connect() as c:
             c.executescript('''
               CREATE TABLE IF NOT EXISTS tasks (
-                key TEXT PRIMARY KEY, snapshot TEXT NOT NULL,
-                manual_status TEXT NOT NULL DEFAULT 'AUTO', note TEXT NOT NULL DEFAULT '',
-                active INTEGER NOT NULL DEFAULT 1, position INTEGER NOT NULL DEFAULT 0, imported_at TEXT NOT NULL,
-                modified_at TEXT);
+                key TEXT PRIMARY KEY,
+                snapshot TEXT NOT NULL,
+                manual_status TEXT NOT NULL DEFAULT 'AUTO',
+                manual_waiting_on TEXT NOT NULL DEFAULT '',
+                note TEXT NOT NULL DEFAULT '',
+                review_again INTEGER NOT NULL DEFAULT 0,
+                active INTEGER NOT NULL DEFAULT 1,
+                position INTEGER NOT NULL DEFAULT 0,
+                imported_at TEXT NOT NULL,
+                modified_at TEXT
+              );
               CREATE TABLE IF NOT EXISTS imports (
-                hash TEXT PRIMARY KEY, imported_at TEXT NOT NULL, generated_at TEXT NOT NULL,
-                count INTEGER NOT NULL);
+                hash TEXT PRIMARY KEY,
+                imported_at TEXT NOT NULL,
+                generated_at TEXT NOT NULL,
+                count INTEGER NOT NULL
+              );
             ''')
-            if 'position' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
+            columns = [r[1] for r in c.execute('PRAGMA table_info(tasks)')]
+            if 'position' not in columns:
                 c.execute('ALTER TABLE tasks ADD COLUMN position INTEGER NOT NULL DEFAULT 0')
+            if 'manual_waiting_on' not in columns:
+                c.execute("ALTER TABLE tasks ADD COLUMN manual_waiting_on TEXT NOT NULL DEFAULT ''")
+            if 'review_again' not in columns:
+                c.execute('ALTER TABLE tasks ADD COLUMN review_again INTEGER NOT NULL DEFAULT 0')
+            # Migrate old local workflow values from v1 without losing intent.
+            c.execute("UPDATE tasks SET manual_status='WAITING' WHERE manual_status IN ('WAITING INPUT','WAITING DEPENDENCY')")
+            c.execute("UPDATE tasks SET manual_status='TODO' WHERE manual_status='NEEDS DECISION'")
 
     @contextmanager
     def connect(self):
@@ -72,20 +106,40 @@ class Desk:
                     raise ValueError()
             except ValueError:
                 raise ValueError('generatedAt must be an ISO timestamp with timezone.')
+
             keys = set()
+            string_fields = (
+                'summary', 'aiStatus', 'aiPriority', 'waitingOn', 'waitingEvidence',
+                'nextAction', 'whyNextAction', 'definitionOfDone', 'readyOutput',
+                'readyOutputType', 'readyOutputTitle', 'jiraStatus', 'jiraPriority',
+                'priority', 'url', 'taskBrief', 'currentSituation', 'surfaceAnalysis',
+                'blockingReason', 'actionType', 'contactType', 'contactTarget',
+                'contactPurpose', 'changedSinceLastReview', 'changeSummary', 'confidence'
+            )
+            array_fields = ('facts', 'hypotheses', 'unknowns', 'actionPlan', 'afterNextAction')
             for task in doc['tasks']:
                 if not isinstance(task, dict) or not re.fullmatch(r'CCON-\d+', str(task.get('key', ''))):
                     raise ValueError('Every task needs a CCON-number key.')
                 if task['key'] in keys:
                     raise ValueError('Duplicate task key: ' + task['key'])
                 keys.add(task['key'])
-                for field in ('summary', 'aiStatus', 'waitingOn', 'statusReason', 'nextAction', 'readyOutput', 'jiraStatus', 'priority', 'url'):
+                if not isinstance(task.get('summary'), str) or not task['summary'].strip():
+                    raise ValueError('Every task needs a summary.')
+                for field in string_fields:
                     if field in task and not isinstance(task[field], str):
                         raise ValueError(field + ' must be text.')
-                if not task.get('summary', '').strip():
-                    raise ValueError('Every task needs a summary.')
+                for field in array_fields:
+                    if field in task and (not isinstance(task[field], list) or not all(isinstance(x, str) for x in task[field])):
+                        raise ValueError(field + ' must be a list of text values.')
                 if 'blocking' in task and not isinstance(task['blocking'], bool):
                     raise ValueError('blocking must be true or false.')
+                if 'contactNeeded' in task and not isinstance(task['contactNeeded'], bool):
+                    raise ValueError('contactNeeded must be true or false.')
+                if 'focusRank' in task and task['focusRank'] is not None and not isinstance(task['focusRank'], int):
+                    raise ValueError('focusRank must be an integer or null.')
+                if 'latestChange' in task and not isinstance(task['latestChange'], dict):
+                    raise ValueError('latestChange must be an object.')
+
             with self.lock, self.connect() as c:
                 if c.execute('SELECT 1 FROM imports WHERE hash=?', (digest,)).fetchone():
                     self.error = ''
@@ -93,17 +147,31 @@ class Desk:
                 latest = c.execute('SELECT generated_at FROM imports ORDER BY imported_at DESC LIMIT 1').fetchone()
                 if latest and date < datetime.fromisoformat(latest[0].replace('Z', '+00:00')):
                     raise ValueError('Older snapshot rejected. Use the latest generatedAt timestamp.')
+
+                old_rows = {r['key']: r for r in c.execute('SELECT key,snapshot,manual_status,review_again FROM tasks')}
                 stamp = now()
                 c.execute('UPDATE tasks SET active=0')
                 for position, task in enumerate(doc['tasks']):
-                    c.execute('''INSERT INTO tasks(key,snapshot,imported_at,position) VALUES(?,?,?,?)
-                      ON CONFLICT(key) DO UPDATE SET snapshot=excluded.snapshot,
-                      imported_at=excluded.imported_at, position=excluded.position, active=1''',
-                      (task['key'], json.dumps(task, ensure_ascii=False), stamp, position))
+                    old = old_rows.get(task['key'])
+                    review_again = int(old['review_again']) if old else 0
+                    if old and old['manual_status'] == 'DONE':
+                        previous = json.loads(old['snapshot'])
+                        if meaningful_change(previous, task):
+                            review_again = 1
+                    c.execute('''
+                      INSERT INTO tasks(key,snapshot,review_again,active,position,imported_at)
+                      VALUES(?,?,?,1,?,?)
+                      ON CONFLICT(key) DO UPDATE SET
+                        snapshot=excluded.snapshot,
+                        review_again=excluded.review_again,
+                        imported_at=excluded.imported_at,
+                        position=excluded.position,
+                        active=1
+                    ''', (task['key'], json.dumps(task, ensure_ascii=False), review_again, position, stamp))
                 c.execute('INSERT INTO imports VALUES(?,?,?,?)', (digest, stamp, generated, len(keys)))
             self.error = ''
-            return {'message': f'Imported {len(keys)} tasks. Manual status and notes preserved.'}
-        except (ValueError, OSError) as e:
+            return {'message': f'Imported {len(keys)} tasks. Manual workflow state preserved.'}
+        except (ValueError, OSError, json.JSONDecodeError) as e:
             self.error = 'Import failed: ' + str(e)
             raise ValueError(self.error)
 
@@ -114,19 +182,43 @@ class Desk:
             tasks = []
             for row in rows:
                 task = json.loads(row['snapshot'])
-                task.update(manualStatus=row['manual_status'], note=row['note'], active=bool(row['active']),
-                            importedAt=row['imported_at'], modifiedAt=row['modified_at'])
+                task.update(
+                    manualStatus=row['manual_status'],
+                    manualWaitingOn=row['manual_waiting_on'],
+                    note=row['note'],
+                    reviewAgain=bool(row['review_again']),
+                    active=bool(row['active']),
+                    importedAt=row['imported_at'],
+                    modifiedAt=row['modified_at']
+                )
                 tasks.append(task)
             return {'tasks': tasks, 'latest': dict(latest) if latest else None, 'error': self.error}
 
     def save(self, key, data):
-        status, note = data.get('manualStatus'), data.get('note')
-        if status not in STATUSES or not isinstance(note, str) or len(note) > 20000:
-            raise ValueError('Invalid manual status or note (maximum 20,000 characters).')
+        status = data.get('manualStatus')
+        note = data.get('note')
+        waiting_on = data.get('manualWaitingOn', '')
+        clear_review = bool(data.get('clearReviewAgain', False))
+        if status not in STATUSES:
+            raise ValueError('Invalid manual status.')
+        if not isinstance(note, str) or len(note) > 20000:
+            raise ValueError('Invalid note (maximum 20,000 characters).')
+        if waiting_on not in WAITING_ON:
+            raise ValueError('Invalid waiting-on value.')
+        if status != 'WAITING':
+            waiting_on = ''
         with self.lock, self.connect() as c:
-            if not c.execute('UPDATE tasks SET manual_status=?, note=?, modified_at=? WHERE key=?',
-                             (status, note, now(), key)).rowcount:
+            current = c.execute('SELECT review_again FROM tasks WHERE key=?', (key,)).fetchone()
+            if not current:
                 raise ValueError('Unknown task.')
+            review_again = int(current['review_again'])
+            if clear_review or status != 'DONE':
+                review_again = 0
+            c.execute('''UPDATE tasks
+                         SET manual_status=?, manual_waiting_on=?, note=?, review_again=?, modified_at=?
+                         WHERE key=?''',
+                      (status, waiting_on, note, review_again, now(), key))
+
 
 def handler(desk):
     class Handler(BaseHTTPRequestHandler):
@@ -173,12 +265,13 @@ def handler(desk):
                     desk.save(unquote(path.split('/')[-1]), data)
                     return self.send(200, {'message': 'Saved locally.'})
                 return self.send(404, {'error': 'Not found.'})
-            except (ValueError, OSError) as e:
+            except (ValueError, OSError, json.JSONDecodeError) as e:
                 return self.send(400, {'error': str(e)})
 
         def log_message(self, fmt, *args):
             pass
     return Handler
+
 
 def main():
     p = argparse.ArgumentParser()
@@ -192,13 +285,16 @@ def main():
     except ValueError as e:
         print(e)
     server = ThreadingHTTPServer(('127.0.0.1', args.port), handler(desk))
+
+    stop = threading.Event()
+
     def watch():
         while not stop.wait(3):
             try:
                 desk.import_snapshot()
             except ValueError:
                 pass
-    stop = threading.Event()
+
     threading.Thread(target=watch, daemon=True).start()
     print(f'CCON BA Desk: http://localhost:{args.port}\nData: {desk.db}\nCtrl+C to stop.', flush=True)
     if args.open:
@@ -210,6 +306,7 @@ def main():
     finally:
         stop.set()
         server.server_close()
+
 
 if __name__ == '__main__':
     main()
