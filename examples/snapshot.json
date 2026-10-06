@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-10-06T12:00:00Z",
+  "tasks": [
+    {
+      "key": "CCON-900001",
+      "summary": "DEMO: clarify supplier requirements",
+      "jiraStatus": "In Progress",
+      "priority": "High",
+      "aiStatus": "ACTIONABLE NOW",
+      "waitingOn": "NONE",
+      "statusReason": "Demo data only: requirements need a BA review before supplier follow-up.",
+      "blocking": true,
+      "nextAction": "Review the acceptance criteria and prepare three clarification questions.",
+      "readyOutput": "Hello,\nCould you clarify the expected behavior for the acceptance criteria?\nThank you."
+    },
+    {
+      "key": "CCON-900002",
+      "summary": "DEMO: supplier response pending",
+      "jiraStatus": "Open",
+      "priority": "Medium",
+      "aiStatus": "WAITING INPUT",
+      "waitingOn": "SUPPLIER",
+      "statusReason": "Demo data only: the last activity is an unanswered supplier question.",
+      "blocking": false,
+      "nextAction": "Check whether the supplier replied; follow up if appropriate.",
+      "readyOutput": "Hello,\nFollowing up on the question below. Could you share an update?"
+    }
+  ]
+}
