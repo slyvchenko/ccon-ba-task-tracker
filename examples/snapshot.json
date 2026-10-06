@@ -57,7 +57,9 @@
       "readyOutput": "",
       "changedSinceLastReview": "NEW",
       "changeSummary": "New reproducible example was added.",
-      "focusRank": 1
+      "focusRank": 1,
+      "analysisDepth": "DEEP",
+      "readyOutputSubject": ""
     },
     {
       "key": "CCON-900002",
@@ -104,7 +106,9 @@
       "readyOutput": "",
       "changedSinceLastReview": "NO_CHANGE",
       "changeSummary": "",
-      "focusRank": null
+      "focusRank": null,
+      "analysisDepth": "BRIEF",
+      "readyOutputSubject": ""
     },
     {
       "key": "CCON-900003",
@@ -158,7 +162,9 @@
       "readyOutput": "Dear Team,\n\nCould you please confirm whether the observed behavior described in this case is expected on your side?\n\nWe can provide additional examples if required.",
       "changedSinceLastReview": "UNKNOWN",
       "changeSummary": "",
-      "focusRank": 2
+      "focusRank": 2,
+      "analysisDepth": "DEEP",
+      "readyOutputSubject": "AER. Supplier behavior clarification [900003]"
     }
   ]
 }
