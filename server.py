@@ -109,8 +109,8 @@ class Desk:
 
             keys = set()
             string_fields = (
-                'summary', 'aiStatus', 'aiPriority', 'waitingOn', 'waitingEvidence',
-                'nextAction', 'whyNextAction', 'definitionOfDone', 'readyOutput',
+                'summary', 'analysisDepth', 'aiStatus', 'aiPriority', 'waitingOn', 'waitingEvidence',
+                'nextAction', 'whyNextAction', 'definitionOfDone', 'readyOutput', 'readyOutputSubject',
                 'readyOutputType', 'readyOutputTitle', 'jiraStatus', 'jiraPriority',
                 'priority', 'url', 'taskBrief', 'currentSituation', 'surfaceAnalysis',
                 'blockingReason', 'actionType', 'contactType', 'contactTarget',
