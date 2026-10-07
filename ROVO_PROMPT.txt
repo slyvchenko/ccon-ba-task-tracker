@@ -12,7 +12,7 @@ ORDER BY priority DESC, updated DESC
 
 COMPLETE COVERAGE IS REQUIRED:
 Fetch ALL issues matching the JQL, following every result page until exhausted. Do not stop at 15, 50, 100, or the first search page. Every matching issue must appear exactly once in tasks, including waiting tasks and tasks with no immediate BA action.
-Quickly triage every returned issue using summary, status, priority, latest relevant activity and visible dependencies. Rank the top 15 by useful BA action now, then read their detailed context, comments and linked issues. The top-15 limit applies ONLY to deeper analysis, NEVER to the number of tasks exported. Include the remaining issues with their basic triage and clearly state when deeper analysis was not performed. Return ALL tasks, with the focus 15 first and the remainder in JQL order.
+Read the full available description, relevant comment history with dates, and linked/blocking context for EVERY matching issue. Analyze every issue, not only the top 15. If context is unavailable, explicitly mark the issue REVIEW and state the gap; do not pretend a deep review was performed. Return ALL tasks in the order of useful BA action now, placing evidenced waiting tasks below actionable work.
 Do not invent facts, addresses or links. If information is missing, say so. Explain waitingOn and aiStatus with concrete source context in statusReason. Prefer actions that I can actually perform. readyOutput should be a useful draft or prompt, explicitly a draft, never a claim that a message has been sent. For tasks without enough context, use an empty readyOutput rather than inventing one.
 Verify that the number of unique exported keys equals the complete number retrieved across all pages. Report that count in the final sentence. If a tool limit prevents complete retrieval, explicitly report the limitation and the retrieved count; do not deliver a partial file under the final CCON_BA_Snapshot.json name or describe it as complete.
 
@@ -28,6 +28,7 @@ statusReason: short explanation with date/source of latest relevant evidence; do
 blocking: boolean, true only when evidence shows it blocks another task
 nextAction: concrete action
 readyOutput: draft text or reusable analysis prompt; no invented recipients
+analysis: an object with signal (READY|WRITE|WAIT|DECIDE|REVIEW|DONE), reasonUk and nextActionUk strictly in Ukrainian, missingInfo (array of concrete unanswered questions in Ukrainian), waitingRequired and needsEmail (true|false|null when unknown), waitingOnUk, queueScore (0..100), evidence (array of {text,url} with dated source facts), standardDescription, emailDraft ({to,subject,body}). Do not ask questions already answered in the description or comments. Do not infer waiting just from mentioning a supplier. Email addresses must be supplied by sources, otherwise leave to empty. If no email is needed, leave the draft body empty. Follow the user's attached description/email rules; if absent, standardDescription is empty and email format is provisional. Sending remains a manual action. A Jira comment does not prove what is or is not in email.
 
 Shape:
 {"generatedAt":"ACTUAL_TIMESTAMP","tasks":[{"key":"ACTUAL_CCON_KEY","summary":"...","jiraStatus":"...","priority":"...","aiStatus":"...","waitingOn":"...","statusReason":"...","blocking":false,"nextAction":"...","readyOutput":"..."}]}
@@ -40,3 +41,11 @@ FILE VALIDATION BEFORE DELIVERY:
 - Do not add Markdown fences, introductory text, trailing commas, comments, or ellipses to the file. Deliver the complete JQL result set, not a truncated preview.
 
 If I attach CCON_BA_State.json, consider my manualStatus and note as context. Do not overwrite or reinterpret my decisions as Jira facts. The local app preserves these fields separately.
+
+MANDATORY EMAIL RULES (override any previous email-format examples):
+Subject: AER. operation. Concrete subject [issue-number]. Example: AER. verify-fare. Success=false without an error message [15344]
+Start every body exactly Dear Team,
+Do not include Best regards, any signature, or Volodymyr: Outlook adds the signature.
+End with Logs attached for your reference. The user attaches logs manually. Never promise to add logs later.
+Keep questions specific to missing context, do not repeat answered questions.
+Use only confirmed recipient emails; otherwise leave to empty.

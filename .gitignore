@@ -3,3 +3,8 @@ inbox/*.json
 __pycache__/
 *.log
 .python-path
+.jira-credentials.json
+/.pipeline.lock
+data/
+inbox/*.pending
+tests/test-data-*/

@@ -1,170 +1,29 @@
 {
-  "generatedAt": "2026-10-07T08:30:00+02:00",
+  "generatedAt": "2026-10-06T12:00:00Z",
   "tasks": [
     {
       "key": "CCON-900001",
-      "summary": "DEMO: retrieve response differs from expected API structure",
-      "url": "https://example.atlassian.net/browse/CCON-900001",
-      "jiraStatus": "Analysis",
-      "jiraPriority": "High",
-      "taskBrief": "A downstream consumer cannot process the retrieve response because one expected structure is missing.",
-      "currentSituation": "A reproducible example exists. It is not yet proven whether the data disappears in the supplier response or during internal transformation.",
-      "latestChange": {
-        "date": "2026-10-07",
-        "source": "COMMENT",
-        "text": "Reporter added a reproducible example."
-      },
-      "surfaceAnalysis": "The fastest split is to compare the raw upstream payload with the internal REST response before assuming ownership.",
-      "facts": [
-        "The issue is reproducible.",
-        "The consumer expects the field according to the agreed contract."
-      ],
-      "hypotheses": [
-        "The internal mapping may omit the structure.",
-        "The upstream response may not contain it."
-      ],
-      "unknowns": [
-        "Whether the structure exists in the raw upstream response."
-      ],
-      "confidence": "HIGH",
+      "summary": "DEMO: clarify supplier requirements",
+      "jiraStatus": "In Progress",
+      "priority": "High",
       "aiStatus": "ACTIONABLE NOW",
-      "aiPriority": "P1 DO NOW",
       "waitingOn": "NONE",
-      "waitingEvidence": "",
+      "statusReason": "Demo data only: requirements need a BA review before supplier follow-up.",
       "blocking": true,
-      "blockingReason": "Integration testing cannot continue for this flow.",
-      "actionType": "INVESTIGATE",
-      "nextAction": "Compare the raw upstream response for the reproducible example with the internal retrieve response.",
-      "whyNextAction": "This identifies which side first loses the expected data.",
-      "actionPlan": [
-        "Open the reproducible example in logs.",
-        "Locate the raw upstream response.",
-        "Locate the internal REST response.",
-        "Compare the relevant structure.",
-        "Record where the data first disappears."
-      ],
-      "afterNextAction": [
-        "If upstream contains the data -> investigate internal mapping/serialization.",
-        "If upstream does not contain the data -> prepare a supplier question."
-      ],
-      "definitionOfDone": "The component responsible for the missing data is identified.",
-      "contactNeeded": false,
-      "contactType": "NONE",
-      "contactTarget": "",
-      "contactPurpose": "",
-      "readyOutputType": "NONE",
-      "readyOutputTitle": "",
-      "readyOutput": "",
-      "changedSinceLastReview": "NEW",
-      "changeSummary": "New reproducible example was added.",
-      "focusRank": 1,
-      "analysisDepth": "DEEP",
-      "readyOutputSubject": ""
+      "nextAction": "Review the acceptance criteria and prepare three clarification questions.",
+      "readyOutput": "Hello,\nCould you clarify the expected behavior for the acceptance criteria?\nThank you."
     },
     {
       "key": "CCON-900002",
       "summary": "DEMO: supplier response pending",
-      "url": "https://example.atlassian.net/browse/CCON-900002",
       "jiraStatus": "Open",
-      "jiraPriority": "Medium",
-      "taskBrief": "A supplier clarification is already in progress and there is no useful internal action until the reply arrives.",
-      "currentSituation": "The supplier was asked a concrete question yesterday and has not replied yet.",
-      "latestChange": {
-        "date": "2026-10-06",
-        "source": "COMMENT",
-        "text": "Supplier question was sent."
-      },
-      "surfaceAnalysis": "This is a genuine waiting state because the outbound request already exists.",
-      "facts": [
-        "Supplier question was sent on 2026-10-06."
-      ],
-      "hypotheses": [],
-      "unknowns": [
-        "Supplier explanation."
-      ],
-      "confidence": "HIGH",
+      "priority": "Medium",
       "aiStatus": "WAITING INPUT",
-      "aiPriority": "P4 WAITING",
       "waitingOn": "SUPPLIER",
-      "waitingEvidence": "Question sent on 2026-10-06; no answer is visible yet.",
+      "statusReason": "Demo data only: the last activity is an unanswered supplier question.",
       "blocking": false,
-      "blockingReason": "",
-      "actionType": "WAIT",
-      "nextAction": "Wait for the supplier response; review again when new information arrives.",
-      "whyNextAction": "No useful internal action is available until the supplier answers.",
-      "actionPlan": [],
-      "afterNextAction": [
-        "If supplier replies -> reassess ownership and next action."
-      ],
-      "definitionOfDone": "Supplier response is reviewed and the next BA action is identified.",
-      "contactNeeded": false,
-      "contactType": "NONE",
-      "contactTarget": "",
-      "contactPurpose": "",
-      "readyOutputType": "NONE",
-      "readyOutputTitle": "",
-      "readyOutput": "",
-      "changedSinceLastReview": "NO_CHANGE",
-      "changeSummary": "",
-      "focusRank": null,
-      "analysisDepth": "BRIEF",
-      "readyOutputSubject": ""
-    },
-    {
-      "key": "CCON-900003",
-      "summary": "DEMO: supplier clarification required",
-      "url": "https://example.atlassian.net/browse/CCON-900003",
-      "jiraStatus": "Analysis",
-      "jiraPriority": "High",
-      "taskBrief": "Current evidence points to supplier-specific behavior that needs clarification before implementation can be specified safely.",
-      "currentSituation": "The discrepancy is confirmed, but the supplier's expected behavior is not documented in the task.",
-      "latestChange": {
-        "date": "2026-10-07",
-        "source": "DESCRIPTION",
-        "text": "A concrete supplier discrepancy is documented."
-      },
-      "surfaceAnalysis": "Supplier clarification is the next useful action. This is not WAITING yet because no question has been sent.",
-      "facts": [
-        "Observed supplier behavior differs from the expected flow."
-      ],
-      "hypotheses": [
-        "The behavior may be supplier-specific."
-      ],
-      "unknowns": [
-        "Whether the supplier considers the behavior expected."
-      ],
-      "confidence": "MEDIUM",
-      "aiStatus": "ACTIONABLE NOW",
-      "aiPriority": "P2 ACTIONABLE",
-      "waitingOn": "NONE",
-      "waitingEvidence": "",
-      "blocking": false,
-      "blockingReason": "",
-      "actionType": "EMAIL",
-      "nextAction": "Send the prepared supplier clarification email.",
-      "whyNextAction": "A supplier answer is required before a safe implementation decision can be made.",
-      "actionPlan": [
-        "Review the draft for accuracy.",
-        "Send it manually through the normal mail client.",
-        "Record the outbound request in your own workflow if needed."
-      ],
-      "afterNextAction": [
-        "If supplier confirms expected behavior -> draft internal handling.",
-        "If supplier confirms a defect -> follow the supplier resolution path."
-      ],
-      "definitionOfDone": "A clear supplier position is received or the issue is accepted for supplier investigation.",
-      "contactNeeded": true,
-      "contactType": "SUPPLIER",
-      "contactTarget": "Supplier support",
-      "contactPurpose": "Confirm whether the observed behavior is expected.",
-      "readyOutputType": "EMAIL",
-      "readyOutputTitle": "Supplier clarification email",
-      "readyOutput": "Dear Team,\n\nCould you please confirm whether the observed behavior described in this case is expected on your side?\n\nWe can provide additional examples if required.",
-      "changedSinceLastReview": "UNKNOWN",
-      "changeSummary": "",
-      "focusRank": 2,
-      "analysisDepth": "DEEP",
-      "readyOutputSubject": "AER. Supplier behavior clarification [900003]"
+      "nextAction": "Check whether the supplier replied; follow up if appropriate.",
+      "readyOutput": "Hello,\nFollowing up on the question below. Could you share an update?"
     }
   ]
 }
