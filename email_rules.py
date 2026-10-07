@@ -23,7 +23,13 @@ def normalize_draft(key, draft):
     body = re.sub(r'\A(?:Hi|Hello|Dear)\b[^\n]*\n*', '', body, flags=re.I)
     body = re.split(r'\n(?:Best regards|Kind regards|Regards)[,\s]*\n', body, maxsplit=1, flags=re.I)[0]
     body = re.sub(r'We will add the relevant request ID, timestamp and response excerpt from the linked logs before sending\.?', '', body, flags=re.I)
-    body = re.sub(r'\n*Logs attached for your reference\.?\s*$', '', body, flags=re.I)
-    result['body'] = 'Dear Team,\n\n' + body.strip() + '\n\nLogs attached for your reference.'
+    body = re.sub(r'^\s*Logs (?:are )?attached for your reference\.?\s*$', '', body, flags=re.I | re.M).strip()
+    # Preserve the writer's situation-specific thanks; never shorten the analysis.
+    closing = 'Thanks in advance for your endless support.'
+    lines = body.splitlines()
+    if lines and re.match(r'^(?:Thanks\b|Thank you\b|We appreciate\b)', lines[-1], flags=re.I):
+        closing = lines.pop().strip()
+        body = '\n'.join(lines).strip()
+    result['body'] = 'Dear Team,\n\n' + body + '\n\nLogs are attached for your reference.\n' + closing
     return result
 
