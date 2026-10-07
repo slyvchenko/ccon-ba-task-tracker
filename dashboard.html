@@ -99,8 +99,17 @@
     function normalizedDraft(value) {
       return {to:typeof value?.to === 'string' ? value.to : '', subject:typeof value?.subject === 'string' ? value.subject : '', body:typeof value?.body === 'string' ? value.body : ''};
     }
+    function defaultRecipients(task) {
+      const title = task.summary || '';
+      if (/^airtuerk\b/i.test(title)) return 'systems_airtuerk <systems@airtuerk.de>, Oruc Demir - airtuerk Service GmbH <odemir@airtuerk.de>';
+      if (/^(?:AF\s*\/\s*KL|AFKL)\b/i.test(title)) return 'mail.afkl.ndc.production <mail.afkl.ndc.production@airfrance.fr>, mail.afkl.ndc.team@airfrance.fr';
+      if (/^SQ213\b/i.test(title)) return 'Leon Woon <leon_woon@singaporeair.com.sg>, NDC Support <NDC_Support@singaporeair.com.sg>';
+      return '';
+    }
     function savedForm(task) {
-      return {manualStatus:STATUS_LABELS[task.manualStatus] ? task.manualStatus : 'AUTO', note:task.note || '', emailDraft:normalizedDraft(task.savedEmailDraft ?? task.analysis?.emailDraft)};
+      const emailDraft = normalizedDraft(task.savedEmailDraft ?? task.analysis?.emailDraft);
+      if (task.savedEmailDraft == null || !emailDraft.to.trim()) emailDraft.to = defaultRecipients(task);
+      return {manualStatus:STATUS_LABELS[task.manualStatus] ? task.manualStatus : 'AUTO', note:task.note || '', emailDraft};
     }
     function formFor(task) {
       if (!forms.has(task.key)) {
