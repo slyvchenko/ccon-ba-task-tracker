@@ -33,6 +33,21 @@
     .jira-button:hover{background:#e0ebfa;border-color:#8eadd5}
     .analysis-lead .assessment-reason{font-size:13px;line-height:1.5}
     @media(max-width:750px){.signal-card{grid-template-columns:110px minmax(0,1fr);gap:3px;padding:6px 9px}.signal-card .caption{margin:0}.signal-card .hint{margin-top:0}}
+
+    /* Consistent status colors, text rhythm and a divided number column. */
+    .badge{border:1px solid currentColor}.status-chip{border-color:currentColor}
+    .badge:hover{border-color:currentColor}.status-chip:hover{background:color-mix(in srgb,currentColor 12%,white);border-color:currentColor}
+    .row{grid-template-columns:34px minmax(0,1fr);column-gap:10px;padding:0 10px 0 0;align-items:stretch}
+    .row-number{display:flex;align-items:center;justify-content:center;padding:8px 0;text-align:center;border-right:1px solid #c4d1e1;background:#f5f8fc}
+    .row.selected .row-number{background:#dfe9f8}.row-content{padding:8px 0}
+    .analysis-lead .next-action{font-size:13px;line-height:1.5;color:inherit;font-weight:400}
+    .missing-info,.missing-info li{font-size:13px;line-height:1.5}.missing-info li{margin:5px 0}
+    #note{min-height:58px;height:58px;padding:8px 10px;font-size:13px;line-height:1.45}
+    #done{background:#e5f4ed;color:#126b48;border-color:#9ac8b0}#done:hover{background:#d4ebdf;border-color:#6da38a}
+    .state-actions{display:flex;flex-wrap:nowrap;gap:5px;align-items:stretch}
+    .state-actions button{flex:1 1 0;font-size:11px;line-height:1.25;padding:8px 7px;white-space:normal;min-width:0}
+    .state-actions #discard{padding:8px 6px}
+    @media(max-width:380px){.state-actions{gap:3px}.state-actions button{font-size:10px;padding:7px 4px}.state-actions #discard{padding:7px 4px}}
   </style>
 </head>
 <body>
@@ -61,14 +76,15 @@
     const $ = id => document.getElementById(id);
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
     const STATUS_LABELS = {'AUTO':'Автоматично','IN PROGRESS':'У роботі','WAITING INPUT':'Очікую відповідь','WAITING DEPENDENCY':'Очікую залежність','NEEDS DECISION':'Потрібне рішення','DONE':'Завершено'};
+    const STATUS_TONES = {'AUTO':'gray','IN PROGRESS':'amber','WAITING INPUT':'red','WAITING DEPENDENCY':'red','NEEDS DECISION':'blue','DONE':'green'};
     const MANUAL_SIGNALS = {'IN PROGRESS':'READY','WAITING INPUT':'WAIT','WAITING DEPENDENCY':'WAIT','NEEDS DECISION':'DECIDE','DONE':'DONE'};
     const SIGNALS = {
       READY:{label:'Можна працювати',group:'Можна працювати зараз',tone:'green',order:0},
       WRITE:{label:'Написати листа',group:'Підготувати й надіслати лист',tone:'blue',order:0},
-      DECIDE:{label:'Потрібне рішення',group:'Ухвалити рішення',tone:'amber',order:1},
+      DECIDE:{label:'Потрібне рішення',group:'Ухвалити рішення',tone:'blue',order:1},
       REVIEW:{label:'Потрібна перевірка',group:'Перевірити / проаналізувати',tone:'gray',order:2},
       WAIT:{label:'Очікуємо',group:'Очікуємо відповідь або залежність',tone:'red',order:3},
-      DONE:{label:'Завершено',group:'Завершені',tone:'gray',order:4}
+      DONE:{label:'Завершено',group:'Завершені',tone:'green',order:4}
     };
     const LOCAL_EDITS_KEY = 'ccon-ba-desk.unsaved-forms.v2';
     let tasks = [], selected = null, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0;
@@ -114,8 +130,11 @@
       if (task.manualStatus && task.manualStatus !== 'AUTO') return MANUAL_SIGNALS[task.manualStatus] || 'REVIEW';
       return hasAnalysis(task) ? task.analysis.signal : 'REVIEW';
     }
-    function signalInfo(task) { return SIGNALS[effectiveSignal(task)]; }
-    function statusTone(status, task) { return status === 'AUTO' ? SIGNALS[hasAnalysis(task) ? task.analysis.signal : 'REVIEW'].tone : SIGNALS[MANUAL_SIGNALS[status] || 'REVIEW'].tone; }
+    function signalInfo(task) {
+      const info = SIGNALS[effectiveSignal(task)];
+      return task.manualStatus && task.manualStatus !== 'AUTO' ? {...info, label:STATUS_LABELS[task.manualStatus], tone:statusTone(task.manualStatus)} : info;
+    }
+    function statusTone(status, task) { return STATUS_TONES[status] || 'gray'; }
     function safeUrl(value) {
       try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) ? url.href : ''; }
       catch { return ''; }
@@ -168,7 +187,7 @@
         const group = ['Можна просувати зараз', 'Очікуємо', 'Завершені', 'Відсутні в останньому snapshot'][queueTier(task)];
         const heading = group !== previousGroup ? `<div class="queue-group">${escapeHtml(group)}</div>` : '';
         previousGroup = group;
-        return `${heading}<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}.</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${signalBadge(task)}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`;
+        return `${heading}<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${signalBadge(task)}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`;
       }).join('') || '<div class="empty">Немає задач за цими фільтрами.</div>';
       $('list').querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => selectTask(button.dataset.key)));
     }
@@ -218,7 +237,7 @@
       $('detail').innerHTML = `
         <div class="task-top"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="muted">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
         <h2>${escapeHtml(task.summary)}</h2>
-        <div class="task-badges">${signalBadge(task)}<span class="badge">Jira: ${escapeHtml(task.jiraStatus || 'Не вказано')}</span>${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${!task.active ? '<span class="badge tone-gray">Відсутня в останньому snapshot · стан збережений</span>' : ''}</div>
+        <div class="task-badges"><span class="badge">Jira: ${escapeHtml(task.jiraStatus || 'Не вказано')}</span>${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${!task.active ? '<span class="badge tone-gray">Відсутня в останньому snapshot · стан збережений</span>' : ''}</div>
         <div id="staleNotice" class="saved-note" hidden></div>
         <div class="signal-grid">
           ${signalCard('Що робити', analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз', info.tone, task.manualStatus !== 'AUTO' ? 'За моїм ручним статусом' : 'За щоденним аналізом')}
@@ -236,8 +255,8 @@
               ${analysis.nextActionUk ? '<button id="copyNext" class="quiet">Скопіювати дію</button>' : ''}
             </section>
             <section class="panel" aria-label="Відсутні дані та підстави оцінки">
-              <h3>Чого не вистачає</h3>
-              ${missing.length ? '<ol>' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : `<p class="muted">${analyzed ? 'Аналіз не виявив додаткових питань. Перевір пояснення та джерела нижче.' : 'Поки не визначено — потрібен аналіз контексту.'}</p>`}
+              <div class="section-label">Чого не вистачає</div>
+              ${missing.length ? '<ol class="missing-info">' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : `<p class="muted">${analyzed ? 'Аналіз не виявив додаткових питань. Перевір пояснення та джерела нижче.' : 'Поки не визначено — потрібен аналіз контексту.'}</p>`}
               <div class="section-label">На чому ґрунтується оцінка</div>
               ${sourceMarkup(analysis)}
               <details class="description"><summary>Стандартизований опис задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Опис ще не підготовлений. Після узгодження твоїх правил тут буде готовий текст.')}</p></details>
@@ -254,7 +273,7 @@
               <div class="manual-status-label"><label for="manual">Мій статус</label><span class="muted small">Ручний вибір має пріоритет</span></div>
               <div class="status-chips" role="group" aria-label="Обрати мій статус">${Object.entries(STATUS_LABELS).map(([value,label]) => `<button type="button" class="badge status-chip tone-${statusTone(value,task)}" data-status="${value}" aria-pressed="${form.manualStatus === value}">${escapeHtml(label)}</button>`).join('')}</div><select id="manual" class="sr-only status-select tone-${statusTone(form.manualStatus, task)}">${Object.entries(STATUS_LABELS).map(([value, label]) => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
               <p class="muted small">«Автоматично» використовує оцінку щоденного аналізу. Інший чіп фіксує твій власний статус.</p><label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Домовленості, наступний контакт, особистий контекст…">${escapeHtml(form.note)}</textarea>
-              <div class="actions"><button id="save" class="primary">Зберегти все</button><button id="done">Завершити → Далі</button><button id="discard" class="quiet">Скинути незбережене</button></div>
+              <div class="actions state-actions"><button id="save" class="primary">Зберегти все</button><button id="done">Завершити → Далі</button><button id="discard" class="quiet">Скинути незбережене</button></div>
               <div id="saved" class="save-state" role="status"></div>
             </section>
             <section class="panel email-panel ${email === true || form.emailDraft.body ? 'email-first' : ''}" aria-label="Редагована чернетка листа">
