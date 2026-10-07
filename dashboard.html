@@ -57,6 +57,13 @@
     .email-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;font-size:16px;font-weight:700;color:#253d5c}.email-summary::-webkit-details-marker{display:none}.email-toggle{font-size:13px;font-weight:400;color:var(--blue);padding:7px 9px;border:1px solid #c5d0df;border-radius:7px}.email-panel[open]>.email-summary .email-toggle{font-size:0;border:0;padding:0}.email-panel[open]>.email-summary .email-toggle::after{content:'Згорнути ▴';font-size:13px}.email-fields{margin-top:12px}.email-meta{margin-bottom:8px}
     .state-actions #save{background:#fff;border-color:#c5d0df;color:#21334a}.state-actions #save:hover{background:#edf3fc}.state-actions #done{background:#16784f;border-color:#16784f;color:#fff}.state-actions #done:hover{background:#116340;border-color:#116340}.state-actions #discard{background:transparent;border-color:transparent;color:#647b96;text-decoration:underline;text-underline-offset:3px}.state-actions #discard:hover{background:#f4f7fb}
     @media(max-width:750px){.signal-strip{gap:8px 12px}.signal-text+.signal-text{padding-left:12px}.statusbar #snapshotInfo{margin:0}.email-summary{font-size:15px}}
+    .task-toolbar{position:sticky;top:-24px;z-index:4;flex-wrap:wrap;justify-content:flex-start;margin:-24px -26px 0;padding:12px 26px;background:#fff;border-bottom:1px solid #e7edf4;box-shadow:0 2px 5px #21334a08}.task-toolbar .task-key{display:flex;align-items:center;gap:10px}.task-toolbar .badge{margin:0}.task-toolbar .task-date{margin-left:auto;font-size:12px}
+    @media(min-width:1700px){.task-toolbar{top:-26px;margin:-26px -32px 0;padding-left:32px;padding-right:32px}}
+    @media(max-width:1150px){.task-toolbar{top:-20px;margin:-20px -20px 0;padding:10px 20px}}
+    @media(max-width:750px){main{overflow:visible}.task-toolbar{top:0;margin:-17px -17px 0;padding:10px 17px}.task-toolbar .task-date{font-size:11px}}
+    .task-meta{margin:0 0 16px;gap:8px 14px;min-height:28px}.task-meta .badge{font-size:11px}.task-meta .signal-text{font-size:12px}.task-meta .signal-text+.signal-text{padding-left:14px}
+    .work-state{padding:16px 18px}.work-state .manual-status-label{margin-bottom:8px}.work-state .status-chips{gap:5px}.work-state label[for="note"]{margin-top:12px;margin-bottom:6px}.work-state .state-actions{margin-top:12px;border-top:1px solid #e7edf4;padding-top:12px}.work-state .state-actions [hidden]{display:none}.work-state .save-state{margin-top:7px;font-size:11px;line-height:1.45}.work-state .state-actions button{flex:0 1 auto;padding:8px 12px}.work-state .state-actions #discard{margin-left:auto;padding:8px 4px}.work-state .state-actions #done{flex:1 1 auto}
+    @media(max-width:1150px){.work-state .state-actions button{padding:8px 10px}}
   </style>
 </head>
 <body>
@@ -264,15 +271,13 @@
       const waiting = task.manualStatus !== 'AUTO' ? manualWaiting : analysis.waitingRequired, email = manualWaiting || task.manualStatus === 'DONE' ? false : analysis.needsEmail;
       const missing = Array.isArray(analysis.missingInfo) ? analysis.missingInfo : [];
       $('detail').innerHTML = `
-        <div class="task-top"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="muted">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
+        <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span><span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
         <h2>${escapeHtml(task.summary)}</h2>
-        <div class="task-badges"><span class="badge">Jira: ${escapeHtml(task.jiraStatus || 'Не вказано')}</span>${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${!task.active ? '<span class="badge tone-gray">Відсутня в останньому snapshot · стан збережений</span>' : ''}</div>
-        <div id="staleNotice" class="saved-note" hidden></div>
-        <div class="signal-strip" aria-label="Поточна дія, листування та очікування">
-          <span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span>
+        <div class="task-badges signal-strip task-meta" aria-label="Статус Jira, листування та очікування"><span class="badge">Jira: ${escapeHtml(task.jiraStatus || 'Не вказано')}</span>${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${!task.active ? '<span class="badge tone-gray">Відсутня в останньому snapshot · стан збережений</span>' : ''}
           ${effectiveSignal(task) === 'WRITE' && email === true ? '' : `<span class="signal-text text-${email === true ? 'blue' : email === false ? 'green' : 'gray'}">${email === true ? 'Потрібен лист' : email === false ? 'Лист не потрібен' : 'Потребу в листі не визначено'}</span>`}
           <span class="signal-text text-${waiting === true ? 'red' : waiting === false ? 'green' : 'gray'}">${escapeHtml(waiting === true ? manualWaiting ? 'Очікуємо за моїм статусом' : 'Очікуємо: ' + (analysis.waitingOnUk || 'адресат не вказаний') : waiting === false ? 'Не очікуємо' : 'Очікування не визначено')}</span>
         </div>
+        <div id="staleNotice" class="saved-note" hidden></div>
         ${stale ? '<div class="analysis-missing"><b>Контекст Jira змінився — попередній аналіз застарів.</b><br>Черга й сигнали потребують нового аналізу опису, коментарів та залежностей. Твій ручний стан і збережена чернетка залишаються чинними.</div>' : !analyzed ? '<div class="analysis-missing"><b>Для цієї задачі ще немає повного аналізу українською.</b><br>Потрібно прочитати опис, коментарі й залежності. Попередній snapshot не дає достатніх підстав для нової оцінки.</div>' : ''}
         <div class="detail-grid">
           <div>
@@ -298,7 +303,7 @@
             </section>
           </div>
           <div class="right-column">
-            <section class="panel" aria-label="Мій робочий стан">
+            <section class="panel work-state" aria-label="Мій робочий стан">
               <div class="manual-status-label"><label for="manual">Мій статус</label><details class="status-help"><summary aria-label="Як працює мій статус">ⓘ</summary><p>«Автоматично» використовує оцінку щоденного аналізу. Інший чіп фіксує твій власний статус і має пріоритет. Вибір статусу зберігається автоматично.</p></details></div>
               <div class="status-chips" role="group" aria-label="Обрати мій статус">${Object.entries(STATUS_LABELS).map(([value,label]) => `<button type="button" class="badge status-chip tone-${statusTone(value,task)}" data-status="${value}" aria-pressed="${form.manualStatus === value}">${escapeHtml(label)}</button>`).join('')}</div><select id="manual" class="sr-only status-select tone-${statusTone(form.manualStatus, task)}">${Object.entries(STATUS_LABELS).map(([value, label]) => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
               <label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Домовленості, наступний контакт, особистий контекст…">${escapeHtml(form.note)}</textarea>
@@ -348,6 +353,7 @@
       const dirty = isDirty(task.key);
       $('saved').textContent = dirty ? 'Є незбережені зміни: статус, нотатки або чернетка. ' + (browserRecoveryAvailable ? 'Вони збережені в цьому браузері до натискання «Зберегти все».' : 'Натисни «Зберегти все», щоб зберегти їх у базі.') : task.modifiedAt ? 'Збережено локально · ' + dateLabel(task.modifiedAt) : 'Статус-чіп зберігається автоматично. Нотатки й чернетку збережи кнопкою «Зберегти все».';
       $('saved').classList.toggle('unsaved', dirty);
+      $('discard').hidden = !dirty;
       $('discard').disabled = !dirty || busy;
       if ($('staleNotice')) {
         $('staleNotice').hidden = !pendingDetail;
