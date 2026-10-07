@@ -64,6 +64,7 @@
     .task-meta{margin:0 0 16px;gap:8px 14px;min-height:28px}.task-meta .badge{font-size:11px}.task-meta .signal-text{font-size:12px}.task-meta .signal-text+.signal-text{padding-left:14px}
     .work-state{padding:16px 18px}.work-state .manual-status-label{margin-bottom:8px}.work-state .status-chips{gap:5px}.work-state label[for="note"]{margin-top:12px;margin-bottom:6px}.work-state .state-actions{margin-top:12px;border-top:1px solid #e7edf4;padding-top:12px}.work-state .state-actions [hidden]{display:none}.work-state .save-state{margin-top:7px;font-size:11px;line-height:1.45}.work-state .state-actions button{flex:0 1 auto;padding:8px 12px}.work-state .state-actions #discard{margin-left:auto;padding:8px 4px}.work-state .state-actions #done{flex:1 1 auto}
     @media(max-width:1150px){.work-state .state-actions button{padding:8px 10px}}
+    .work-state .state-actions{gap:8px;align-items:stretch}.work-state .state-actions button,.email-panel .actions button{flex:0 1 auto;min-height:38px;padding:8px 12px;font-size:13px;font-weight:400;line-height:1.3;border-radius:8px;white-space:normal}.work-state .state-actions #done{flex:0 1 auto;font-weight:400}.work-state .state-actions #discard{margin-left:0;padding:8px 12px}.work-state .state-actions #savedIndicator{display:inline-flex;align-items:center;font-size:13px;color:#126b48;margin-right:4px}.work-state .state-actions #savedIndicator[hidden]{display:none}
   </style>
 </head>
 <body>
@@ -78,7 +79,7 @@
         <input id="search" type="search" aria-label="Пошук задач" placeholder="Ключ, назва або наступна дія…">
         <div class="filter-row">
           <select id="filter" aria-label="Список задач"><option value="open">Поточні незавершені</option><option value="all">Усі поточні</option><option value="done">Завершені</option><option value="archive">Відсутні у snapshot</option></select>
-          <select id="signalFilter" aria-label="Тип дії"><option value="all">Усі типи дій</option><option value="READY">Можна працювати</option><option value="WRITE">Написати листа</option><option value="DECIDE">Потрібне рішення</option><option value="REVIEW">Перевірити / проаналізувати</option><option value="WAIT">Очікуємо</option></select>
+          <select id="signalFilter" aria-label="Тип дії"><option value="all">Усі типи дій</option><option value="READY">Можна працювати</option><option value="WRITE">Написати листа</option><option value="DECIDE">Потрібне рішення</option><option value="REVIEW">Проаналізувати</option><option value="WAIT">Очікуємо</option></select>
         </div>
         <span id="count" class="muted"></span>
       </div>
@@ -97,14 +98,14 @@
 
     const $ = id => document.getElementById(id);
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-    const STATUS_LABELS = {'AUTO':'Автоматично','IN PROGRESS':'У роботі','WAITING INPUT':'Очікую відповідь','WAITING DEPENDENCY':'Очікую залежність','NEEDS DECISION':'Потрібне рішення','DONE':'Завершено'};
+    const STATUS_LABELS = {'AUTO':'Автоматично','IN PROGRESS':'Аналітика','WAITING INPUT':'Очікую відповідь','WAITING DEPENDENCY':'Очікую залежність','NEEDS DECISION':'Потрібне рішення','DONE':'Завершено'};
     const STATUS_TONES = {'AUTO':'gray','IN PROGRESS':'amber','WAITING INPUT':'red','WAITING DEPENDENCY':'red','NEEDS DECISION':'blue','DONE':'green'};
     const MANUAL_SIGNALS = {'IN PROGRESS':'READY','WAITING INPUT':'WAIT','WAITING DEPENDENCY':'WAIT','NEEDS DECISION':'DECIDE','DONE':'DONE'};
     const SIGNALS = {
       READY:{label:'Можна працювати',group:'Можна працювати зараз',tone:'green',order:0},
       WRITE:{label:'Написати листа',group:'Підготувати й надіслати лист',tone:'blue',order:0},
       DECIDE:{label:'Потрібне рішення',group:'Ухвалити рішення',tone:'blue',order:1},
-      REVIEW:{label:'Потрібна перевірка',group:'Перевірити / проаналізувати',tone:'gray',order:2},
+      REVIEW:{label:'Потрібна перевірка',group:'Проаналізувати',tone:'gray',order:2},
       WAIT:{label:'Очікуємо',group:'Очікуємо відповідь або залежність',tone:'red',order:3},
       DONE:{label:'Завершено',group:'Завершені',tone:'green',order:4}
     };
@@ -306,8 +307,8 @@
             <section class="panel work-state" aria-label="Мій робочий стан">
               <div class="manual-status-label"><label for="manual">Мій статус</label><details class="status-help"><summary aria-label="Як працює мій статус">ⓘ</summary><p>«Автоматично» використовує оцінку щоденного аналізу. Інший чіп фіксує твій власний статус і має пріоритет. Вибір статусу зберігається автоматично.</p></details></div>
               <div class="status-chips" role="group" aria-label="Обрати мій статус">${Object.entries(STATUS_LABELS).map(([value,label]) => `<button type="button" class="badge status-chip tone-${statusTone(value,task)}" data-status="${value}" aria-pressed="${form.manualStatus === value}">${escapeHtml(label)}</button>`).join('')}</div><select id="manual" class="sr-only status-select tone-${statusTone(form.manualStatus, task)}">${Object.entries(STATUS_LABELS).map(([value, label]) => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
-              <label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Домовленості, наступний контакт, особистий контекст…">${escapeHtml(form.note)}</textarea>
-              <div class="actions state-actions"><button id="save">Зберегти все</button><button id="done" class="primary">Завершити → Далі</button><button id="discard" class="quiet">Скинути незбережене</button></div>
+              <label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Додай домовленість або наступний контакт…">${escapeHtml(form.note)}</textarea>
+              <div class="actions state-actions"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Завершити → Далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
               <div id="saved" class="save-state" role="status"></div>
             </section>
             <details id="emailDetails" class="panel email-panel ${email === true || form.emailDraft.body ? 'email-first' : ''}" ${email === true || form.emailDraft.body || form.emailDraft.subject || expandedEmails.has(task.key) ? 'open' : ''}>
@@ -342,7 +343,7 @@
       const form = formFor(task);
       form.value = {manualStatus:$('manual').value, note:$('note').value, emailDraft:{to:$('draftTo').value, subject:$('draftSubject').value, body:$('draftBody').value}};
       form.changedAt = new Date().toISOString();
-      $('manual').className = 'status-select tone-' + statusTone(form.value.manualStatus, task);
+      $('manual').className = 'sr-only status-select tone-' + statusTone(form.value.manualStatus, task);
       rememberEdits();
       updateFormStatus();
       renderList();
@@ -351,7 +352,11 @@
       const task = tasks.find(item => item.key === selected);
       if (!task || !$('saved')) return;
       const dirty = isDirty(task.key);
-      $('saved').textContent = dirty ? 'Є незбережені зміни: статус, нотатки або чернетка. ' + (browserRecoveryAvailable ? 'Вони збережені в цьому браузері до натискання «Зберегти все».' : 'Натисни «Зберегти все», щоб зберегти їх у базі.') : task.modifiedAt ? 'Збережено локально · ' + dateLabel(task.modifiedAt) : 'Статус-чіп зберігається автоматично. Нотатки й чернетку збережи кнопкою «Зберегти все».';
+      $('saved').textContent = '';
+      $('saved').hidden = true;
+      $('savedIndicator').hidden = dirty;
+      $('save').hidden = !dirty;
+      $('save').disabled = !dirty || busy;
       $('saved').classList.toggle('unsaved', dirty);
       $('discard').hidden = !dirty;
       $('discard').disabled = !dirty || busy;
