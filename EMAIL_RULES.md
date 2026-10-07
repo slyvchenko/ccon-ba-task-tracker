@@ -8,3 +8,13 @@
 - За наявності контексту: коротко відоме, далі конкретні незакриті питання. Не запитувати вже надані дані.
 - Адресат лише з підтвердженого джерела; інакше поле порожнє.
 
+
+## Постійні адресати нових чернеток
+
+Визначай постачальника за назвою задачі, а не згадками в коментарях.
+- Airtuerk: systems_airtuerk <systems@airtuerk.de>, Oruc Demir - airtuerk Service GmbH <odemir@airtuerk.de>.
+- AF/KL (AFKL): mail.afkl.ndc.production <mail.afkl.ndc.production@airfrance.fr>, mail.afkl.ndc.team@airfrance.fr.
+- SQ213: Leon Woon <leon_woon@singaporeair.com.sg>, NDC Support <NDC_Support@singaporeair.com.sg>.
+- Для решти постачальників або неоднозначної назви залишати поле «Кому» порожнім: користувач визначає адресатів індивідуально.
+- Ручні збережені адресати й незбережені правки користувача мають пріоритет; не перезаписувати їх.
+
