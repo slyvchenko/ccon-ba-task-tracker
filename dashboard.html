@@ -66,6 +66,7 @@
     @media(max-width:1150px){.work-state .state-actions button{padding:8px 10px}}
     .work-state .state-actions{gap:8px;align-items:stretch}.work-state .state-actions button,.email-panel .actions button{flex:0 1 auto;min-height:38px;padding:8px 12px;font-size:13px;font-weight:400;line-height:1.3;border-radius:8px;white-space:normal}.work-state .state-actions #done{flex:0 1 auto;font-weight:400}.work-state .state-actions #discard{margin-left:0;padding:8px 12px}.work-state .state-actions #savedIndicator{display:inline-flex;align-items:center;font-size:13px;color:#126b48;margin-right:4px}.work-state .state-actions #savedIndicator[hidden]{display:none}
     .work-state .state-actions,.email-panel .actions{justify-content:flex-end}.work-state .state-actions #savedIndicator{margin-right:auto}
+    .work-state .status-select{width:100%;min-height:38px;padding:8px 12px;font-size:13px;line-height:1.4;border:1px solid currentColor;border-radius:7px;cursor:pointer}.work-state .status-select option{background:#fff;color:#21334a;font-size:13px}
   </style>
 </head>
 <body>
@@ -306,8 +307,8 @@
           </div>
           <div class="right-column">
             <section class="panel work-state" aria-label="Мій робочий стан">
-              <div class="manual-status-label"><label for="manual">Мій статус</label><details class="status-help"><summary aria-label="Як працює мій статус">ⓘ</summary><p>«Автоматично» використовує оцінку щоденного аналізу. Інший чіп фіксує твій власний статус і має пріоритет. Вибір статусу зберігається автоматично.</p></details></div>
-              <div class="status-chips" role="group" aria-label="Обрати мій статус">${Object.entries(STATUS_LABELS).map(([value,label]) => `<button type="button" class="badge status-chip tone-${statusTone(value,task)}" data-status="${value}" aria-pressed="${form.manualStatus === value}">${escapeHtml(label)}</button>`).join('')}</div><select id="manual" class="sr-only status-select tone-${statusTone(form.manualStatus, task)}">${Object.entries(STATUS_LABELS).map(([value, label]) => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
+              <div class="manual-status-label"><label for="manual">Мій статус</label><details class="status-help"><summary aria-label="Як працює мій статус">ⓘ</summary><p>«Автоматично» використовує оцінку щоденного аналізу. Ручний вибір фіксує твій власний статус і має пріоритет. Вибір статусу зберігається автоматично.</p></details></div>
+              <select id="manual" class="status-select tone-${statusTone(form.manualStatus, task)}">${['AUTO','IN PROGRESS','NEEDS DECISION','WAITING INPUT','WAITING DEPENDENCY','DONE'].map(value => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>● ${escapeHtml(STATUS_LABELS[value])}</option>`).join('')}</select>
               <label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Додай домовленість або наступний контакт…">${escapeHtml(form.note)}</textarea>
               <div class="actions state-actions"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Завершити → Далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
               <div id="saved" class="save-state" role="status"></div>
@@ -327,8 +328,8 @@
         </div>`;
       renderedTaskVersion = taskVersion(task);
       pendingDetail = false;
-      ['manual', 'note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener(id === 'manual' ? 'change' : 'input', captureForm));
-      document.querySelectorAll('[data-status]').forEach(button => button.addEventListener('click', () => saveStatus(button.dataset.status)));
+      ['note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener('input', captureForm));
+      $('manual').addEventListener('change', () => saveStatus($('manual').value));
       if ($('copyNext')) $('copyNext').addEventListener('click', () => copyText(analysis.nextActionUk, 'Наступну дію скопійовано.'));
       $('save').addEventListener('click', () => saveTask(false));
       $('done').addEventListener('click', () => saveTask(true));
@@ -344,7 +345,7 @@
       const form = formFor(task);
       form.value = {manualStatus:$('manual').value, note:$('note').value, emailDraft:{to:$('draftTo').value, subject:$('draftSubject').value, body:$('draftBody').value}};
       form.changedAt = new Date().toISOString();
-      $('manual').className = 'sr-only status-select tone-' + statusTone(form.value.manualStatus, task);
+      $('manual').className = 'status-select tone-' + statusTone(form.value.manualStatus, task);
       rememberEdits();
       updateFormStatus();
       renderList();
@@ -401,7 +402,7 @@
         renderList();
         renderDetail();
         $('detail').scrollTop = scroll;
-        document.querySelector(`[data-status="${status}"]`)?.focus({preventScroll:true});
+        $('manual')?.focus({preventScroll:true});
         message('Мій статус збережено автоматично.');
       } catch (error) { message(error.message, true); }
       finally { setBusy(false); }
