@@ -48,12 +48,14 @@
     .state-actions button{flex:1 1 0;font-size:11px;line-height:1.25;padding:8px 7px;white-space:normal;min-width:0}
     .state-actions #discard{padding:8px 6px}
     @media(max-width:380px){.state-actions{gap:3px}.state-actions button{font-size:10px;padding:7px 4px}.state-actions #discard{padding:7px 4px}}
+    #bulkDialog{font-family:Aptos,"Segoe UI",Arial,sans-serif;width:min(680px,92vw);max-height:85dvh;border:1px solid #c5d0df;border-radius:12px;padding:22px;color:#21334a}
+    #bulkDialog::backdrop{background:#21334a66}#bulkList{max-height:45dvh;overflow:auto}.bulk-row{padding:9px 0;border-bottom:1px solid #e7edf4;font-size:13px}.bulk-row .muted{font-size:12px}
   </style>
 </head>
 <body>
   <header>
     <div><h1>CCON BA Desk</h1><p class="muted">Черга дій, аналіз задач і видимі чернетки листів</p></div>
-    <div class="tools"><button id="import">Імпортувати snapshot</button><button id="export">Експорт мого стану</button></div>
+    <div class="tools"><button id="bulkEmail">Відкрити всі листи (0)</button><button id="import">Імпортувати snapshot</button><button id="export">Експорт мого стану</button></div>
   </header>
   <div id="statusbar" class="statusbar" role="status" aria-live="polite"><span id="message">Завантаження…</span><span id="snapshotInfo"></span></div>
   <div class="layout">
@@ -70,6 +72,12 @@
     </aside>
     <main id="detail" aria-label="Обрана задача"></main>
   </div>
+  <dialog id="bulkDialog" aria-labelledby="bulkTitle">
+    <h3 id="bulkTitle">Чернетки для Outlook</h3>
+    <p class="muted">Усі поточні задачі «Написати листа», незалежно від фільтрів. Кожен лист відкриється окремо у стандартній поштовій програмі Windows. Перевір листи й прикріпи логи перед відправленням.</p>
+    <div id="bulkList"></div><p id="bulkResult" role="status" class="muted"></p>
+    <div class="actions"><button id="bulkOpen" class="primary">Відкрити чернетки</button><button id="bulkClose">Закрити</button></div>
+  </dialog>
   <script>
     'use strict';
 
@@ -190,6 +198,9 @@
     }
     function renderList() {
       const items = visibleTasks(), current = tasks.filter(task => task.active), analyzed = current.filter(hasAnalysis).length;
+      const mailCount = tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length;
+      $('bulkEmail').textContent = `Відкрити всі листи (${mailCount})`;
+      $('bulkEmail').disabled = !mailCount || busy;
       $('count').textContent = `${items.length} у списку · ${current.length} поточних · аналіз ${analyzed}/${current.length}`;
       let previousGroup = '';
       $('list').innerHTML = items.map((task, index) => {
@@ -399,6 +410,36 @@
       try { await navigator.clipboard.writeText(text); message(notice); }
       catch { message('Копіювання недоступне. Виділи видимий текст і скопіюй вручну.', true); }
     }
+    let bulkItems = [];
+    function previewBulkEmails() {
+      const candidates = rankedTasks().filter(task => task.active && effectiveSignal(task) === 'WRITE');
+      bulkItems = [];
+      $('bulkList').innerHTML = candidates.map(task => {
+        const draft = structuredClone(formFor(task).value.emailDraft);
+        const missing = [!draft.to.trim() && 'адресат', !draft.subject.trim() && 'тема', !draft.body.trim() && 'текст'].filter(Boolean);
+        if (!missing.length) bulkItems.push({key:task.key, draft});
+        return `<div class="bulk-row"><div>${escapeHtml(task.key)} · ${escapeHtml(task.summary)}</div><div class="muted">${missing.length ? 'Пропущено: не заповнено ' + missing.join(', ') : escapeHtml(draft.to)}</div></div>`;
+      }).join('');
+      $('bulkResult').textContent = `Готово: ${bulkItems.length} із ${candidates.length}.`;
+      $('bulkOpen').textContent = `Відкрити чернетки (${bulkItems.length})`;
+      $('bulkOpen').disabled = !bulkItems.length;
+      $('bulkDialog').showModal();
+    }
+    async function openBulkEmails() {
+      const items = bulkItems;
+      $('bulkOpen').disabled = true;
+      $('bulkClose').disabled = true;
+      try {
+        const result = await api('/api/email/open-batch', {items});
+        bulkItems = items.filter(item => !result.opened.includes(item.key));
+        $('bulkResult').textContent = `Передано поштовій програмі: ${result.opened.length}. Не вдалося відкрити: ${result.failed.length}. Перевір вікна Outlook.`;
+        $('bulkOpen').textContent = `Повторити невдалі (${bulkItems.length})`;
+      } catch (error) { $('bulkResult').textContent = error.message; }
+      finally { $('bulkClose').disabled = false; $('bulkOpen').disabled = !bulkItems.length; }
+    }
+    $('bulkEmail').addEventListener('click', previewBulkEmails);
+    $('bulkOpen').addEventListener('click', openBulkEmails);
+    $('bulkClose').addEventListener('click', () => $('bulkDialog').close());
     async function openEmail() {
       captureForm();
       const draft = structuredClone(forms.get(selected)?.value.emailDraft);
