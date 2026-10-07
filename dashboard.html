@@ -12,7 +12,7 @@
     @media(min-width:1700px){.layout{grid-template-columns:400px minmax(0,1fr)}.detail-grid{grid-template-columns:minmax(0,1.2fr) minmax(380px,.8fr)}main{padding:26px 32px}}
     @media(max-width:1150px){header,.statusbar{padding-left:18px;padding-right:18px}.layout{padding:14px 18px;gap:14px;grid-template-columns:300px minmax(0,1fr)}main{padding:20px}.detail-grid{grid-template-columns:1fr}.signal-grid{gap:7px}.signal-card{padding:10px}.signal-card .value{font-size:13px}.filter-row{grid-template-columns:1fr}h2{font-size:22px}}
     @media(max-width:750px){header{padding:15px;flex-wrap:wrap;gap:12px}.tools{margin-left:0}.statusbar{padding:10px 15px;display:block}#snapshotInfo{display:block;margin:5px 0 0;white-space:normal}.layout{display:block;height:auto;padding:12px}aside{max-height:390px;margin-bottom:12px}main{padding:17px}.filters{padding:12px}.filter-row{grid-template-columns:1fr 1fr}.signal-grid{grid-template-columns:1fr}.signal-card{display:grid;grid-template-columns:120px 1fr;gap:6px;align-items:center}.signal-card .caption{margin:0}.signal-card .hint{grid-column:2;margin:0}.task-top{flex-wrap:wrap}.detail-grid{gap:0}.panel{padding:15px}h2{font-size:21px}.email-panel textarea{min-height:140px;height:140px}}
-    .row{min-width:0}.row-title{overflow-wrap:anywhere}.row .badge{font-size:11px;font-weight:400;padding:3px 6px;margin:1px 4px 0 0}.right-column{display:flex;flex-direction:column;min-width:0}.right-column .email-first{order:-1}
+    .row{min-width:0}.row-title{overflow-wrap:anywhere}.row .badge{font-size:11px;font-weight:400;padding:3px 6px;margin:1px 4px 0 0}.right-column{display:flex;flex-direction:column;min-width:0}
   .status-chips{display:flex;flex-wrap:wrap;gap:7px}.status-chip{font-size:13px;border-radius:99px;border:1px solid transparent;padding:8px 11px;margin:0}.status-chip[aria-pressed="true"]{outline:2px solid currentColor;outline-offset:1px;font-weight:700}.signal-card .badge{width:max-content;max-width:100%;font-weight:650}.email-panel textarea{font-family:Aptos,Arial,sans-serif;font-size:11pt;color:#000}
 
     /* Requested density refinements; retain the existing dashboard layout. */
@@ -50,14 +50,21 @@
     @media(max-width:380px){.state-actions{gap:3px}.state-actions button{font-size:10px;padding:7px 4px}.state-actions #discard{padding:7px 4px}}
     #bulkDialog{font-family:Aptos,"Segoe UI",Arial,sans-serif;width:min(680px,92vw);max-height:85dvh;border:1px solid #c5d0df;border-radius:12px;padding:22px;color:#21334a}
     #bulkDialog::backdrop{background:#21334a66}#bulkList{max-height:45dvh;overflow:auto}.bulk-row{padding:9px 0;border-bottom:1px solid #e7edf4;font-size:13px}.bulk-row .muted{font-size:12px}
+    .signal-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:14px 0 18px;font-size:13px;line-height:1.5}.signal-strip .badge{margin:0}.signal-text+.signal-text{border-left:1px solid #c5d0df;padding-left:16px}
+    .statusbar{min-height:36px;padding-top:7px;padding-bottom:7px}#snapshotInfo{margin-left:0;color:#536c8c}#message:empty{display:none}#message:not(:empty)+#snapshotInfo{margin-left:auto}
+    .data-menu{position:relative}.data-menu>summary{list-style:none;cursor:pointer;border:1px solid #c5d0df;border-radius:8px;padding:10px 14px;background:#fff;font-size:15px}.data-menu>summary::-webkit-details-marker{display:none}.data-menu-items{position:absolute;right:0;top:calc(100% + 6px);z-index:10;min-width:220px;padding:6px;background:#fff;border:1px solid #c5d0df;border-radius:9px;box-shadow:0 5px 16px #21334a1a}.data-menu-items button{display:block;border:0;width:100%;text-align:left}
+    .status-help{position:relative}.status-help>summary{list-style:none;cursor:pointer;color:#647b96;padding:0 4px;font-size:16px}.status-help>summary::-webkit-details-marker{display:none}.status-help p{position:absolute;right:0;top:20px;z-index:5;width:260px;padding:12px;background:#fff;border:1px solid #c5d0df;border-radius:8px;box-shadow:0 4px 12px #21334a1a;font-size:13px;line-height:1.5;font-weight:400}
+    .email-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;font-size:16px;font-weight:700;color:#253d5c}.email-summary::-webkit-details-marker{display:none}.email-toggle{font-size:13px;font-weight:400;color:var(--blue);padding:7px 9px;border:1px solid #c5d0df;border-radius:7px}.email-panel[open]>.email-summary .email-toggle{font-size:0;border:0;padding:0}.email-panel[open]>.email-summary .email-toggle::after{content:'Згорнути ▴';font-size:13px}.email-fields{margin-top:12px}.email-meta{margin-bottom:8px}
+    .state-actions #save{background:#fff;border-color:#c5d0df;color:#21334a}.state-actions #save:hover{background:#edf3fc}.state-actions #done{background:#16784f;border-color:#16784f;color:#fff}.state-actions #done:hover{background:#116340;border-color:#116340}.state-actions #discard{background:transparent;border-color:transparent;color:#647b96;text-decoration:underline;text-underline-offset:3px}.state-actions #discard:hover{background:#f4f7fb}
+    @media(max-width:750px){.signal-strip{gap:8px 12px}.signal-text+.signal-text{padding-left:12px}.statusbar #snapshotInfo{margin:0}.email-summary{font-size:15px}}
   </style>
 </head>
 <body>
   <header>
     <div><h1>CCON BA Desk</h1><p class="muted">Черга дій, аналіз задач і видимі чернетки листів</p></div>
-    <div class="tools"><button id="bulkEmail">Відкрити всі листи (0)</button><button id="import">Імпортувати snapshot</button><button id="export">Експорт мого стану</button></div>
+    <div class="tools"><button id="bulkEmail">Відкрити всі листи (0)</button><details id="dataMenu" class="data-menu"><summary>Дані <span aria-hidden="true">▾</span></summary><div class="data-menu-items"><button id="import">Імпортувати snapshot</button><button id="export">Експорт мого стану</button></div></details></div>
   </header>
-  <div id="statusbar" class="statusbar" role="status" aria-live="polite"><span id="message">Завантаження…</span><span id="snapshotInfo"></span></div>
+  <div id="statusbar" class="statusbar" role="status" aria-live="polite"><span id="message"></span><span id="snapshotInfo"></span></div>
   <div class="layout">
     <aside aria-label="Черга задач">
       <div class="filters">
@@ -98,6 +105,7 @@
     let tasks = [], selected = null, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0;
     let signature = '', renderedTaskVersion = '', pendingDetail = false;
     const forms = new Map();
+    const expandedEmails = new Set();
     const recoveredForms = readRecoveredForms();
 
     function readRecoveredForms() {
@@ -197,6 +205,7 @@
       return `<span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(label)}</span>`;
     }
     function renderList() {
+      updateSnapshotInfo();
       const items = visibleTasks(), current = tasks.filter(task => task.active), analyzed = current.filter(hasAnalysis).length;
       const mailCount = tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length;
       $('bulkEmail').textContent = `Відкрити всі листи (${mailCount})`;
@@ -259,10 +268,10 @@
         <h2>${escapeHtml(task.summary)}</h2>
         <div class="task-badges"><span class="badge">Jira: ${escapeHtml(task.jiraStatus || 'Не вказано')}</span>${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${!task.active ? '<span class="badge tone-gray">Відсутня в останньому snapshot · стан збережений</span>' : ''}</div>
         <div id="staleNotice" class="saved-note" hidden></div>
-        <div class="signal-grid">
-          ${signalCard('Що робити', analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз', info.tone, task.manualStatus !== 'AUTO' ? 'За моїм ручним статусом' : 'За щоденним аналізом')}
-          ${signalCard('Писати листа?', email === true ? 'Так' : email === false ? 'Ні' : 'Ще не визначено', email === true ? 'blue' : email === false ? 'green' : 'gray', email === true ? 'Чернетка нижче, доступна для редагування' : '')}
-          ${signalCard('Потрібно чекати?', waiting === true ? 'Так' : waiting === false ? 'Ні' : 'Ще не визначено', waiting === true ? 'red' : waiting === false ? 'green' : 'gray', waiting === true ? manualWaiting ? 'За моїм ручним статусом' : analysis.waitingOnUk || 'Адресат очікування не вказаний' : '')}
+        <div class="signal-strip" aria-label="Поточна дія, листування та очікування">
+          <span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span>
+          ${effectiveSignal(task) === 'WRITE' && email === true ? '' : `<span class="signal-text text-${email === true ? 'blue' : email === false ? 'green' : 'gray'}">${email === true ? 'Потрібен лист' : email === false ? 'Лист не потрібен' : 'Потребу в листі не визначено'}</span>`}
+          <span class="signal-text text-${waiting === true ? 'red' : waiting === false ? 'green' : 'gray'}">${escapeHtml(waiting === true ? manualWaiting ? 'Очікуємо за моїм статусом' : 'Очікуємо: ' + (analysis.waitingOnUk || 'адресат не вказаний') : waiting === false ? 'Не очікуємо' : 'Очікування не визначено')}</span>
         </div>
         ${stale ? '<div class="analysis-missing"><b>Контекст Jira змінився — попередній аналіз застарів.</b><br>Черга й сигнали потребують нового аналізу опису, коментарів та залежностей. Твій ручний стан і збережена чернетка залишаються чинними.</div>' : !analyzed ? '<div class="analysis-missing"><b>Для цієї задачі ще немає повного аналізу українською.</b><br>Потрібно прочитати опис, коментарі й залежності. Попередній snapshot не дає достатніх підстав для нової оцінки.</div>' : ''}
         <div class="detail-grid">
@@ -290,20 +299,23 @@
           </div>
           <div class="right-column">
             <section class="panel" aria-label="Мій робочий стан">
-              <div class="manual-status-label"><label for="manual">Мій статус</label><span class="muted small">Ручний вибір має пріоритет</span></div>
+              <div class="manual-status-label"><label for="manual">Мій статус</label><details class="status-help"><summary aria-label="Як працює мій статус">ⓘ</summary><p>«Автоматично» використовує оцінку щоденного аналізу. Інший чіп фіксує твій власний статус і має пріоритет. Вибір статусу зберігається автоматично.</p></details></div>
               <div class="status-chips" role="group" aria-label="Обрати мій статус">${Object.entries(STATUS_LABELS).map(([value,label]) => `<button type="button" class="badge status-chip tone-${statusTone(value,task)}" data-status="${value}" aria-pressed="${form.manualStatus === value}">${escapeHtml(label)}</button>`).join('')}</div><select id="manual" class="sr-only status-select tone-${statusTone(form.manualStatus, task)}">${Object.entries(STATUS_LABELS).map(([value, label]) => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
-              <p class="muted small">«Автоматично» використовує оцінку щоденного аналізу. Інший чіп фіксує твій власний статус.</p><label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Домовленості, наступний контакт, особистий контекст…">${escapeHtml(form.note)}</textarea>
-              <div class="actions state-actions"><button id="save" class="primary">Зберегти все</button><button id="done">Завершити → Далі</button><button id="discard" class="quiet">Скинути незбережене</button></div>
+              <label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Домовленості, наступний контакт, особистий контекст…">${escapeHtml(form.note)}</textarea>
+              <div class="actions state-actions"><button id="save">Зберегти все</button><button id="done" class="primary">Завершити → Далі</button><button id="discard" class="quiet">Скинути незбережене</button></div>
               <div id="saved" class="save-state" role="status"></div>
             </section>
-            <section class="panel email-panel ${email === true || form.emailDraft.body ? 'email-first' : ''}" aria-label="Редагована чернетка листа">
-              <div class="panel-title"><h3>Чернетка листа</h3><span class="badge ${staleGeneratedDraft ? 'tone-amber' : email === true ? 'tone-blue' : 'tone-gray'}">${staleGeneratedDraft ? 'Зі старого аналізу' : savedDraft && stale ? 'Моя збережена чернетка' : email === true ? 'Потрібна' : email === false ? 'За потреби' : 'Потребу ще не визначено'}</span></div>
+            <details id="emailDetails" class="panel email-panel ${email === true || form.emailDraft.body ? 'email-first' : ''}" ${email === true || form.emailDraft.body || form.emailDraft.subject || expandedEmails.has(task.key) ? 'open' : ''}>
+              <summary class="email-summary"><span>${email === false && !form.emailDraft.body && !form.emailDraft.subject ? 'Лист зараз не потрібен' : 'Чернетка листа'}</span><span class="email-toggle">Підготувати лист</span></summary>
+              <div class="email-fields" role="region" aria-label="Редагована чернетка листа">
+              <div class="panel-title email-meta"><span class="badge ${staleGeneratedDraft ? 'tone-amber' : email === true ? 'tone-blue' : 'tone-gray'}">${staleGeneratedDraft ? 'Зі старого аналізу' : savedDraft && stale ? 'Моя збережена чернетка' : email === true ? 'Потрібна' : email === false ? 'За потреби' : 'Потребу ще не визначено'}</span></div>
               <p class="email-intro">${stale && form.emailDraft.body ? savedDraft ? 'Твоя збережена чернетка залишилася без змін. Аналіз застарів: перевір лист за новим контекстом перед використанням.' : 'Новий контекст ще не проаналізовано. Ця чернетка збережена зі старого аналізу або твоїх незбережених правок; перевір її актуальність перед використанням.' : form.emailDraft.body ? 'Перевір адресата й текст. Усі поля можна відредагувати.' : email === false && analyzed ? 'За поточним аналізом лист зараз не потрібен. За потреби можеш підготувати власну чернетку.' : email === true ? 'Потрібен лист, але готової чернетки ще немає. Підготуй текст за конкретними відкритими питаннями задачі.' : 'Потребу в листі ще не визначено. Спочатку перевір контекст і наступну дію.'}</p>
               <label for="draftTo">Кому</label><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата, якщо він відомий" value="${escapeHtml(form.emailDraft.to)}">
               <label for="draftSubject">Тема</label><input id="draftSubject" maxlength="2000" placeholder="Тема листа" value="${escapeHtml(form.emailDraft.subject)}">
               <label for="draftBody">Текст листа</label><textarea id="draftBody" maxlength="50000" placeholder="Чернетка за описом, коментарями та відкритими питаннями задачі…">${escapeHtml(form.emailDraft.body)}</textarea>
               <div class="actions"><button id="email" class="primary">Відкрити в пошті ↗</button></div>
-            </section>
+              </div>
+            </details>
           </div>
         </div>`;
       renderedTaskVersion = taskVersion(task);
@@ -315,6 +327,7 @@
       $('done').addEventListener('click', () => saveTask(true));
       $('discard').addEventListener('click', discardForm);
       $('email').addEventListener('click', openEmail);
+      $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
       $('loadContext').addEventListener('click', () => loadContext(task.key));
       updateFormStatus();
     }
@@ -501,7 +514,7 @@
     }
     function editorFocused() { return ['manual', 'note', 'draftTo', 'draftSubject', 'draftBody'].includes(document.activeElement?.id); }
     function updateSnapshotInfo() {
-      $('snapshotInfo').textContent = latest ? 'Snapshot ' + dateLabel(latest.generated_at) + ' · ' + latest.count + ' задач' : 'Очікую snapshot';
+      $('snapshotInfo').textContent = latest ? tasks.filter(task => task.active).length + ' задач · ' + tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length + ' листів · Оновлено ' + dateLabel(latest.generated_at) : 'Очікую snapshot';
     }
     async function load() {
       const request = ++loadRequest;
@@ -528,7 +541,7 @@
           else renderDetail();
         }
         if (data.error) message(data.error, true);
-        else if (changed) message(hasUnsaved() ? 'Дані оновлено. Незбережені правки залишаються у твоїх формах.' : 'Черга за ризиком і пріоритетом: дії, листи, рішення та перевірки разом; очікування нижче. Ручний статус має пріоритет.');
+        else if (changed) message(hasUnsaved() ? 'Дані оновлено. Незбережені правки залишаються у твоїх формах.' : '');
       } catch (error) { message('Сервер недоступний. Запусти Start CCON BA.bat. ' + error.message, true); }
     }
     function applyFilters() {
@@ -540,16 +553,20 @@
         renderDetail();
       }
     }
+    document.addEventListener('click', event => { if (!$('dataMenu').contains(event.target)) $('dataMenu').open = false; });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') { $('dataMenu').open = false; document.querySelectorAll('.status-help[open]').forEach(help => help.open = false); } });
     $('search').addEventListener('input', applyFilters);
     $('filter').addEventListener('change', applyFilters);
     $('signalFilter').addEventListener('change', applyFilters);
     $('import').addEventListener('click', async () => {
+      $('dataMenu').open = false;
       $('import').disabled = true;
       try { await api('/api/import', {}); await load(); message('Snapshot перевірено. Нові дані імпортовані; ручні правки та чернетки збережені.'); }
       catch (error) { message(error.message, true); }
       finally { $('import').disabled = false; }
     });
     $('export').addEventListener('click', async () => {
+      $('dataMenu').open = false;
       try {
         const data = await api('/api/export');
         const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:'application/json'}));
