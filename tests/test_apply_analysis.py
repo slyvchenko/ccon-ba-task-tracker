@@ -123,3 +123,4 @@ class AnalysisIntegrity(unittest.TestCase):
         self.assertEqual(task['savedEmailDraft'],draft)
         self.assertEqual(task['manualStatus'],'WAITING INPUT')
         self.assertEqual(task['note'],'Мій вибір')
+

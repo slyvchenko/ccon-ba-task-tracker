@@ -26,3 +26,4 @@ def normalize_draft(key, draft):
     body = re.sub(r'\n*Logs attached for your reference\.?\s*$', '', body, flags=re.I)
     result['body'] = 'Dear Team,\n\n' + body.strip() + '\n\nLogs attached for your reference.'
     return result
+

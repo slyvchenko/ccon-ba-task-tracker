@@ -12,3 +12,4 @@ class EmailRules(unittest.TestCase):
     def test_no_email_remains_empty(self):
         draft={'to':'','subject':'','body':''}
         self.assertEqual(normalize_draft('CCON-1',draft),draft)
+

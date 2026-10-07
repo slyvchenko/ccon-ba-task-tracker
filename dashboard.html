@@ -5,45 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CCON BA Desk</title>
   <style>
-    :root{font-family:Aptos,"Segoe UI",Arial,sans-serif;font-size:15px;color:#21334a;background:#eef2f6;font-synthesis:none;--line:#dbe3ed;--muted:#61738b;--blue:#215bbb;--green:#126b48;--red:#a53837;--amber:#916016}
-    *{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid #c5d0df;border-radius:8px;padding:10px 14px;background:#fff;color:#21334a}button:hover{background:#edf3fc}button:disabled{cursor:default;opacity:.5}button:focus-visible,a:focus-visible{outline:3px solid #7ba6e5;outline-offset:2px}a{color:var(--blue)}.primary{background:var(--blue);border-color:var(--blue);color:#fff}.primary:hover{background:#164b9f}.quiet{padding:7px 10px;font-size:13px}.muted{color:var(--muted);font-size:13px;line-height:1.5}.small{font-size:12px}.pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}.sr-only{position:absolute;clip:rect(0,0,0,0);height:1px;width:1px;overflow:hidden}
-    header{display:flex;align-items:center;gap:20px;padding:18px 28px;background:#fff;border-bottom:1px solid var(--line)}h1{font-size:24px;letter-spacing:-.5px;margin:0}header p{margin:5px 0 0}.tools{margin-left:auto;display:flex;gap:9px;flex-wrap:wrap}.statusbar{display:flex;align-items:center;gap:16px;min-height:45px;padding:10px 28px;background:#e6eef9;font-size:13px}.statusbar.error{background:#fff0ee;color:#9d3432}#snapshotInfo{margin-left:auto;white-space:nowrap;color:#536c8c}.layout{display:grid;grid-template-columns:minmax(300px,28%) minmax(0,1fr);gap:18px;padding:18px 28px;height:calc(100dvh - 128px)}aside,main{background:#fff;border:1px solid var(--line);border-radius:13px;min-height:0;overflow:auto}aside{display:flex;flex-direction:column}.filters{padding:15px;border-bottom:1px solid var(--line);background:#fff;display:grid;gap:10px;flex:none}.filter-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}input,select,textarea{padding:10px 11px;border:1px solid #bccbde;border-radius:7px;width:100%;color:#21334a;background:#fff}input:focus,select:focus,textarea:focus{outline:2px solid #c0d6f8;border-color:#6394d3}textarea{min-height:100px;resize:vertical;line-height:1.5}#list{overflow:auto;min-height:0;flex:1}.queue-group{padding:10px 16px;background:#f4f7fb;font-size:11px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;color:#687b93;border-bottom:1px solid #e9edf3}.row{display:block;text-align:left;width:100%;border:none;border-radius:0;padding:15px 17px;border-bottom:1px solid #e7edf4;border-left:4px solid transparent}.row:hover{background:#f5f8fc}.row.selected{background:#eaf1fc;border-left-color:var(--blue)}.row-head{display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:12px;color:#6b7d92}.row strong{display:block;font-size:14px;margin:7px 0 9px;line-height:1.45}.row-next{font-size:12px;line-height:1.5;color:#5a6f8b;margin-top:7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.rank{font-weight:700;color:#34577f}.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:1.3;padding:5px 8px;border-radius:6px;margin:2px 5px 2px 0;background:#edf1f6;color:#56677d}.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}.tone-green{background:#e5f4ed;color:var(--green)}.tone-blue{background:#e5effd;color:#245aab}.tone-red{background:#fbe9e7;color:var(--red)}.tone-amber{background:#fbf1da;color:var(--amber)}.tone-gray{background:#edf1f6;color:#65768b}.edit-dot{color:#a66a0b;font-weight:700}
-    main{padding:24px 26px}h2{font-size:22px;line-height:1.3;letter-spacing:-.45px;margin:10px 0 15px;overflow-wrap:anywhere}h3{font-size:16px;margin:0 0 12px;color:#253d5c}.task-top{display:flex;align-items:center;gap:10px;justify-content:space-between}.task-key{font-size:13px;color:#647b96}.task-badges{margin-bottom:18px}.signal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0 21px}.signal-card{border:1px solid var(--line);border-radius:10px;padding:13px 14px}.signal-card .caption{font-size:12px;color:#60738b;display:block;margin-bottom:7px}.signal-card .value{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:650}.signal-card .hint{display:block;font-size:12px;line-height:1.45;margin-top:6px;color:#6a7c93}.value .dot{width:9px;height:9px}.text-green{color:var(--green)}.text-blue{color:#245aab}.text-red{color:var(--red)}.text-amber{color:var(--amber)}.text-gray{color:#65768b}.detail-grid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(290px,.88fr);gap:22px;align-items:start}.panel{border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px}.analysis-lead{background:#f6f9fd;border-color:#d8e4f3}.section-label{font-size:12px;font-weight:700;color:#637c9a;margin:18px 0 6px;text-transform:uppercase;letter-spacing:.35px}.section-label:first-child{margin-top:0}.panel p{margin:6px 0 12px}.panel ul,.panel ol{padding-left:22px;margin:9px 0;line-height:1.6}.panel li{margin:5px 0}.next-action{font-size:17px;line-height:1.55;color:#233e62}.panel-title{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}.panel-title h3{margin:0}label{display:block;font-size:13px;font-weight:650;margin:14px 0 7px}.panel>label:first-child{margin-top:0}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.save-state{font-size:12px;line-height:1.5;min-height:18px;margin-top:10px;color:#41785d}.unsaved{color:#93621c}.saved-note{padding:10px 12px;background:#fff5de;border:1px solid #f0dca9;border-radius:8px;font-size:12px;line-height:1.5;color:#806020;margin-bottom:14px}.email-panel{border-color:#c9d9f0}.email-panel textarea{min-height:230px}.email-intro{margin:0 0 12px!important;font-size:13px;line-height:1.5;color:#62758c}.email-panel .actions{align-items:center}.status-select.tone-green{background:#edf8f1;border-color:#9bc9af}.status-select.tone-blue{background:#edf4ff;border-color:#a8c0e7}.status-select.tone-red{background:#fff0ed;border-color:#dfb0a8}.status-select.tone-amber{background:#fff7e6;border-color:#dec68f}.status-select.tone-gray{background:#f5f7fa}.empty{padding:30px;line-height:1.7;color:#667a93}.empty h2{font-size:22px;color:#304969}.analysis-missing{padding:14px 16px;background:#fff6e5;border:1px solid #edd8ad;border-radius:9px;line-height:1.6;color:#7f6227;margin:16px 0}.source-list{font-size:13px}.description{margin-top:13px;border-top:1px solid var(--line);padding-top:12px}.description summary{cursor:pointer;font-size:13px;font-weight:650;color:#3f618b}.description .pre{font-size:13px;color:#536983;max-height:340px;overflow:auto}.footer-note{font-size:12px;line-height:1.5;color:#6e829a;margin:10px 0 0}.manual-status-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}.manual-status-label label{margin:0}.loading{color:#6c7e94}.wordbreak{overflow-wrap:anywhere}
-    @media(min-width:1700px){.layout{grid-template-columns:400px minmax(0,1fr)}.detail-grid{grid-template-columns:minmax(0,1.2fr) minmax(380px,.8fr)}main{padding:26px 32px}}
-    @media(max-width:1150px){header,.statusbar{padding-left:18px;padding-right:18px}.layout{padding:14px 18px;gap:14px;grid-template-columns:300px minmax(0,1fr)}main{padding:20px}.detail-grid{grid-template-columns:1fr}.signal-grid{gap:7px}.signal-card{padding:10px}.signal-card .value{font-size:13px}.filter-row{grid-template-columns:1fr}h2{font-size:22px}}
-    @media(max-width:750px){header{padding:15px;flex-wrap:wrap;gap:12px}.tools{margin-left:0}.statusbar{padding:10px 15px;display:block}#snapshotInfo{display:block;margin:5px 0 0;white-space:normal}.layout{display:block;height:auto;padding:12px}aside{max-height:390px;margin-bottom:12px}main{padding:17px}.filters{padding:12px}.filter-row{grid-template-columns:1fr 1fr}.signal-grid{grid-template-columns:1fr}.signal-card{display:grid;grid-template-columns:120px 1fr;gap:6px;align-items:center}.signal-card .caption{margin:0}.signal-card .hint{grid-column:2;margin:0}.task-top{flex-wrap:wrap}.detail-grid{gap:0}.panel{padding:15px}h2{font-size:21px}.email-panel textarea{min-height:250px}}
-    .row{min-width:0}.row strong{overflow-wrap:anywhere}.right-column{display:flex;flex-direction:column;min-width:0}.right-column .email-first{order:-1}
-  .status-chips{display:flex;flex-wrap:wrap;gap:7px}.status-chip{font-size:13px;border-radius:99px;border:1px solid transparent;padding:8px 11px;margin:0}.status-chip[aria-pressed="true"]{outline:2px solid currentColor;outline-offset:1px;font-weight:700}.signal-card .badge{width:max-content;max-width:100%;font-weight:650}.email-panel textarea{font-family:Aptos,Arial,sans-serif;font-size:11pt;color:#000}
-  
-    /* Compact queue and restrained, meaningful color accents. */
-    .layout{grid-template-columns:minmax(270px,24%) minmax(0,1fr)}
-    .filters{padding:12px;gap:8px}.filters input,.filters select{padding:8px;font-size:13px}
-    .row{padding:10px 12px;border-left-width:4px}.row strong{font-size:13px;line-height:1.35;margin:5px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-    .row-head{font-size:11px}.row .badge{font-size:11px;padding:3px 6px;margin:2px 4px 0 0}.row-next{font-size:11px;line-height:1.35;margin-top:5px;-webkit-line-clamp:1}
-    .queue-group{padding:7px 12px}.row-green{border-left-color:#57a682}.row-blue{border-left-color:#5a8ed0}.row-amber{border-left-color:#c99a3b}.row-red{border-left-color:#cc7470}.row-gray{border-left-color:#a6b0bd}
-    .row.selected{background:#dce9fc;border-left-color:#205cbb;box-shadow:inset 0 0 0 1px #b4ccee}.row:hover{background:#edf3fc}
-    .tone-green{background:#ceebdc;color:#105a3c}.tone-blue{background:#d2e3ff;color:#174b9b}.tone-red{background:#f8d8d5;color:#922c2a}.tone-amber{background:#f7e5b7;color:#764b09}.tone-gray{background:#e1e6ee;color:#485a70}
-    .signal-green{background:#f0faf4;border-color:#8ebda3;border-top:3px solid #31805b}.signal-blue{background:#eff5ff;border-color:#94b4e0;border-top:3px solid #316bb7}.signal-red{background:#fff2f0;border-color:#dba29b;border-top:3px solid #b64b44}.signal-amber{background:#fff8e9;border-color:#dbbc73;border-top:3px solid #ac7b1d}.signal-gray{background:#f5f7fa;border-top:3px solid #8b99ac}
-    .analysis-lead{background:#f4f8ff;border-color:#b9cfee;border-left:4px solid #4a7bbb}.next-action{background:#e4eefc;border-left:3px solid #2862af;padding:12px 14px;border-radius:0 7px 7px 0;color:#183d6e;font-weight:550}
-    .missing-panel{border-color:#e3c788;border-top:3px solid #c3973f}.missing-panel h3{color:#785111}.email-panel{border-top:3px solid #4c7ec4}.section-label{color:#425f84}
-    @media(min-width:1700px){.layout{grid-template-columns:340px minmax(0,1fr)}}
-    @media(max-width:1150px){.layout{grid-template-columns:270px minmax(0,1fr)}}
-    @media(max-width:750px){.layout{display:block}.row{padding:9px 12px}}
+
+    :root{font-family:Aptos,"Segoe UI",Arial,sans-serif;font-size:15px;color:#20324a;background:#edf1f6;font-synthesis:none;--line:#d9e2ed;--muted:#5c6e84;--blue:#245db5;--green:#176447;--red:#a33235;--amber:#885907}
+    *{box-sizing:border-box}body{margin:0;height:100dvh;display:flex;flex-direction:column}button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid #bfcddd;border-radius:7px;padding:9px 13px;background:#fff;color:inherit;line-height:1.3}button:hover{background:#edf3fc;border-color:#91add1}button:disabled{cursor:default;opacity:.48}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #6899dc;outline-offset:3px}a{color:var(--blue);text-underline-offset:3px}.primary{background:var(--blue);border-color:var(--blue);color:#fff}.primary:hover{background:#194a92;color:#fff}.quiet{padding:6px 9px;font-size:13px}.muted{color:var(--muted);font-size:13px;line-height:1.5}.small{font-size:12px}.pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}.sr-only{position:absolute;clip:rect(0,0,0,0);height:1px;width:1px;overflow:hidden}.wordbreak{overflow-wrap:anywhere}
+    header{display:flex;align-items:center;gap:20px;padding:13px 22px;background:#fff;border-bottom:1px solid var(--line);flex:none}h1{font-size:23px;letter-spacing:-.5px;margin:0}header p{margin:3px 0 0}.brand{display:flex;gap:11px;align-items:center}.brand-mark{display:grid;place-items:center;width:37px;height:37px;border-radius:10px;background:#235ab0;color:white;font-size:17px;font-weight:750}.tools{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}.tools button{font-size:13px}.statusbar{display:flex;align-items:center;gap:16px;min-height:32px;padding:6px 22px;background:#e4edf8;font-size:12px;flex:none;color:#405d80}.statusbar.error{background:#fde9e7;color:#962d2b}#snapshotInfo{margin-left:auto;white-space:nowrap}.layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;padding:14px 20px;flex:1;min-height:0}aside,main{background:#fff;border:1px solid var(--line);border-radius:11px;min-width:0;min-height:0}aside{display:flex;flex-direction:column;overflow:hidden}.queue-title{display:flex;justify-content:space-between;align-items:center;padding:12px 13px 0}.queue-title h2{font-size:16px;margin:0}.queue-title span{font-size:11px;color:var(--muted)}.filters{padding:11px 12px 12px;border-bottom:1px solid var(--line);display:grid;gap:8px;flex:none}.filter-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}.filters input,.filters select{font-size:13px;padding:8px;min-width:0}.filter-caption{font-size:11px;font-weight:600;display:block;margin:0 0 4px;color:var(--muted)}input,select,textarea{padding:9px 10px;border:1px solid #b7c8dd;border-radius:6px;width:100%;color:inherit;background:#fff}input:focus,select:focus,textarea:focus{outline:2px solid #c4d8f5;border-color:#5e8fcf}textarea{min-height:90px;resize:vertical;line-height:1.5}#count{font-size:11px}#list{overflow:auto;min-height:0;flex:1;scrollbar-width:thin}.queue-group{position:sticky;top:0;z-index:1;padding:7px 12px;background:#f1f5fa;font-size:10px;letter-spacing:.65px;text-transform:uppercase;font-weight:750;color:#526882;border-bottom:1px solid var(--line)}.row{display:block;text-align:left;width:100%;border:none;border-radius:0;padding:10px 12px;border-bottom:1px solid #e7edf4;border-left:3px solid transparent;min-width:0}.row:hover{background:#f0f5fc}.row.selected{background:#dfebfc;box-shadow:inset 0 0 0 1px #a9c5ea;border-left-color:#235bb1}.row-head{display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:11px;color:#61758e}.rank{font-weight:700;color:#335a86}.row strong{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:13px;line-height:1.4;margin:5px 0}.row-next{font-size:11px;line-height:1.4;color:#546b88;margin-top:5px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}.row .badge{font-size:11px;padding:3px 6px;margin:2px 4px 0 0}.row-green{border-left-color:#68a58a}.row-blue{border-left-color:#6995cf}.row-red{border-left-color:#ce807e}.row-amber{border-left-color:#ccaa60}.row-gray{border-left-color:#a4afbd}.edit-dot{color:#986309;font-weight:700}
+    .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;line-height:1.35;padding:4px 8px;border-radius:5px;margin:0;background:#edf1f6;color:#50627a}.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}.tone-green{background:#d9efe3;color:#105a3c}.tone-blue{background:#dce9ff;color:#194d9e}.tone-red{background:#f9dedb;color:#962c2d}.tone-amber{background:#f9eac3;color:#79500a}.tone-gray{background:#e9edf3;color:#4f6178}.text-green{color:var(--green)}.text-blue{color:var(--blue)}.text-red{color:var(--red)}.text-amber{color:var(--amber)}.text-gray{color:var(--muted)}
+    main{overflow:auto;padding:20px 24px 0;scrollbar-width:thin}h2{font-size:23px;line-height:1.3;letter-spacing:-.4px;margin:10px 0 12px;overflow-wrap:anywhere}h3{font-size:16px;margin:0 0 12px;color:#253b57}.task-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.task-key{font-size:13px;font-weight:650;color:#476687}.task-nav{display:flex;align-items:center;gap:6px}.task-nav span{font-size:12px;color:var(--muted);margin-right:4px}.task-nav button{padding:5px 9px;font-size:12px}.task-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:16px}.task-meta .updated{margin-left:auto;font-size:11px;color:var(--muted)}
+    .state-panel{padding:12px 14px;background:#f7f9fc;border:1px solid var(--line);border-radius:9px;margin-bottom:16px}.state-heading{display:flex;align-items:center;gap:10px;margin-bottom:9px}.state-heading h3{margin:0;font-size:13px}.state-heading span{font-size:11px;color:var(--muted)}.status-chips{display:flex;flex-wrap:wrap;gap:7px}.status-chip{font-size:12px;border-radius:6px;border:1px solid transparent;padding:6px 9px;margin:0}.status-chip[aria-pressed="true"]{box-shadow:0 0 0 2px currentColor;font-weight:750}.status-chip:hover{filter:brightness(.96)}
+    .work-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,1fr);grid-template-areas:"action email" "reason email" "missing email" "notes notes" "evidence evidence";gap:16px 20px;align-items:start}.panel{border:1px solid var(--line);border-radius:9px;padding:16px;min-width:0}.panel p{margin:6px 0 0}.panel ul,.panel ol{padding-left:22px;margin:8px 0 0;line-height:1.6}.panel li{margin:6px 0}.panel-title{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:11px}.panel-title h3{margin:0}.action-panel{grid-area:action;background:#f1f6ff;border-color:#adc6e8;border-left:4px solid #3067b4}.action-panel.action-red{background:#fff5f2;border-color:#e0b1a9;border-left-color:#b44c44}.action-panel.action-green{background:#f1f9f5;border-color:#acd1ba;border-left-color:#36815a}.action-panel.action-amber{background:#fff9ec;border-color:#e0c68e;border-left-color:#b18b37}.next-action{font-size:17px;font-weight:550;color:#253f60;line-height:1.55}.action-foot{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:14px}.action-foot .muted{font-size:11px}.signal-line{display:flex;flex-wrap:wrap;align-items:center;gap:7px 16px;margin-top:13px;padding-top:12px;border-top:1px solid #cfdef0;font-size:12px;color:#516782}.signal-line>span{display:flex;align-items:center;gap:6px}.reason-panel{grid-area:reason;border-color:transparent;padding:0 2px}.reason-panel p{font-size:14px;color:#405570;line-height:1.6}.missing-panel{grid-area:missing;background:#fffcf4;border-color:#e7d4a2}.missing-panel h3{color:#7d5614;font-size:14px}.missing-panel li{font-size:14px}.missing-panel .badge{background:#f3e7c8;color:#78531a}.notes-panel{grid-area:notes}.notes-panel label{margin-top:0}.notes-panel textarea{min-height:82px}.evidence-panel{grid-area:evidence;padding:0 16px}.evidence-panel>summary{padding:14px 0;cursor:pointer;font-size:14px;font-weight:650;color:#405b7d}.evidence-panel[open]{padding-bottom:16px}.source-list{font-size:13px}.description{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}.description summary{cursor:pointer;font-size:13px;font-weight:650;color:#3f618b}.description .pre{font-size:13px;color:#536983;max-height:340px;overflow:auto}.section-label{font-size:11px;font-weight:750;color:#536d8f;margin:17px 0 7px;text-transform:uppercase;letter-spacing:.5px}.footer-note{font-size:12px;line-height:1.5;color:var(--muted)}
+    .email-panel{grid-area:email;border-color:#abc4e7;border-top:3px solid #316bb7;overflow:hidden}.email-panel>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:16px;font-weight:700;color:#243d5d}.email-panel>summary::-webkit-details-marker{display:none}.email-panel>summary:after{content:'+';font-size:18px;color:#58789f}.email-panel[open]>summary:after{content:'−'}.email-panel>summary .badge{margin-left:auto;font-weight:500}.email-panel[open]>summary{margin-bottom:10px}.email-intro{font-size:12px;color:var(--muted);line-height:1.5}.email-panel textarea{min-height:280px;font-family:Aptos,Arial,sans-serif;font-size:11pt;color:#000}.email-panel .actions{margin-top:12px}.email-panel label{font-size:12px;margin-top:12px}.email-panel input{font-size:13px}.email-panel .subject-field{min-height:60px;font:13px/1.45 Aptos,"Segoe UI",Arial,sans-serif;color:#20324a;resize:vertical}.email-panel:not([open]){background:#f7f9fc;border-top-color:#b3c0d2;border-color:var(--line)}.email-panel:not([open])>summary{font-size:14px}
+    label{display:block;font-size:13px;font-weight:650;margin:14px 0 7px}.actions{display:flex;gap:8px;flex-wrap:wrap}.task-footer{position:sticky;bottom:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:14px;margin:20px -24px 0;padding:12px 24px;background:rgba(255,255,255,.97);border-top:1px solid var(--line);box-shadow:0 -5px 16px #233b5a08}.task-footer .actions{flex:none}.save-feedback{min-width:0;max-width:520px}.save-state{font-size:12px;line-height:1.45;color:#357052}.save-state.unsaved{color:#98600c}.task-footer #discard{margin-top:3px;border:none;padding:0;background:none;font-size:11px;color:#7a5c32}.complete{color:#176447;border-color:#8bbca1;background:#f1faf5}.complete:hover{background:#e0f1e7;border-color:#5f9c79}.saved-note,.analysis-missing{padding:12px 14px;background:#fff4da;border:1px solid #e9c77f;border-radius:8px;font-size:13px;line-height:1.5;color:#795516;margin:0 0 16px}.empty{padding:30px;line-height:1.7;color:#60748d}.empty h2{font-size:22px}.queue-toggle{display:none}
+    .work-grid.no-email{grid-template-areas:"action action" "reason missing" "notes notes" "email email" "evidence evidence"}.no-email .next-action{max-width:85ch}
+    @media(min-width:1700px){.layout{grid-template-columns:330px minmax(0,1fr)}main{padding:24px 32px 0}.task-footer{margin-left:-32px;margin-right:-32px;padding-left:32px;padding-right:32px}.work-grid{grid-template-columns:minmax(0,1.1fr) minmax(400px,.9fr)}}
+    @media(max-width:1180px){.layout{grid-template-columns:270px minmax(0,1fr);padding:12px;gap:12px}main{padding:18px 20px 0}.work-grid,.work-grid.no-email{grid-template-columns:1fr;grid-template-areas:"action" "email" "reason" "missing" "notes" "evidence";gap:16px}.task-footer{margin-left:-20px;margin-right:-20px;padding:12px 20px}.task-nav span{display:none}.task-meta .updated{width:100%;margin-left:0}.email-panel textarea{min-height:260px}.task-footer{align-items:flex-start;flex-direction:column;gap:8px}.task-footer .actions{width:100%}.task-footer .actions button{flex:1}}
+    @media(max-width:760px){body{height:auto;min-height:100dvh}header{padding:12px 14px;gap:10px;flex-wrap:wrap}.brand-mark{width:31px;height:31px;font-size:14px}h1{font-size:21px}header p{font-size:11px}.tools{margin-left:0;width:100%}.tools button{font-size:12px;padding:7px 10px}.statusbar{padding:7px 14px;gap:5px;align-items:flex-start;flex-direction:column}#snapshotInfo{margin:0;font-size:11px}.layout{display:flex;flex-direction:column;padding:10px;gap:10px}.queue-toggle{display:flex;justify-content:space-between;align-items:center;width:100%;font-weight:650;color:#345b8b;background:#f8fbff}.layout aside{display:none;max-height:58dvh;min-height:300px}.layout.queue-open aside{display:flex}main{padding:16px 14px 0;overflow:visible}.task-top{gap:8px;align-items:flex-start}.task-key{font-size:12px}.task-nav{gap:4px}.task-nav button{font-size:11px;padding:5px 7px}.task-meta{margin-bottom:12px}h2{font-size:21px}.state-panel{padding:11px 12px}.state-heading{flex-wrap:wrap;gap:4px}.status-chips{gap:7px}.status-chip{font-size:11px;padding:6px 8px}.panel{padding:14px}.next-action{font-size:16px}.action-foot{align-items:flex-start}.work-grid{gap:16px}.reason-panel{padding:0 2px}.task-footer{margin-left:-14px;margin-right:-14px;padding:11px 14px}.task-footer .actions button{padding:9px;font-size:13px}.evidence-panel{padding:0 14px}.email-panel textarea{min-height:300px}.email-panel .subject-field{min-height:62px}.save-state{font-size:11px}}
+    @media(min-width:1181px){.state-panel{display:flex;align-items:center;gap:16px}.state-heading{display:block;flex:0 0 165px;margin:0}.state-heading span{display:block;margin-top:4px}.status-chips{flex:1}.email-panel .subject-field{min-height:58px;height:58px;padding:8px 10px}.email-panel label{margin:7px 0 4px}.email-panel input{padding:7px 10px}.email-panel[open]>summary{margin-bottom:8px}#draftBody{min-height:150px;height:clamp(150px,calc(100dvh - 750px),360px)}}
+    @media(prefers-reduced-motion:no-preference){button{transition:background .12s,border-color .12s}.row{transition:background .12s}}
   </style>
 </head>
 <body>
   <header>
-    <div><h1>CCON BA Desk</h1><p class="muted">Черга дій, аналіз задач і видимі чернетки листів</p></div>
+    <div class="brand"><span class="brand-mark" aria-hidden="true">BA</span><div><h1>CCON BA Desk</h1><p class="muted">Обери задачу. Зроби наступний крок.</p></div></div>
     <div class="tools"><button id="import">Імпортувати snapshot</button><button id="export">Експорт мого стану</button></div>
   </header>
   <div id="statusbar" class="statusbar" role="status" aria-live="polite"><span id="message">Завантаження…</span><span id="snapshotInfo"></span></div>
   <div class="layout">
-    <aside aria-label="Черга задач">
+    <button id="queueToggle" class="queue-toggle" aria-expanded="false" aria-controls="queue"><span>Показати чергу задач</span><span id="mobileCount"></span></button>
+    <aside id="queue" aria-label="Черга задач">
+      <div class="queue-title"><h2>Моя черга</h2><span>За ризиком і пріоритетом</span></div>
       <div class="filters">
         <input id="search" type="search" aria-label="Пошук задач" placeholder="Ключ, назва або наступна дія…">
         <div class="filter-row">
-          <select id="filter" aria-label="Список задач"><option value="open">Поточні незавершені</option><option value="all">Усі поточні</option><option value="done">Завершені</option><option value="archive">Відсутні у snapshot</option></select>
-          <select id="signalFilter" aria-label="Тип дії"><option value="all">Усі типи дій</option><option value="READY">Можна працювати</option><option value="WRITE">Написати листа</option><option value="DECIDE">Потрібне рішення</option><option value="REVIEW">Перевірити / проаналізувати</option><option value="WAIT">Очікуємо</option></select>
+          <label class="filter-caption" for="filter">Показати<select id="filter" aria-label="Список задач"><option value="open">Незавершені</option><option value="all">Усі поточні</option><option value="done">Завершені</option><option value="archive">Архів snapshot</option></select></label>
+          <label class="filter-caption" for="signalFilter">Тип дії<select id="signalFilter" aria-label="Тип дії"><option value="all">Усі типи дій</option><option value="READY">Можна працювати</option><option value="WRITE">Написати листа</option><option value="DECIDE">Потрібне рішення</option><option value="REVIEW">Перевірити / проаналізувати</option><option value="WAIT">Очікуємо</option></select></label>
         </div>
         <span id="count" class="muted"></span>
       </div>
@@ -68,7 +62,7 @@
     };
     const LOCAL_EDITS_KEY = 'ccon-ba-desk.unsaved-forms.v2';
     let tasks = [], selected = null, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0;
-    let signature = '', renderedTaskVersion = '', pendingDetail = false;
+    let signature = '', renderedTaskVersion = '', pendingDetail = false, initialLoad = true;
     const forms = new Map();
     const recoveredForms = readRecoveredForms();
 
@@ -158,7 +152,8 @@
     }
     function renderList() {
       const items = visibleTasks(), current = tasks.filter(task => task.active), analyzed = current.filter(hasAnalysis).length;
-      $('count').textContent = `${items.length} у списку · ${current.length} поточних · аналіз ${analyzed}/${current.length}`;
+      $('count').textContent = `${items.length} у списку · проаналізовано ${analyzed} із ${current.length}`;
+      $('mobileCount').textContent = items.length;
       let previousGroup = '';
       $('list').innerHTML = items.map((task, index) => {
         const group = ['Можна просувати зараз', 'Очікуємо', 'Завершені', 'Відсутні в останньому snapshot'][queueTier(task)];
@@ -170,12 +165,19 @@
       $('list').querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => selectTask(button.dataset.key)));
     }
     function selectTask(key) {
-      if (busy || selected === key) return;
-      selected = key;
-      pendingDetail = false;
-      renderList();
-      renderDetail();
+      if (busy) return;
+      if (selected !== key) {
+        selected = key;
+        rememberView();
+        pendingDetail = false;
+        renderList();
+        renderDetail();
+      }
       $('detail').scrollTop = 0;
+      $('queueToggle').setAttribute('aria-expanded','false');
+      document.querySelector('.layout').classList.remove('queue-open');
+      $('queueToggle').firstElementChild.textContent = 'Показати чергу задач';
+      if (window.matchMedia('(max-width:760px)').matches) $('detail').scrollIntoView({block:'start'});
     }
     function signalCard(caption, value, tone, hint) {
       return `<div class="signal-card signal-${tone}"><span class="caption">${escapeHtml(caption)}</span><span class="value"><span class="badge tone-${tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(value)}</span></span>${hint ? `<span class="hint">${escapeHtml(hint)}</span>` : ''}</div>`;
@@ -212,62 +214,50 @@
       const manualWaiting = ['WAITING INPUT','WAITING DEPENDENCY'].includes(task.manualStatus);
       const waiting = task.manualStatus !== 'AUTO' ? manualWaiting : analysis.waitingRequired, email = manualWaiting || task.manualStatus === 'DONE' ? false : analysis.needsEmail;
       const missing = Array.isArray(analysis.missingInfo) ? analysis.missingInfo : [];
+      const items = visibleTasks(), position = items.findIndex(item => item.key === selected);
+      const showEmail = email === true || !!form.emailDraft.body || !!form.emailDraft.subject || !!form.emailDraft.to;
       $('detail').innerHTML = `
-        <div class="task-top"><span class="task-key">${escapeHtml(task.key)}${url ? ` · <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="muted">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
+        <div class="task-top"><span class="task-key">${escapeHtml(task.key)}${url ? ` · <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Jira ↗</a>` : ''}</span><nav class="task-nav" aria-label="Перехід між задачами"><span>${position >= 0 ? `${position + 1} із ${items.length}` : 'Поза поточним фільтром'}</span><button id="previous" ${position <= 0 ? 'disabled' : ''} aria-label="Попередня задача">←</button><button id="next" ${!items.length || position === items.length - 1 ? 'disabled' : ''} title="Перейти без завершення поточної задачі">Далі →</button></nav></div>
         <h2>${escapeHtml(task.summary)}</h2>
-        <div class="task-badges">${signalBadge(task)}<span class="badge">Jira: ${escapeHtml(task.jiraStatus || 'Не вказано')}</span>${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${!task.active ? '<span class="badge tone-gray">Відсутня в останньому snapshot · стан збережений</span>' : ''}</div>
+        <div class="task-meta"><span class="badge tone-gray">Jira: ${escapeHtml(task.jiraStatus || 'Не вказано')}</span><span class="badge tone-gray">${escapeHtml(task.priority || 'Пріоритет не вказано')}</span>${task.blocking ? '<span class="badge tone-red"><span class="dot" aria-hidden="true"></span>Блокує інших</span>' : ''}${!task.active ? '<span class="badge tone-gray">В архіві · стан збережений</span>' : ''}<span class="updated">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
         <div id="staleNotice" class="saved-note" hidden></div>
-        <div class="signal-grid">
-          ${signalCard('Що робити', analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз', info.tone, task.manualStatus !== 'AUTO' ? 'За моїм ручним статусом' : 'За щоденним аналізом')}
-          ${signalCard('Писати листа?', email === true ? 'Так' : email === false ? 'Ні' : 'Ще не визначено', email === true ? 'blue' : email === false ? 'green' : 'gray', email === true ? 'Чернетка нижче, доступна для редагування' : '')}
-          ${signalCard('Потрібно чекати?', waiting === true ? 'Так' : waiting === false ? 'Ні' : 'Ще не визначено', waiting === true ? 'red' : waiting === false ? 'green' : 'gray', waiting === true ? manualWaiting ? 'За моїм ручним статусом' : analysis.waitingOnUk || 'Адресат очікування не вказаний' : '')}
+        <section class="state-panel" aria-label="Мій робочий стан"><div class="state-heading"><h3>Мій статус</h3><span>Зберігається автоматично · має пріоритет над аналізом</span></div>
+          <div class="status-chips" role="group" aria-label="Обрати мій статус">${Object.entries(STATUS_LABELS).map(([value,label]) => `<button type="button" class="badge status-chip tone-${statusTone(value,task)}" data-status="${value}" title="${value === 'AUTO' ? 'Використовувати рекомендацію щоденного аналізу' : 'Зафіксувати мій статус'}" aria-pressed="${form.manualStatus === value}">${escapeHtml(label)}</button>`).join('')}</div><select id="manual" class="sr-only" aria-label="Мій статус" tabindex="-1" aria-hidden="true">${Object.entries(STATUS_LABELS).map(([value, label]) => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
+        </section>
+        ${stale ? '<div class="analysis-missing"><b>Контекст Jira змінився. Потрібно оновити аналіз.</b> Попередні висновки перенесено до історії. Твій статус і збережена чернетка залишаються.</div>' : !analyzed ? '<div class="analysis-missing"><b>Ще немає повного аналізу.</b> Перевір опис, коментарі та залежності, перш ніж визначати дію.</div>' : ''}
+        <div class="work-grid ${showEmail ? '' : 'no-email'}">
+          <section class="panel action-panel action-${info.tone}" aria-label="Наступна дія">
+            <div class="panel-title"><h3>Наступна дія</h3>${signalBadge(task)}</div>
+            <p class="pre next-action" id="nextText">${escapeHtml(analysis.nextActionUk || (stale ? 'Онови аналіз за останнім описом, коментарями й залежностями, перш ніж діяти за старою рекомендацією.' : 'Перевір контекст задачі та визнач конкретну дію.'))}</p>
+            <div class="signal-line"><span>Лист <span class="badge tone-${email === true ? 'blue' : email === false ? 'green' : 'gray'}">${email === true ? 'Потрібен' : email === false ? 'Не потрібен' : 'Не визначено'}</span></span><span>Очікування <span class="badge tone-${waiting === true ? 'red' : waiting === false ? 'green' : 'gray'}">${waiting === true ? 'Так' : waiting === false ? 'Ні' : 'Не визначено'}</span></span></div>
+            ${waiting === true ? `<p class="muted small">${escapeHtml(manualWaiting ? STATUS_LABELS[task.manualStatus] : analysis.waitingOnUk || 'Адресат очікування ще не визначений')}</p>` : ''}
+            <div class="action-foot"><span class="muted">${task.manualStatus === 'AUTO' ? 'Рекомендація щоденного аналізу' : 'Враховано твій ручний статус'}</span>${analysis.nextActionUk ? '<button id="copyNext" class="quiet">Скопіювати дію</button>' : ''}</div>
+          </section>
+          <details class="panel email-panel" ${showEmail ? 'open' : ''} aria-label="Редагована чернетка листа">
+            <summary>${showEmail ? 'Чернетка листа' : 'Створити власну чернетку'}<span class="badge ${staleGeneratedDraft ? 'tone-amber' : email === true ? 'tone-blue' : 'tone-gray'}">${staleGeneratedDraft ? 'Перевір актуальність' : savedDraft && stale ? 'Моя збережена' : email === true ? 'Потрібна' : email === false ? 'За потреби' : 'Не визначено'}</span></summary>
+            <p class="email-intro">${stale && form.emailDraft.body ? 'Контекст змінився. Перевір актуальність чернетки перед використанням.' : form.emailDraft.body ? 'Перевір адресата й текст перед відкриттям у пошті.' : email === false && analyzed ? 'Зараз лист не потрібен. За потреби підготуй власну чернетку.' : email === true ? 'Підготуй лист за відкритими питаннями задачі.' : 'Спочатку перевір контекст і визнач наступну дію.'}</p>
+            <label for="draftTo">Кому</label><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата" value="${escapeHtml(form.emailDraft.to)}">
+            <label for="draftSubject">Тема</label><textarea id="draftSubject" class="subject-field" maxlength="2000" rows="2" placeholder="AER. Операція. Суть питання [номер]">${escapeHtml(form.emailDraft.subject)}</textarea>
+            <label for="draftBody">Текст листа</label><textarea id="draftBody" maxlength="50000" placeholder="Dear Team,">${escapeHtml(form.emailDraft.body)}</textarea>
+            <div class="actions"><button id="email" class="primary">Відкрити в пошті ↗</button></div>
+          </details>
+          <section class="reason-panel" aria-label="Пояснення оцінки"><h3>Чому саме ця дія</h3><p class="pre">${escapeHtml(analysis.reasonUk || (stale ? 'Попередні висновки не підтверджені новим контекстом.' : 'Щоденний аналіз ще не підготовлений.'))}</p></section>
+          <section class="panel missing-panel" aria-label="Відсутні дані"><div class="panel-title"><h3>Чого не вистачає</h3>${missing.length ? `<span class="badge">${missing.length} ${missing.length % 10 === 1 && missing.length % 100 !== 11 ? 'питання' : missing.length % 10 >= 2 && missing.length % 10 <= 4 && !(missing.length % 100 >= 12 && missing.length % 100 <= 14) ? 'питання' : 'питань'}</span>` : ''}</div>${missing.length ? '<ol>' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : `<p class="muted">${analyzed ? 'Додаткових питань не виявлено.' : 'Потрібен аналіз контексту.'}</p>`}</section>
+          <section class="panel notes-panel" aria-label="Мої нотатки"><label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Домовленості, наступний контакт, особистий контекст…">${escapeHtml(form.note)}</textarea></section>
+          <details class="panel evidence-panel"><summary>Джерела, опис і контекст Jira</summary>
+            ${sourceMarkup(analysis)}
+            <details class="description"><summary>Стандартизований опис задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Опис ще не підготовлений. Після узгодження твоїх правил тут буде готовий текст.')}</p></details>
+            ${previousAnalysisMarkup(task)}${legacyMarkup(task)}
+            <div class="description"><div class="panel-title"><h3>Контекст Jira</h3><button id="loadContext" class="quiet">Показати опис і коментарі</button></div><div id="contextPreview" class="muted">Вихідний опис, коментарі й пов’язані задачі.</div></div>
+          </details>
         </div>
-        ${stale ? '<div class="analysis-missing"><b>Контекст Jira змінився — попередній аналіз застарів.</b><br>Черга й сигнали потребують нового аналізу опису, коментарів та залежностей. Твій ручний стан і збережена чернетка залишаються чинними.</div>' : !analyzed ? '<div class="analysis-missing"><b>Для цієї задачі ще немає повного аналізу українською.</b><br>Потрібно прочитати опис, коментарі й залежності. Попередній snapshot не дає достатніх підстав для нової оцінки.</div>' : ''}
-        <div class="detail-grid">
-          <div>
-            <section class="panel analysis-lead" aria-label="Пояснення та наступна дія">
-              <div class="section-label">Чому така оцінка</div>
-              <p class="pre">${escapeHtml(analysis.reasonUk || (stale ? 'Попередні висновки не підтверджені новим контекстом. Потрібен повторний аналіз.' : 'Щоденний аналіз ще не підготовлений.'))}</p>
-              <div class="section-label">Наступна дія</div>
-              <p class="pre next-action" id="nextText">${escapeHtml(analysis.nextActionUk || (stale ? 'Онови аналіз за останнім описом, коментарями й залежностями, перш ніж діяти за старою рекомендацією.' : 'Спочатку перевір контекст задачі та визнач конкретну дію.'))}</p>
-              ${analysis.nextActionUk ? '<button id="copyNext" class="quiet">Скопіювати дію</button>' : ''}
-            </section>
-            <section class="panel missing-panel" aria-label="Відсутні дані та підстави оцінки">
-              <h3>Чого не вистачає</h3>
-              ${missing.length ? '<ol>' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : `<p class="muted">${analyzed ? 'Аналіз не виявив додаткових питань. Перевір пояснення та джерела нижче.' : 'Поки не визначено — потрібен аналіз контексту.'}</p>`}
-              <div class="section-label">На чому ґрунтується оцінка</div>
-              ${sourceMarkup(analysis)}
-              <details class="description"><summary>Стандартизований опис задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Опис ще не підготовлений. Після узгодження твоїх правил тут буде готовий текст.')}</p></details>
-              ${previousAnalysisMarkup(task)}
-              ${legacyMarkup(task)}
-            </section>
-            <section class="panel" aria-label="Контекст Jira">
-              <div class="panel-title"><h3>Контекст Jira</h3><button id="loadContext" class="quiet">Показати опис і коментарі</button></div>
-              <div id="contextPreview" class="muted">Повний вихідний контекст можна відкрити для перевірки аналізу.</div>
-            </section>
-          </div>
-          <div class="right-column">
-            <section class="panel" aria-label="Мій робочий стан">
-              <div class="manual-status-label"><label for="manual">Мій статус</label><span class="muted small">Ручний вибір має пріоритет</span></div>
-              <div class="status-chips" role="group" aria-label="Обрати мій статус">${Object.entries(STATUS_LABELS).map(([value,label]) => `<button type="button" class="badge status-chip tone-${statusTone(value,task)}" data-status="${value}" aria-pressed="${form.manualStatus === value}">${escapeHtml(label)}</button>`).join('')}</div><select id="manual" class="sr-only status-select tone-${statusTone(form.manualStatus, task)}">${Object.entries(STATUS_LABELS).map(([value, label]) => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
-              <p class="muted small">«Автоматично» використовує оцінку щоденного аналізу. Інший чіп фіксує твій власний статус.</p><label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Домовленості, наступний контакт, особистий контекст…">${escapeHtml(form.note)}</textarea>
-              <div class="actions"><button id="save" class="primary">Зберегти все</button><button id="done">Завершити → Далі</button><button id="discard" class="quiet">Скинути незбережене</button></div>
-              <div id="saved" class="save-state" role="status"></div>
-            </section>
-            <section class="panel email-panel ${email === true || form.emailDraft.body ? 'email-first' : ''}" aria-label="Редагована чернетка листа">
-              <div class="panel-title"><h3>Чернетка листа</h3><span class="badge ${staleGeneratedDraft ? 'tone-amber' : email === true ? 'tone-blue' : 'tone-gray'}">${staleGeneratedDraft ? 'Зі старого аналізу' : savedDraft && stale ? 'Моя збережена чернетка' : email === true ? 'Потрібна' : email === false ? 'За потреби' : 'Потребу ще не визначено'}</span></div>
-              <p class="email-intro">${stale && form.emailDraft.body ? savedDraft ? 'Твоя збережена чернетка залишилася без змін. Аналіз застарів: перевір лист за новим контекстом перед використанням.' : 'Новий контекст ще не проаналізовано. Ця чернетка збережена зі старого аналізу або твоїх незбережених правок; перевір її актуальність перед використанням.' : form.emailDraft.body ? 'Перевір адресата й текст. Усі поля можна відредагувати.' : email === false && analyzed ? 'За поточним аналізом лист зараз не потрібен. За потреби можеш підготувати власну чернетку.' : email === true ? 'Потрібен лист, але готової чернетки ще немає. Підготуй текст за конкретними відкритими питаннями задачі.' : 'Потребу в листі ще не визначено. Спочатку перевір контекст і наступну дію.'}</p>
-              <label for="draftTo">Кому</label><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата, якщо він відомий" value="${escapeHtml(form.emailDraft.to)}">
-              <label for="draftSubject">Тема</label><input id="draftSubject" maxlength="2000" placeholder="Тема листа" value="${escapeHtml(form.emailDraft.subject)}">
-              <label for="draftBody">Текст листа</label><textarea id="draftBody" maxlength="50000" placeholder="Чернетка за описом, коментарями та відкритими питаннями задачі…">${escapeHtml(form.emailDraft.body)}</textarea>
-              <div class="actions"><button id="email" class="primary">Відкрити в пошті ↗</button></div>
-            </section>
-          </div>
-        </div>`;
+        <div class="task-footer"><div class="save-feedback"><div id="saved" class="save-state" role="status" aria-live="polite"></div><button id="discard" class="quiet">Скинути незбережені зміни</button></div><div class="actions"><button id="save" class="primary">Зберегти зміни</button><button id="done" class="complete">Завершити → Далі</button></div></div>`;
       renderedTaskVersion = taskVersion(task);
       pendingDetail = false;
       ['manual', 'note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener(id === 'manual' ? 'change' : 'input', captureForm));
-      document.querySelectorAll('[data-status]').forEach(button => button.addEventListener('click', async () => { if (busy) return; $('manual').value = button.dataset.status; captureForm(); await saveTask(false); }));
+      document.querySelectorAll('[data-status]').forEach(button => button.addEventListener('click', () => saveStatus(button.dataset.status)));
+      $('previous').addEventListener('click', () => moveTask(-1));
+      $('next').addEventListener('click', () => moveTask(1));
       if ($('copyNext')) $('copyNext').addEventListener('click', () => copyText(analysis.nextActionUk, 'Наступну дію скопійовано.'));
       $('save').addEventListener('click', () => saveTask(false));
       $('done').addEventListener('click', () => saveTask(true));
@@ -280,9 +270,8 @@
       const task = tasks.find(item => item.key === selected);
       if (!task) return;
       const form = formFor(task);
-      form.value = {manualStatus:$('manual').value, note:$('note').value, emailDraft:{to:$('draftTo').value, subject:$('draftSubject').value, body:$('draftBody').value}};
+      form.value = {manualStatus:$('manual').value, note:$('note').value, emailDraft:{to:$('draftTo').value, subject:$('draftSubject').value.replace(/[\r\n]+/g,' '), body:$('draftBody').value}};
       form.changedAt = new Date().toISOString();
-      $('manual').className = 'status-select tone-' + statusTone(form.value.manualStatus, task);
       rememberEdits();
       updateFormStatus();
       renderList();
@@ -291,9 +280,17 @@
       const task = tasks.find(item => item.key === selected);
       if (!task || !$('saved')) return;
       const dirty = isDirty(task.key);
-      $('saved').textContent = dirty ? 'Є незбережені зміни: статус, нотатки або чернетка. ' + (browserRecoveryAvailable ? 'Вони збережені в цьому браузері до натискання «Зберегти все».' : 'Натисни «Зберегти все», щоб зберегти їх у базі.') : task.modifiedAt ? 'Збережено локально · ' + dateLabel(task.modifiedAt) : 'Статус-чіп зберігається автоматично. Нотатки й чернетку збережи кнопкою «Зберегти все».';
-      $('saved').classList.toggle('unsaved', dirty);
+      $('saved').textContent = busy ? 'Зберігаю…' : dirty ? 'Нотатки або чернетку змінено. ' + (browserRecoveryAvailable ? 'Правки відновляться в цьому браузері; збережи їх у базі.' : 'Збережи правки в локальній базі.') : task.modifiedAt ? 'Усе збережено · ' + dateLabel(task.modifiedAt) : 'Статус зберігається автоматично. Нотатки й лист — кнопкою нижче.';
+      $('saved').classList.toggle('unsaved', dirty && !busy);
+      $('save').disabled = !dirty || busy;
+      $('discard').hidden = !dirty;
       $('discard').disabled = !dirty || busy;
+      const items = visibleTasks(), position = items.findIndex(item => item.key === selected);
+      document.querySelector('.task-nav span').textContent = position >= 0 ? `${position + 1} із ${items.length}` : 'Поза поточним фільтром';
+      $('previous').disabled = busy || position <= 0;
+      $('next').disabled = busy || !items.length || position === items.length - 1;
+      $('done').disabled = busy || task.manualStatus === 'DONE';
+      $('email').disabled = busy || !formFor(task).value.emailDraft.subject.trim() || !formFor(task).value.emailDraft.body.trim();
       if ($('staleNotice')) {
         $('staleNotice').hidden = !pendingDetail;
         $('staleNotice').textContent = 'Надійшли нові дані. Поточний текст залишається у формі; новий аналіз з’явиться після збереження правок. Якщо правок немає, достатньо вийти з поля.';
@@ -310,15 +307,48 @@
     }
     function setBusy(value) {
       busy = value;
-      ['manual', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard'].forEach(id => { if ($(id)) $(id).disabled = value; });
+      ['manual', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard', 'previous', 'next'].forEach(id => { if ($(id)) $(id).disabled = value; });
       $('import').disabled = value;
-      if (!value) updateFormStatus();
+      document.querySelectorAll('[data-status]').forEach(button => { button.disabled = value; });
+      updateFormStatus();
+    }
+    function moveTask(offset) {
+      if (busy) return;
+      const items = visibleTasks(), index = items.findIndex(task => task.key === selected);
+      const next = items[index < 0 ? 0 : index + offset];
+      if (next) selectTask(next.key);
+    }
+    async function saveStatus(status) {
+      if (busy || !STATUS_LABELS[status]) return;
+      const task = tasks.find(item => item.key === selected);
+      if (!task || task.manualStatus === status) return;
+      captureForm();
+      const scroll = $('detail').scrollTop;
+      setBusy(true);
+      try {
+        // Only persist the status; keep typed note/draft buffers separate.
+        await api('/api/tasks/' + encodeURIComponent(task.key), {manualStatus:status, note:task.note || ''});
+        task.manualStatus = status;
+        task.modifiedAt = new Date().toISOString();
+        const form = formFor(task);
+        form.value.manualStatus = status;
+        form.base = JSON.stringify(savedForm(task));
+        rememberEdits();
+        signature = '';
+        renderList();
+        renderDetail();
+        $('detail').scrollTop = scroll;
+        document.querySelector(`[data-status="${status}"]`)?.focus({preventScroll:true});
+        message('Мій статус збережено автоматично.');
+      } catch (error) { message(error.message, true); }
+      finally { setBusy(false); }
     }
     async function saveTask(done = false) {
       if (busy) return false;
       const task = tasks.find(item => item.key === selected);
       if (!task) return false;
       captureForm();
+      const scroll = $('detail').scrollTop;
       const value = structuredClone(formFor(task).value);
       if (done) value.manualStatus = 'DONE';
       setBusy(true);
@@ -332,7 +362,9 @@
         if (done) selected = visibleTasks().find(item => item.key !== task.key)?.key || null;
         renderList();
         renderDetail();
-        message('Статус, нотатки та чернетку збережено в локальній базі.');
+        $('detail').scrollTop = done ? 0 : scroll;
+        rememberView();
+        message(done ? 'Задачу завершено. Відкрито наступну в черзі.' : 'Нотатки та чернетку збережено.');
         return true;
       } catch (error) {
         message(error.message, true);
@@ -404,7 +436,7 @@
     }
     function editorFocused() { return ['manual', 'note', 'draftTo', 'draftSubject', 'draftBody'].includes(document.activeElement?.id); }
     function updateSnapshotInfo() {
-      $('snapshotInfo').textContent = latest ? 'Snapshot ' + dateLabel(latest.generated_at) + ' · ' + latest.count + ' задач' : 'Очікую snapshot';
+      $('snapshotInfo').textContent = latest ? 'Оновлено ' + dateLabel(latest.generated_at) + ' · ' + latest.count + ' задач' : 'Очікую snapshot';
     }
     async function load() {
       const request = ++loadRequest;
@@ -420,7 +452,9 @@
           signature = nextSignature;
           // A new snapshot must never overwrite a typed note or email draft.
           forms.forEach((form, key) => { if (!isDirty(key)) forms.delete(key); });
-          if (!selected || !tasks.some(task => task.key === selected)) selected = visibleTasks()[0]?.key || null;
+          if (!selected || !tasks.some(task => task.key === selected) || initialLoad && !visibleTasks().some(task => task.key === selected)) selected = visibleTasks()[0]?.key || null;
+          initialLoad = false;
+          rememberView();
           renderList();
           updateSnapshotInfo();
         }
@@ -431,8 +465,11 @@
           else renderDetail();
         }
         if (data.error) message(data.error, true);
-        else if (changed) message(hasUnsaved() ? 'Дані оновлено. Незбережені правки залишаються у твоїх формах.' : 'Черга за ризиком і пріоритетом: дії, листи, рішення та перевірки разом; очікування нижче. Ручний статус має пріоритет.');
+        else if (changed) message(hasUnsaved() ? 'Дані оновлено. Незбережені правки залишаються у твоїх формах.' : 'Спочатку дії за ризиком і пріоритетом · очікування нижче');
       } catch (error) { message('Сервер недоступний. Запусти Start CCON BA.bat. ' + error.message, true); }
+    }
+    function rememberView() {
+      try { localStorage.setItem('ccon-ba-desk.view.v1', JSON.stringify({selected,search:$('search').value,filter:$('filter').value,signal:$('signalFilter').value})); } catch {}
     }
     function applyFilters() {
       if (busy) return;
@@ -442,7 +479,21 @@
         renderList();
         renderDetail();
       }
+      updateFormStatus();
+      rememberView();
     }
+    try {
+      const view = JSON.parse(localStorage.getItem('ccon-ba-desk.view.v1') || '{}');
+      if (typeof view.selected === 'string') selected = view.selected;
+      if (typeof view.search === 'string') $('search').value = view.search.slice(0,300);
+      if ([...$('filter').options].some(option => option.value === view.filter)) $('filter').value = view.filter;
+      if ([...$('signalFilter').options].some(option => option.value === view.signal)) $('signalFilter').value = view.signal;
+    } catch {}
+    $('queueToggle').addEventListener('click', () => {
+      const open = document.querySelector('.layout').classList.toggle('queue-open');
+      $('queueToggle').setAttribute('aria-expanded', String(open));
+      $('queueToggle').firstElementChild.textContent = open ? 'Сховати чергу задач' : 'Показати чергу задач';
+    });
     $('search').addEventListener('input', applyFilters);
     $('filter').addEventListener('change', applyFilters);
     $('signalFilter').addEventListener('change', applyFilters);
@@ -467,3 +518,4 @@
   </script>
 </body>
 </html>
+

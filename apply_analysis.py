@@ -85,3 +85,4 @@ if __name__=='__main__':
     except (ValueError,OSError) as error:
         print('Analysis import failed: '+str(error),file=sys.stderr)
         raise SystemExit(1)
+

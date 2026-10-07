@@ -49,3 +49,4 @@ Do not include Best regards, any signature, or Volodymyr: Outlook adds the signa
 End with Logs attached for your reference. The user attaches logs manually. Never promise to add logs later.
 Keep questions specific to missing context, do not repeat answered questions.
 Use only confirmed recipient emails; otherwise leave to empty.
+
