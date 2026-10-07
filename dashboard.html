@@ -14,6 +14,21 @@
     @media(max-width:750px){header{padding:15px;flex-wrap:wrap;gap:12px}.tools{margin-left:0}.statusbar{padding:10px 15px;display:block}#snapshotInfo{display:block;margin:5px 0 0;white-space:normal}.layout{display:block;height:auto;padding:12px}aside{max-height:390px;margin-bottom:12px}main{padding:17px}.filters{padding:12px}.filter-row{grid-template-columns:1fr 1fr}.signal-grid{grid-template-columns:1fr}.signal-card{display:grid;grid-template-columns:120px 1fr;gap:6px;align-items:center}.signal-card .caption{margin:0}.signal-card .hint{grid-column:2;margin:0}.task-top{flex-wrap:wrap}.detail-grid{gap:0}.panel{padding:15px}h2{font-size:21px}.email-panel textarea{min-height:250px}}
     .row{min-width:0}.row strong{overflow-wrap:anywhere}.right-column{display:flex;flex-direction:column;min-width:0}.right-column .email-first{order:-1}
   .status-chips{display:flex;flex-wrap:wrap;gap:7px}.status-chip{font-size:13px;border-radius:99px;border:1px solid transparent;padding:8px 11px;margin:0}.status-chip[aria-pressed="true"]{outline:2px solid currentColor;outline-offset:1px;font-weight:700}.signal-card .badge{width:max-content;max-width:100%;font-weight:650}.email-panel textarea{font-family:Aptos,Arial,sans-serif;font-size:11pt;color:#000}
+  
+    /* Compact queue and restrained, meaningful color accents. */
+    .layout{grid-template-columns:minmax(270px,24%) minmax(0,1fr)}
+    .filters{padding:12px;gap:8px}.filters input,.filters select{padding:8px;font-size:13px}
+    .row{padding:10px 12px;border-left-width:4px}.row strong{font-size:13px;line-height:1.35;margin:5px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .row-head{font-size:11px}.row .badge{font-size:11px;padding:3px 6px;margin:2px 4px 0 0}.row-next{font-size:11px;line-height:1.35;margin-top:5px;-webkit-line-clamp:1}
+    .queue-group{padding:7px 12px}.row-green{border-left-color:#57a682}.row-blue{border-left-color:#5a8ed0}.row-amber{border-left-color:#c99a3b}.row-red{border-left-color:#cc7470}.row-gray{border-left-color:#a6b0bd}
+    .row.selected{background:#dce9fc;border-left-color:#205cbb;box-shadow:inset 0 0 0 1px #b4ccee}.row:hover{background:#edf3fc}
+    .tone-green{background:#ceebdc;color:#105a3c}.tone-blue{background:#d2e3ff;color:#174b9b}.tone-red{background:#f8d8d5;color:#922c2a}.tone-amber{background:#f7e5b7;color:#764b09}.tone-gray{background:#e1e6ee;color:#485a70}
+    .signal-green{background:#f0faf4;border-color:#8ebda3;border-top:3px solid #31805b}.signal-blue{background:#eff5ff;border-color:#94b4e0;border-top:3px solid #316bb7}.signal-red{background:#fff2f0;border-color:#dba29b;border-top:3px solid #b64b44}.signal-amber{background:#fff8e9;border-color:#dbbc73;border-top:3px solid #ac7b1d}.signal-gray{background:#f5f7fa;border-top:3px solid #8b99ac}
+    .analysis-lead{background:#f4f8ff;border-color:#b9cfee;border-left:4px solid #4a7bbb}.next-action{background:#e4eefc;border-left:3px solid #2862af;padding:12px 14px;border-radius:0 7px 7px 0;color:#183d6e;font-weight:550}
+    .missing-panel{border-color:#e3c788;border-top:3px solid #c3973f}.missing-panel h3{color:#785111}.email-panel{border-top:3px solid #4c7ec4}.section-label{color:#425f84}
+    @media(min-width:1700px){.layout{grid-template-columns:340px minmax(0,1fr)}}
+    @media(max-width:1150px){.layout{grid-template-columns:270px minmax(0,1fr)}}
+    @media(max-width:750px){.layout{display:block}.row{padding:9px 12px}}
   </style>
 </head>
 <body>
@@ -150,7 +165,7 @@
         const heading = group !== previousGroup ? `<div class="queue-group">${escapeHtml(group)}</div>` : '';
         previousGroup = group;
         const next = hasAnalysis(task) ? analysisOf(task).nextActionUk : '';
-        return `${heading}<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-head"><span class="rank">${index + 1}. ${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}${escapeHtml(task.priority || '')}</span></span><strong>${escapeHtml(task.summary)}</strong>${signalBadge(task)}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${next ? `<div class="row-next">${escapeHtml(next)}</div>` : ''}</button>`;
+        return `${heading}<button class="row row-${signalInfo(task).tone} ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-head"><span class="rank">${index + 1}. ${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}${escapeHtml(task.priority || '')}</span></span><strong>${escapeHtml(task.summary)}</strong>${signalBadge(task)}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${next ? `<div class="row-next">${escapeHtml(next)}</div>` : ''}</button>`;
       }).join('') || '<div class="empty">Немає задач за цими фільтрами.</div>';
       $('list').querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => selectTask(button.dataset.key)));
     }
@@ -163,7 +178,7 @@
       $('detail').scrollTop = 0;
     }
     function signalCard(caption, value, tone, hint) {
-      return `<div class="signal-card"><span class="caption">${escapeHtml(caption)}</span><span class="value"><span class="badge tone-${tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(value)}</span></span>${hint ? `<span class="hint">${escapeHtml(hint)}</span>` : ''}</div>`;
+      return `<div class="signal-card signal-${tone}"><span class="caption">${escapeHtml(caption)}</span><span class="value"><span class="badge tone-${tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(value)}</span></span>${hint ? `<span class="hint">${escapeHtml(hint)}</span>` : ''}</div>`;
     }
     function sourceMarkup(analysis) {
       if (!Array.isArray(analysis.evidence) || !analysis.evidence.length) return '<p class="muted">Джерела оцінки ще не додані.</p>';
@@ -217,7 +232,7 @@
               <p class="pre next-action" id="nextText">${escapeHtml(analysis.nextActionUk || (stale ? 'Онови аналіз за останнім описом, коментарями й залежностями, перш ніж діяти за старою рекомендацією.' : 'Спочатку перевір контекст задачі та визнач конкретну дію.'))}</p>
               ${analysis.nextActionUk ? '<button id="copyNext" class="quiet">Скопіювати дію</button>' : ''}
             </section>
-            <section class="panel" aria-label="Відсутні дані та підстави оцінки">
+            <section class="panel missing-panel" aria-label="Відсутні дані та підстави оцінки">
               <h3>Чого не вистачає</h3>
               ${missing.length ? '<ol>' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : `<p class="muted">${analyzed ? 'Аналіз не виявив додаткових питань. Перевір пояснення та джерела нижче.' : 'Поки не визначено — потрібен аналіз контексту.'}</p>`}
               <div class="section-label">На чому ґрунтується оцінка</div>
@@ -245,8 +260,7 @@
               <label for="draftTo">Кому</label><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата, якщо він відомий" value="${escapeHtml(form.emailDraft.to)}">
               <label for="draftSubject">Тема</label><input id="draftSubject" maxlength="2000" placeholder="Тема листа" value="${escapeHtml(form.emailDraft.subject)}">
               <label for="draftBody">Текст листа</label><textarea id="draftBody" maxlength="50000" placeholder="Чернетка за описом, коментарями та відкритими питаннями задачі…">${escapeHtml(form.emailDraft.body)}</textarea>
-              <div class="actions"><button id="email" class="primary">Відкрити в пошті ↗</button><button id="copyDraft">Копіювати текст · Aptos 11</button></div>
-              <p class="footer-note">Відкриття пошти передає звичайний текст; шрифт визначає Outlook. Для Aptos 11 використай форматоване копіювання. Прикріпи логи й надішли лист у Outlook.</p>
+              <div class="actions"><button id="email" class="primary">Відкрити в пошті ↗</button></div>
             </section>
           </div>
         </div>`;
@@ -259,7 +273,6 @@
       $('done').addEventListener('click', () => saveTask(true));
       $('discard').addEventListener('click', discardForm);
       $('email').addEventListener('click', openEmail);
-      $('copyDraft').addEventListener('click', copyDraft);
       $('loadContext').addEventListener('click', () => loadContext(task.key));
       updateFormStatus();
     }
@@ -329,16 +342,6 @@
     async function copyText(text, notice) {
       try { await navigator.clipboard.writeText(text); message(notice); }
       catch { message('Копіювання недоступне. Виділи видимий текст і скопіюй вручну.', true); }
-    }
-    async function copyDraft() {
-      captureForm();
-      const draft = forms.get(selected)?.value.emailDraft;
-      if (!draft) return;
-      const html = '<div style="font-family:Aptos,Arial,sans-serif;font-size:11pt;color:#000000">' + escapeHtml(draft.body).replace(/\n/g,'<br>') + '</div>';
-      try {
-        await navigator.clipboard.write([new ClipboardItem({'text/plain':new Blob([draft.body],{type:'text/plain'}),'text/html':new Blob([html],{type:'text/html'})})]);
-        message('Текст скопійовано: Aptos 11, чорний. Встав у Outlook зі збереженням форматування. Тему скопіюй з поля вище.');
-      } catch { await copyText(draft.body,'Скопійовано лише текст; форматування недоступне. Шрифт визначає Outlook.'); }
     }
     async function openEmail() {
       captureForm();
