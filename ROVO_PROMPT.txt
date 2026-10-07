@@ -10,9 +10,13 @@ project = CCON AND status != Done AND assignee = currentUser()
 AND (labels IS EMPTY OR labels NOT IN ("blocked")) AND issuetype != Epic
 ORDER BY priority DESC, updated DESC
 
-Quickly triage every returned issue using summary, status, priority, latest relevant activity and visible dependencies. Rank the top 15 by useful BA action now, then read their detailed context, comments and linked issues. Return those tasks in ranked order. Do not invent facts, addresses or links. If information is missing, say so. Explain waitingOn and aiStatus with concrete source context in statusReason. Prefer actions that I can actually perform. readyOutput should be a useful draft or prompt, explicitly a draft, never a claim that a message has been sent.
+COMPLETE COVERAGE IS REQUIRED:
+Fetch ALL issues matching the JQL, following every result page until exhausted. Do not stop at 15, 50, 100, or the first search page. Every matching issue must appear exactly once in tasks, including waiting tasks and tasks with no immediate BA action.
+Quickly triage every returned issue using summary, status, priority, latest relevant activity and visible dependencies. Rank the top 15 by useful BA action now, then read their detailed context, comments and linked issues. The top-15 limit applies ONLY to deeper analysis, NEVER to the number of tasks exported. Include the remaining issues with their basic triage and clearly state when deeper analysis was not performed. Return ALL tasks, with the focus 15 first and the remainder in JQL order.
+Do not invent facts, addresses or links. If information is missing, say so. Explain waitingOn and aiStatus with concrete source context in statusReason. Prefer actions that I can actually perform. readyOutput should be a useful draft or prompt, explicitly a draft, never a claim that a message has been sent. For tasks without enough context, use an empty readyOutput rather than inventing one.
+Verify that the number of unique exported keys equals the complete number retrieved across all pages. Report that count in the final sentence. If a tool limit prevents complete retrieval, explicitly report the limitation and the retrieved count; do not deliver a partial file under the final CCON_BA_Snapshot.json name or describe it as complete.
 
-The snapshot is the complete daily selected queue. Include generatedAt as the actual current ISO-8601 timestamp with timezone. Every task has:
+The snapshot is the complete daily JQL result set, not a selected queue. Include generatedAt as the actual current ISO-8601 timestamp with timezone. Every task has:
 key: actual CCON-number
 summary: string
 url: actual Jira URL if available, otherwise omit
@@ -33,6 +37,6 @@ FILE VALIDATION BEFORE DELIVERY:
 - Use plain URL strings, such as "https://aerticket.atlassian.net/browse/CCON-12345". Never use Markdown links inside url. Keep jiraStatus as a separate property.
 - Escape double quotes inside text as \" and literal backslashes as \\. This is especially important for Kibana queries and PHP namespaces. Use \n for newlines inside string values.
 - Ensure tasks is an array, keys are unique, summary is non-empty, blocking is a JSON boolean, and generatedAt includes the actual date, time and timezone.
-- Do not add Markdown fences, introductory text, trailing commas, comments, or ellipses to the file. Deliver the complete selected queue, not a truncated preview.
+- Do not add Markdown fences, introductory text, trailing commas, comments, or ellipses to the file. Deliver the complete JQL result set, not a truncated preview.
 
 If I attach CCON_BA_State.json, consider my manualStatus and note as context. Do not overwrite or reinterpret my decisions as Jira facts. The local app preserves these fields separately.
