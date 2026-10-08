@@ -4,7 +4,6 @@ The daily agent opens downloadUrl in its authenticated CCON browser session.
 No browser cookies, passwords, or session tokens are copied into this script.
 """
 import argparse
-import hashlib
 import io
 import json
 import re
@@ -13,14 +12,14 @@ import sys
 import uuid
 import xml.etree.ElementTree as ET
 from collections import defaultdict
-from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from urllib.parse import parse_qs, unquote, urlencode, urlparse
 from zipfile import BadZipFile, ZipFile, ZIP_DEFLATED
 
-from pipeline_lock import pipeline_lock, replace_file
+from pipeline_lock import pipeline_lock
+from storage import digest, inside, read_json, write_json
+from app_config import ROOT, utc_now as now
 
-ROOT = Path(__file__).resolve().parent
 CCON_DOWNLOAD = 'https://cconnector.aerticket-it.de/admin/logs-download/'
 MAX_ZIP = 100 * 1024 * 1024
 MAX_EXPANDED = 512 * 1024 * 1024
@@ -36,38 +35,10 @@ SUPPLIERS = [
 ]
 
 
-def now():
-    return datetime.now(timezone.utc).isoformat()
-
-
-def digest(data):
-    return hashlib.sha256(data).hexdigest()
-
-
-def read_json(path, default=None):
-    path = Path(path)
-    return json.loads(path.read_text(encoding='utf-8-sig')) if path.exists() else default
-
-
-def write_json(path, value):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_name(path.name + '.' + uuid.uuid4().hex + '.pending')
-    temp.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding='utf-8')
-    replace_file(temp, path)
-
-
 def logs_root(root):
     config = read_json(Path(root) / 'log_config.json', {})
     configured = config.get('logsDir')
     return Path(configured).resolve() if isinstance(configured, str) and configured else (Path(root) / 'logs').resolve()
-
-
-def inside(parent, relative):
-    path = (parent / relative).resolve()
-    if not path.is_relative_to(parent.resolve()):
-        raise ValueError('Invalid stored log path.')
-    return path
 
 
 def validate_identity(key, flow):
@@ -137,7 +108,7 @@ def supplier_hint(summary):
 
 
 def make_plan(root=ROOT, analysis_file=None, issue_key=None):
-    from server import Desk
+    from desk_store import Desk
     root = Path(root)
     with pipeline_lock(root):
         context = read_json(root / 'data/jira_context.json', {})
@@ -295,7 +266,7 @@ def ingest(root, key, flow, source_path):
         context = read_json(root / 'data/jira_context.json', {})
         if context.get('issues', {}).get(key, {}).get('fingerprint') != job['contextFingerprint']:
             raise ValueError('Jira context changed; regenerate the log plan.')
-        from server import Desk
+        from desk_store import Desk
         task = next((task for task in Desk(root).view()['tasks'] if task['key'] == key), None)
         if not task or not task['active'] or task['manualStatus'] != 'AUTO':
             raise ValueError('Task is no longer eligible for automatic log preparation.')

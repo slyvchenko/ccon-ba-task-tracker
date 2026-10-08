@@ -2,14 +2,13 @@
 import argparse
 import json
 import sys
-from datetime import datetime,timezone
 from pathlib import Path
-from server import Desk, LIMIT
+from desk_store import Desk
+from app_config import LIMIT, ROOT, utc_now
 from pipeline_lock import pipeline_lock, replace_file
 from email_rules import normalize_draft
 from supplier_logs import verified_method
 
-ROOT=Path(__file__).resolve().parent
 
 def apply(path,root=ROOT):
     with pipeline_lock(root):
@@ -34,7 +33,7 @@ def _apply(path,root):
         raise ValueError('Snapshot and Jira context cover different tasks; run Jira sync again.')
     if set(analyses)!=keys:
         raise ValueError(f'Coverage mismatch: {len(keys-analyses.keys())} missing, {len(analyses.keys()-keys)} extra.')
-    stamp=datetime.now(timezone.utc).isoformat()
+    stamp=utc_now()
     for task in snapshot['tasks']:
         analysis=analyses[task['key']]
         if not isinstance(analysis,dict):

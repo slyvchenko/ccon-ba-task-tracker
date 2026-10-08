@@ -4,7 +4,8 @@ import re
 from pathlib import Path
 from urllib.parse import quote
 
-from supplier_logs import digest, flow_references, inside, logs_root, read_json, supplier_hint, validate_identity
+from storage import digest, inside, read_json
+from supplier_logs import flow_references, logs_root, supplier_hint, validate_identity
 
 
 def validate_key(key):

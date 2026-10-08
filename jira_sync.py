@@ -13,28 +13,22 @@ import os
 import re
 import sqlite3
 import sys
-import tempfile
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
 from pathlib import Path
-from pipeline_lock import pipeline_lock, replace_file
+from pipeline_lock import pipeline_lock
+from storage import write_json as atomic_json
+from app_config import ROOT, SNAPSHOT_LIMIT, utc_now as now
 
-ROOT = Path(__file__).resolve().parent
 JIRA_URL = 'https://aerticket.atlassian.net'
 JQL = ('project = CCON AND status != Done AND assignee = currentUser() '
        'AND (labels IS EMPTY OR labels NOT IN ("blocked")) AND issuetype != Epic '
        'ORDER BY priority DESC, updated DESC')
 FIELDS = ('summary,status,priority,updated,description,issuetype,reporter,'
           'assignee,issuelinks,labels,created,attachment,resolution,parent')
-SNAPSHOT_LIMIT = 5 * 1024 * 1024
 MANUAL_FIELDS = {'manualStatus', 'note', 'active', 'importedAt', 'modifiedAt'}
-
-
-def now():
-    return datetime.now(timezone.utc).isoformat()
 
 
 def unprotect_token(encoded):
@@ -325,25 +319,6 @@ def make_task(context, prior):
     return task
 
 
-def atomic_json(path, document, limit=None):
-    raw = json.dumps(document, ensure_ascii=False, indent=2).encode('utf-8')
-    if limit is not None and len(raw) > limit:
-        raise ValueError('Compact snapshot exceeds 5 MB; no import performed.')
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = None
-    try:
-        with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name + '.', suffix='.pending', delete=False) as stream:
-            temporary = Path(stream.name)
-            stream.write(raw)
-            stream.flush()
-            os.fsync(stream.fileno())
-        replace_file(temporary, path)
-    finally:
-        if temporary and temporary.exists():
-            temporary.unlink()
-
-
 def sync(root=ROOT, client=None):
     with pipeline_lock(root):
         return _sync(root, client)
@@ -408,4 +383,3 @@ def main():
 
 if __name__ == '__main__':
     raise SystemExit(main())
-
