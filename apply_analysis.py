@@ -7,6 +7,7 @@ from pathlib import Path
 from server import Desk, LIMIT
 from pipeline_lock import pipeline_lock, replace_file
 from email_rules import normalize_draft
+from supplier_logs import verified_method
 
 ROOT=Path(__file__).resolve().parent
 
@@ -54,7 +55,8 @@ def _apply(path,root):
         if not required.issubset(analysis):
             raise ValueError('Incomplete analysis fields for '+task['key'])
         Desk.validate_analysis(analysis)
-        analysis['emailDraft']=normalize_draft(task['key'],analysis['emailDraft'])
+        analysis['emailDraft']=normalize_draft(task['key'],analysis['emailDraft'],
+                                             verified_method(root,task['key'],current['fingerprint']))
         analysis.update(analyzedAt=stamp,stale=False)
         task['analysis']=analysis
         task['contextFingerprint']=current['fingerprint']
@@ -85,4 +87,3 @@ if __name__=='__main__':
     except (ValueError,OSError) as error:
         print('Analysis import failed: '+str(error),file=sys.stderr)
         raise SystemExit(1)
-
