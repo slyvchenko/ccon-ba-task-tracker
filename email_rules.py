@@ -1,7 +1,7 @@
 """User-approved email conventions, applied to generated drafts."""
 import re
 
-def normalize_draft(key, draft):
+def normalize_draft(key, draft, supplier_method=None):
     result = dict(draft)
     body = result.get('body', '').strip()
     if not body:
@@ -19,6 +19,11 @@ def normalize_draft(key, draft):
         subject = subject[:1].upper() + subject[1:]
     if key == 'CCON-15344':
         subject = re.sub(r'^Verify-fare\.', 'verify-fare.', subject)
+    if supplier_method:
+        detail = subject.split('. ', 1)[-1]
+        subject = supplier_method + '. ' + detail
+        body = re.sub(r'(We have recently received the following error during\s+)[^:\n]+:',
+                      lambda match: match[1] + supplier_method + ':', body, count=1)
     result['subject'] = 'AER. ' + subject + ' [' + key.split('-')[-1] + ']'
     body = re.sub(r'\A(?:Hi|Hello|Dear)\b[^\n]*\n*', '', body, flags=re.I)
     body = re.split(r'\n(?:Best regards|Kind regards|Regards)[,\s]*\n', body, maxsplit=1, flags=re.I)[0]
@@ -32,4 +37,3 @@ def normalize_draft(key, draft):
         body = '\n'.join(lines).strip()
     result['body'] = 'Dear Team,\n\n' + body + '\n\nLogs are attached for your reference.\n' + closing
     return result
-
