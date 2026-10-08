@@ -8,4 +8,5 @@ __pycache__/
 data/
 inbox/*.pending
 tests/test-data-*/
-
+logs/
+log_config.json
