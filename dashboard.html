@@ -67,6 +67,10 @@
     .work-state .state-actions{gap:8px;align-items:stretch}.work-state .state-actions button,.email-panel .actions button{flex:0 1 auto;min-height:38px;padding:8px 12px;font-size:13px;font-weight:400;line-height:1.3;border-radius:8px;white-space:normal}.work-state .state-actions #done{flex:0 1 auto;font-weight:400}.work-state .state-actions #discard{margin-left:0;padding:8px 12px}.work-state .state-actions #savedIndicator{display:inline-flex;align-items:center;font-size:13px;color:#126b48;margin-right:4px}.work-state .state-actions #savedIndicator[hidden]{display:none}
     .work-state .state-actions,.email-panel .actions{justify-content:flex-end}.work-state .state-actions #savedIndicator{margin-right:auto}
     .work-state .status-select{width:100%;min-height:38px;padding:8px 12px;font-size:13px;line-height:1.4;border:1px solid currentColor;border-radius:7px;cursor:pointer}.work-state .status-select option{background:#fff;color:#21334a;font-size:13px}
+    .email-logs{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);font-size:13px}
+    .logs-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}.logs-heading h4{font-size:13px;margin:0}.logs-count{color:var(--green);font-size:12px}
+    .log-file{padding:10px 11px;border:1px solid #c7dfd2;border-radius:7px;background:#f6fbf8;margin:8px 0}.log-file-name{font-size:12px;line-height:1.45;overflow-wrap:anywhere}.log-file .muted{font-size:11px;margin:4px 0 7px}.log-file.log-review{border-color:#dec68f;background:#fffaf0}.log-review-note{font-size:12px;color:var(--amber);margin:6px 0}
+    .log-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.file-button{display:inline-flex;align-items:center;justify-content:center;border:1px solid #c5d0df;border-radius:8px;background:#fff;color:#21334a;padding:8px 12px;font-size:13px;line-height:1.3;min-height:38px;text-decoration:none}.file-button:hover{background:#edf3fc}.logs-folder{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}.logs-folder .muted{font-size:11px;overflow-wrap:anywhere;min-width:0}.logs-folder button{flex:none}.email-logs .footer-note{margin:8px 0 0;font-size:11px}.bulk-logs{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:6px}.bulk-logs a{font-size:12px}
   </style>
 </head>
 <body>
@@ -116,6 +120,8 @@
     let signature = '', renderedTaskVersion = '', pendingDetail = false;
     const forms = new Map();
     const expandedEmails = new Set();
+    let logRequest = 0;
+    const logSignatures = new WeakMap();
     const recoveredForms = readRecoveredForms();
 
     function readRecoveredForms() {
@@ -321,6 +327,7 @@
               <label for="draftTo">Кому</label><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата, якщо він відомий" value="${escapeHtml(form.emailDraft.to)}">
               <label for="draftSubject">Тема</label><input id="draftSubject" maxlength="2000" placeholder="Тема листа" value="${escapeHtml(form.emailDraft.subject)}">
               <label for="draftBody">Текст листа</label><textarea id="draftBody" maxlength="50000" placeholder="Чернетка за описом, коментарями та відкритими питаннями задачі…">${escapeHtml(form.emailDraft.body)}</textarea>
+              <section id="emailLogs" class="email-logs" aria-label="Логи до листа"><div class="logs-heading"><h4>Логи до листа</h4></div><p class="muted" role="status">Перевіряю архіви задачі…</p></section>
               <div class="actions"><button id="email" class="primary">Відкрити в пошті ↗</button></div>
               </div>
             </details>
@@ -338,6 +345,35 @@
       $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
       $('loadContext').addEventListener('click', () => loadContext(task.key));
       updateFormStatus();
+      loadLogs(task.key);
+    }
+    async function loadLogs(key = selected) {
+      if (!key || selected !== key || !$('emailLogs')) return;
+      const request = ++logRequest, target = $('emailLogs');
+      try {
+        const data = await api('/api/logs/' + encodeURIComponent(key));
+        if (request !== logRequest || selected !== key || target !== $('emailLogs')) return;
+        const nextSignature = JSON.stringify(data);
+        if (logSignatures.get(target) === nextSignature) return;
+        logSignatures.set(target, nextSignature);
+        const items = data.items || [];
+        target.innerHTML = `<div class="logs-heading"><h4>Логи до листа</h4><span class="logs-count">${items.length ? items.length + ' ZIP' : ''}</span></div>` +
+          (items.length ? items.map(item => `<div class="log-file ${item.stale || item.needsReview ? 'log-review' : ''}"><div class="log-file-name">${escapeHtml(item.filename)}</div><p class="muted">${escapeHtml(item.method || item.supplier || 'Метод потребує перевірки')} · ${escapeHtml(item.fileCount ?? '?')} XML · <span title="${escapeHtml(item.flowId)}">flow ${escapeHtml(item.flowId.slice(0, 8))}…</span></p>${item.stale || item.needsReview ? `<div class="log-review-note">${item.stale ? 'З попереднього контексту — перевір актуальність перед відправленням.' : 'Є зауваження до логів — перевір перед відправленням.'}</div>` : ''}<div class="log-actions"><a class="file-button" href="${escapeHtml(item.downloadUrl)}" download>Завантажити ZIP</a></div></div>`).join('') : '<p class="muted">' + escapeHtml(data.emptyMessage) + '</p>') +
+          (items.length && data.pendingCount ? `<p class="muted">Ще ${escapeHtml(data.pendingCount)} прикладів очікують підготовки.</p>` : '') +
+          `<div class="logs-folder"><span class="muted" title="${escapeHtml(data.folder)}">CCON-Logs / ${escapeHtml(key)}</span>${data.folderAvailable ? '<button id="openLogsFolder" class="quiet">Відкрити папку</button>' : ''}</div>` +
+          (items.length ? '<p class="footer-note">Прикріпи ZIP до цього листа в Outlook.</p>' : '');
+        if ($('openLogsFolder')) $('openLogsFolder').addEventListener('click', async () => {
+          const button = $('openLogsFolder'); button.disabled = true;
+          try { const result = await api('/api/logs/' + encodeURIComponent(key) + '/folder', {}); message(result.message); }
+          catch (error) { message(error.message, true); }
+          finally { button.disabled = false; }
+        });
+      } catch (error) {
+        if (request === logRequest && selected === key && target === $('emailLogs')) {
+          logSignatures.delete(target);
+          target.innerHTML = '<div class="logs-heading"><h4>Логи до листа</h4></div><p class="muted" role="status">Не вдалося прочитати архіви. ' + escapeHtml(error.message) + '</p>';
+        }
+      }
     }
     function captureForm() {
       const task = tasks.find(item => item.key === selected);
@@ -437,19 +473,31 @@
       catch { message('Копіювання недоступне. Виділи видимий текст і скопіюй вручну.', true); }
     }
     let bulkItems = [];
-    function previewBulkEmails() {
+    let bulkPreviewRequest = 0;
+    async function previewBulkEmails() {
+      const request = ++bulkPreviewRequest;
       const candidates = rankedTasks().filter(task => task.active && effectiveSignal(task) === 'WRITE');
       bulkItems = [];
       $('bulkList').innerHTML = candidates.map(task => {
         const draft = structuredClone(formFor(task).value.emailDraft);
         const missing = [!draft.to.trim() && 'адресат', !draft.subject.trim() && 'тема', !draft.body.trim() && 'текст'].filter(Boolean);
         if (!missing.length) bulkItems.push({key:task.key, draft});
-        return `<div class="bulk-row"><div>${escapeHtml(task.key)} · ${escapeHtml(task.summary)}</div><div class="muted">${missing.length ? 'Пропущено: не заповнено ' + missing.join(', ') : escapeHtml(draft.to)}</div></div>`;
+        return `<div class="bulk-row"><div>${escapeHtml(task.key)} · ${escapeHtml(task.summary)}</div><div class="muted">${missing.length ? 'Пропущено: не заповнено ' + missing.join(', ') : escapeHtml(draft.to)}</div><div class="bulk-logs muted" data-log-key="${escapeHtml(task.key)}">Перевіряю архіви…</div></div>`;
       }).join('');
       $('bulkResult').textContent = `Готово: ${bulkItems.length} із ${candidates.length}.`;
       $('bulkOpen').textContent = `Відкрити чернетки (${bulkItems.length})`;
       $('bulkOpen').disabled = !bulkItems.length;
       $('bulkDialog').showModal();
+      try {
+        const catalog = await api('/api/logs');
+        if (request !== bulkPreviewRequest || !$('bulkDialog').open) return;
+        $('bulkList').querySelectorAll('[data-log-key]').forEach(row => {
+          const items = catalog[row.dataset.logKey]?.items || [];
+          row.innerHTML = items.length ? 'Логи: ' + items.map((item, index) => `<a href="${escapeHtml(item.downloadUrl)}" download title="${escapeHtml(item.filename)}">ZIP ${index + 1} · ${escapeHtml(item.fileCount ?? '?')} XML</a>${item.stale || item.needsReview ? '<span class="text-amber">перевір актуальність</span>' : ''}`).join(' ') + (catalog[row.dataset.logKey].pendingCount ? `<span>ще ${escapeHtml(catalog[row.dataset.logKey].pendingCount)} очікують підготовки</span>` : '') : escapeHtml(catalog[row.dataset.logKey]?.emptyMessage || 'Логи ще не підготовлені');
+        });
+      } catch {
+        if (request === bulkPreviewRequest) $('bulkList').querySelectorAll('[data-log-key]').forEach(row => { row.textContent = 'Архіви зараз недоступні'; });
+      }
     }
     async function openBulkEmails() {
       const items = bulkItems;
@@ -590,9 +638,8 @@
     });
     window.addEventListener('beforeunload', event => { if (hasUnsaved()) { event.preventDefault(); event.returnValue = ''; } });
     load();
-    setInterval(load, 5000);
+    setInterval(() => { load(); loadLogs(); }, 5000);
   </script>
 </body>
 </html>
-
 
