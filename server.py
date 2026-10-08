@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent
 STATUSES = ['AUTO', 'IN PROGRESS', 'WAITING INPUT', 'WAITING DEPENDENCY', 'NEEDS DECISION', 'DONE']
 LIMIT = 5 * 1024 * 1024
 CONTEXT_LIMIT = 50 * 1024 * 1024
-VERSION = '2.0.0'
+VERSION = '2.1.0'
 SIGNALS = ('READY', 'WRITE', 'WAIT', 'DECIDE', 'REVIEW', 'DONE')
 
 class LocalServer(ThreadingHTTPServer):
@@ -269,13 +269,15 @@ def open_email_batch(items, opener=None):
 
 def handler(desk):
     class Handler(BaseHTTPRequestHandler):
-        def send(self, code, value, content_type='application/json; charset=utf-8'):
+        def send(self, code, value, content_type='application/json; charset=utf-8', filename=None):
             body = value if isinstance(value, bytes) else json.dumps(value, ensure_ascii=False).encode()
             self.send_response(code)
             self.send_header('Content-Type', content_type)
             self.send_header('Content-Length', str(len(body)))
             self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Content-Type-Options', 'nosniff')
+            if filename:
+                self.send_header('Content-Disposition', "attachment; filename*=UTF-8''" + quote(filename, safe=''))
             self.end_headers()
             self.wfile.write(body)
 
@@ -294,6 +296,20 @@ def handler(desk):
                 return self.send(200, desk.view())
             if path == '/api/health':
                 return self.send(200, {'app': 'CCON BA Desk', 'version': VERSION})
+            if path == '/api/logs' or path.startswith('/api/logs/'):
+                from log_attachments import log_catalog, download_archive
+                try:
+                    parts = [unquote(part) for part in path.split('/')]
+                    if path == '/api/logs':
+                        return self.send(200, log_catalog(desk))
+                    if len(parts) == 4:
+                        return self.send(200, log_catalog(desk, parts[3]))
+                    if len(parts) == 6 and parts[5] == 'download':
+                        filename, content = download_archive(desk, parts[3], parts[4])
+                        return self.send(200, content, 'application/zip', filename)
+                except (ValueError, OSError, KeyError, TypeError) as error:
+                    return self.send(400, {'error': str(error)})
+                return self.send(404, {'error': 'Not found.'})
             if path.startswith('/api/context/'):
                 try:
                     return self.send(200, desk.context(unquote(path.split('/')[-1])))
@@ -313,6 +329,9 @@ def handler(desk):
                 if not isinstance(data, dict):
                     raise ValueError('Expected an object.')
                 path = urlparse(self.path).path
+                if re.fullmatch(r'/api/logs/CCON-\d+/folder', path):
+                    from log_attachments import open_task_folder
+                    return self.send(200, open_task_folder(desk, path.split('/')[3]))
                 if path == '/api/email/open-batch':
                     return self.send(200, open_email_batch(data.get('items')))
                 if path == '/api/import':
@@ -376,4 +395,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
