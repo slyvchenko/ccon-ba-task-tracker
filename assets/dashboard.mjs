@@ -136,11 +136,11 @@ function renderDetail() {
           ${analysis.nextActionUk ? '<button id="copyNext" class="quiet">Скопіювати дію</button>' : ''}
         </section>
         <section class="panel" aria-label="Відсутні дані та підстави оцінки">
-          <div class="section-label">Чого не вистачає</div>
+          <div class="section-label">Відкриті питання BA</div>
           ${missing.length ? '<ol class="missing-info">' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : `<p class="muted">${analyzed ? 'Аналіз не виявив додаткових питань. Перевір пояснення та джерела нижче.' : 'Поки не визначено — потрібен аналіз контексту.'}</p>`}
           <div class="section-label">На чому ґрунтується оцінка</div>
           ${sourceMarkup(analysis)}
-          <details class="description"><summary>Стандартизований опис задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Опис ще не підготовлений. Після узгодження твоїх правил тут буде готовий текст.')}</p></details>
+          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? '<button id="copyDescription" class="quiet">Скопіювати опис</button>' : ''}</details>
           ${previousAnalysisMarkup(task)}
           ${legacyMarkup(task)}
         </section>
@@ -176,6 +176,7 @@ function renderDetail() {
   ['note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener('input', captureForm));
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
   if ($('copyNext')) $('copyNext').addEventListener('click', () => copyText(analysis.nextActionUk, 'Наступну дію скопійовано.'));
+  if ($('copyDescription')) $('copyDescription').addEventListener('click', () => copyText(analysis.standardDescription, 'Чернетку опису скопійовано.'));
   $('save').addEventListener('click', () => saveTask(false));
   $('done').addEventListener('click', () => saveTask(true));
   $('discard').addEventListener('click', discardForm);
