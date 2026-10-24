@@ -129,7 +129,9 @@ class LogPipelineTests(unittest.TestCase):
             self.assertFalse(any('/rest/' in name or '/errors/' in name
                                  or '/biletBank/' in name for name in names))
         report = read_json(self.root / 'data/evidence/CCON-1' / (FLOW + '.json'))
-        self.assertEqual(report['counts']['supplier'], 4)
+        # Evidence sees the selected supplier's extra TXT diagnostic.
+        # Only the separate Outlook ZIP is restricted to 4 supplier XMLs.
+        self.assertEqual(report['counts']['supplier'], 5)
         self.assertEqual(report['counts']['rest'], 1)
         self.assertEqual(report['issueKey'], 'CCON-1')
         self.assertIn('valueReview', report)
