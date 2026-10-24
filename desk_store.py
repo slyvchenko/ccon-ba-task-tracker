@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from app_config import CONTEXT_LIMIT, LIMIT, STATUSES, utc_now as now
 from schema import text_field, validate_analysis, validate_draft
+from task_history import init as init_history, append as history_append, view_state, history_page
 
 class Desk:
     validate_analysis = staticmethod(validate_analysis)
@@ -31,6 +32,7 @@ class Desk:
                 hash TEXT PRIMARY KEY, imported_at TEXT NOT NULL, generated_at TEXT NOT NULL,
                 count INTEGER NOT NULL);
             ''')
+            init_history(c)
             if 'position' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
                 c.execute('ALTER TABLE tasks ADD COLUMN position INTEGER NOT NULL DEFAULT 0')
             if 'email_draft' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
@@ -91,12 +93,23 @@ class Desk:
                 if latest and date < datetime.fromisoformat(latest[0].replace('Z', '+00:00')):
                     raise ValueError('Older snapshot rejected. Use the latest generatedAt timestamp.')
                 stamp = now()
+                prior = {row['key']: row for row in c.execute('SELECT * FROM tasks')}
                 c.execute('UPDATE tasks SET active=0')
                 for position, task in enumerate(doc['tasks']):
                     c.execute('''INSERT INTO tasks(key,snapshot,imported_at,position) VALUES(?,?,?,?)
                       ON CONFLICT(key) DO UPDATE SET snapshot=excluded.snapshot,
                       imported_at=excluded.imported_at, position=excluded.position, active=1''',
                       (task['key'], json.dumps(task, ensure_ascii=False), stamp, position))
+                    persisted = c.execute('SELECT * FROM tasks WHERE key=?', (task['key'],)).fetchone()
+                    draft = json.loads(persisted['email_draft']) if persisted['email_draft'] else None
+                    history_append(c, task['key'], view_state(task,
+                        persisted['manual_status'], persisted['note'], draft, True), 'IMPORT')
+                for previous_key, row in prior.items():
+                    if previous_key not in keys and row['active']:
+                        old = json.loads(row['snapshot'])
+                        draft = json.loads(row['email_draft']) if row['email_draft'] else None
+                        history_append(c, previous_key, view_state(
+                            old, row['manual_status'], row['note'], draft, False), 'IMPORT')
                 c.execute('INSERT INTO imports VALUES(?,?,?,?)', (digest, stamp, generated, len(keys)))
             self.error = ''
             return {'message': f'Imported {len(keys)} tasks. Manual status and notes preserved.'}
@@ -134,6 +147,16 @@ class Desk:
             values.append(key)
             if not c.execute(query, values).rowcount:
                 raise ValueError('Unknown task.')
+            row = c.execute('SELECT * FROM tasks WHERE key=?', (key,)).fetchone()
+            saved_draft = json.loads(row['email_draft']) if row['email_draft'] else None
+            history_append(c, key, view_state(json.loads(row['snapshot']),
+                row['manual_status'], row['note'], saved_draft, bool(row['active'])), 'MANUAL')
+
+    def history(self, key, limit=20, offset=0):
+        with self.lock, self.connect() as c:
+            if not c.execute('SELECT 1 FROM tasks WHERE key=?', (key,)).fetchone():
+                raise ValueError('Unknown task.')
+            return history_page(c, key, limit, offset)
 
     def context(self, key):
         if not re.fullmatch(r'CCON-\d+', key):

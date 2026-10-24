@@ -36,8 +36,8 @@
 | CORE-04 | P0 | IMPLEMENTED (code) | 0–100 із п'ятьма факторами та поясненням | businessImpact, urgency, dependencies, baDecision, actionability; compare real queue |
 | CORE-05 | P0 | IMPLEMENTED (code) | Збереження manual status, notes, email draft між sync/refresh | Жоден імпорт AI не переписує ручних змін |
 | CORE-06 | P0 | IMPLEMENTED (code) | New/updated/reopened/done/left-scope daily delta | Verified Jira Done ≠ disappeared from JQL; tests + live UAT |
-| CORE-07 | P1 | PARTIAL | Повний task-history 360° з ревізіями рішень/листування | Зберігати й порівнювати snapshots, аналіз, відповідь, дату, джерело |
-| CORE-08 | P1 | PLANNED | Personal action plan / черга на сьогодні | Що перевірити, кому написати, хто блокує, next follow-up, робочий стан |
+| CORE-07 | P1 | IMPLEMENTED (local revision history); real UAT pending | Повний task-history 360° з ревізіями рішень/листування | Зберігати й порівнювати snapshots, аналіз, відповідь, дату, джерело |
+| CORE-08 | P1 | IMPLEMENTED (human action plans); real UAT pending | Personal action plan / черга на сьогодні | Що перевірити, кому написати, хто блокує, next follow-up, робочий стан |
 | CORE-09 | P2 | PLANNED | Швидкий пошук і фільтрація за методами, supplier, issue, залежностями | Search/filter без переробки основної картки |
 | CORE-10 | P2 | PARTIAL | Узгодженість оцінок між задачами та ретроспектива пріоритетів | Виявляти протиріччя в 0–100 і bias, review проти результату |
 | BA-01 | P0 | PARTIAL (description quality checks); expert UAT open | Готовий короткий англомовний task description | Кожна умова IF/THEN, field, expected output, QA зчитані коректно; human gold set |
@@ -96,8 +96,8 @@
 | **#11 — CODE COMPLETE; HUMAN CONTENT UAT OPEN** | BA-04 + OUT-04: перевірка зв'язку claim→source; BA-07: QA traceability | Невідтворювана вимога залишається OPEN |
 | **#12 — CODE COMPLETE; LIVE UAT OPEN** | BA-06: question answer suggestions; BA-10: decision register | Не закривати питання автоматично |
 | **#13 — CODE COMPLETE; LIVE UAT OPEN** | EVD-09/EVD-11: mapping contracts + flow timeline | Два request paths, retry/timeout, ordering |
-| **#14 — NEXT** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
-| **#15** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
+| **#14 — CODE COMPLETE; LOCAL UAT OPEN** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
+| **#15 — NEXT** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
 | **#16** | QA-03/QA-06: real gold-set test + prompt A/B | No critical false claims |
 | **Далі** | EVD-10,12,13,14,15; CORE-09,10; BA-11; UX-02,03; QA-07,08 | Окремо після реальних потреб |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |

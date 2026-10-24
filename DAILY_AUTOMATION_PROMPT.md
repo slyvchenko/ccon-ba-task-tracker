@@ -37,3 +37,7 @@
 ## v2.13: contract mapping і timeline
 
 Для задач з авторизованими ZIP використовуй `flowDiagnostics` із `data/evidence/KEY/FLOW.json`. Поясни, який REST request йде до якого supplier method, а supplier response до якого REST response, але не видавай candidate mapping за узгоджений контракт. Звертай увагу на `null`, повторювані поля/segments та точні field names. Хронологію підтверджуй лише явними ISO timestamps із offset; filename order/sequence не є часом, повторений метод не доводить retry. Якщо немає REST endpoint/timestamp, прямо зазнач це як відкрите питання. Жодних зайвих режимів у dashboard.
+
+## v2.14: next actions та history
+
+Зберігай всі аналізи й оновлюй `nextActionUk` як коротку чітку рекомендацію. Не додавай і не закривай дії у локальному `data/actions` без мого вибору. Збирай історію через штатний `Desk.import_snapshot` та не очищай попередні ревізії після sync. У dashboard у звичних згорнутих блоках відображаються план наступних дій і хронологія станів, описів, нотаток та листів. Реальні зміни Jira/Confluence тільки read-only.
