@@ -176,7 +176,7 @@ class ReviewFeedbackRegressions(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             with patch("prompt_calibration.ZoneInfo", side_effect=ZoneInfoNotFoundError):
                 result = update_daily(report, folder)
-            self.assertRegex(result["date"], r"^\\d{4}-\\d{2}-\\d{2}$")
+            self.assertRegex(result["date"], r"^\d{4}-\d{2}-\d{2}$")
             self.assertTrue((Path(folder) / "data/prompt_calibration/current.md").exists())
 
     def test_prompt_cache_fingerprint_ignores_calibration_date_and_count(self):
