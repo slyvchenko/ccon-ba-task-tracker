@@ -199,6 +199,13 @@ def quality_gate(analysis, issue, related=None):
     coverage, qa_findings = rule_coverage(briefing)
     writing_findings = description_review(analysis.get("standardDescription"), briefing)
     findings = (source_findings + qa_findings + writing_findings)[:MAX_FINDINGS]
+    if not claims:
+        findings.append({"code": "NO_CONFIRMED_SOURCE_CLAIMS", "ref": "briefing",
+                         "messageUk": "Немає підтверджених фактів або правил із перевірюваним джерелом."})
+    if not coverage:
+        findings.append({"code": "NO_CONFIRMED_RULE_TRACE", "ref": "briefing",
+                         "messageUk": "Не сформовано зв'язок підтверджених правил із QA-сценаріями."})
+    findings = findings[:MAX_FINDINGS]
     critical = {"CLAIM_SOURCE_NOT_READ", "CLAIM_EXCERPT_NOT_FOUND",
                 "CLAIM_EXCERPT_MISSING", "RULE_QA_GAP", "QA_UNKNOWN_RULE_ID",
                 "RULE_ID_DUPLICATED", "CONFIRMED_FIELD_OMITTED"}
