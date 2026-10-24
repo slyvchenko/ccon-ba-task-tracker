@@ -172,6 +172,26 @@ function previousAnalysisMarkup(task) {
   return `<details class="description"><summary>Попередній аналіз — застарів після зміни контексту</summary><p class="muted">Ці висновки збережені лише як історія; вони не визначають поточну чергу чи сигнали.</p><div class="section-label">Попереднє пояснення</div><p class="pre">${escapeHtml(previous.reasonUk || '')}</p><div class="section-label">Попередня дія</div><p class="pre">${escapeHtml(previous.nextActionUk || '')}</p><div class="section-label">Попередні джерела</div>${sourceMarkup(previous)}</details>`;
 }
 function taskVersion(task) { return JSON.stringify([latest?.hash || latest?.generated_at || '', task]); }
+function qualityGateMarkup(gate) {
+  if (!gate) return '';
+  const names = {BLOCKED:'Потрібне підтвердження', NEEDS_REVIEW:'Перевірити опис',
+    STRUCTURALLY_VERIFIED:'Структура перевірена (не доказ правильності)'};
+  const findings = (gate.findings || []).slice(0, 25).map(f =>
+    '<li><b>' + escapeHtml(f.code) + '</b> · ' + escapeHtml(f.ref) + ': ' + escapeHtml(f.messageUk) + '</li>').join('');
+  const coverage = (gate.qaCoverage || []).slice(0, 25).map(r =>
+    '<li>' + escapeHtml(r.ruleId) + ': ' + escapeHtml((r.covered || []).join(', ') || 'Тестів немає') +
+    ((r.missing || []).length ? ' · бракує ' + escapeHtml(r.missing.join(', ')) : ' · покрито') + '</li>').join('');
+  const summary = gate.summary || {};
+  return '<details class="description"><summary>Перевірка доказів і QA · ' +
+    escapeHtml(names[gate.state] || 'Недостатньо даних') + '</summary><p class="muted">' +
+    'Цитат у прочитаних джерелах: ' + escapeHtml(summary.sourceExcerptsPresent || 0) + '/' +
+    escapeHtml(summary.claimsChecked || 0) + '. Правил із QA: ' +
+    escapeHtml(summary.rulesFullyCovered || 0) + '/' + escapeHtml(summary.rulesTracked || 0) +
+    '. Це структурна перевірка, не підтвердження бізнес-правильності.</p>' +
+    (coverage ? '<div class="section-label">Покриття умов</div><ul>' + coverage + '</ul>' : '') +
+    (findings ? '<div class="section-label">Що виправити</div><ul>' + findings + '</ul>' : '') + '</details>';
+}
+
 function renderDetail() {
   const task = tasks.find(item => item.key === selected);
   if (!task) {
@@ -217,6 +237,7 @@ function renderDetail() {
           </details>
           <div class="section-label">На чому ґрунтується оцінка</div>
           ${sourceMarkup(analysis)}
+          ${qualityGateMarkup(analysis.qualityGate)}
           <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? '<button id="copyDescription" class="quiet">Скопіювати опис</button>' : ''}</details>
           ${previousAnalysisMarkup(task)}
           ${legacyMarkup(task)}

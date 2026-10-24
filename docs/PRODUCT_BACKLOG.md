@@ -40,13 +40,13 @@
 | CORE-08 | P1 | PLANNED | Personal action plan / черга на сьогодні | Що перевірити, кому написати, хто блокує, next follow-up, робочий стан |
 | CORE-09 | P2 | PLANNED | Швидкий пошук і фільтрація за методами, supplier, issue, залежностями | Search/filter без переробки основної картки |
 | CORE-10 | P2 | PARTIAL | Узгодженість оцінок між задачами та ретроспектива пріоритетів | Виявляти протиріччя в 0–100 і bias, review проти результату |
-| BA-01 | P0 | PARTIAL | Готовий короткий англомовний task description | Кожна умова IF/THEN, field, expected output, QA зчитані коректно; human gold set |
+| BA-01 | P0 | PARTIAL (description quality checks); expert UAT open | Готовий короткий англомовний task description | Кожна умова IF/THEN, field, expected output, QA зчитані коректно; human gold set |
 | BA-02 | P0 | PARTIAL | Готовий фактологічний emailDraft для **кожної** задачі | Незалежно від WRITE; не вигадувати адресата/метод/прикріплений ZIP; коректний follow-up |
 | BA-03 | P0 | IMPLEMENTED (code) | 30-second context: confirmed/current/target/action/why | Зрозумілий стислий briefing із proof/uncertainty |
-| BA-04 | P0 | PARTIAL | Source-grounded facts vs interpretations vs assumptions | Для кожного важливого твердження source offset/URL і support test |
+| BA-04 | P0 | IMPLEMENTED (mechanical excerpt gate); semantic UAT open | Source-grounded facts vs interpretations vs assumptions | Для кожного важливого твердження source offset/URL і support test |
 | BA-05 | P0 | PARTIAL | BA questions ID, status, owner, answer, evidence | OPEN → ANSWERED / SUPERSEDED / NOT_APPLICABLE; пропажа з AI ≠ answered |
 | BA-06 | P1 | PLANNED | Розпізнавання реальної відповіді на питання з Jira/документів | Запропонувати кандидата відповіді з цитатою; без auto-close |
-| BA-07 | P0 | PARTIAL | Requirement → QA traceability | Зіставити позитивні/негативні/edge-cases із кожною підтвердженою вимогою |
+| BA-07 | P0 | IMPLEMENTED (explicit rule/QA references); real-case UAT open | Requirement → QA traceability | Зіставити позитивні/негативні/edge-cases із кожною підтвердженою вимогою |
 | BA-08 | P1 | PLANNED | On-demand deep re-analysis однієї задачі | Перезапуск без повного щоденного проходу, повага до збережених ручних правок |
 | BA-09 | P1 | PARTIAL | Related Jira + wiki/documentation cross-check | Читати доступні джерела, фіксувати непрочитані та конфлікти |
 | BA-10 | P1 | PLANNED | Decision register: confirmed/superseded/disputed | Хронологія рішень, хто підтвердив, коли, що змінюється |
@@ -69,7 +69,7 @@
 | OUT-01 | P0 | PARTIAL | Самодостатній BA dossier із короткою дією, правилами, QA, gaps | Реальні приклади без зайвих формулювань; scenario-based grading |
 | OUT-02 | P0 | PARTIAL | Чернетка листа, subject/method, контекст попередніх відповідей | Ситуативне формулювання, ручне редагування, без auto-send |
 | OUT-03 | P1 | IMPLEMENTED (code); live UAT pending | Готовий supplier ZIP та evidence status без прихованої недоступності | Показувати ready/stale/blocked + причина і flow у поточній картці |
-| OUT-04 | P1 | PARTIAL | Контроль фактичності вставлених доказів і PDF/логів | Кожна вимога та тест мають джерело, або чітко OPEN |
+| OUT-04 | P1 | IMPLEMENTED (claim/source gate); semantic UAT open | Контроль фактичності вставлених доказів і PDF/логів | Кожна вимога та тест мають джерело, або чітко OPEN |
 | UX-01 | P0 | IMPLEMENTED (code) | Зберігати стандартну сторінку, без окремих режимів | Меню/поля/status/email/лог ZIP збережені |
 | UX-02 | P1 | PARTIAL | Compact descriptions і progressive disclosure | Скорочення повторів, не ховати основний результат |
 | UX-03 | P2 | PARTIAL | AERTiCKET-inspired branding | Дійсні токени/логотип потребують brand approval |
@@ -93,8 +93,8 @@
 |---|---|---|
 | **#9 — CODE COMPLETE; LIVE UAT OPEN** | EVD-07: 1–30 error cases з локально підготовлених flow reports; EVD-08: evidence-based RCA із альтернативами й прогалинами | Synthetic multi-flow regression + flow/supplier isolation + baseline CI. Реальний Kibana UAT окремо |
 | **#10 — CODE COMPLETE; LIVE BROWSER UAT OPEN** | EVD-05: локальний browser-to-ZIP handoff із журналом помилок; OUT-03: ready/stale/blocked ZIP в existing card | Реальний авторизований download без cookies/API leaks |
-| **#11 — NEXT** | BA-04 + OUT-04: перевірка зв'язку claim→source; BA-07: QA traceability | Невідтворювана вимога залишається OPEN |
-| **#12** | BA-06: question answer suggestions; BA-10: decision register | Не закривати питання автоматично |
+| **#11 — CODE COMPLETE; HUMAN CONTENT UAT OPEN** | BA-04 + OUT-04: перевірка зв'язку claim→source; BA-07: QA traceability | Невідтворювана вимога залишається OPEN |
+| **#12 — NEXT** | BA-06: question answer suggestions; BA-10: decision register | Не закривати питання автоматично |
 | **#13** | EVD-09/EVD-11: mapping contracts + flow timeline | Два request paths, retry/timeout, ordering |
 | **#14** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
 | **#15** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |

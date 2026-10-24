@@ -84,6 +84,34 @@ class AnalysisIntegrity(unittest.TestCase):
         self.run_apply({'CCON-1':self.analysis})
         self.assertFalse(self.desk.view()['tasks'][0]['analysis']['stale'])
 
+    def test_quality_gate_downgrades_ready_when_claim_evidence_is_missing(self):
+        from test_ba_quality_gate import analysis as good_analysis, issue as good_issue
+        material = good_analysis()
+        self.analysis['briefing'] = material['briefing']
+        self.analysis['standardDescription'] = material['standardDescription']
+        self.analysis['briefing']['readiness'] = 'READY_FOR_REVIEW'
+        context = json.loads((self.root / 'data/jira_context.json').read_text())
+        context['issues']['CCON-1'].update(good_issue())
+        context['issues']['CCON-1']['url'] = 'https://aerticket.atlassian.net/browse/CCON-1'
+        # A link to CCON-123 from an issue CCON-1 is not read proof.
+        (self.root / 'data/jira_context.json').write_text(json.dumps(context))
+        self.run_apply({'CCON-1': self.analysis})
+        saved = self.desk.view()['tasks'][0]['analysis']
+        self.assertEqual(saved['qualityGate']['state'], 'BLOCKED')
+        self.assertFalse(saved['qualityGate']['isReadyForReview'])
+        self.assertEqual(saved['briefing']['readiness'], 'NEEDS_CONFIRMATION')
+
+    def test_quality_gate_never_overwrites_manual_draft_or_note(self):
+        self.desk.save('CCON-1', {'manualStatus': 'IN PROGRESS',
+                                 'note': 'Keep user note',
+                                 'emailDraft': {'to': '', 'subject': 'User subject',
+                                                'body': 'Edited by me'}})
+        self.run_apply({'CCON-1': self.analysis})
+        task = self.desk.view()['tasks'][0]
+        self.assertIn('qualityGate', task['analysis'])
+        self.assertEqual(task['savedEmailDraft']['body'], 'Edited by me')
+        self.assertEqual(task['note'], 'Keep user note')
+
     def test_lock_is_shared_between_processes(self):
         code=('from pipeline_lock import pipeline_lock\nfrom pathlib import Path\nimport sys\n'
               'try:\n    with pipeline_lock(Path(sys.argv[1])):\n        sys.exit(0)\n'
