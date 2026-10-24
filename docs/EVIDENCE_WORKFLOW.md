@@ -134,3 +134,11 @@ archive intentionally excludes REST and error layers.
 - The local Codex/Work task, not the Python server, controls browser navigation.
   The user must update the existing local Codex task from
   `DAILY_AUTOMATION_PROMPT.md`; merging GitHub code never updates the laptop.
+
+## v2.8 refinement: one ZIP, two distinct deliverables
+
+After downloading the authorized CCON full ZIP, use the `supplier_logs.py ingest` pipeline. It now also writes a privacy-bounded `data/evidence/CCON-KEY/FLOW.json` manifest; `valueReview` contains actual scalar **equality/mismatch checks** for paired REST and supplier exchanges. These are **CANDIDATE_ONLY**, not proven transformation errors. Raw field values and other supplier files are never persisted in that JSON manifest.
+
+The downloadable ZIP in the existing dashboard is the **original supplier-only result**: XML files belonging to the one selected supplier, and never REST/error/other-supplier folders. `plan --mode evidence` permits packaging for active tasks even when no email is needed, including a manually completed item that still belongs to the current Jira scope.
+
+Every analysis should produce a concise developer-ready English `standardDescription` when technically possible, and an optional editable `emailDraft` irrespective of `needsEmail`. A source-uncertain fallback draft must not pretend a supplier method or attachment has been verified.

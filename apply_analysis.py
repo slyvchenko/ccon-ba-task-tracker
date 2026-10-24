@@ -6,7 +6,7 @@ from pathlib import Path
 from desk_store import Desk
 from app_config import LIMIT, ROOT, utc_now
 from pipeline_lock import pipeline_lock, replace_file
-from email_rules import normalize_draft
+from draft_output import make_ready_draft, supplier_zip_ready
 from supplier_logs import verified_method
 from review_report import build_report, write_report
 from prompt_calibration import update_daily
@@ -57,8 +57,10 @@ def _apply(path,root):
         if not required.issubset(analysis):
             raise ValueError('Incomplete analysis fields for '+task['key'])
         Desk.validate_analysis(analysis)
-        analysis['emailDraft']=normalize_draft(task['key'],analysis['emailDraft'],
-                                             verified_method(root,task['key'],current['fingerprint']))
+        analysis['emailDraft']=make_ready_draft(
+            task['key'], analysis,
+            method=verified_method(root, task['key'], current['fingerprint']),
+            attachment_ready=supplier_zip_ready(root, task['key']))
         analysis.update(analyzedAt=stamp,stale=False)
         task['analysis']=analysis
         task['contextFingerprint']=current['fingerprint']

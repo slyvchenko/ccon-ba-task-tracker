@@ -215,6 +215,12 @@ def request_analysis(settings, instructions, task_context, note="", opener=None)
                 "direction, missing/altered values and multiple error cases. "
                 "Never claim a verified mapping or root cause solely from a matching "
                 "filename, sequence, structural field, or correlation hint. "
+                "Explain exact-value equality and same-named value differences "
+                "reported under valueReview, including REST request -> supplier request "
+                "and supplier response -> REST response. These are CANDIDATE_ONLY "
+                "until confirmed against mapping rules and chronology. Never invent "
+                "raw values omitted for privacy. "
+
                 "When ZIP evidence is missing say so explicitly and propose the "
                 "specific Kibana search / additional sample required. "
                 "Return the complete required analysis, including briefing and "
@@ -268,7 +274,11 @@ def evidence_for_issue(root, key, limit=30):
             continue
         if not isinstance(result, dict) or result.get("issueKey") != key:
             continue
-        fingerprints.append(str(result.get("sourceSha256") or ""))
+        fingerprints.append(json.dumps(
+            {"source": result.get("sourceSha256"),
+             "schemaVersion": result.get("schemaVersion"),
+             "valueReview": result.get("valueReview")},
+            ensure_ascii=False, sort_keys=True))
         # Keep source filenames and correlation IDs bounded; do not move
         # original passenger/customer XML and JSON into a model prompt.
         reports.append({
@@ -281,6 +291,11 @@ def evidence_for_issue(root, key, limit=30):
             "questionsUk": (result.get("questionsUk") or [])[:30],
             "warnings": (result.get("warnings") or [])[:30],
             "correlationCandidates": (result.get("correlationCandidates") or [])[:60],
+            "valueReview": {
+                "comparisons": (result.get("valueReview") or {}).get("comparisons", [])[:30],
+                "issues": (result.get("valueReview") or {}).get("issues", [])[:50],
+                "disclaimer": (result.get("valueReview") or {}).get("disclaimer"),
+            },
             "samples": [{
                 "id": item.get("id"), "layer": item.get("layer"),
                 "kind": item.get("kind"), "format": item.get("format"),
