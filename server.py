@@ -75,8 +75,14 @@ def handler(desk, cloud=None):
                     run = json.loads(receipt.read_text(encoding='utf-8')) if receipt.exists() else None
                 except (OSError, ValueError, TypeError):
                     run = None
+                attempt_file = desk.root / 'data/last_daily_attempt.json'
+                try:
+                    attempt = json.loads(attempt_file.read_text(encoding='utf-8')) if attempt_file.exists() else None
+                except (OSError, ValueError, TypeError):
+                    attempt = None
                 return self.send(200, {'app': 'CCON BA Desk', 'version': VERSION,
-                                       'cloud': bool(cloud), 'lastSuccessfulDailyRun': run})
+                                       'cloud': bool(cloud), 'lastSuccessfulDailyRun': run,
+                                       'lastDailyAttempt': attempt})
             if path in ('/api/daily-report', '/api/daily-report.md'):
                 source = desk.root / 'data' / 'daily_review_report.json'
                 if not source.exists():
