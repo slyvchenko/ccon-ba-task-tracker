@@ -22,3 +22,5 @@ jobs:
           node-version: '24'
       - name: Python, JavaScript and release regression checks
         run: python check_project.py
+      - name: Validate private cloud Compose manifest without credentials
+        run: docker compose --env-file .env.example config --quiet
