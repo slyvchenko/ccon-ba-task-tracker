@@ -9,7 +9,7 @@
 
 ```mermaid
 flowchart TD
-  A["Jira read-only sync<br/>jira_sync.py"] --> B{"JQL: assigned, open,<br/>not blocked, not Epic"}
+  A["Jira read-only sync<br/>jira_sync.py"] --> B{"JQL: assigned, not Done,<br/>not Epic"}
   B -->|included| C["Description + all comments<br/>linked issues + metadata"]
   B -->|excluded| X["Outside query / previously saved archive<br/>NOT automatically completed"]
   C --> D["Configured board active sprint<br/>sprint_priority.py"]
