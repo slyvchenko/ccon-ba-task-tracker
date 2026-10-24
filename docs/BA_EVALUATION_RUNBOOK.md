@@ -159,3 +159,17 @@ They are not human-reviewed evidence that the analysis is correct.
 - [ ] At least 20 genuine cases independently reviewed
 - [ ] Quality targets met or failure cases documented
 - [ ] Read-only smoke test after deployment; manual notes remain unchanged
+
+## v2.16: контрольований Prompt A/B з rollback
+
+Тепер можна зберігати **версію candidate prompt** окремо від затверджених BA-правил. Вона не впливає на щоденну роботу, доки немає незалежної людської перевірки та явного схвалення.
+
+1. Створи локальний `candidate.txt` із короткими додатковими BA-правилами, не включаючи PII, token, raw ZIP чи корпоративний payload. `python prompt_experiments.py stage --candidate-file candidate.txt --rationale "Why this should improve QA"`.
+2. Підготуй заморожений набір **20–30 реальних** своїх Jira-кейсів через `python evaluation.py prepare --count 20` (або 30). Синтетичні CI-дані не дають права схвалювати промпт.
+3. `python prompt_experiments.py generate --variant baseline` та `python prompt_experiments.py generate --variant candidate` викликають **лише явно дозволений корпоративний endpoint**, заморожують два набори результатів у `data/evaluation/`, нічого не записують у Jira/dashboard.
+4. Людина аналізує обидва варіанти з наявним rubric, заповнює `reviews.json`: контекст, джерела, вимоги, питання, QA, рішення, наступна дія; випадки помилкових тверджень і час виправлення.
+5. `python prompt_experiments.py assess` перевіряє фактичні результати оцінювання. Потрібно 20–30 повністю оцінених кейсів, ≥90% good rate кожного критерію, 0 критичних вигадок, ≥40% медіанного часу економії. Це **вимоги**, а не заявлені досягнення.
+6. Після окремого людського рішення `python prompt_experiments.py approve --reviewer "Reviewer" --reason "Detailed reason of approval"`. Лише тоді затверджений addendum потрапляє до наступного model run, з перевіркою SHA256 базових BA-правил і candidate. При зміні базових правил зміну не використовувати без нової оцінки.
+7. `python prompt_experiments.py rollback --reason "Observed regression on a real issue"` вимикає addendum, зберігаючи історію approval та digest. Загальні BA-правила не переписуються ні при approve, ні при rollback.
+
+Заборонено замінювати незалежну людську оцінку auto-score AI або автоматично схвалювати prompt при гарних synthetic CI тестах. Всі файли залишаються у приватному `data/` (Git-ignored).
