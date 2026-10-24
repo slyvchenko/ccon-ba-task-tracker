@@ -1328,3 +1328,36 @@ header {
     display:none;
   }
 }
+
+.delta-strip {
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  background:#edf7fc;
+  color:#21485e;
+  border-bottom:1px solid #c5dfec;
+  padding:9px 28px;
+  font-size:12px;
+  line-height:1.4;
+}
+.delta-strip[hidden] {
+  display:none;
+}
+.delta-strip a {
+  white-space:nowrap;
+  font-weight:650;
+}
+.delta-strip:not([hidden]) ~ .layout {
+  height:calc(100dvh - 164px);
+}
+@media (max-width:800px) {
+  .delta-strip {
+    flex-wrap:wrap;
+    padding:9px 16px;
+  }
+  .delta-strip:not([hidden]) ~ .layout {
+    height:auto;
+    min-height:calc(100dvh - 164px);
+  }
+}
