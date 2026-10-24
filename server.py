@@ -69,11 +69,19 @@ def handler(desk, cloud=None):
             if path == '/api/tasks':
                 return self.send(200, desk.view())
             if re.fullmatch(r'/api/questions/CCON-\d+', path):
-                from ba_questions import task_in_scope, read_questions
+                from question_candidates import questions_with_candidates
+                key = path.rsplit('/', 1)[-1]
+                try:
+                    return self.send(200, questions_with_candidates(desk.root, key))
+                except (ValueError, OSError) as error:
+                    return self.send(400, {'error': str(error)})
+            if re.fullmatch(r'/api/decisions/CCON-\d+', path):
+                from ba_questions import task_in_scope
+                from ba_decisions import read_decisions
                 key = path.rsplit('/', 1)[-1]
                 try:
                     task_in_scope(desk.root, key)
-                    return self.send(200, read_questions(desk.root, key))
+                    return self.send(200, read_decisions(desk.root, key))
                 except (ValueError, OSError) as error:
                     return self.send(400, {'error': str(error)})
             if re.fullmatch(r'/api/evidence/CCON-\d+', path):
@@ -184,6 +192,17 @@ def handler(desk, cloud=None):
                     return self.send(200, open_email_batch(data.get('items')))
                 if path == '/api/import':
                     return self.send(200, desk.import_snapshot())
+                if re.fullmatch(r'/api/decisions/CCON-\d+', path):
+                    from ba_decisions import apply_decision
+                    key = path.rsplit('/', 1)[-1]
+                    result = apply_decision(desk.root, key,
+                                            action=data.get('action'),
+                                            identifier=data.get('id'),
+                                            text=data.get('text', ''),
+                                            source_url=data.get('sourceUrl', ''),
+                                            impact=data.get('impact', ''),
+                                            reason=data.get('reason', ''))
+                    return self.send(200, result)
                 if re.fullmatch(r'/api/questions/CCON-\d+/Q-[a-f0-9]{14}', path):
                     from ba_questions import update_question
                     parts = path.split('/')
