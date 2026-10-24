@@ -83,7 +83,20 @@ def handler(desk, cloud=None):
                     from ba_questions import task_in_scope
                     task_in_scope(desk.root, key)
                     reports, version = evidence_for_issue(desk.root, key)
-                    return self.send(200, {'key': key, 'version': version, 'reports': reports})
+                    from storage import read_json
+                    source = desk.root / 'data/investigations' / (key + '.json')
+                    investigation = None
+                    if source.is_file() and not source.is_symlink() and source.stat().st_size < 4 * 1024 * 1024:
+                        candidate = read_json(source, {})
+                        if isinstance(candidate, dict) and candidate.get('issueKey') == key:
+                            investigation = {
+                                field: candidate.get(field) for field in (
+                                    'causality', 'supplier', 'sampling', 'scope', 'coverage',
+                                    'analyzedCases', 'availableUniqueFlows',
+                                    'requestedErrorCode', 'groups', 'hypotheses', 'questionsUk')
+                            }
+                    return self.send(200, {'key': key, 'version': version,
+                                           'reports': reports, 'investigation': investigation})
                 except (ValueError, OSError) as error:
                     return self.send(400, {'error': str(error)})
             if path == '/api/export':
