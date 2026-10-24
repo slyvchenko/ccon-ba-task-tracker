@@ -182,3 +182,26 @@ safely be publicly exposed or served by GitHub Pages alone.
 
 For Jira Software Cloud sprint REST reference see:
 https://developer.atlassian.com/cloud/jira/software/rest/api-group-board/
+
+## 7. Private one-analyst cloud pilot (v2.6 code)
+
+```mermaid
+flowchart TD
+  Browser["Authorized analyst browser"] --> Caddy["Caddy HTTPS"]
+  Caddy --> Nginx["Nginx auth_request"]
+  Nginx --> OIDC["oauth2-proxy OIDC / company SSO"]
+  Nginx --> APP["Python API: verified email + proxy secret"]
+  APP --> DB[("Persistent pilot SQLite volume")]
+  Schedule["08:00 Warsaw cloud_scheduler.py"] --> Runner["run_daily.py"]
+  Runner --> Jira["Read-only Jira for one explicit assignee"]
+  Runner --> LLM["Approved HTTPS LLM model_analysis.py"]
+  Runner --> QA["Schema / source fingerprint / priority factors"]
+  QA --> DB
+  classDef secure fill:#e8edf5,stroke:#58789e,color:#233f62
+  class Browser,Caddy,Nginx,OIDC,APP secure
+```
+
+Code exists in the PR branch; this topology is **not deployed**
+on a corporate cloud. SQLite is a single-user pilot only.
+Managed PostgreSQL, HA, approved object storage, backup/restore and
+company OIDC credentials remain external prerequisites.

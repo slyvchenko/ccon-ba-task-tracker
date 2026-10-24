@@ -7,7 +7,7 @@ import json
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from storage import write_json
 from app_config import ROOT
 
@@ -35,7 +35,13 @@ def compile_calibration(report, reviews=None, date=None):
         if isinstance(item, dict) and item.get("code") in PATTERNS
     )
     ranked = sorted(counts, key=lambda code: (-counts[code], code))
-    date = date or datetime.now(ZoneInfo("Europe/Warsaw")).date().isoformat()
+    if date is None:
+        try:
+            date = datetime.now(ZoneInfo("Europe/Warsaw")).date().isoformat()
+        except ZoneInfoNotFoundError:
+            # Windows often ships no IANA tzdb; local calendar date is a
+            # best-effort fallback for the human-facing checklist only.
+            date = datetime.now().astimezone().date().isoformat()
     checklist = [{"code": code, "occurrences": counts[code],
                   "instructionUk": PATTERNS[code]} for code in ranked]
     human_warnings = []

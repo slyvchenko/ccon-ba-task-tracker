@@ -85,3 +85,21 @@ board і перевіряє всі сторінки membership; повертає
 Повні потоки, каталог модулів, послідовність task lifecycle і
 цільова приватна хмара: `docs/BA_SYSTEM_FLOW.md`.
 Cloud design gate: `docs/CLOUD_MIGRATION_PLAN.md`.
+
+## v2.6: runnable single-analyst cloud pilot
+
+Private HTTPS SSO edge: `Caddyfile` -> `nginx.conf.template` ->
+`oauth2-proxy` OIDC -> `cloud_security.py` exact allowed user + proxy
+shared secret -> `server.py` cloud mode. The Python backend is not
+published as a Docker host port. Manual state is local to an
+encrypted-host-volume-dependent SQLite pilot, **not** managed Postgres.
+
+`run_daily.py` requires cloud mode, a personal Jira account ID, and
+approved HTTPS model egress before fetching Jira data. `jira_sync.py`
+never relies on the technical API principal's `currentUser()` in cloud
+mode. `model_analysis.py` caches unchanged fingerprint+notes+prompt
+analyses and atomically publishes a complete output set;
+`apply_analysis.py` validates and commits the result locally.
+`cloud_scheduler.py` tracks successful Warsaw calendar dates.
+External Jira/Confluence write operations and auto-send email
+remain absent. See `docs/CLOUD_PILOT_RUNBOOK.md`.

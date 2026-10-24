@@ -18,6 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from datetime import datetime
 from pipeline_lock import pipeline_lock
 from storage import write_json as atomic_json
 from app_config import ROOT, SNAPSHOT_LIMIT, utc_now as now
@@ -26,6 +27,26 @@ from sprint_priority import active_sprint_snapshot, sprint_fields, load_board_id
 JIRA_URL = 'https://aerticket.atlassian.net'
 JQL = ('project = CCON AND statusCategory != Done AND assignee = currentUser() '
        'AND issuetype != Epic ORDER BY priority DESC, updated DESC')
+def query_for_owner(account_id=None, cloud_mode=False):
+    """Restrict every primary issue to the one authorized analyst.
+
+    currentUser() refers to the Jira API principal, NOT necessarily the
+    person using the web UI. Cloud sync therefore requires the analyst's
+    explicit Jira account ID and must fail closed if it is absent.
+    """
+    if account_id is None:
+        account_id = os.environ.get("CCON_JIRA_ASSIGNEE_ACCOUNT_ID")
+    if not account_id:
+        if cloud_mode:
+            raise ValueError("Cloud sync requires CCON_JIRA_ASSIGNEE_ACCOUNT_ID; "
+                             "currentUser() would select the service account's tasks.")
+        return JQL
+    if not isinstance(account_id, str) or len(account_id) > 128 or not re.fullmatch(
+            r"[A-Za-z0-9:_-]+", account_id):
+        raise ValueError("Invalid Jira assignee account ID.")
+    return JQL.replace("assignee = currentUser()", 'assignee = "' + account_id + '"')
+
+
 FIELDS = ('summary,status,priority,updated,description,issuetype,reporter,'
           'assignee,issuelinks,labels,created,attachment,resolution,parent')
 MANUAL_FIELDS = {'manualStatus', 'note', 'active', 'importedAt', 'modifiedAt'}
@@ -164,11 +185,11 @@ def person(value, include_email=False):
     return result
 
 
-def fetch_issues(client):
+def fetch_issues(client, jql=None):
     issues, tokens = {}, set()
     next_token = None
     while True:
-        params = {'jql': JQL, 'maxResults': 100, 'fields': FIELDS}
+        params = {'jql': jql or JQL, 'maxResults': 100, 'fields': FIELDS}
         if next_token:
             params['nextPageToken'] = next_token
         page = client.get('/rest/api/3/search/jql', params)
@@ -322,37 +343,71 @@ def make_task(context, prior, sprint=None):
 
 
 def inspect_departed_issues(root, current_keys, client):
-    """Verify previously visible issues that left the search; never guess Done."""
-    source = Path(root) / "inbox" / "CCON_BA_Snapshot.json"
-    if not source.exists():
-        return []
-    document = json.loads(source.read_text(encoding="utf-8-sig"))
-    old = {item["key"] for item in document.get("tasks", [])}
-    departed = []
-    for key in sorted(old - set(current_keys)):
+    """Retain unreported departures across repeated syncs and live server imports.
+
+    A previous report consumes a departure only if it was generated after
+    its first detection. A later return/re-departure is a new event.
+    """
+    root = Path(root)
+    current_keys = set(current_keys)
+    source = root / "inbox" / "CCON_BA_Snapshot.json"
+    cache = root / "data/jira_context.json"
+    report_file = root / "data/daily_review_report.json"
+    snapshot = json.loads(source.read_text(encoding="utf-8-sig")) if source.exists() else {}
+    previous_cache = json.loads(cache.read_text(encoding="utf-8-sig")) if cache.exists() else {}
+    last_report = json.loads(report_file.read_text(encoding="utf-8-sig")) if report_file.exists() else {}
+    old = {task["key"] for task in snapshot.get("tasks", [])}
+    pending = {item["key"]: item for item in previous_cache.get("leftScope", [])}
+    reported = {item["key"] for item in last_report.get("changes", [])
+                if item.get("category") in ("JIRA_DONE", "LEFT_SCOPE")}
+    try:
+        report_time = datetime.fromisoformat(
+            last_report.get("generatedAt", "").replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        report_time = None
+    for key, item in list(pending.items()):
+        if key in current_keys:
+            del pending[key]
+            continue
+        first = item.get("firstSeenAt")
+        try:
+            first_time = datetime.fromisoformat(first.replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            first_time = None
+        if report_time and first_time and report_time >= first_time and key in reported:
+            del pending[key]
+    observed = old - current_keys
+    keys = sorted((observed | set(pending)) - current_keys)
+    departures = []
+    for key in keys:
+        # If this task was already acknowledged in a prior report, it does
+        # not re-enter the inbox until Jira returns it again.
+        prior = pending.get(key, {})
+        if key not in pending and key not in observed:
+            continue
         try:
             result = client.get("/rest/api/3/issue/" + urllib.parse.quote(key, safe=""),
                                 {"fields": "status,resolution,updated"})
             fields = result.get("fields") or {}
             status = fields.get("status") or {}
             category = (status.get("statusCategory") or {}).get("key") or "unknown"
-            departed.append({
+            item = {
                 "key": key, "jiraStatus": status.get("name", ""),
-                "statusCategory": category,
-                "confirmedDone": category == "done",
+                "statusCategory": category, "confirmedDone": category == "done",
                 "sourceUrl": JIRA_URL + "/browse/" + key,
                 "verification": "VERIFIED",
-            })
+            }
         except ValueError as error:
             if "HTTP 403" not in str(error) and "HTTP 404" not in str(error):
                 raise
-            departed.append({
-                "key": key, "jiraStatus": "",
-                "statusCategory": "unknown", "confirmedDone": False,
-                "sourceUrl": JIRA_URL + "/browse/" + key,
+            item = {
+                "key": key, "jiraStatus": "", "statusCategory": "unknown",
+                "confirmedDone": False, "sourceUrl": JIRA_URL + "/browse/" + key,
                 "verification": "UNAVAILABLE",
-            })
-    return departed
+            }
+        item["firstSeenAt"] = prior.get("firstSeenAt") or now()
+        departures.append(item)
+    return departures
 
 
 def sync(root=ROOT, client=None):
@@ -365,7 +420,8 @@ def _sync(root, client):
     if client is None:
         client = JiraClient(*load_credentials(root))
     prior = read_existing(root)
-    raw_issues = fetch_issues(client)
+    jql = query_for_owner(cloud_mode=os.environ.get('CCON_CLOUD_MODE') == '1')
+    raw_issues = fetch_issues(client, jql)
     left_scope = inspect_departed_issues(root, raw_issues, client)
     # Board-based membership is authoritative; no inference from past sprint labels.
     sprint = active_sprint_snapshot(client, load_board_id(root))
@@ -392,13 +448,13 @@ def _sync(root, client):
     generated = now()
     tasks = [make_task(context, prior.get(key, {}), sprint) for key, context in contexts.items()]
     snapshot = {'generatedAt': generated, 'source': 'Jira API — read-only full context sync',
-                'jql': JQL, 'complete': True, 'retrievedCount': len(tasks),
+                'jql': jql, 'complete': True, 'retrievedCount': len(tasks),
                 'sprint': {key: val for key, val in sprint.items() if key != 'members'},
                 'leftScope': left_scope, 'tasks': tasks}
     # Check size before touching either file, preserving the previous complete import on failure.
     if len(json.dumps(snapshot, ensure_ascii=False, indent=2).encode('utf-8')) > SNAPSHOT_LIMIT:
         raise ValueError('Compact snapshot exceeds 5 MB; no import performed.')
-    cache = {'generatedAt': generated, 'retrievedAt': stamp, 'jql': JQL, 'complete': True,
+    cache = {'generatedAt': generated, 'retrievedAt': stamp, 'jql': jql, 'complete': True,
              'retrievedCount': len(tasks), 'issues': contexts, 'linkedIssues': linked_contexts,
              'unavailableLinkedIssues': inaccessible_links,
              'sprint': {key: val for key, val in sprint.items() if key != 'members'},

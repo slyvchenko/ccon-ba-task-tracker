@@ -1,0 +1,88 @@
+# Private SINGLE-ANALYST pilot. No direct application port is published.
+services:
+  app:
+    build: .
+    command: ["python", "server.py", "--cloud", "--port", "8765", "--data-dir", "/srv/runtime"]
+    restart: unless-stopped
+    expose: ["8765"]
+    volumes: [runtime:/srv/runtime]
+    environment:
+      CCON_CLOUD_MODE: "1"
+      CCON_PUBLIC_ORIGIN: "${CCON_PUBLIC_ORIGIN:?Required HTTPS origin}"
+      CCON_AUTHORIZED_EMAIL: "${CCON_AUTHORIZED_EMAIL:?Required analyst email}"
+      CCON_PROXY_SHARED_SECRET: "${CCON_PROXY_SHARED_SECRET:?Required secret}"
+    networks: [internal]
+
+  worker:
+    build: .
+    command: ["python", "cloud_scheduler.py", "--root", "/srv/runtime"]
+    restart: unless-stopped
+    volumes: [runtime:/srv/runtime]
+    environment:
+      CCON_CLOUD_MODE: "1"
+      CCON_JIRA_ASSIGNEE_ACCOUNT_ID: "${CCON_JIRA_ASSIGNEE_ACCOUNT_ID:?Required personal Jira account id}"
+      CCON_JIRA_BOARD_ID: "${CCON_JIRA_BOARD_ID:?Required board id}"
+      JIRA_EMAIL: "${JIRA_EMAIL:?Required Jira API principal}"
+      JIRA_API_TOKEN: "${JIRA_API_TOKEN:?Required Jira token}"
+      CCON_ALLOW_CORPORATE_AI_UPLOAD: "${CCON_ALLOW_CORPORATE_AI_UPLOAD:-NO}"
+      CCON_LLM_APPROVED_HOST: "${CCON_LLM_APPROVED_HOST:?Required approved host}"
+      CCON_LLM_ENDPOINT: "${CCON_LLM_ENDPOINT:?Required HTTPS endpoint}"
+      CCON_LLM_MODEL: "${CCON_LLM_MODEL:?Required model}"
+      CCON_LLM_API_KEY: "${CCON_LLM_API_KEY:?Required AI key}"
+    networks: [internal]
+    depends_on: [app]
+
+  oauth2proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
+    restart: unless-stopped
+    environment:
+      OAUTH2_PROXY_PROVIDER: oidc
+      OAUTH2_PROXY_OIDC_ISSUER_URL: "${CCON_OIDC_ISSUER:?Required OIDC issuer}"
+      OAUTH2_PROXY_CLIENT_ID: "${CCON_OIDC_CLIENT_ID:?Required OIDC client}"
+      OAUTH2_PROXY_CLIENT_SECRET: "${CCON_OIDC_CLIENT_SECRET:?Required OIDC secret}"
+      OAUTH2_PROXY_COOKIE_SECRET: "${CCON_OIDC_COOKIE_SECRET:?Required cookie secret}"
+      OAUTH2_PROXY_REDIRECT_URL: "${CCON_PUBLIC_ORIGIN:?Required origin}/oauth2/callback"
+      OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
+      OAUTH2_PROXY_UPSTREAMS: "static://200"
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+      OAUTH2_PROXY_SET_XAUTHREQUEST: "true"
+      OAUTH2_PROXY_EMAIL_DOMAINS: "*"
+      OAUTH2_PROXY_COOKIE_SECURE: "true"
+      OAUTH2_PROXY_COOKIE_SAMESITE: "lax"
+      OAUTH2_PROXY_SCOPE: "openid email profile"
+    expose: ["4180"]
+    networks: [internal]
+
+  authgateway:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    environment:
+      CCON_PROXY_SHARED_SECRET: "${CCON_PROXY_SHARED_SECRET:?Required secret}"
+      NGINX_ENVSUBST_FILTER: "CCON_"
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on: [app, oauth2proxy]
+    expose: ["8080"]
+    networks: [internal]
+
+  edge:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      CCON_PUBLIC_HOST: "${CCON_PUBLIC_HOST:?Required DNS host}"
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [authgateway]
+    networks: [internal]
+
+volumes:
+  runtime:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    driver: bridge

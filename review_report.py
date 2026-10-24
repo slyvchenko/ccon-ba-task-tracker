@@ -1,15 +1,38 @@
 """Deterministic daily BA change report and non-blocking quality diagnostics."""
 from collections import Counter
+from urllib.parse import urlparse
 from pathlib import Path
 
 from storage import write_json
 from ba_briefing import audit_briefing
+from app_config import LIMIT
+
+# A delta may contain both a prior and current 5 MiB question set.
+REPORT_LIMIT = 2 * LIMIT + 2 * 1024 * 1024
 
 
 def normalize(value):
     if value is None:
         return ""
     return " ".join(str(value).split()).casefold()
+
+
+def normalize_technical(value):
+    """Collapse formatting but preserve case-sensitive field names and payloads."""
+    return "" if value is None else " ".join(str(value).split())
+
+
+def has_usable_evidence(analysis):
+    """Reject empty or scheme-less evidence before suppressing warnings."""
+    for item in analysis.get("evidence") or []:
+        if not isinstance(item, dict):
+            continue
+        url = item.get("url")
+        if isinstance(url, str):
+            parsed = urlparse(url.strip())
+            if parsed.scheme in ("http", "https") and parsed.netloc:
+                return True
+    return False
 
 
 def questions(analysis):
@@ -22,7 +45,7 @@ def normalize_briefing(briefing):
         return None
     # Preserve semantic ordering of decisions/rules; ignore cosmetic whitespace.
     import json
-    return normalize(json.dumps(briefing, ensure_ascii=False, sort_keys=True))
+    return normalize_technical(json.dumps(briefing, ensure_ascii=False, sort_keys=True))
 
 
 def signature(analysis):
@@ -34,15 +57,15 @@ def signature(analysis):
         "waitingOnUk": normalize(analysis.get("waitingOnUk")),
         "nextActionUk": normalize(analysis.get("nextActionUk")),
         "missingInfo": tuple(sorted(questions(analysis))),
-        "standardDescription": normalize(analysis.get("standardDescription")),
+        "standardDescription": normalize_technical(analysis.get("standardDescription")),
         "briefing": normalize_briefing(analysis.get("briefing")),
-        "emailDraft": tuple(normalize(draft.get(field)) for field in ("to", "subject", "body")),
+        "emailDraft": tuple(normalize_technical(draft.get(field)) for field in ("to", "subject", "body")),
     }
 
 
 def diagnostics(key, analysis):
     signal = analysis.get("signal")
-    proof = analysis.get("evidence") or []
+    proof = has_usable_evidence(analysis)
     findings = []
     def add(code, explanation):
         findings.append({"key": key, "code": code, "messageUk": explanation})
@@ -60,7 +83,7 @@ def diagnostics(key, analysis):
     return findings
 
 
-def build_report(previous_tasks, current_tasks, generated_at, left_scope=None):
+def build_report(previous_tasks, current_tasks, generated_at, left_scope=None, issue_contexts=None):
     """Compare the last imported analysis to today's complete analyzed snapshot.
 
     Removed questions are *not* called answered: only source review can confirm that.
@@ -109,14 +132,20 @@ def build_report(previous_tasks, current_tasks, generated_at, left_scope=None):
             "manualStatus": old.get("manualStatus", "AUTO"),
         })
         warnings.extend(diagnostics(key, analysis))
-        warnings.extend({"key": key, **warning} for warning in audit_briefing(analysis))
+        warnings.extend({"key": key, **warning} for warning in audit_briefing(
+            analysis, (issue_contexts or {}).get(key)))
     # Jira results exclude Done by design; an issue leaving JQL is not automatically Done.
     # Only explicit source verification may set JIRA_DONE.
     current_keys = {item["key"] for item in current_tasks}
     disappeared = {item["key"]: item for item in (left_scope or [])}
-    for key, previous in previous_tasks.items():
-        if key in current_keys:
-            continue
+    # Pending verifications are authoritative even if a running dashboard
+    # already marked the issue inactive. Do not re-report old archived tasks.
+    keys_to_report = set(disappeared)
+    keys_to_report.update(
+        key for key, task in previous_tasks.items()
+        if key not in current_keys and task.get("active") is True)
+    for key in sorted(keys_to_report - current_keys):
+        previous = previous_tasks.get(key) or {"key": key}
         status = disappeared.get(key, {})
         verified = status.get("verification") == "VERIFIED"
         done = verified and status.get("confirmedDone") is True
@@ -156,7 +185,34 @@ def build_report(previous_tasks, current_tasks, generated_at, left_scope=None):
     return result
 
 
+def validate_report(report):
+    """Both report endpoints require the same complete bounded structure."""
+    if not isinstance(report, dict) or not isinstance(report.get("generatedAt"), str):
+        raise ValueError("Report timestamp missing.")
+    summary = report.get("summary")
+    required = ("total", "NEW", "UPDATED", "COMPLETED", "REOPENED", "UNCHANGED",
+                "questionsAdded", "questionsRemoved", "warnings")
+    if not isinstance(summary, dict) or any(type(summary.get(k)) is not int or
+        summary[k] < 0 for k in required):
+        raise ValueError("Report summary is incomplete.")
+    if not isinstance(report.get("changes"), list) or not isinstance(report.get("warnings"), list):
+        raise ValueError("Report changes/warnings are invalid.")
+    for item in report["changes"]:
+        if not isinstance(item, dict) or any(field not in item for field in
+            ("key", "category", "summary", "previousSignal", "signal", "nextActionUk",
+             "questionsAdded", "questionsRemoved", "sourceChanged", "url")):
+            raise ValueError("Report change is incomplete.")
+        if not isinstance(item["questionsAdded"], list) or not isinstance(item["questionsRemoved"], list):
+            raise ValueError("Report question lists are invalid.")
+    for item in report["warnings"]:
+        if not isinstance(item, dict) or any(field not in item for field in
+            ("key", "code", "messageUk")):
+            raise ValueError("Report warning is incomplete.")
+    return report
+
+
 def render_markdown(report):
+    validate_report(report)
     s = report["summary"]
     lines = [
         "# CCON BA Desk: щоденний звіт",
@@ -203,6 +259,7 @@ def render_markdown(report):
 
 
 def write_report(report, root):
+    validate_report(report)
     destination = Path(root) / "data" / "daily_review_report.json"
-    write_json(destination, report)
+    write_json(destination, report, REPORT_LIMIT)
     return destination

@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -22,3 +24,5 @@ jobs:
           node-version: '24'
       - name: Python, JavaScript and release regression checks
         run: python check_project.py
+      - name: Validate private cloud Compose manifest without credentials
+        run: docker compose --env-file .env.example config --quiet

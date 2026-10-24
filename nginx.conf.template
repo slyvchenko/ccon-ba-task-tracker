@@ -1,0 +1,39 @@
+server {
+    listen 8080;
+    server_name _;
+    client_max_body_size 5m;
+    proxy_read_timeout 60s;
+
+    location /oauth2/ {
+        proxy_pass http://oauth2proxy:4180;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header X-Auth-Request-Redirect $request_uri;
+    }
+    location = /oauth2/auth {
+        internal;
+        proxy_pass http://oauth2proxy:4180;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Uri $request_uri;
+        proxy_set_header Content-Length "";
+        proxy_pass_request_body off;
+    }
+    location / {
+        auth_request /oauth2/auth;
+        error_page 401 = @oauth2_signin;
+        auth_request_set $verified_email $upstream_http_x_auth_request_email;
+        proxy_set_header X-CCON-Verified-Email $verified_email;
+        proxy_set_header X-CCON-Proxy-Secret "${CCON_PROXY_SHARED_SECRET}";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Auth-Request-Email "";
+        proxy_pass http://app:8765;
+    }
+    location @oauth2_signin {
+        return 302 https://$http_host/oauth2/start?rd=https://$http_host$request_uri;
+    }
+}

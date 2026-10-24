@@ -108,9 +108,10 @@ def prepare(root=ROOT, count=30):
             "contextFingerprint": issue.get("fingerprint", ""),
             "source": {
                 "description": issue.get("description", ""),
+                "descriptionAdf": issue.get("descriptionAdf"),
                 "jiraStatus": issue.get("jiraStatus", ""),
                 "comments": [
-                    {k: comment.get(k) for k in ("id", "created", "updated", "body", "author")}
+                    {k: comment.get(k) for k in ("id", "created", "updated", "body", "bodyAdf", "author")}
                     for comment in issue.get("comments", [])
                 ],
                 "links": issue.get("links", []),
@@ -121,8 +122,9 @@ def prepare(root=ROOT, count=30):
                 "linkedContexts": [
                     {"key": linked, "summary": linked_issue.get("summary", ""),
                      "description": linked_issue.get("description", ""),
+                      "descriptionAdf": linked_issue.get("descriptionAdf"),
                      "comments": [
-                        {k: comment.get(k) for k in ("id", "created", "updated", "body", "author")}
+                        {k: comment.get(k) for k in ("id", "created", "updated", "body", "bodyAdf", "author")}
                         for comment in linked_issue.get("comments", [])
                      ], "url": linked_issue.get("url", "")}
                     for linked in [relation.get("linkedKey") for relation in issue.get("links", [])]

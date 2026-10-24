@@ -63,8 +63,9 @@ def _apply(path,root):
         task['contextFingerprint']=current['fingerprint']
     snapshot['generatedAt']=stamp
     desk=Desk(root)
-    previous = {item['key']: item for item in desk.view()['tasks'] if item.get('active')}
-    report = build_report(previous, snapshot['tasks'], stamp, context.get('leftScope', []))
+    previous = {item['key']: item for item in desk.view()['tasks']}
+    report = build_report(previous, snapshot['tasks'], stamp,
+                          context.get('leftScope', []), context.get('issues', {}))
     # Preflight nested types before replacing the import file.
     if hasattr(desk,'validate_analysis'):
         for task in snapshot['tasks']:
@@ -91,7 +92,7 @@ def _apply(path,root):
         review_file = root / 'data/evaluation/results.json'
         review_metrics = json.loads(review_file.read_text(encoding='utf-8')) if review_file.exists() else None
         calibration = update_daily(report, root, reviews=review_metrics)
-    except (ValueError, TypeError, OSError) as error:
+    except (ValueError, TypeError, OSError, KeyError) as error:
         calibration_error = str(error)
     print(json.dumps({'analyzed':len(keys), 'message':result['message'],
                       'dailyReport':report_path, 'reportError':report_error,
