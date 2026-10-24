@@ -24,7 +24,7 @@ def review_one(root=ROOT, issue_key=None, model_call=request_analysis):
     if generated.get("generated") != 1 or generated.get("focusIssue") != issue_key:
         raise ValueError("Focused model analysis did not produce exactly one review.")
     # Existing import validates every analysis and preserves all manual edits.
-    apply(Path(generated["path"]), root)
+    apply(Path(generated["path"]), root, focus_issue=issue_key)
     return {"issueKey": issue_key, "generated": 1,
             "preservedOtherAnalyses": generated["reused"],
             "status": "LOCAL_ANALYSIS_IMPORTED_NOT_JIRA_UPDATED"}
