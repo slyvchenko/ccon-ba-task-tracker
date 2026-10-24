@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-24 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #8 (v2.8). **Текущий робочий блок:** PR #9 — Kibana error-series + evidence-based RCA.  
+**Базовий код:** `main` після PR #8 (v2.8). **Поточний релізний кандидат:** PR #9 (v2.9): реалізовано в коді, але live Kibana UAT ще не проводився.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -57,8 +57,8 @@
 | EVD-04 | P0 | IMPLEMENTED (code) | Supplier-only ZIP для листа з перевіреною цілісністю | Лише XML конкретного supplier; не залежить від needsEmail |
 | EVD-05 | P0 | PARTIAL | Автоматизоване завантаження авторизованих CCON ZIP через локальний Codex | Flow plan вже є; реально перевірити браузер→локальний ZIP→ingest→download |
 | EVD-06 | P0 | PARTIAL | Kibana discovery по issue, cconFlowId, error links | Action plan вже є; потрібні локальні браузерні перевірки |
-| EVD-07 | P0 | NEXT | **Kibana error-series: до 30 репрезентативних випадків однієї помилки** | Дедуп flow, групування за error code/stage/method, coverage/gaps, proof links, без змішування supplier |
-| EVD-08 | P0 | NEXT | **RCA evidence matrix: що підтверджено, що лише гіпотеза** | Hypothesis/alternative/counterexample/missing proof; заборона фальшивої definitive cause |
+| EVD-07 | P0 | IMPLEMENTED (code); live UAT pending | **Kibana error-series: до 30 репрезентативних випадків однієї помилки** | Дедуп flow, групування за error code/stage/method, coverage/gaps, proof links, без змішування supplier |
+| EVD-08 | P0 | IMPLEMENTED (code); live UAT pending | **RCA evidence matrix: що підтверджено, що лише гіпотеза** | Hypothesis/alternative/counterexample/missing proof; заборона фальшивої definitive cause |
 | EVD-09 | P1 | PLANNED | Детальний endpoint/method mapping і контракти request/response | Розрізняти REST та supplier native method, status/field/null/repetition |
 | EVD-10 | P1 | PLANNED | Error taxonomy та регресія по кількох supplier версіях | Bad request, provider reject, mapping, timeout, CCON internal із підтвердженим stage |
 | EVD-11 | P1 | PLANNED | Часова послідовність по flow з Kibana timestamps | Причинно-часові залежності, pagination, timezone, retries |
@@ -91,7 +91,7 @@
 
 | Блок | Обсяг (не більше 2–3 функцій) | Гейт |
 |---|---|---|
-| **#9 — ПОТОЧНИЙ** | EVD-07: 1–30 error cases з локально підготовлених flow reports; EVD-08: evidence-based RCA із альтернативами й прогалинами | Synthetic multi-flow regression + flow/supplier isolation + baseline CI. Реальний Kibana UAT окремо |
+| **#9 — CODE COMPLETE; LIVE UAT OPEN** | EVD-07: 1–30 error cases з локально підготовлених flow reports; EVD-08: evidence-based RCA із альтернативами й прогалинами | Synthetic multi-flow regression + flow/supplier isolation + baseline CI. Реальний Kibana UAT окремо |
 | **#10 — NEXT** | EVD-05: локальний browser-to-ZIP handoff із журналом помилок; OUT-03: ready/stale/blocked ZIP в existing card | Реальний авторизований download без cookies/API leaks |
 | **#11** | BA-04 + OUT-04: перевірка зв'язку claim→source; BA-07: QA traceability | Невідтворювана вимога залишається OPEN |
 | **#12** | BA-06: question answer suggestions; BA-10: decision register | Не закривати питання автоматично |
