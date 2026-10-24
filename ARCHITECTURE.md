@@ -63,3 +63,25 @@ Jira contexts in `data/evaluation/`, accepts paired frozen predictions tied
 to those fingerprints, and computes quality metrics exclusively from
 human-completed rubric scores. No user content is uploaded to CI/GitHub.
 Evaluation is not performed automatically on an inaccessible Jira instance.
+
+## v2.5: sprint, change provenance, prompt calibration and cloud plan
+
+`sprint_priority.py` читає статус active з вказаної Jira Software
+board і перевіряє всі сторінки membership; повертає VERIFIED
+або NOT_CONFIGURED, але не здогадується про спринт з тексту задачі.
+Нові `activeSprint` поля впливають на чисті функції сортування
+в `assets/task-rules.mjs`. Робочі завдання активного спринту завжди
+вище відкритого беклогу незалежно від score 0–100.
+
+`jira_sync.py` додатково перевіряє задачі, що залишили JQL,
+за актуальним Jira statusCategory. `review_report.py` показує
+`JIRA_DONE` лише після підтвердження, інакше `LEFT_SCOPE`.
+
+`prompt_calibration.py` оновлює локальний датований checklist
+з фіксованих попереджень коду після успішного `apply_analysis.py`.
+Інструкції з Jira не використовуються як правила. Ядро промптів
+лишається під code review та реальним human A/B evaluation.
+
+Повні потоки, каталог модулів, послідовність task lifecycle і
+цільова приватна хмара: `docs/BA_SYSTEM_FLOW.md`.
+Cloud design gate: `docs/CLOUD_MIGRATION_PLAN.md`.
