@@ -21,7 +21,7 @@ from pathlib import Path
 from pipeline_lock import pipeline_lock
 from storage import write_json as atomic_json
 from app_config import ROOT, SNAPSHOT_LIMIT, utc_now as now
-from sprint_priority import active_sprint_snapshot, sprint_fields
+from sprint_priority import active_sprint_snapshot, sprint_fields, load_board_id
 
 JIRA_URL = 'https://aerticket.atlassian.net'
 JQL = ('project = CCON AND statusCategory != Done AND assignee = currentUser() '
@@ -368,7 +368,7 @@ def _sync(root, client):
     raw_issues = fetch_issues(client)
     left_scope = inspect_departed_issues(root, raw_issues, client)
     # Board-based membership is authoritative; no inference from past sprint labels.
-    sprint = active_sprint_snapshot(client, os.environ.get('CCON_JIRA_BOARD_ID'))
+    sprint = active_sprint_snapshot(client, load_board_id(root))
     stamp = now()
     contexts = {key: normalize_issue(issue, fetch_comments(client, key), stamp)
                 for key, issue in raw_issues.items()}
