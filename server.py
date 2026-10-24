@@ -70,7 +70,13 @@ def handler(desk, cloud=None):
             if path == '/api/export':
                 return self.send(200, desk.view())
             if path == '/api/health':
-                return self.send(200, {'app': 'CCON BA Desk', 'version': VERSION})
+                receipt = desk.root / 'data/last_daily_success.json'
+                try:
+                    run = json.loads(receipt.read_text(encoding='utf-8')) if receipt.exists() else None
+                except (OSError, ValueError, TypeError):
+                    run = None
+                return self.send(200, {'app': 'CCON BA Desk', 'version': VERSION,
+                                       'cloud': bool(cloud), 'lastSuccessfulDailyRun': run})
             if path in ('/api/daily-report', '/api/daily-report.md'):
                 source = desk.root / 'data' / 'daily_review_report.json'
                 if not source.exists():
