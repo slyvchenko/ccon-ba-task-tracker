@@ -50,3 +50,16 @@ HTTP-маршрути `/api/daily-report` і `/api/daily-report.md` показу
 структурований і читабельний вигляд локально. Markdown будується з JSON
 на запит, тож дві копії звіту не розходяться. Ці маршрути не можуть
 змінювати Jira, листи чи ручні рішення. CI працює з синтетичними даними.
+
+## v2.4: source-grounded BA dossier and independent evaluation
+
+`ba_briefing.py` adds optional validated `analysis.briefing` to legacy schema.
+Evidence, decision timeline, conditional rules, QA, source-read audit and
+readiness are displayed by `assets/dashboard.mjs` without any write API.
+`review_report.py` issues non-blocking warnings for incomplete dossiers.
+
+`evaluation.py` is a separate **local-only** workflow: it freezes 20–30 real
+Jira contexts in `data/evaluation/`, accepts paired frozen predictions tied
+to those fingerprints, and computes quality metrics exclusively from
+human-completed rubric scores. No user content is uploaded to CI/GitHub.
+Evaluation is not performed automatically on an inaccessible Jira instance.
