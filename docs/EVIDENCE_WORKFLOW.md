@@ -180,3 +180,9 @@ python error_series.py --issue CCON-123 --error-code AF_REJECTED --max-cases 30
 Інші постачальники і значення PNR/пасажирів не включаються в результат. Для спірного mapping перевіряти raw ZIP тільки у локальному Codex разом із підтвердженим supplier/API контрактом і Jira-вимогою. Серія не доводить причину бага автоматично. Вихідний ZIP для листа як і раніше містить **тільки XML вибраного supplier**.
 
 Для підтвердженої хронології Kibana потрібні подієві timestamps конкретного flow, а не час ZIP. Без них звіт залишається неповним.
+
+## v2.17: health check доказів та обережна класифікація помилок
+
+`python evidence_health.py --issue CCON-123` аналізує лише локальні JSON-manifests конкретної власної Jira-задачі та supplier, що визначений із summary. Порівнює перелік очікуваних `cconFlowId` із підтверджених Jira Kibana-фільтрів із реально підготовленими ZIP. Видає покриття REST+supplier, прогалини REST/supplier/errors/correlation і коротку групу error code → **гіпотеза категорії** (timeout, validation, mapping, rejection, CCON processing або unclassified). Показує повторення коду в **різних локально завантажених** flow, без перебільшення через повторні експорти одного ZIP. Якщо Jira не містить перевірених flow filters, coverage **невідомий**, а не 100%. Відсутня errors папка не означає відсутність помилки.
+
+В наявному згорнутому блоці REST/Supplier/Errors видно health summary, відкриті прогалини та попередні категорії. Цей індикатор **не** визначає винну сторону, causal stage, частоту на продакшені чи точність mapping. Для підтвердженого root cause потрібно перевірити raw REST/supplier request/response, часову послідовність, технічний контракт і контрприклади.
