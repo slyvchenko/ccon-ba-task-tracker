@@ -1,11 +1,13 @@
 import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueTier, priorityLane, rankTasks, filterTasks} from './task-rules.mjs';
 import {createLogsController} from './logs.mjs';
+import {setTaskMode, loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
 
 
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const LOCAL_EDITS_KEY = 'ccon-ba-desk.unsaved-forms.v2';
 let tasks = [], selected = null, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
+let taskMode = 'quick';
 let signature = '', renderedTaskVersion = '', pendingDetail = false;
 const forms = new Map();
 const expandedEmails = new Set();
@@ -188,6 +190,7 @@ function renderDetail() {
   $('detail').innerHTML = `
     <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span><span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
     <h2>${escapeHtml(task.summary)}</h2>
+    <div class="focus-mode-switch"><button class="mode-button" data-mode="quick">Швидко</button><button class="mode-button" data-mode="deep">Глибокий аналіз</button><button class="mode-button" data-mode="email">Лист</button></div>
     <div class="task-badges signal-strip task-meta" aria-label="Статус Jira, листування та очікування"><span class="badge">Jira: ${escapeHtml(task.jiraStatus || 'Не вказано')}</span>${task.activeSprintStatus === "VERIFIED" ? `<span class="badge ${task.activeSprint ? 'tone-blue' : 'tone-gray'}">${escapeHtml(task.activeSprint ? 'Активний спринт: ' + (task.activeSprintNames || []).join(', ') : 'Поза активним спринтом')}</span>` : '<span class="badge tone-amber">Активний спринт не підтверджено</span>'}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${!task.active ? '<span class="badge tone-gray">Відсутня в останньому snapshot · стан збережений</span>' : ''}
       ${effectiveSignal(task) === 'WRITE' && email === true ? '' : `<span class="signal-text text-${email === true ? 'blue' : email === false ? 'green' : 'gray'}">${email === true ? 'Потрібен лист' : email === false ? 'Лист не потрібен' : 'Потребу в листі не визначено'}</span>`}
       <span class="signal-text text-${waiting === true ? 'red' : waiting === false ? 'green' : 'gray'}">${escapeHtml(waiting === true ? manualWaiting ? 'Очікуємо за моїм статусом' : 'Очікуємо: ' + (analysis.waitingOnUk || 'адресат не вказаний') : waiting === false ? 'Не очікуємо' : 'Очікування не визначено')}</span>
@@ -207,10 +210,12 @@ function renderDetail() {
         </section>
         <section class="panel" aria-label="Відсутні дані та підстави оцінки">
           <div class="section-label">Відкриті питання BA</div>
+          <details class="description"><summary>Питання та підтверджені відповіді</summary><div id="questionTracker" class="question-tracker muted">Завантажую…</div></details>
           ${missing.length ? '<ol class="missing-info">' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : `<p class="muted">${analyzed ? 'Аналіз не виявив додаткових питань. Перевір пояснення та джерела нижче.' : 'Поки не визначено — потрібен аналіз контексту.'}</p>`}
+          <div class="section-label">REST / Supplier / Errors</div><div id="evidenceSummary" class="muted">Завантажую докази…</div>
           <div class="section-label">На чому ґрунтується оцінка</div>
           ${sourceMarkup(analysis)}
-          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? '<button id="copyDescription" class="quiet">Скопіювати опис</button>' : ''}</details>
+          <details class="description" open><summary>Готовий опис задачі · коротко й точно</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? '<button id="copyDescription" class="quiet">Скопіювати опис</button>' : ''}</details>
           ${previousAnalysisMarkup(task)}
           ${legacyMarkup(task)}
         </section>
@@ -227,8 +232,8 @@ function renderDetail() {
           <div class="actions state-actions"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Готово → Далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
           <div id="saved" class="save-state" role="status"></div>
         </section>
-        <details id="emailDetails" class="panel email-panel ${email === true || form.emailDraft.body ? 'email-first' : ''}" ${email === true || form.emailDraft.body || form.emailDraft.subject || expandedEmails.has(task.key) ? 'open' : ''}>
-          <summary class="email-summary"><span>${email === false && !form.emailDraft.body && !form.emailDraft.subject ? 'Лист зараз не потрібен' : 'Чернетка листа'}</span><span class="email-toggle">Підготувати лист</span></summary>
+        <details id="emailDetails" class="panel email-panel ${email === true || form.emailDraft.body ? 'email-first' : ''}" open>
+          <summary class="email-summary"><span>${email === false && !form.emailDraft.body && !form.emailDraft.subject ? 'Готова чернетка на випадок потреби' : 'Готовий лист'}</span><span class="email-toggle">Підготувати лист</span></summary>
           <div class="email-fields" role="region" aria-label="Редагована чернетка листа">
           <div class="panel-title email-meta"><span class="badge ${staleGeneratedDraft ? 'tone-amber' : email === true ? 'tone-blue' : 'tone-gray'}">${staleGeneratedDraft ? 'Зі старого аналізу' : savedDraft && stale ? 'Моя збережена чернетка' : email === true ? 'Потрібна' : email === false ? 'За потреби' : 'Потребу ще не визначено'}</span></div>
           <p class="email-intro">${stale && form.emailDraft.body ? savedDraft ? 'Твоя збережена чернетка залишилася без змін. Аналіз застарів: перевір лист за новим контекстом перед використанням.' : 'Новий контекст ще не проаналізовано. Ця чернетка збережена зі старого аналізу або твоїх незбережених правок; перевір її актуальність перед використанням.' : form.emailDraft.body ? 'Перевір адресата й текст. Усі поля можна відредагувати.' : email === false && analyzed ? 'За поточним аналізом лист зараз не потрібен. За потреби можеш підготувати власну чернетку.' : email === true ? 'Потрібен лист, але готової чернетки ще немає. Підготуй текст за конкретними відкритими питаннями задачі.' : 'Потребу в листі ще не визначено. Спочатку перевір контекст і наступну дію.'}</p>
@@ -255,6 +260,13 @@ function renderDetail() {
   $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
   $('loadContext').addEventListener('click', () => loadContext(task.key));
   updateFormStatus();
+  setTaskMode($('detail'), taskMode);
+  $('detail').querySelectorAll('.mode-button').forEach(button => button.addEventListener('click', () => {
+    taskMode = button.dataset.mode;
+    setTaskMode($('detail'), taskMode);
+  }));
+  loadTaskEvidence(task.key, api, escapeHtml, () => selected);
+  loadTaskQuestions(task.key, api, escapeHtml, message, () => selected);
   loadLogs(task.key);
 }
 function captureForm() {
