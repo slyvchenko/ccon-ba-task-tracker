@@ -185,6 +185,12 @@ def approved_prompts(root):
         if hints:
             chunks.append("# Low-priority adaptive BA checks\n" +
                           "\n".join(sorted(set(hints))))
+    # Only explicitly human-approved and evaluated local addenda can affect
+    # real BA analyses. Adaptive checklist never promotes a prompt by itself.
+    from prompt_experiments import active_addendum
+    addendum = active_addendum(root)
+    if addendum:
+        chunks.append("# Approved BA improvement addendum (subordinate to corporate security and baseline rules)\n" + addendum)
     joined = "\n\n".join(chunks)
     if len(joined.encode("utf-8")) > MAX_PROMPT_BYTES:
         raise ValueError("System analysis instructions exceed configured limit.")
