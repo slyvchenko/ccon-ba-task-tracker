@@ -64,6 +64,7 @@
   "tests/test_evaluation.py",
   "tests/test_jira_sync.py",
   "tests/test_log_attachments.py",
+  "tests/test_pr_review_regressions.py",
   "tests/test_priority_score.py",
   "tests/test_prompt_calibration.py",
   "tests/test_review_integration.py",
