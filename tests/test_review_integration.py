@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 from http.server import ThreadingHTTPServer
 from urllib.request import build_opener, ProxyHandler
+from urllib.error import HTTPError
 
 from apply_analysis import apply
 from desk_store import Desk
@@ -74,6 +75,29 @@ class ReportIntegrationTests(unittest.TestCase):
             self.apply_current()
         self.assertEqual(report_path.read_bytes(), original_report)
         self.assertEqual(self.snapshot_file.read_bytes(), original_snapshot)
+
+    def test_newer_snapshot_rejects_stale_report_on_both_endpoints(self):
+        self.apply_current()
+        snapshot = json.loads(self.snapshot_file.read_text())
+        # The Jira watcher can import a newer un-analyzed snapshot before AI
+        # finishes: neither endpoint should present the old result as current.
+        snapshot["generatedAt"] = "2099-10-25T09:00:00+00:00"
+        self.snapshot_file.write_text(json.dumps(snapshot), encoding="utf-8")
+        self.desk.import_snapshot()
+        server = ThreadingHTTPServer(("127.0.0.1", 0), handler(self.desk))
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        opener = build_opener(ProxyHandler({}))
+        url = "http://127.0.0.1:" + str(server.server_port)
+        try:
+            for suffix in ("/api/daily-report", "/api/daily-report.md"):
+                with self.subTest(suffix=suffix), self.assertRaises(HTTPError) as error:
+                    opener.open(url + suffix)
+                self.assertEqual(error.exception.code, 409)
+        finally:
+            server.shutdown()
+            server.server_close()
+            worker.join()
 
     def test_http_report_endpoints_and_missing_report(self):
         server = ThreadingHTTPServer(("127.0.0.1", 0), handler(self.desk))
