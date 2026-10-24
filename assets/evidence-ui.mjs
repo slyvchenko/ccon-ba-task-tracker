@@ -2,6 +2,27 @@
 const stateLabels = {OPEN:'Відкрите', ANSWERED:'Отримано відповідь',
   SUPERSEDED:'Замінене', NOT_APPLICABLE:'Не стосується'};
 
+export function valueMappingMarkup(report, escape) {
+  const comparisons = (report.valueReview?.comparisons || []).slice(0, 20);
+  const rows = [];
+  for (const comparison of comparisons) {
+    const dir = comparison.direction === 'REST_REQUEST_TO_SUPPLIER_REQUEST'
+      ? 'REST request → supplier request' : 'Supplier response → REST response';
+    for (const matched of (comparison.exactValueCandidates || []).slice(0, 15)) {
+      rows.push('<tr><td>' + escape(dir) + '</td><td>' + escape(matched.restField) +
+        '</td><td>' + escape(matched.supplierField) + '</td><td>Однакове значення (кандидат)</td></tr>');
+    }
+    for (const diff of (comparison.sameNamedDifferentValues || []).slice(0, 15)) {
+      rows.push('<tr><td>' + escape(dir) + '</td><td>' + escape(diff.restField) +
+        '</td><td>' + escape(diff.supplierField) + '</td><td>Різні значення, перевірити трансформацію</td></tr>');
+    }
+  }
+  if (!comparisons.length) return '<p class="muted">Немає однозначно спарених REST/supplier обмінів для перевірки значень.</p>';
+  return '<details><summary>Порівняння значень REST ↔ supplier (' + rows.length + ' спостережень)</summary>' +
+    '<p class="muted">Кандидати, не підтверджені mapping rules. Сирі значення не зберігаються.</p>' +
+    '<div class="evidence-scroll"><table><thead><tr><th>Напрям</th><th>REST</th><th>Supplier</th><th>Висновок</th>' +
+    '</tr></thead><tbody>' + rows.join('') + '</tbody></table></div></details>';
+}
 export async function loadTaskEvidence(key, api, escape, current) {
   const destination = document.getElementById('evidenceSummary');
   if (!destination) return;
@@ -30,6 +51,7 @@ export async function loadTaskEvidence(key, api, escape, current) {
         (rows ? '<details><summary>Приклади обмінів (до 30)</summary><div class="evidence-scroll">' +
           '<table><thead><tr><th>#</th><th>Рівень</th><th>Напрям</th><th>Поля</th>' +
           '</tr></thead><tbody>' + rows + '</tbody></table></div></details>' : '') +
+        valueMappingMarkup(report, escape) +
         (questions ? '<div class="section-label">Що уточнити</div><ul>' + questions + '</ul>' : '') +
         '</div>';
     }).join('');
