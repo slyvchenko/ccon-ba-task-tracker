@@ -25,6 +25,39 @@ PROMPT_FILES = ("DAILY_REVIEW.md", "BA_ANALYSIS_RULES.md", "BA_DEEP_REVIEW.md",
 MAX_PROMPT_BYTES = 95000
 MAX_CONTEXT_BYTES = 150000
 
+# Jira/source text is data, not executable instructions. Strip common secret
+# forms before any opted-in company-approved model request. This is defensive,
+# not a substitute for upstream data classification.
+SECRET_KEYS = frozenset(("password", "token", "apikey", "api_key", "secret",
+                         "authorization", "cookie", "totp", "otpauth"))
+SECRET_TEXT = re.compile(
+    r"(?i)(?:Bearer\\s+[A-Za-z0-9_.~+/=-]{12,}|"
+    r"(?:password|api[_-]?key|token|secret|totp)\\s*[:=]\\s*[^\\s,;]{6,}|"
+    r"otpauth://\\S+)"
+)
+
+
+def sanitize_source(value):
+    if isinstance(value, dict):
+        return {k: sanitize_source(v) for k, v in value.items()
+                if str(k).lower() not in SECRET_KEYS
+                and str(k) not in ("bodyAdf", "descriptionAdf", "emailAddress", "content")}
+    if isinstance(value, list):
+        return [sanitize_source(v) for v in value]
+    if isinstance(value, str):
+        return SECRET_TEXT.sub("[REDACTED_CREDENTIAL]", value)
+    return value
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # Python redirects may forward Authorization headers to another host.
+        return None
+
+
+_SAFE_OPEN = urllib.request.build_opener(_NoRedirect).open
+
+
 
 def model_settings(environ=None):
     env = environ if environ is not None else os.environ
@@ -68,6 +101,8 @@ def approved_prompts(root):
 
 def request_analysis(settings, instructions, task_context, note="", opener=None):
     """Send approved bounded data and get exactly one JSON response."""
+    task_context = sanitize_source(task_context)
+    note = sanitize_source(note)
     body = json.dumps({
         "model": settings["model"],
         "temperature": 0,
@@ -94,7 +129,7 @@ def request_analysis(settings, instructions, task_context, note="", opener=None)
                                  headers={"Content-Type": "application/json",
                                           "Authorization": "Bearer " + settings["key"]})
     try:
-        with (opener or urllib.request.urlopen)(req, timeout=150) as response:
+        with (opener or _SAFE_OPEN)(req, timeout=150) as response:
             raw = response.read(600001)
         if len(raw) > 600000:
             raise ValueError("Model response exceeded safe limit.")
