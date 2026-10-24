@@ -28,6 +28,12 @@ def run(root=ROOT, jira_sync=sync, analyze=analyze_all, importer=apply):
         pulled = jira_sync(root)
         analyzed = analyze(root)
         importer(Path(analyzed["path"]), root)
+        # A successful snapshot alone is insufficient: the daily delta report
+        # must belong to this exact completed import.
+        report = json.loads((root / "data/daily_review_report.json").read_text(encoding="utf-8"))
+        snapshot = json.loads((root / "inbox/CCON_BA_Snapshot.json").read_text(encoding="utf-8"))
+        if report.get("generatedAt") != snapshot.get("generatedAt"):
+            raise ValueError("Daily report is missing or stale after import.")
     return {
         "sync": pulled,
         "analysis": analyzed,
