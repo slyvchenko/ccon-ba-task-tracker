@@ -9,6 +9,7 @@ from pipeline_lock import pipeline_lock, replace_file
 from email_rules import normalize_draft
 from supplier_logs import verified_method
 from review_report import build_report, write_report
+from prompt_calibration import update_daily
 
 
 def apply(path,root=ROOT):
@@ -84,9 +85,19 @@ def _apply(path,root):
         report_path = str(write_report(report, root))
     except OSError as error:
         report_error = str(error)
+    calibration_error = None
+    calibration = None
+    try:
+        review_file = root / 'data/evaluation/results.json'
+        review_metrics = json.loads(review_file.read_text(encoding='utf-8')) if review_file.exists() else None
+        calibration = update_daily(report, root, reviews=review_metrics)
+    except (ValueError, TypeError, OSError) as error:
+        calibration_error = str(error)
     print(json.dumps({'analyzed':len(keys), 'message':result['message'],
                       'dailyReport':report_path, 'reportError':report_error,
-                      'changes':report['summary'], 'qualityWarnings':report['warnings']},
+                      'changes':report['summary'], 'qualityWarnings':report['warnings'],
+                      'promptCalibrationDate':calibration['date'] if calibration else None,
+                      'calibrationError':calibration_error},
                      ensure_ascii=False))
 
 if __name__=='__main__':
