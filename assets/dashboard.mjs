@@ -1,4 +1,4 @@
-import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueTier, rankTasks, filterTasks} from './task-rules.mjs';
+import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueTier, priorityLane, rankTasks, filterTasks} from './task-rules.mjs';
 import {createLogsController} from './logs.mjs';
 
 
@@ -67,13 +67,17 @@ function renderList() {
   const mailCount = tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length;
   $('bulkEmail').textContent = `Відкрити всі листи (${mailCount})`;
   $('bulkEmail').disabled = !mailCount || busy;
-  $('count').textContent = `${items.length} у списку · ${current.length} поточних · аналіз ${analyzed}/${current.length}`;
+  const verified = current.filter(task => task.activeSprintStatus === 'VERIFIED').length;
+  const sprintCount = current.filter(task => task.activeSprintStatus === 'VERIFIED' && task.activeSprint).length;
+  $('count').textContent = `${items.length} у списку · ${sprintCount} активний спринт · ${current.length} поточних · аналіз ${analyzed}/${current.length}` +
+    (verified < current.length ? ' · спринт ще не підтверджено' : '');
   let previousGroup = '';
   $('list').innerHTML = items.map((task, index) => {
-    const group = ['Можна просувати зараз', 'Очікуємо', 'Завершені', 'Відсутні в останньому snapshot'][queueTier(task)];
+    const scope = ['Активний спринт · головна черга', 'Поза активним спринтом / не підтверджено', 'Завершені', 'Архів'][priorityLane(task)];
+    const group = scope + ' · ' + ['Можна просувати зараз', 'Очікуємо', 'Завершені', 'Відсутні в останньому snapshot'][queueTier(task)];
     const heading = group !== previousGroup ? `<div class="queue-group">${escapeHtml(group)}</div>` : '';
     previousGroup = group;
-    return `${heading}<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${signalBadge(task)}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`;
+    return `${heading}<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`;
   }).join('') || '<div class="empty">Немає задач за цими фільтрами.</div>';
   $('list').querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => selectTask(button.dataset.key)));
 }
@@ -166,7 +170,7 @@ function renderDetail() {
   $('detail').innerHTML = `
     <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span><span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
     <h2>${escapeHtml(task.summary)}</h2>
-    <div class="task-badges signal-strip task-meta" aria-label="Статус Jira, листування та очікування"><span class="badge">Jira: ${escapeHtml(task.jiraStatus || 'Не вказано')}</span>${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${!task.active ? '<span class="badge tone-gray">Відсутня в останньому snapshot · стан збережений</span>' : ''}
+    <div class="task-badges signal-strip task-meta" aria-label="Статус Jira, листування та очікування"><span class="badge">Jira: ${escapeHtml(task.jiraStatus || 'Не вказано')}</span>${task.activeSprintStatus === "VERIFIED" ? `<span class="badge ${task.activeSprint ? 'tone-blue' : 'tone-gray'}">${escapeHtml(task.activeSprint ? 'Активний спринт: ' + (task.activeSprintNames || []).join(', ') : 'Поза активним спринтом')}</span>` : '<span class="badge tone-amber">Активний спринт не підтверджено</span>'}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${!task.active ? '<span class="badge tone-gray">Відсутня в останньому snapshot · стан збережений</span>' : ''}
       ${effectiveSignal(task) === 'WRITE' && email === true ? '' : `<span class="signal-text text-${email === true ? 'blue' : email === false ? 'green' : 'gray'}">${email === true ? 'Потрібен лист' : email === false ? 'Лист не потрібен' : 'Потребу в листі не визначено'}</span>`}
       <span class="signal-text text-${waiting === true ? 'red' : waiting === false ? 'green' : 'gray'}">${escapeHtml(waiting === true ? manualWaiting ? 'Очікуємо за моїм статусом' : 'Очікуємо: ' + (analysis.waitingOnUk || 'адресат не вказаний') : waiting === false ? 'Не очікуємо' : 'Очікування не визначено')}</span>
     </div>
@@ -477,6 +481,7 @@ document.addEventListener('keydown', event => { if (event.key === 'Escape') { $(
 $('search').addEventListener('input', applyFilters);
 $('filter').addEventListener('change', applyFilters);
 $('signalFilter').addEventListener('change', applyFilters);
+$('sprintFilter').addEventListener('change', applyFilters);
 $('import').addEventListener('click', async () => {
   $('dataMenu').open = false;
   $('import').disabled = true;
@@ -500,5 +505,5 @@ setInterval(() => { load(); loadLogs(); }, 5000);
 
 function rankedTasks() { return rankTasks(tasks); }
 function visibleTasks() {
-  return filterTasks(rankedTasks(), {search: $('search').value.trim().toLocaleLowerCase('uk-UA'), filter: $('filter').value, signal: $('signalFilter').value});
+  return filterTasks(rankedTasks(), {search: $('search').value.trim().toLocaleLowerCase('uk-UA'), filter: $('filter').value, signal: $('signalFilter').value, sprint: $('sprintFilter').value});
 }
