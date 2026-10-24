@@ -47,6 +47,14 @@ status/notes/edited drafts, and Outlook actions can open mailto drafts.
 Neither is an automatic Jira write, but the latter is Windows-specific
 and not suitable as the cloud outbound-mail pattern.
 
+### Important scope boundary
+
+The current JQL filters `assignee = currentUser()`. Active sprint
+membership is fetched from the authoritative board, but **only
+assigned issues already in this JQL** become analyzed task cards.
+A future all-sprint/team queue must be an explicit product decision
+and not inferred from verified membership alone.
+
 ## 2. Module catalogue and ownership
 
 | Module | Current job | Input/output | Cloud or product decision |
