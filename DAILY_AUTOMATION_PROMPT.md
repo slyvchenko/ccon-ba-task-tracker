@@ -21,3 +21,7 @@
 ## Серійне розслідування помилки
 
 Для задач, де Jira/Kibana дає error-log з багатьма випадками, в чинній локальній браузерній сесії перевір до 30 **різних** flow однієї помилки. Збережи повні ZIP локально; виконай existing supplier ZIP ingest/evidence; запусти `error_series.py --issue CCON-ID --error-code ACTUAL_ERROR --max-cases 30`. Передай результат до BA аналізу: error-code, method, stage, coverage, підтверджені спостереження, RCA-гіпотези, альтернативи, counterexamples і відкриті питання. Не називай root cause підтвердженою без source evidence і контракту, не змішуй інших постачальників. Онови питання, але не закривай їх автоматично.
+
+## v2.10: ZIP handoff у локальному Codex
+
+Після Jira sync і перед AI-аналізом запусти `python local_downloads.py prepare`, прочитай `data/browser_handoff.json`. Для кожного cached=false у вже авторизованому браузері відкрий тільки заданий downloadUrl та збережи фактичний ZIP у saveAs відповідного issue і flow. Не передавай cookies, токени чи пароль Python-скриптам. Сторінку логіну/HTML не видавай за ZIP. Після завершення браузерних дій запусти `python local_downloads.py process` та перевір журнал `data/download_handoff_status.json`. Використовуй підготовлені докази лише якщо реально отримані, ZIP для Outlook містить тільки supplier XML. Dashboard не перебудовувати.
