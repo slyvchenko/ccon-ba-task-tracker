@@ -467,6 +467,37 @@ async function load() {
     else if (changed) message(hasUnsaved() ? 'Дані оновлено. Незбережені правки залишаються у твоїх формах.' : '');
   } catch (error) { message('Сервер недоступний. Запусти Start CCON BA.bat. ' + error.message, true); }
 }
+async function loadDeltaStrip() {
+  const target = $('deltaStrip');
+  try {
+    const result = await api('/api/daily-report');
+    if (result.available === false || !result.summary) {
+      target.hidden = true;
+      return;
+    }
+    const summary = result.summary;
+    target.replaceChildren();
+    const label = document.createElement('span');
+    label.textContent = 'Зміни останнього аналізу: ' +
+      'нові ' + (summary.NEW ?? 0) +
+      ' · змінені ' + (summary.UPDATED ?? 0) +
+      ' · Done у Jira ' + (summary.JIRA_DONE ?? 0) +
+      ' · поза JQL ' + (summary.LEFT_SCOPE ?? 0) +
+      ' · +питання ' + (summary.questionsAdded ?? 0) +
+      ' · −питання ' + (summary.questionsRemoved ?? 0) +
+      ' · попереджень ' + (summary.warnings ?? 0);
+    const link = document.createElement('a');
+    link.href = '/api/daily-report.md';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Повний звіт ↗';
+    target.append(label, link);
+    target.hidden = false;
+  } catch {
+    target.hidden = true;
+  }
+}
+
 function applyFilters() {
   if (busy) return;
   renderList();
@@ -501,7 +532,8 @@ $('export').addEventListener('click', async () => {
 });
 window.addEventListener('beforeunload', event => { if (hasUnsaved()) { event.preventDefault(); event.returnValue = ''; } });
 load();
-setInterval(() => { load(); loadLogs(); }, 5000);
+loadDeltaStrip();
+setInterval(() => { load(); loadLogs(); loadDeltaStrip(); }, 5000);
 
 function rankedTasks() { return rankTasks(tasks); }
 function visibleTasks() {
