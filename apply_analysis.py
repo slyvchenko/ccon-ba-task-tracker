@@ -63,7 +63,7 @@ def _apply(path,root):
     snapshot['generatedAt']=stamp
     desk=Desk(root)
     previous = {item['key']: item for item in desk.view()['tasks'] if item.get('active')}
-    report = build_report(previous, snapshot['tasks'], stamp)
+    report = build_report(previous, snapshot['tasks'], stamp, context.get('leftScope', []))
     # Preflight nested types before replacing the import file.
     if hasattr(desk,'validate_analysis'):
         for task in snapshot['tasks']:
