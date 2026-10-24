@@ -45,7 +45,7 @@ class ModelAndSchedulerTests(unittest.TestCase):
         def opener(req, timeout):
             calls.append(req)
             return FakeResponse()
-        with self.assertRaisesRegex(ValueError, "invalid JSON|missing required"):
+        with self.assertRaisesRegex(ValueError, "analysis object|invalid JSON|missing required"):
             request_analysis(settings, "rules", {"issue": {"key": "CCON-1"}},
                              opener=opener)
         self.assertEqual(len(calls), 1)
