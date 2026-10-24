@@ -67,6 +67,24 @@ def handler(desk, cloud=None):
                 return self.send(200, (ROOT / filename).read_bytes(), content_type)
             if path == '/api/tasks':
                 return self.send(200, desk.view())
+            if re.fullmatch(r'/api/questions/CCON-\d+', path):
+                from ba_questions import task_in_scope, read_questions
+                key = path.rsplit('/', 1)[-1]
+                try:
+                    task_in_scope(desk.root, key)
+                    return self.send(200, read_questions(desk.root, key))
+                except (ValueError, OSError) as error:
+                    return self.send(400, {'error': str(error)})
+            if re.fullmatch(r'/api/evidence/CCON-\d+', path):
+                from model_analysis import evidence_for_issue
+                key = path.rsplit('/', 1)[-1]
+                try:
+                    from ba_questions import task_in_scope
+                    task_in_scope(desk.root, key)
+                    reports, version = evidence_for_issue(desk.root, key)
+                    return self.send(200, {'key': key, 'version': version, 'reports': reports})
+                except (ValueError, OSError) as error:
+                    return self.send(400, {'error': str(error)})
             if path == '/api/export':
                 return self.send(200, desk.view())
             if path == '/api/health':
@@ -152,6 +170,15 @@ def handler(desk, cloud=None):
                     return self.send(200, open_email_batch(data.get('items')))
                 if path == '/api/import':
                     return self.send(200, desk.import_snapshot())
+                if re.fullmatch(r'/api/questions/CCON-\d+/Q-[a-f0-9]{14}', path):
+                    from ba_questions import update_question
+                    parts = path.split('/')
+                    answer = update_question(desk.root, parts[3], parts[4],
+                                             status=data.get('status'),
+                                             owner=data.get('owner', ''),
+                                             answer=data.get('answer', ''),
+                                             evidence_url=data.get('evidenceUrl', ''))
+                    return self.send(200, {'question': answer})
                 if path.startswith('/api/tasks/'):
                     desk.save(unquote(path.split('/')[-1]), data)
                     return self.send(200, {'message': 'Saved locally.'})
