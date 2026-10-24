@@ -1361,3 +1361,19 @@ header {
     min-height:calc(100dvh - 164px);
   }
 }
+/* BA Fast Lane: prepare description/email first, drill into evidence only on demand */
+.focus-mode-switch {display:flex;gap:7px;flex-wrap:wrap;margin:12px 0;}
+.mode-button {padding:7px 12px;font-weight:600;font-size:13px;}
+.mode-button.selected {background:var(--brand-blue,#0879b6);color:white;border-color:var(--brand-blue,#0879b6);}
+.question-tracker {display:grid;gap:9px;margin:10px 0;}
+.question-record {border:1px solid var(--line);border-radius:9px;padding:10px;background:#fafcfe;display:grid;gap:9px;}
+.question-record label {display:grid;gap:3px;font-size:12px;}
+.question-record input,.question-record textarea,.question-record select {width:100%;max-width:100%;}
+.evidence-report {border-left:3px solid var(--brand-blue,#0879b6);padding:10px;background:#f3f8fc;margin:9px 0;}
+.evidence-scroll {max-height:240px;overflow:auto;}
+.evidence-scroll table {border-collapse:collapse;width:100%;font-size:12px;}
+.evidence-scroll td,.evidence-scroll th {border:1px solid var(--line);padding:6px;text-align:left;}
+#detail.focus-quick .brief-source-trace,
+#detail.focus-email .brief-source-trace {display:none;}
+#detail.focus-email #emailDetails {border:2px solid var(--brand-blue,#0879b6);}
+#detail.focus-deep #evidenceSummary {font-size:14px;}
