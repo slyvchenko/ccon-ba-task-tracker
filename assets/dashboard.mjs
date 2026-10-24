@@ -5,7 +5,7 @@ import {createLogsController} from './logs.mjs';
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const LOCAL_EDITS_KEY = 'ccon-ba-desk.unsaved-forms.v2';
-let tasks = [], selected = null, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0;
+let tasks = [], selected = null, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
 let signature = '', renderedTaskVersion = '', pendingDetail = false;
 const forms = new Map();
 const expandedEmails = new Set();
@@ -67,6 +67,7 @@ function renderList() {
   const mailCount = tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length;
   $('bulkEmail').textContent = `Відкрити всі листи (${mailCount})`;
   $('bulkEmail').disabled = !mailCount || busy;
+  $('bulkEmail').hidden = cloudMode;
   const verified = current.filter(task => task.activeSprintStatus === 'VERIFIED').length;
   const sprintCount = current.filter(task => task.activeSprintStatus === 'VERIFIED' && task.activeSprint).length;
   $('count').textContent = `${items.length} у списку · ${sprintCount} активний спринт · ${current.length} поточних · аналіз ${analyzed}/${current.length}` +
@@ -142,6 +143,23 @@ function briefingMarkup(briefing, stale) {
   </section>`;
 }
 
+function priorityBreakdown(analysis) {
+  const factors = analysis?.priorityFactors;
+  if (!factors || typeof factors !== 'object') return '';
+  const definitions = [
+    ['businessImpact', 'Бізнес-вплив', 25],
+    ['urgency', 'Терміновість', 25],
+    ['dependencies', 'Залежності', 20],
+    ['baDecision', 'Рішення BA', 20],
+    ['actionability', 'Можливість діяти', 10],
+  ];
+  return `<details class="description">
+    <summary>Пояснювана оцінка: ${escapeHtml(analysis.queueScore)} / 100</summary>
+    <ul class="brief-list">${definitions.map(([name,label,max]) => `<li>${label}: <b>${escapeHtml(factors[name] ?? 'не визначено')} / ${max}</b></li>`).join('')}</ul>
+    <p class="muted">Оцінка визначає порядок у межах групи; активний спринт має окремий вищий пріоритет.</p>
+  </details>`;
+}
+
 function legacyMarkup(task) {
   const parts = [['Попереднє пояснення', task.statusReason], ['Попередня дія', task.nextAction], ['Попередній підготовлений текст', task.readyOutput]].filter(item => item[1]);
   if (!parts.length) return '';
@@ -182,6 +200,7 @@ function renderDetail() {
         <section class="panel analysis-lead" aria-label="Пояснення та наступна дія">
           <div class="section-label">Чому така оцінка</div>
           <p class="pre assessment-reason">${escapeHtml(analysis.reasonUk || (stale ? 'Попередні висновки не підтверджені новим контекстом. Потрібен повторний аналіз.' : 'Щоденний аналіз ще не підготовлений.'))}</p>
+          ${priorityBreakdown(analysis)}
           <div class="section-label">Наступна дія</div>
           <p class="pre next-action" id="nextText">${escapeHtml(analysis.nextActionUk || (stale ? 'Онови аналіз за останнім описом, коментарями й залежностями, перш ніж діяти за старою рекомендацією.' : 'Спочатку перевір контекст задачі та визнач конкретну дію.'))}</p>
           ${analysis.nextActionUk ? '<button id="copyNext" class="quiet">Скопіювати дію</button>' : ''}
@@ -232,6 +251,7 @@ function renderDetail() {
   $('done').addEventListener('click', () => saveTask(true));
   $('discard').addEventListener('click', discardForm);
   $('email').addEventListener('click', openEmail);
+  if (cloudMode) $('email').textContent = 'Зберегти й скопіювати лист';
   $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
   $('loadContext').addEventListener('click', () => loadContext(task.key));
   updateFormStatus();
@@ -323,7 +343,7 @@ async function saveTask(done = false) {
     if (done) selected = visibleTasks().find(item => item.key !== task.key)?.key || null;
     renderList();
     renderDetail();
-    message('Статус, нотатки та чернетку збережено в локальній базі.');
+    message(cloudMode ? 'Статус, нотатки та чернетку збережено у приватній базі.' : 'Статус, нотатки та чернетку збережено в локальній базі.');
     return true;
   } catch (error) {
     message(error.message, true);
@@ -381,6 +401,11 @@ async function openEmail() {
   const draft = structuredClone(forms.get(selected)?.value.emailDraft);
   if (!draft?.subject.trim() || !draft?.body.trim()) { message('Додай тему й текст листа перед відкриттям чернетки.', true); return; }
   if (!await saveTask(false)) return;
+  if (cloudMode) {
+    await copyText('To: ' + draft.to + '\nSubject: ' + draft.subject + '\n\n' + draft.body,
+                   'Чернетку збережено та скопійовано. Надсилання залишається ручним.');
+    return;
+  }
   const recipient = draft.to.replace(/[\r\n]/g, '').trim();
   const mailto = 'mailto:' + encodeURIComponent(recipient).replace(/%40/gi, '@').replace(/%2C/gi, ',') + '?subject=' + encodeURIComponent(draft.subject) + '&body=' + encodeURIComponent(draft.body);
   window.location.href = mailto;
@@ -531,6 +556,20 @@ $('export').addEventListener('click', async () => {
   } catch (error) { message(error.message, true); }
 });
 window.addEventListener('beforeunload', event => { if (hasUnsaved()) { event.preventDefault(); event.returnValue = ''; } });
+async function loadCloudCapabilities() {
+  try {
+    const health = await api('/api/health');
+    cloudMode = health.cloud === true;
+    if (cloudMode) {
+      $('bulkEmail').hidden = true;
+      $('import').hidden = true;
+      if ($('email')) $('email').textContent = 'Зберегти й скопіювати лист';
+      const info = health.lastSuccessfulDailyRun;
+      if (!info) message('Хмарний режим: успішного щоденного аналізу ще немає.');
+    }
+  } catch {}
+}
+loadCloudCapabilities();
 load();
 loadDeltaStrip();
 setInterval(() => { load(); loadLogs(); loadDeltaStrip(); }, 5000);
