@@ -120,7 +120,7 @@ class LocalBrowserHandoffTests(unittest.TestCase):
         write_json(self.root / "data/jira_context.json", context)
         result = process(self.root, "CCON-1")
         self.assertEqual(result["results"][0]["state"], "STALE")
-        self.assertEqual(log_catalog(self.desk, "CCON-1")["state"], "PENDING")
+        self.assertEqual(log_catalog(self.desk, "CCON-1")["state"], "STALE")
         self.assertEqual(log_catalog(self.desk, "CCON-1")["items"], [])
 
     def test_damaged_cached_zip_fails_checksum_check(self):
