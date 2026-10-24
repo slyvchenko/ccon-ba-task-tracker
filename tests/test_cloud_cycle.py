@@ -105,6 +105,10 @@ class ModelAndSchedulerTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 scheduler_iteration(root, datetime(2026, 10, 25, 8, 0, tzinfo=WARSAW), fail)
             self.assertFalse((root / "data/last_daily_success.json").exists())
+            attempt = json.loads((root / "data/last_daily_attempt.json").read_text())
+            self.assertEqual(attempt["status"], "FAILED")
+            self.assertEqual(attempt["errorType"], "ValueError")
+            self.assertNotIn("provider missing", json.dumps(attempt))
 
 
 if __name__ == "__main__":
