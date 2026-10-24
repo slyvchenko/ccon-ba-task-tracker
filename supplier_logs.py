@@ -276,7 +276,7 @@ def ingest(root, key, flow, source_path):
             raise ValueError('Jira context changed; regenerate the log plan.')
         from desk_store import Desk
         task = next((task for task in Desk(root).view()['tasks'] if task['key'] == key), None)
-        if not task or not task['active'] or task['manualStatus'] != 'AUTO':
+        if not task or not task['active'] or task['manualStatus'] == 'DONE' or (plan.get('mode', 'mail') == 'mail' and task['manualStatus'] != 'AUTO'):
             raise ValueError('Task is no longer eligible for automatic log preparation.')
         source_path = Path(source_path)
         if source_path.stat().st_size > MAX_ZIP:
