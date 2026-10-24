@@ -23,6 +23,32 @@ export function valueMappingMarkup(report, escape) {
     '<div class="evidence-scroll"><table><thead><tr><th>Напрям</th><th>REST</th><th>Supplier</th><th>Висновок</th>' +
     '</tr></thead><tbody>' + rows.join('') + '</tbody></table></div></details>';
 }
+export function investigationMarkup(investigation, escape) {
+  if (!investigation || !investigation.analyzedCases) return '';
+  const total = Number(investigation.analyzedCases) || 0;
+  const available = Number(investigation.availableUniqueFlows) || 0;
+  const coverage = investigation.coverage || {};
+  const groups = (investigation.groups || []).slice(0, 12).map(g =>
+    '<li><b>' + escape(g.errorCode) + '</b> · ' + escape(g.supplierMethod) +
+    ': ' + escape(g.caseCount) + ' flow(s)</li>').join('');
+  const guesses = (investigation.hypotheses || []).slice(0, 8).map(h =>
+    '<li><b>Гіпотеза (не підтверджено):</b> ' + escape(h.titleUk) +
+    '. <span>Альтернатива: ' + escape(h.alternativeUk) +
+    '</span> <span>Перевірити: ' + escape(h.verificationUk) + '</span></li>').join('');
+  const questions = (investigation.questionsUk || []).slice(0, 12).map(q =>
+    '<li>' + escape(q) + '</li>').join('');
+  return '<details><summary>Серія помилок · ' + escape(total) + ' із ' + escape(available) +
+    ' локальних flow (RCA не підтверджено)</summary>' +
+    '<p class="muted">Лише локально завантажені ZIP. Вибірка не є статистично репрезентативною. ' +
+    'Причину треба довести повними payload, часовою послідовністю та контрактом.</p>' +
+    '<p>Покриття: REST ' + escape(coverage.withRest || 0) + '/' + escape(total) +
+    ', Supplier ' + escape(coverage.withSupplier || 0) + '/' + escape(total) +
+    ', Errors ' + escape(coverage.withErrorLayer || 0) + '/' + escape(total) + '</p>' +
+    (groups ? '<div class="section-label">Коди й методи</div><ul>' + groups + '</ul>' : '') +
+    (guesses ? '<div class="section-label">Що може бути причиною</div><ul>' + guesses + '</ul>' : '') +
+    (questions ? '<div class="section-label">Недостатні докази / питання</div><ul>' + questions + '</ul>' : '') +
+    '</details>';
+}
 export async function loadTaskEvidence(key, api, escape, current) {
   const destination = document.getElementById('evidenceSummary');
   if (!destination) return;
@@ -54,7 +80,7 @@ export async function loadTaskEvidence(key, api, escape, current) {
         valueMappingMarkup(report, escape) +
         (questions ? '<div class="section-label">Що уточнити</div><ul>' + questions + '</ul>' : '') +
         '</div>';
-    }).join('');
+    }).join('') + investigationMarkup(data.investigation, escape);
   } catch (error) {
     if (current() === key) destination.textContent = 'Evidence недоступні: ' + error.message;
   }
