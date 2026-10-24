@@ -15,7 +15,7 @@ from app_config import ROOT, STATUSES, LIMIT, CONTEXT_LIMIT, VERSION, SIGNALS, u
 from desk_store import Desk
 from mail_service import open_email_batch
 from schema import text_field, validate_draft, validate_analysis
-from review_report import render_markdown
+from review_report import render_markdown, validate_report, REPORT_LIMIT
 from cloud_security import cloud_configuration, authorized
 
 STATIC_FILES = {
@@ -91,11 +91,10 @@ def handler(desk, cloud=None):
                                          'text/plain; charset=utf-8')
                     return self.send(200, {'available': False, 'message': 'No completed review yet.'})
                 try:
-                    if source.stat().st_size > LIMIT:
+                    if source.stat().st_size > REPORT_LIMIT:
                         raise ValueError('Daily report is too large.')
                     report = json.loads(source.read_text(encoding='utf-8-sig'))
-                    if not isinstance(report, dict) or not isinstance(report.get('summary'), dict):
-                        raise ValueError('Invalid daily report.')
+                    validate_report(report)
                     if path.endswith('.md'):
                         return self.send(200, render_markdown(report).encode('utf-8'),
                                          'text/markdown; charset=utf-8')
