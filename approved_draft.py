@@ -31,8 +31,11 @@ def current(root, key):
     text = analysis.get("standardDescription") or ""
     if not isinstance(text, str) or not text.strip() or len(text) > MAX_DESCRIPTION:
         raise ValueError("Valid ready BA description required.")
-    if analysis.get("stale") or (
-            analysis.get("contextFingerprint") != task.get("contextFingerprint")):
+    context = read_json(Path(root) / "data/jira_context.json", {})
+    source = (context.get("issues") or {}).get(key) or {}
+    if (analysis.get("stale") or
+            analysis.get("contextFingerprint") != task.get("contextFingerprint") or
+            task.get("contextFingerprint") != source.get("fingerprint")):
         raise ValueError("Jira task description analysis is stale.")
     return task, text
 
