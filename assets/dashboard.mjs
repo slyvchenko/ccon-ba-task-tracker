@@ -2,6 +2,7 @@ import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalys
 import {createLogsController} from './logs.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
 import {loadTaskDecisions} from './decisions-ui.mjs';
+import {loadTaskActions, loadTaskHistory} from './action-history.mjs';
 
 
 const $ = id => document.getElementById(id);
@@ -226,6 +227,9 @@ function renderDetail() {
           <div class="section-label">Наступна дія</div>
           <p class="pre next-action" id="nextText">${escapeHtml(analysis.nextActionUk || (stale ? 'Онови аналіз за останнім описом, коментарями й залежностями, перш ніж діяти за старою рекомендацією.' : 'Спочатку перевір контекст задачі та визнач конкретну дію.'))}</p>
           ${analysis.nextActionUk ? '<button id="copyNext" class="quiet">Скопіювати дію</button>' : ''}
+          <details class="description"><summary>Мій план дій і наступна перевірка</summary>
+            <div id="actionPlan" class="muted">Завантажую план…</div>
+          </details>
         </section>
         <section class="panel" aria-label="Відсутні дані та підстави оцінки">
           <div class="section-label">Відкриті питання BA</div>
@@ -244,6 +248,9 @@ function renderDetail() {
           ${qualityGateMarkup(analysis.qualityGate)}
           <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? '<button id="copyDescription" class="quiet">Скопіювати опис</button>' : ''}</details>
           ${previousAnalysisMarkup(task)}
+          <details class="description"><summary>Історія змін задачі</summary>
+            <div id="taskHistory" class="muted">Завантажую історію…</div>
+          </details>
           ${legacyMarkup(task)}
         </section>
         <section class="panel" aria-label="Контекст Jira">
@@ -290,6 +297,9 @@ function renderDetail() {
   loadTaskEvidence(task.key, api, escapeHtml, () => selected);
   loadTaskQuestions(task.key, api, escapeHtml, message, () => selected);
   loadTaskDecisions(task.key, api, escapeHtml, message, () => selected);
+  loadTaskActions(task.key, api, escapeHtml, message, () => selected,
+                  analysis.nextActionUk || '');
+  loadTaskHistory(task.key, api, escapeHtml, () => selected);
   loadLogs(task.key);
 }
 function captureForm() {
