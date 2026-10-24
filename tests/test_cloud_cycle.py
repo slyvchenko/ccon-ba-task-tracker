@@ -6,7 +6,9 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from model_analysis import model_settings, request_analysis, approved_prompts, sanitize_source
+from model_analysis import (model_settings, request_analysis, approved_prompts,
+                            sanitize_source, extract_adf_links, sprint_cache_version,
+                            analyze_all)
 from run_daily import run
 from cloud_scheduler import eligible, scheduler_iteration, WARSAW
 
@@ -69,6 +71,104 @@ class ModelAndSchedulerTests(unittest.TestCase):
         self.assertNotIn('descriptionAdf', dump)
         self.assertNotIn('private_attachment', dump)
         self.assertEqual(filtered['issue']['summary'], 'NDC workflow')
+    def test_named_adf_hyperlinks_are_available_without_raw_adf(self):
+        value = {
+            "description": "Read Supplier spec",
+            "descriptionAdf": {"type": "doc", "content": [
+                {"type": "text", "text": "Supplier spec",
+                 "marks": [{"type": "link", "attrs": {
+                     "href": "https://supplier.example/spec?token=SECRET999#fragment"}}]},
+                {"type": "inlineCard", "attrs": {"url": "https://jira.example/browse/CCON-123"}},
+            ]},
+            "comments": [{"body": "Refer to policy",
+                          "bodyAdf": {"type": "doc", "content": [
+                              {"type": "text", "text": "Policy",
+                               "marks": [{"type": "link", "attrs": {
+                                   "href": "https://policy.example/guide"}}]}]}}],
+        }
+        result = sanitize_source(value)
+        encoded = json.dumps(result)
+        self.assertNotIn("descriptionAdf\"", encoded)
+        self.assertNotIn("bodyAdf\"", encoded)
+        self.assertNotIn("SECRET999", encoded)
+        self.assertIn("https://supplier.example/spec", encoded)
+        self.assertIn("https://jira.example/browse/CCON-123", encoded)
+        self.assertIn("https://policy.example/guide", encoded)
+        self.assertEqual(result["descriptionAdfLinks"][0]["label"], "Supplier spec")
+        self.assertEqual(extract_adf_links({"type": "doc", "content": []}), [])
+
+    def test_json_quoted_and_escaped_secrets_are_redacted(self):
+        samples = [
+            '{"password": "superSecret123", "api_key": "veryPrivateKey456"}',
+            r'{\"password\": \"superSecret123\", \"token\": \"anotherPrivate789\"}',
+            "password=unquotedCredential01234",
+        ]
+        for sample in samples:
+            with self.subTest(sample=sample[:15]):
+                safe = sanitize_source({"description": sample})["description"]
+                self.assertNotIn("superSecret123", safe)
+                self.assertNotIn("veryPrivateKey456", safe)
+                self.assertNotIn("anotherPrivate789", safe)
+                self.assertNotIn("unquotedCredential01234", safe)
+                self.assertIn("[REDACTED_CREDENTIAL]", safe)
+
+    def test_sprint_membership_change_invalidates_cached_analysis(self):
+        from desk_store import Desk
+        from test_ba_briefing import briefing
+        import hashlib
+        with tempfile.TemporaryDirectory(prefix="ccon-sprint-cache-") as folder:
+            root = Path(folder)
+            (root / "data").mkdir()
+            (root / "data/jira_context.json").write_text(json.dumps({
+                "complete": True, "issues": {
+                    "CCON-1": {"key": "CCON-1", "fingerprint": "fp1",
+                               "comments": [], "links": []}}}))
+            _, prompt_version = approved_prompts(root)
+            sprint = {"active": True, "verification": "VERIFIED",
+                      "names": ["Sprint A"]}
+            analysis = {
+                "signal": "READY", "queueScore": 0,
+                "priorityFactors": {"businessImpact": 0, "urgency": 0,
+                                    "dependencies": 0, "baDecision": 0,
+                                    "actionability": 0},
+                "briefing": briefing(), "contextFingerprint": "fp1",
+                "promptVersion": prompt_version,
+                "manualNoteVersion": hashlib.sha256(b"").hexdigest()[:16],
+                "sprintVersion": sprint_cache_version({"sprint": sprint}),
+            }
+            snapshot_path = root / "inbox/CCON_BA_Snapshot.json"
+            snapshot_path.parent.mkdir()
+            task = {"key": "CCON-1", "summary": "Sample",
+                    "contextFingerprint": "fp1", "analysis": analysis,
+                    "activeSprint": True, "activeSprintStatus": "VERIFIED",
+                    "activeSprintNames": ["Sprint A"]}
+            document = {"generatedAt": "2026-10-24T09:00:00+00:00",
+                        "complete": True, "tasks": [task]}
+            snapshot_path.write_text(json.dumps(document))
+            Desk(root).import_snapshot()
+            calls = []
+            def fake_model(*args):
+                calls.append(True)
+                return {"signal": "READY", "queueScore": 0,
+                        "priorityFactors": analysis["priorityFactors"].copy(),
+                        "briefing": briefing()}
+            with patch("model_analysis.model_settings", return_value={"model": "fake"}):
+                same = analyze_all(root, fake_model)
+                self.assertEqual(same["reused"], 1)
+                self.assertEqual(len(calls), 0)
+                document["generatedAt"] = "2026-10-24T10:00:00+00:00"
+                task["activeSprint"] = False
+                task["activeSprintNames"] = []
+                snapshot_path.write_text(json.dumps(document))
+                Desk(root).import_snapshot()
+                refreshed = analyze_all(root, fake_model)
+            self.assertEqual(refreshed["generated"], 1)
+            self.assertEqual(len(calls), 1)
+            self.assertNotEqual(
+                analysis["sprintVersion"], sprint_cache_version({
+                    "sprint": {"active": False, "verification": "VERIFIED",
+                               "names": []}}))
+
     def test_cloud_runner_fails_before_network_for_missing_analyst(self):
         with patch.dict(os.environ, {"CCON_CLOUD_MODE": "1",
                                      "CCON_JIRA_ASSIGNEE_ACCOUNT_ID": "",
