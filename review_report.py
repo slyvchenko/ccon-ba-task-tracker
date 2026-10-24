@@ -60,7 +60,7 @@ def diagnostics(key, analysis):
     return findings
 
 
-def build_report(previous_tasks, current_tasks, generated_at):
+def build_report(previous_tasks, current_tasks, generated_at, left_scope=None):
     """Compare the last imported analysis to today's complete analyzed snapshot.
 
     Removed questions are *not* called answered: only source review can confirm that.
@@ -83,13 +83,15 @@ def build_report(previous_tasks, current_tasks, generated_at):
         old_signal, new_signal = before.get("signal"), analysis.get("signal")
         old_fingerprint = before.get("contextFingerprint")
         source_changed = bool(old_fingerprint and old_fingerprint != task.get("contextFingerprint"))
+        sprint_changed = bool(old and
+                              old.get("activeSprint") != task.get("activeSprint"))
         if not before or not old_signal:
             category = "NEW"
         elif old_signal != "DONE" and new_signal == "DONE":
             category = "COMPLETED"
         elif old_signal == "DONE" and new_signal != "DONE":
             category = "REOPENED"
-        elif fields or source_changed:
+        elif fields or source_changed or sprint_changed:
             category = "UPDATED"
         else:
             category = "UNCHANGED"
@@ -99,7 +101,8 @@ def build_report(previous_tasks, current_tasks, generated_at):
         changes.append({
             "key": key, "summary": task.get("summary", ""), "url": task.get("url", ""),
             "category": category, "previousSignal": old_signal, "signal": new_signal,
-            "sourceChanged": source_changed, "changedFields": fields,
+            "sourceChanged": source_changed, "sprintChanged": sprint_changed,
+            "activeSprint": task.get("activeSprint"), "changedFields": fields,
             "questionsAdded": [after_questions[value] for value in added_keys],
             "questionsRemoved": [before_questions[value] for value in removed_keys],
             "nextActionUk": analysis.get("nextActionUk", ""),
@@ -107,12 +110,42 @@ def build_report(previous_tasks, current_tasks, generated_at):
         })
         warnings.extend(diagnostics(key, analysis))
         warnings.extend({"key": key, **warning} for warning in audit_briefing(analysis))
+    # Jira results exclude Done by design; an issue leaving JQL is not automatically Done.
+    # Only explicit source verification may set JIRA_DONE.
+    current_keys = {item["key"] for item in current_tasks}
+    disappeared = {item["key"]: item for item in (left_scope or [])}
+    for key, previous in previous_tasks.items():
+        if key in current_keys:
+            continue
+        status = disappeared.get(key, {})
+        verified = status.get("verification") == "VERIFIED"
+        done = verified and status.get("confirmedDone") is True
+        category = "JIRA_DONE" if done else "LEFT_SCOPE"
+        totals[category] += 1
+        changes.append({
+            "key": key, "summary": previous.get("summary", ""),
+            "url": status.get("sourceUrl") or previous.get("url", ""),
+            "category": category, "previousSignal": (previous.get("analysis") or {}).get("signal"),
+            "signal": None, "sourceChanged": True, "sprintChanged": False,
+            "activeSprint": None, "changedFields": ["jiraStatus"],
+            "questionsAdded": [], "questionsRemoved": [],
+            "nextActionUk": ("Завершення підтверджено категорією Done у Jira." if done else
+                             "Перевірити, чому задача вийшла з Jira JQL; це не доводить Done."),
+            "manualStatus": previous.get("manualStatus", "AUTO"),
+            "jiraStatus": status.get("jiraStatus", ""),
+            "jiraVerification": status.get("verification", "UNVERIFIED"),
+        })
+        if not done:
+            warnings.append({"key": key, "code": "LEFT_SCOPE_NOT_DONE",
+                             "messageUk": "Задача зникла з JQL, але завершення в Jira не підтверджено."})
     result = {
         "generatedAt": generated_at,
         "summary": {
             "total": len(current_tasks),
             **{category: totals[category] for category in
                ("NEW", "UPDATED", "COMPLETED", "REOPENED", "UNCHANGED")},
+            "JIRA_DONE": totals["JIRA_DONE"],
+            "LEFT_SCOPE": totals["LEFT_SCOPE"],
             "questionsAdded": totals["questionsAdded"],
             "questionsRemoved": totals["questionsRemoved"],
             "warnings": len(warnings),
@@ -131,7 +164,7 @@ def render_markdown(report):
         "Дата (UTC): " + report["generatedAt"],
         "",
         f"Задач: {s['total']} | Нових: {s['NEW']} | Оновлених: {s['UPDATED']} | "
-        f"Завершених за аналізом: {s['COMPLETED']} | Повернутих: {s['REOPENED']} | "
+        f"Завершено за аналізом: {s['COMPLETED']} | Підтверджено Done у Jira: {s.get('JIRA_DONE', 0)} | Поза вибіркою: {s.get('LEFT_SCOPE', 0)} | Повернутих: {s['REOPENED']} | "
         f"Без змін: {s['UNCHANGED']}",
         f"Нових питань: {s['questionsAdded']} | Знятих питань: {s['questionsRemoved']} | "
         f"Попереджень перевірки: {s['warnings']}",
@@ -155,6 +188,8 @@ def render_markdown(report):
             lines.append("Jira: " + item["url"])
         if item["sourceChanged"]:
             lines.append("Джерела Jira змінилися від останнього аналізу.")
+        if item.get("sprintChanged"):
+            lines.append("Належність до активного спринту змінилася.")
         for question in item["questionsAdded"]:
             lines.append("+ Нове питання: " + question)
         for question in item["questionsRemoved"]:

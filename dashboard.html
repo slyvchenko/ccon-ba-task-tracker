@@ -8,10 +8,11 @@
 </head>
 <body>
   <header>
-    <div><h1>CCON BA Desk</h1><p class="muted">Черга дій, аналіз задач і видимі чернетки листів</p></div>
+    <div class="brand-lockup"><div class="brand-wordmark" aria-label="AERTiCKET"><span class="brand-aer">AER</span><span class="brand-ticket">TiCKET</span></div><div class="brand-desk"><h1>CCON BA Desk</h1><p class="muted">BA analysis · Sprint priorities · Evidence-based decisions</p></div></div>
     <div class="tools"><button id="bulkEmail">Відкрити всі листи (0)</button><details id="dataMenu" class="data-menu"><summary>Дані <span aria-hidden="true">▾</span></summary><div class="data-menu-items"><button id="import">Імпортувати snapshot</button><button id="export">Експорт мого стану</button><a href="/api/daily-report.md" target="_blank" rel="noopener noreferrer">Щоденний звіт змін і якості</a></div></details></div>
   </header>
   <div id="statusbar" class="statusbar" role="status" aria-live="polite"><span id="message"></span><span id="snapshotInfo"></span></div>
+  <div id="deltaStrip" class="delta-strip" role="status" aria-live="polite" hidden></div>
   <div class="layout">
     <aside aria-label="Черга задач">
       <div class="filters">
@@ -20,6 +21,7 @@
           <select id="filter" aria-label="Список задач"><option value="open">Поточні незавершені</option><option value="all">Усі поточні</option><option value="done">Завершені</option><option value="archive">Відсутні у snapshot</option></select>
           <select id="signalFilter" aria-label="Тип дії"><option value="all">Усі типи дій</option><option value="READY">Можна працювати</option><option value="WRITE">Написати листа</option><option value="DECIDE">Потрібне рішення</option><option value="REVIEW">Проаналізувати</option><option value="WAIT">Очікуємо</option></select>
         </div>
+        <select id="sprintFilter" aria-label="Приналежність до активного спринту"><option value="all">Усі спринти та беклог</option><option value="active">Активний спринт</option><option value="outside">Поза активним спринтом</option><option value="unverified">Спринт не підтверджено</option></select>
         <span id="count" class="muted"></span>
       </div>
       <div id="list"></div>

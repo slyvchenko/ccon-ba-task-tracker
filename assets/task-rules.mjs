@@ -52,20 +52,33 @@ function queueTier(task) {
   return signal === 'WAIT' ? 1 : signal === 'DONE' ? 2 : 0;
 }
 
+function priorityLane(task) {
+  if (!task.active) return 3;
+  if (effectiveSignal(task) === 'DONE') return 2;
+  // A confirmed member of the configured active sprint outranks every backlog item.
+  // Unverified membership is never treated as sprint work.
+  return task.activeSprintStatus === 'VERIFIED' && task.activeSprint === true ? 0 : 1;
+}
+
 function rankTasks(tasks) {
   return tasks.map((task, index) => ({task, index})).sort((left, right) => {
+    const lane = priorityLane(left.task) - priorityLane(right.task);
     const group = queueTier(left.task) - queueTier(right.task);
-    return group || queueScore(right.task) - queueScore(left.task) || Number(right.task.blocking) - Number(left.task.blocking) || left.index - right.index;
+    return lane || group || queueScore(right.task) - queueScore(left.task) || Number(right.task.blocking) - Number(left.task.blocking) || left.index - right.index;
   }).map(item => item.task);
 }
 
-function filterTasks(items, {search = '', filter = 'open', signal = 'all'} = {}) {
+function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprint = 'all'} = {}) {
   return items.filter(task => {
     const done = effectiveSignal(task) === 'DONE';
     const inList = filter === 'archive' ? !task.active : task.active && (filter === 'all' || (filter === 'done' ? done : !done));
     const text = [task.key, task.summary, hasAnalysis(task) ? analysisOf(task).nextActionUk : ''].join(' ').toLocaleLowerCase('uk-UA');
-    return inList && (signal === 'all' || effectiveSignal(task) === signal) && text.includes(search);
+    const sprintMatch = sprint === 'all' ||
+      (sprint === 'active' && task.activeSprintStatus === 'VERIFIED' && task.activeSprint === true) ||
+      (sprint === 'outside' && task.activeSprintStatus === 'VERIFIED' && task.activeSprint === false) ||
+      (sprint === 'unverified' && task.activeSprintStatus !== 'VERIFIED');
+    return inList && sprintMatch && (signal === 'all' || effectiveSignal(task) === signal) && text.includes(search);
   });
 }
 
-export {STATUS_LABELS, STATUS_TONES, MANUAL_SIGNALS, SIGNALS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueScore, queueTier, rankTasks, filterTasks};
+export {STATUS_LABELS, STATUS_TONES, MANUAL_SIGNALS, SIGNALS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueScore, queueTier, priorityLane, rankTasks, filterTasks};

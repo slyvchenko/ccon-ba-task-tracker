@@ -4,6 +4,7 @@ __pycache__/
 *.log
 .python-path
 .jira-credentials.json
+.jira-board.json
 /.pipeline.lock
 data/
 inbox/*.pending

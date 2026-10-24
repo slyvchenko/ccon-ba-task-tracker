@@ -21,11 +21,11 @@ from pathlib import Path
 from pipeline_lock import pipeline_lock
 from storage import write_json as atomic_json
 from app_config import ROOT, SNAPSHOT_LIMIT, utc_now as now
+from sprint_priority import active_sprint_snapshot, sprint_fields, load_board_id
 
 JIRA_URL = 'https://aerticket.atlassian.net'
-JQL = ('project = CCON AND status != Done AND assignee = currentUser() '
-       'AND (labels IS EMPTY OR labels NOT IN ("blocked")) AND issuetype != Epic '
-       'ORDER BY priority DESC, updated DESC')
+JQL = ('project = CCON AND statusCategory != Done AND assignee = currentUser() '
+       'AND issuetype != Epic ORDER BY priority DESC, updated DESC')
 FIELDS = ('summary,status,priority,updated,description,issuetype,reporter,'
           'assignee,issuelinks,labels,created,attachment,resolution,parent')
 MANUAL_FIELDS = {'manualStatus', 'note', 'active', 'importedAt', 'modifiedAt'}
@@ -94,7 +94,7 @@ class JiraClient:
         self.opener = urllib.request.build_opener()
 
     def get(self, path, params=None):
-        if not path.startswith('/rest/api/3/'):
+        if not path.startswith(('/rest/api/3/', '/rest/agile/1.0/', '/rest/software/1.0/')):
             raise ValueError('Unexpected Jira API path.')
         url = JIRA_URL + path
         if params:
@@ -288,13 +288,15 @@ def read_existing(root):
     return existing
 
 
-def make_task(context, prior):
+def make_task(context, prior, sprint=None):
     task = {key: copy.deepcopy(value) for key, value in prior.items() if key not in MANUAL_FIELDS}
     same = prior.get('contextFingerprint') == context['fingerprint']
     has_analysis = bool(prior.get('analysis')) or prior.get('aiStatus') not in (None, '', 'NOT ANALYZED')
     task.update({key: context[key] for key in ('key', 'summary', 'url', 'jiraStatus', 'priority', 'jiraUpdatedAt')})
     task.update(contextFingerprint=context['fingerprint'], contextRetrievedAt=context['retrievedAt'],
                 contextAvailable=True)
+    if sprint is not None:
+        task.update(sprint_fields(sprint, context['key']))
     if same and has_analysis:
         return task
     reason = ('Дані Jira або пов’язаних задач змінилися після попереднього аналізу. '
@@ -319,6 +321,40 @@ def make_task(context, prior):
     return task
 
 
+def inspect_departed_issues(root, current_keys, client):
+    """Verify previously visible issues that left the search; never guess Done."""
+    source = Path(root) / "inbox" / "CCON_BA_Snapshot.json"
+    if not source.exists():
+        return []
+    document = json.loads(source.read_text(encoding="utf-8-sig"))
+    old = {item["key"] for item in document.get("tasks", [])}
+    departed = []
+    for key in sorted(old - set(current_keys)):
+        try:
+            result = client.get("/rest/api/3/issue/" + urllib.parse.quote(key, safe=""),
+                                {"fields": "status,resolution,updated"})
+            fields = result.get("fields") or {}
+            status = fields.get("status") or {}
+            category = (status.get("statusCategory") or {}).get("key") or "unknown"
+            departed.append({
+                "key": key, "jiraStatus": status.get("name", ""),
+                "statusCategory": category,
+                "confirmedDone": category == "done",
+                "sourceUrl": JIRA_URL + "/browse/" + key,
+                "verification": "VERIFIED",
+            })
+        except ValueError as error:
+            if "HTTP 403" not in str(error) and "HTTP 404" not in str(error):
+                raise
+            departed.append({
+                "key": key, "jiraStatus": "",
+                "statusCategory": "unknown", "confirmedDone": False,
+                "sourceUrl": JIRA_URL + "/browse/" + key,
+                "verification": "UNAVAILABLE",
+            })
+    return departed
+
+
 def sync(root=ROOT, client=None):
     with pipeline_lock(root):
         return _sync(root, client)
@@ -330,6 +366,9 @@ def _sync(root, client):
         client = JiraClient(*load_credentials(root))
     prior = read_existing(root)
     raw_issues = fetch_issues(client)
+    left_scope = inspect_departed_issues(root, raw_issues, client)
+    # Board-based membership is authoritative; no inference from past sprint labels.
+    sprint = active_sprint_snapshot(client, load_board_id(root))
     stamp = now()
     contexts = {key: normalize_issue(issue, fetch_comments(client, key), stamp)
                 for key, issue in raw_issues.items()}
@@ -351,21 +390,29 @@ def _sync(root, client):
     for context in all_contexts.values():
         context['fingerprint'] = fingerprint(context, all_contexts)
     generated = now()
-    tasks = [make_task(context, prior.get(key, {})) for key, context in contexts.items()]
+    tasks = [make_task(context, prior.get(key, {}), sprint) for key, context in contexts.items()]
     snapshot = {'generatedAt': generated, 'source': 'Jira API — read-only full context sync',
-                'jql': JQL, 'complete': True, 'retrievedCount': len(tasks), 'tasks': tasks}
+                'jql': JQL, 'complete': True, 'retrievedCount': len(tasks),
+                'sprint': {key: val for key, val in sprint.items() if key != 'members'},
+                'leftScope': left_scope, 'tasks': tasks}
     # Check size before touching either file, preserving the previous complete import on failure.
     if len(json.dumps(snapshot, ensure_ascii=False, indent=2).encode('utf-8')) > SNAPSHOT_LIMIT:
         raise ValueError('Compact snapshot exceeds 5 MB; no import performed.')
     cache = {'generatedAt': generated, 'retrievedAt': stamp, 'jql': JQL, 'complete': True,
              'retrievedCount': len(tasks), 'issues': contexts, 'linkedIssues': linked_contexts,
-             'unavailableLinkedIssues': inaccessible_links}
+             'unavailableLinkedIssues': inaccessible_links,
+             'sprint': {key: val for key, val in sprint.items() if key != 'members'},
+             'leftScope': left_scope}
     atomic_json(root / 'data' / 'jira_context.json', cache)
     atomic_json(root / 'inbox' / 'CCON_BA_Snapshot.json', snapshot, SNAPSHOT_LIMIT)
     return {'retrievedCount': len(tasks), 'linkedIssueCount': len(linked_contexts),
             'commentCount': sum(len(issue['comments']) for issue in all_contexts.values()),
             'awaitingAnalysis': sum(task.get('aiStatus') == 'NOT ANALYZED' for task in tasks),
-            'generatedAt': generated, 'complete': True}
+            'generatedAt': generated, 'complete': True,
+            'activeSprintStatus': sprint['status'],
+            'activeSprintTaskCount': sum(task.get('activeSprint') is True for task in tasks),
+            'leftScopeCount': len(left_scope),
+            'confirmedDoneSinceLastSync': sum(issue['confirmedDone'] for issue in left_scope)}
 
 
 def main():
