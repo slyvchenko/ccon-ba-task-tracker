@@ -6,6 +6,21 @@
 The current 127.0.0.1 + Windows DPAPI + SQLite implementation **is not cloud deployable as-is**.
 Do not expose port 8765 to the internet or deploy private Jira payloads with GitHub Pages.
 
+## Verified repository/security baseline
+
+At audit time `slyvchenko/ccon-ba-task-tracker` has GitHub
+visibility **public**. Source code may remain public with permission,
+but do not commit corporate Jira payloads, company secrets, private
+supplier evidence, customer PNRs or individual employee notes.
+For a company deployment evaluate private repository access,
+history scanning, secret scanning, protected environments and permission
+to host company data. Making the repository private alone does not
+remove already-exposed material from history.
+
+Hosting needs an approved company tenant; **no live cloud URL is
+currently deployed** and GitHub Pages would not meet the security/storage
+requirements.
+
 ## Target product
 
 - Private HTTPS URL after company SSO login, accessible from browser/phone.
