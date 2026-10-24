@@ -102,7 +102,8 @@ class AnalysisIntegrity(unittest.TestCase):
         self.assertEqual(saved['briefing']['readiness'], 'NEEDS_CONFIRMATION')
 
     def test_quality_gate_never_overwrites_manual_draft_or_note(self):
-        self.desk.save('CCON-1', {'note': 'Keep user note',
+        self.desk.save('CCON-1', {'manualStatus': 'IN PROGRESS',
+                                 'note': 'Keep user note',
                                  'emailDraft': {'to': '', 'subject': 'User subject',
                                                 'body': 'Edited by me'}})
         self.run_apply({'CCON-1': self.analysis})
