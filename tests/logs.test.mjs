@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createLogsController} from '../assets/logs.mjs';
+import {createLogsController, zipStatusText} from '../assets/logs.mjs';
 
 function deferred() {
   let resolve;
@@ -38,4 +38,26 @@ test('unchanged attachment metadata does not replace panel content or editor buf
   await controller.loadLogs();
   assert.equal(nodes.emailLogs.innerHTML, 'Existing panel with focus');
   assert.equal(nodes.draftBody.value, 'My unsaved draft');
+});
+
+
+test('ZIP readiness is rendered in the current email block without mode switching', () => {
+  const escape = v => String(v ?? '').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+  const result = zipStatusText({state:'PARTIAL',reasonCode:'SOME_FLOWS_NOT_READY',
+    flows:[{flowId:'11111111-2222-4333-8444-555555555555',state:'READY'},
+           {flowId:'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',state:'PENDING'}]}, escape);
+  assert.match(result, /Частково готово/);
+  assert.match(result, /Готово/);
+  assert.match(result, /Очікує ZIP/);
+  assert.match(result, /Не всі приклади оброблені/);
+});
+test('damaged or sign-in HTML does not display READY, names get escaped', () => {
+  const escape = v => String(v ?? '').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+  const text = zipStatusText({state:'FAILED',
+    reasonCode:'NOT_ZIP_SIGNIN_OR_ERROR_PAGE',
+    flows:[{flowId:'<script>alert(1)',state:'FAILED'}]}, escape);
+  assert.match(text, /Помилка ZIP/);
+  assert.match(text, /сторінку входу/);
+  assert.doesNotMatch(text, /<script>/);
+  assert.match(text, /&lt;script/);
 });
