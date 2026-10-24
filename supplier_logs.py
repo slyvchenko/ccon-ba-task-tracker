@@ -107,7 +107,7 @@ def supplier_hint(summary):
     return None
 
 
-def make_plan(root=ROOT, analysis_file=None, issue_key=None):
+def make_plan(root=ROOT, analysis_file=None, issue_key=None, mode='mail'):
     from desk_store import Desk
     root = Path(root)
     with pipeline_lock(root):
@@ -124,11 +124,19 @@ def make_plan(root=ROOT, analysis_file=None, issue_key=None):
             if issue_key and key != issue_key:
                 continue
             analysis = proposed.get(key, {}) if proposed is not None else task.get('analysis', {})
-            if not task.get('active') or task.get('manualStatus', 'AUTO') != 'AUTO' or analysis.get('signal') != 'WRITE' or analysis.get('needsEmail') is not True:
+            if mode not in ('mail', 'evidence'):
+                raise ValueError('Unknown log plan mode.')
+            if not task.get('active') or task.get('manualStatus') == 'DONE':
+                continue
+            if mode == 'mail' and (task.get('manualStatus', 'AUTO') != 'AUTO' or
+                                   analysis.get('signal') != 'WRITE' or analysis.get('needsEmail') is not True):
                 continue
             issue = context.get('issues', {}).get(key, {})
             fingerprint = issue.get('fingerprint')
-            if not fingerprint or analysis.get('contextFingerprint') != fingerprint or analysis.get('stale'):
+            # An evidence-first plan must work BEFORE AI has classified a
+            # task as WRITE. The legacy mail ZIP plan remains unchanged.
+            if not fingerprint or (mode == 'mail' and
+                    (analysis.get('contextFingerprint') != fingerprint or analysis.get('stale'))):
                 skipped.append({'key': key, 'reason': 'stale_analysis'})
                 continue
             supplier = supplier_hint(task['summary'])
@@ -151,7 +159,7 @@ def make_plan(root=ROOT, analysis_file=None, issue_key=None):
                              'summary': task['summary'], 'supplier': supplier,
                              'contextFingerprint': fingerprint, 'cached': cached,
                              'archiveRelativePath': entry.get('archiveRelativePath') if cached else None})
-        plan = {'generatedAt': now(), 'logsDirectory': str(directory), 'jobs': jobs, 'skipped': skipped}
+        plan = {'generatedAt': now(), 'mode': mode, 'logsDirectory': str(directory), 'jobs': jobs, 'skipped': skipped}
         write_json(root / 'data/log_plan.json', plan)
         return plan
 
@@ -376,13 +384,14 @@ def main():
     plan = commands.add_parser('plan')
     plan.add_argument('--analysis-file', type=Path)
     plan.add_argument('--issue')
+    plan.add_argument('--mode', choices=['mail', 'evidence'], default='mail')
     process = commands.add_parser('ingest')
     process.add_argument('--issue', required=True)
     process.add_argument('--flow-id', required=True)
     process.add_argument('--source', type=Path, required=True)
     args = parser.parse_args()
     try:
-        result = make_plan(args.root, args.analysis_file, args.issue) if args.command == 'plan' else ingest(args.root, args.issue, args.flow_id, args.source)
+        result = make_plan(args.root, args.analysis_file, args.issue, args.mode) if args.command == 'plan' else ingest(args.root, args.issue, args.flow_id, args.source)
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (ValueError, OSError, BadZipFile) as error:
         print('Log preparation failed: ' + str(error), file=sys.stderr)
