@@ -556,7 +556,7 @@ $('export').addEventListener('click', async () => {
   } catch (error) { message(error.message, true); }
 });
 window.addEventListener('beforeunload', event => { if (hasUnsaved()) { event.preventDefault(); event.returnValue = ''; } });
-async function loadCloudCapabilities() {
+let lastCloudAttemptState = null;\nasync function loadCloudCapabilities() {
   try {
     const health = await api('/api/health');
     cloudMode = health.cloud === true;
@@ -565,16 +565,24 @@ async function loadCloudCapabilities() {
       $('import').hidden = true;
       if ($('email')) $('email').textContent = 'Зберегти й скопіювати лист';
       const info = health.lastSuccessfulDailyRun;
-      if (health.lastDailyAttempt?.status === 'FAILED')
-        message('Останній хмарний аналіз завершився помилкою. Перевір статус працівника та джерела.', true);
-      else if (!info) message('Хмарний режим: успішного щоденного аналізу ще немає.');
+      const attempt = health.lastDailyAttempt || null;
+      const state = attempt?.status === 'FAILED'
+        ? 'FAILED:' + (attempt.attemptedAtUtc || '')
+        : attempt?.status === 'SUCCESS' ? 'SUCCESS:' + (attempt.attemptedAtUtc || '') : 'NOT_RUN';
+      if (state !== lastCloudAttemptState) {
+        lastCloudAttemptState = state;
+        if (attempt?.status === 'FAILED')
+          message('Останній хмарний аналіз завершився помилкою. Перевір статус працівника та джерела.', true);
+        else if (!info) message('Хмарний режим: успішного щоденного аналізу ще немає.');
+        else if (attempt?.status === 'SUCCESS') message('Щоденний хмарний аналіз успішно оновлено.');
+      }
     }
   } catch {}
 }
 loadCloudCapabilities();
 load();
 loadDeltaStrip();
-setInterval(() => { load(); loadLogs(); loadDeltaStrip(); }, 5000);
+setInterval(() => { load(); loadLogs(); loadDeltaStrip(); loadCloudCapabilities(); }, 5000);
 
 function rankedTasks() { return rankTasks(tasks); }
 function visibleTasks() {
