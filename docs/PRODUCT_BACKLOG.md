@@ -59,9 +59,9 @@
 | EVD-06 | P0 | PARTIAL | Kibana discovery по issue, cconFlowId, error links | Action plan вже є; потрібні локальні браузерні перевірки |
 | EVD-07 | P0 | IMPLEMENTED (code); live UAT pending | **Kibana error-series: до 30 репрезентативних випадків однієї помилки** | Дедуп flow, групування за error code/stage/method, coverage/gaps, proof links, без змішування supplier |
 | EVD-08 | P0 | IMPLEMENTED (code); live UAT pending | **RCA evidence matrix: що підтверджено, що лише гіпотеза** | Hypothesis/alternative/counterexample/missing proof; заборона фальшивої definitive cause |
-| EVD-09 | P1 | PLANNED | Детальний endpoint/method mapping і контракти request/response | Розрізняти REST та supplier native method, status/field/null/repetition |
+| EVD-09 | P1 | IMPLEMENTED (contract-shape candidates); live contract UAT pending | Детальний endpoint/method mapping і контракти request/response | Розрізняти REST та supplier native method, status/field/null/repetition |
 | EVD-10 | P1 | PLANNED | Error taxonomy та регресія по кількох supplier версіях | Bad request, provider reject, mapping, timeout, CCON internal із підтвердженим stage |
-| EVD-11 | P1 | PLANNED | Часова послідовність по flow з Kibana timestamps | Причинно-часові залежності, pagination, timezone, retries |
+| EVD-11 | P1 | IMPLEMENTED (explicit payload timestamps); Kibana live timeline UAT pending | Часова послідовність по flow з Kibana timestamps | Причинно-часові залежності, pagination, timezone, retries |
 | EVD-12 | P1 | PLANNED | Confidence+coverage dashboard для доказів | Відсоток flows із REST+supplier+errors, причини прогалин |
 | EVD-13 | P1 | PLANNED | Вкладення Jira (PDF/JSON/XML/ZIP), Confluence/wiki | Read-only extraction, не просто метадані; bounded/safe parser, source audit |
 | EVD-14 | P2 | PLANNED | Cross-case anomaly detection: recurring errors across time | Порівняння case signatures з попереднім аналізом без PII |
@@ -95,8 +95,8 @@
 | **#10 — CODE COMPLETE; LIVE BROWSER UAT OPEN** | EVD-05: локальний browser-to-ZIP handoff із журналом помилок; OUT-03: ready/stale/blocked ZIP в existing card | Реальний авторизований download без cookies/API leaks |
 | **#11 — CODE COMPLETE; HUMAN CONTENT UAT OPEN** | BA-04 + OUT-04: перевірка зв'язку claim→source; BA-07: QA traceability | Невідтворювана вимога залишається OPEN |
 | **#12 — CODE COMPLETE; LIVE UAT OPEN** | BA-06: question answer suggestions; BA-10: decision register | Не закривати питання автоматично |
-| **#13 — NEXT** | EVD-09/EVD-11: mapping contracts + flow timeline | Два request paths, retry/timeout, ordering |
-| **#14** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
+| **#13 — CODE COMPLETE; LIVE UAT OPEN** | EVD-09/EVD-11: mapping contracts + flow timeline | Два request paths, retry/timeout, ordering |
+| **#14 — NEXT** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
 | **#15** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
 | **#16** | QA-03/QA-06: real gold-set test + prompt A/B | No critical false claims |
 | **Далі** | EVD-10,12,13,14,15; CORE-09,10; BA-11; UX-02,03; QA-07,08 | Окремо після реальних потреб |

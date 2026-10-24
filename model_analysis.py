@@ -221,6 +221,11 @@ def request_analysis(settings, instructions, task_context, note="", opener=None)
                 "until confirmed against mapping rules and chronology. Never invent "
                 "raw values omitted for privacy. "
 
+                "For flowDiagnostics, distinguish REST operation if unknown, "
+                "native supplier method, null/repeated field shapes, and ordered "
+                "events ONLY when explicitly timestamped in payload. "
+                "A supplier filename sequence or ZIP file order is NOT event chronology. "
+                "Multiple calls to the same method are a retry candidate, not proof. "
                 "When a multi-flow errorSeriesInvestigation is available, use it "
                 "to describe recurrence, coverage, exceptions and missing proof. "
                 "Every root-cause hypothesis remains UNCONFIRMED; never turn "
@@ -294,7 +299,8 @@ def evidence_for_issue(root, key, limit=30):
         fingerprints.append(json.dumps(
             {"source": result.get("sourceSha256"),
              "schemaVersion": result.get("schemaVersion"),
-             "valueReview": result.get("valueReview")},
+             "valueReview": result.get("valueReview"),
+             "flowDiagnostics": result.get("flowDiagnostics")},
             ensure_ascii=False, sort_keys=True))
         # Keep source filenames and correlation IDs bounded; do not move
         # original passenger/customer XML and JSON into a model prompt.
@@ -308,6 +314,20 @@ def evidence_for_issue(root, key, limit=30):
             "questionsUk": (result.get("questionsUk") or [])[:30],
             "warnings": (result.get("warnings") or [])[:30],
             "correlationCandidates": (result.get("correlationCandidates") or [])[:60],
+            "flowDiagnostics": {
+                "entriesExamined": (result.get("flowDiagnostics") or {}).get("entriesExamined"),
+                "timestampedEntries": (result.get("flowDiagnostics") or {}).get("timestampedEntries"),
+                "timeStatus": (result.get("flowDiagnostics") or {}).get("timeStatus"),
+                "contractCandidates": (result.get("flowDiagnostics") or {}).get("contractCandidates", [])[:15],
+                "repeatedMethodCandidates": (result.get("flowDiagnostics") or {}).get("repeatedMethodCandidates", [])[:12],
+                "warnings": (result.get("flowDiagnostics") or {}).get("warnings", [])[:15],
+                "timeline": [{
+                    "layer": item.get("layer"), "direction": item.get("direction"),
+                    "method": item.get("method"), "operation": item.get("operation"),
+                    "eventTimeUtc": item.get("eventTimeUtc"),
+                    "timeEvidence": item.get("timeEvidence"),
+                } for item in (result.get("flowDiagnostics") or {}).get("timeline", [])[:40]],
+            },
             "valueReview": {
                 "comparisons": (result.get("valueReview") or {}).get("comparisons", [])[:30],
                 "issues": (result.get("valueReview") or {}).get("issues", [])[:50],

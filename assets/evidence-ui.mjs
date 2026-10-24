@@ -49,6 +49,39 @@ export function investigationMarkup(investigation, escape) {
     (questions ? '<div class="section-label">Недостатні докази / питання</div><ul>' + questions + '</ul>' : '') +
     '</details>';
 }
+export function flowDiagnosticsMarkup(report, escape) {
+  const flow = report?.flowDiagnostics;
+  if (!flow) return '';
+  const contracts = (flow.contractCandidates || []).slice(0, 12);
+  const methods = contracts.map(item =>
+    '<li><b>' + escape(item.direction === 'REST_REQUEST_TO_SUPPLIER_REQUEST' ?
+      'REST request → Supplier request' : 'Supplier response → REST response') +
+    '</b> · supplier ' + escape(item.supplierMethod || 'Метод невідомий') +
+    ', REST endpoint не підтверджено; точні збіги: ' +
+    escape((item.exactValueCandidates || []).length) + ', різні значення: ' +
+    escape((item.differentValueCandidates || []).length) +
+    ', null REST/supplier: ' + escape((item.restNullFields || []).length) + '/' +
+    escape((item.supplierNullFields || []).length) +
+    ', повторювані поля: ' + escape((item.restRepeatedFields || []).length) + '/' +
+    escape((item.supplierRepeatedFields || []).length) + '</li>').join('');
+  const timeline = (flow.timeline || []).slice(0, 40).map(item =>
+    '<li>' + escape(item.eventTimeUtc || 'Час невідомий') + ' · ' +
+    escape(item.layer) + ' / ' + escape(item.direction) +
+    (item.method ? ' · ' + escape(item.method) : '') +
+    (!item.eventTimeUtc ? ' (порядок не підтверджений)' : '') + '</li>').join('');
+  const repeat = (flow.repeatedMethodCandidates || []).slice(0, 10).map(item =>
+    '<li>' + escape(item.supplierMethod) + ': ' + escape(item.requestCount) +
+    ' запити, можливий повторний виклик (не доведений retry)</li>').join('');
+  return '<details><summary>Контракт і хронологія · ' +
+    escape(flow.timestampedEntries || 0) + '/' + escape(flow.entriesExamined || 0) +
+    ' подій з достовірною часовою міткою</summary>' +
+    '<p class="muted">Відповідності лише кандидатні. Порядок файлів і sequence не доводять час, причину чи retry.</p>' +
+    (methods ? '<div class="section-label">REST ↔ Supplier</div><ul>' + methods + '</ul>' : '') +
+    (timeline ? '<div class="section-label">Події</div><ol>' + timeline + '</ol>' : '') +
+    (repeat ? '<div class="section-label">Повторні виклики</div><ul>' + repeat + '</ul>' : '') +
+    '</details>';
+}
+
 export async function loadTaskEvidence(key, api, escape, current) {
   const destination = document.getElementById('evidenceSummary');
   if (!destination) return;
@@ -78,6 +111,7 @@ export async function loadTaskEvidence(key, api, escape, current) {
           '<table><thead><tr><th>#</th><th>Рівень</th><th>Напрям</th><th>Поля</th>' +
           '</tr></thead><tbody>' + rows + '</tbody></table></div></details>' : '') +
         valueMappingMarkup(report, escape) +
+        flowDiagnosticsMarkup(report, escape) +
         (questions ? '<div class="section-label">Що уточнити</div><ul>' + questions + '</ul>' : '') +
         '</div>';
     }).join('') + investigationMarkup(data.investigation, escape);
