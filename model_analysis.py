@@ -384,6 +384,21 @@ def analyze_all(root=ROOT, model_call=request_analysis, issue_key=None):
     if current_keys != {t["key"] for t in snapshot["tasks"]}:
         raise ValueError("Jira snapshot and source task sets differ.")
     existing = {task["key"]: task for task in Desk(root).view()["tasks"]}
+    if issue_key is not None:
+        # Preflight BEFORE even one model call. Never consume model tokens or
+        # partially generate a focused report that cannot be imported safely.
+        for task in snapshot["tasks"]:
+            key = task["key"]
+            if key == issue_key:
+                continue
+            fingerprint = context["issues"][key]["fingerprint"]
+            previous = (existing.get(key) or {}).get("analysis") or {}
+            if (not isinstance(previous, dict) or
+                    previous.get("contextFingerprint") != fingerprint or
+                    previous.get("stale") or
+                    task.get("contextFingerprint") != fingerprint):
+                raise ValueError("Other tasks have stale/missing analyses; run the full daily review first.")
+            validate_analysis(previous)
     analyses = {}
     generated = 0
     reused = 0
