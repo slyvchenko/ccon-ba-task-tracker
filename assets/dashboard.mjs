@@ -565,7 +565,9 @@ async function loadCloudCapabilities() {
       $('import').hidden = true;
       if ($('email')) $('email').textContent = 'Зберегти й скопіювати лист';
       const info = health.lastSuccessfulDailyRun;
-      if (!info) message('Хмарний режим: успішного щоденного аналізу ще немає.');
+      if (health.lastDailyAttempt?.status === 'FAILED')
+        message('Останній хмарний аналіз завершився помилкою. Перевір статус працівника та джерела.', true);
+      else if (!info) message('Хмарний режим: успішного щоденного аналізу ще немає.');
     }
   } catch {}
 }
