@@ -221,6 +221,11 @@ def request_analysis(settings, instructions, task_context, note="", opener=None)
                 "until confirmed against mapping rules and chronology. Never invent "
                 "raw values omitted for privacy. "
 
+                "When a multi-flow errorSeriesInvestigation is available, use it "
+                "to describe recurrence, coverage, exceptions and missing proof. "
+                "Every root-cause hypothesis remains UNCONFIRMED; never turn "
+                "an observation that the provider returned an error into a "
+                "conclusion that the provider caused the bug. "
                 "When ZIP evidence is missing say so explicitly and propose the "
                 "specific Kibana search / additional sample required. "
                 "Return the complete required analysis, including briefing and "
@@ -311,7 +316,7 @@ def evidence_for_issue(root, key, limit=30):
     return reports, signature
 
 
-def task_source(context, task, notes, evidence_reports=None):
+def task_source(context, task, notes, evidence_reports=None, investigation=None):
     key = task["key"]
     issue = context["issues"][key]
     related = {ref["linkedKey"]: context.get("issues", {}).get(ref["linkedKey"]) or
@@ -323,6 +328,7 @@ def task_source(context, task, notes, evidence_reports=None):
         "unavailableLinkedIssues": [v for v in context.get("unavailableLinkedIssues", [])
                                    if v.get("key") in related],
         "evidenceReports": evidence_reports or [],
+        "errorSeriesInvestigation": investigation or {},
         "sprint": {"active": task.get("activeSprint"),
                    "verification": task.get("activeSprintStatus"),
                    "names": task.get("activeSprintNames", [])},
@@ -353,7 +359,26 @@ def analyze_all(root=ROOT, model_call=request_analysis):
         notes = prev.get("note") or ""
         note_hash = hashlib.sha256(notes.encode("utf-8")).hexdigest()[:16]
         log_reports, evidence_version = evidence_for_issue(root, key)
-        source = task_source(context, task, notes, log_reports)
+        investigation = {}
+        if log_reports:
+            from error_series import build_investigation
+            try:
+                series = build_investigation(root, key)
+                investigation = {
+                    "scope": series["scope"],
+                    "causality": series["causality"],
+                    "sampling": series["sampling"],
+                    "coverage": series["coverage"],
+                    "analyzedCases": series["analyzedCases"],
+                    "availableUniqueFlows": series["availableUniqueFlows"],
+                    "groups": series["groups"][:15],
+                    "hypotheses": series["hypotheses"][:15],
+                    "questionsUk": series["questionsUk"][:12],
+                }
+            except ValueError:
+                investigation = {"causality": "INSUFFICIENT_SOURCE",
+                                 "questionsUk": ["Серійний аналіз не може бути перевірений за поточними evidence manifests."]}
+        source = task_source(context, task, notes, log_reports, investigation)
         sprint_version = sprint_cache_version(source)
         if (previous.get("contextFingerprint") == fingerprint and
                 previous.get("evidenceVersion", "none") == evidence_version and

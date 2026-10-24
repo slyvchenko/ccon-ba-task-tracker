@@ -142,3 +142,19 @@ After downloading the authorized CCON full ZIP, use the `supplier_logs.py ingest
 The downloadable ZIP in the existing dashboard is the **original supplier-only result**: XML files belonging to the one selected supplier, and never REST/error/other-supplier folders. `plan --mode evidence` permits packaging for active tasks even when no email is needed, including a manually completed item that still belongs to the current Jira scope.
 
 Every analysis should produce a concise developer-ready English `standardDescription` when technically possible, and an optional editable `emailDraft` irrespective of `needsEmail`. A source-uncertain fallback draft must not pretend a supplier method or attachment has been verified.
+
+## v2.9: серійний Kibana error investigation (офлайн-етап локального Codex)
+
+**Цей скрипт сам не відкриває браузер/Kibana, не виконує HTTP-запит і не підтверджує live availability.** Локальний Codex відкриває лише дозволені Jira/Kibana URLs у вже авторизованому браузері, обирає до 30 *різних* flow за конкретним кодом помилки, завантажує повні ZIP через CCON і готує `data/evidence/CCON-123/<flow>.json` за допомогою `supplier_logs.py ingest` або `layered_evidence.py`.
+
+Далі запуск:
+
+```bash
+python error_series.py --issue CCON-123 --error-code AF_REJECTED --max-cases 30
+```
+
+Вихід **`data/investigations/CCON-123.json`**: кількість унікальних flows, покриття REST/supplier/errors, групи code+method, зв'язки із source flow IDs, candidate mismatches, можливі причини та альтернативи, конкретні докази, яких бракує. Повторні експорти одного flow не збільшують кількість випадків. Інший supplier чи інша Jira-задача не потрапляють у дослідження. Якщо в error-search є 100+ випадків, звіт не вдає, що 30 детермінованих flows є репрезентативною вибіркою.
+
+Статус **`ROOT_CAUSE_UNCONFIRMED`** зберігається завжди, доки немає окремого експертного підтвердження з raw REST/Supplier RQ/RS, mapping/spec та контрприкладами. Помилка в supplier response **не** доводить, що supplier винен: CCON міг надіслати некоректний RQ. Усі висновки подаються як гіпотези з альтернативою й планом перевірки.
+
+Серійне дослідження входить у наступний model-based BA аналіз через `errorSeriesInvestigation` (скорочений safety-bounded snapshot) і в існуючу згорнуту секцію доказів у dashboard. Всі ZIP та персональні дані залишаються тільки локально.
