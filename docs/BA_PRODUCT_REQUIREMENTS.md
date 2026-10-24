@@ -46,8 +46,7 @@ The human analyst is responsible for deciding whether to use generated outputs.
   modify Jira status and must not be presented as confirmed Jira Done.
 - **Confirmed Jira Done:** a task left in-scope JQL and a fresh read-only
   get-issue request verified `statusCategory=done`.
-- **Left scope:** issue no longer in JQL because of reassignment, blocking,
-  deletion, visibility, completion uncertainty or other reason; **not**
+- **Left scope:** issue no longer in JQL because of reassignment, deletion, visibility, completion uncertainty or other reason; **not**
   counted as Jira Done without verification.
 - **New/removed BA questions:** text deltas, with removed never automatically
   labeled "answered".
