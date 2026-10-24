@@ -113,6 +113,27 @@ class LogPipelineTests(unittest.TestCase):
         self.assertNotEqual(first['archiveRelativePath'], third['archiveRelativePath'])
         self.assertTrue(archive.exists())
 
+    def test_evidence_mode_prepares_supplier_only_zip_even_without_email(self):
+        self.desk.save('CCON-1', {'manualStatus': 'DONE', 'note': 'No new email'})
+        # Evidence preparation is independent of generated WRITE or manual
+        # email status. Users may still need to download a supplier ZIP.
+        plan = make_plan(self.root, mode='evidence')
+        self.assertEqual(len(plan['jobs']), 1)
+        archive = ingest(self.root, 'CCON-1', FLOW, self.source)
+        self.assertTrue(archive['evidencePrepared'])
+        path = logs_root(self.root) / archive['archiveRelativePath']
+        with ZipFile(path) as output:
+            names = output.namelist()
+            self.assertTrue(names)
+            self.assertTrue(all(name.endswith('.xml') for name in names))
+            self.assertFalse(any('/rest/' in name or '/errors/' in name
+                                 or '/biletBank/' in name for name in names))
+        report = read_json(self.root / 'data/evidence/CCON-1' / (FLOW + '.json'))
+        self.assertEqual(report['counts']['supplier'], 4)
+        self.assertEqual(report['counts']['rest'], 1)
+        self.assertEqual(report['issueKey'], 'CCON-1')
+        self.assertIn('valueReview', report)
+
     def test_manual_decisions_and_stale_analysis_skip_downloads(self):
         self.desk.save('CCON-1', {'manualStatus': 'DONE', 'note': 'keep'})
         self.assertFalse(make_plan(self.root)['jobs'])
