@@ -105,7 +105,14 @@ def process(root=ROOT, issue=None, strict=False):
         if not fingerprint or fingerprint != job["contextFingerprint"]:
             state, reason = "STALE", "JIRA_CONTEXT_CHANGED"
         elif job.get("cached"):
-            state, reason = "READY", "VERIFIED_SUPPLIER_ARCHIVE_CACHED"
+            # A cached entry is not proof that archive bytes remain intact.
+            try:
+                from desk_store import Desk
+                from log_attachments import download_archive
+                download_archive(Desk(root), key, flow)
+                state, reason = "READY", "VERIFIED_SUPPLIER_ARCHIVE_CACHED"
+            except (ValueError, OSError, KeyError, TypeError):
+                state, reason = "FAILED", "ARCHIVE_INTEGRITY_FAILED"
         else:
             path = download_path(root, key, flow)
             if not path.is_file() or path.is_symlink():
