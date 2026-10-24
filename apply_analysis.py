@@ -10,6 +10,7 @@ from email_rules import normalize_draft
 from supplier_logs import verified_method
 from review_report import build_report, write_report
 from prompt_calibration import update_daily
+from ba_questions import sync_questions, all_evidence
 
 
 def apply(path,root=ROOT):
@@ -86,6 +87,15 @@ def _apply(path,root):
         report_path = str(write_report(report, root))
     except OSError as error:
         report_error = str(error)
+    question_errors = []
+    for task in snapshot['tasks']:
+        try:
+            sync_questions(root, task['key'], task['analysis'],
+                           all_evidence(root, task['key']))
+        except (ValueError, OSError, TypeError, KeyError) as error:
+            # Do not claim a failed local questions update was successful,
+            # but never undo an already-committed snapshot.
+            question_errors.append({'key': task['key'], 'error': str(error)[:180]})
     calibration_error = None
     calibration = None
     try:
@@ -98,7 +108,8 @@ def _apply(path,root):
                       'dailyReport':report_path, 'reportError':report_error,
                       'changes':report['summary'], 'qualityWarnings':report['warnings'],
                       'promptCalibrationDate':calibration['date'] if calibration else None,
-                      'calibrationError':calibration_error},
+                      'calibrationError':calibration_error,
+                      'questionErrors':question_errors},
                      ensure_ascii=False))
 
 if __name__=='__main__':

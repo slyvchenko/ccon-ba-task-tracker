@@ -1,5 +1,6 @@
 import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueTier, priorityLane, rankTasks, filterTasks} from './task-rules.mjs';
 import {createLogsController} from './logs.mjs';
+import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
 
 
 const $ = id => document.getElementById(id);
@@ -207,7 +208,13 @@ function renderDetail() {
         </section>
         <section class="panel" aria-label="Відсутні дані та підстави оцінки">
           <div class="section-label">Відкриті питання BA</div>
+          <details class="description"><summary>Історія питань і відповіді</summary>
+            <div id="questionTracker" class="question-tracker muted">Завантажую…</div>
+          </details>
           ${missing.length ? '<ol class="missing-info">' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : `<p class="muted">${analyzed ? 'Аналіз не виявив додаткових питань. Перевір пояснення та джерела нижче.' : 'Поки не визначено — потрібен аналіз контексту.'}</p>`}
+          <details class="description"><summary>Підтвердження з REST / Supplier / Errors</summary>
+            <div id="evidenceSummary" class="muted">Завантажую…</div>
+          </details>
           <div class="section-label">На чому ґрунтується оцінка</div>
           ${sourceMarkup(analysis)}
           <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? '<button id="copyDescription" class="quiet">Скопіювати опис</button>' : ''}</details>
@@ -255,6 +262,8 @@ function renderDetail() {
   $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
   $('loadContext').addEventListener('click', () => loadContext(task.key));
   updateFormStatus();
+  loadTaskEvidence(task.key, api, escapeHtml, () => selected);
+  loadTaskQuestions(task.key, api, escapeHtml, message, () => selected);
   loadLogs(task.key);
 }
 function captureForm() {

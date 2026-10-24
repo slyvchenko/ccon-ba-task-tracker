@@ -60,10 +60,19 @@ function priorityLane(task) {
   return task.activeSprintStatus === 'VERIFIED' && task.activeSprint === true ? 0 : 1;
 }
 
+function actionRank(task) {
+  const signal = effectiveSignal(task);
+  if (signal === 'WRITE' || (hasAnalysis(task) && analysisOf(task).needsEmail === true)) return 0;
+  if (signal === 'READY' || signal === 'DECIDE') return 1;
+  if (signal === 'REVIEW') return 2;
+  if (signal === 'WAIT') return 3;
+  return 4;
+}
+
 function rankTasks(tasks) {
   return tasks.map((task, index) => ({task, index})).sort((left, right) => {
     const lane = priorityLane(left.task) - priorityLane(right.task);
-    const group = queueTier(left.task) - queueTier(right.task);
+    const group = actionRank(left.task) - actionRank(right.task);
     return lane || group || queueScore(right.task) - queueScore(left.task) || Number(right.task.blocking) - Number(left.task.blocking) || left.index - right.index;
   }).map(item => item.task);
 }
@@ -81,4 +90,4 @@ function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprin
   });
 }
 
-export {STATUS_LABELS, STATUS_TONES, MANUAL_SIGNALS, SIGNALS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueScore, queueTier, priorityLane, rankTasks, filterTasks};
+export {STATUS_LABELS, STATUS_TONES, MANUAL_SIGNALS, SIGNALS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueScore, queueTier, actionRank, priorityLane, rankTasks, filterTasks};

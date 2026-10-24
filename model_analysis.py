@@ -208,7 +208,15 @@ def request_analysis(settings, instructions, task_context, note="", opener=None)
                 "email or other external writes. Return one JSON object with only "
                 "an 'analysis' field, following these authoritative rules:\n\n" + instructions)},
             {"role": "user", "content": (
-                "Read-only Jira issue context and supporting linked issues follow. "
+                "Read-only Jira issue, related tickets, local REST/supplier/errors "
+                "evidence manifests and previous BA context follow. "
+                "For REST requests identify candidate supplier requests; for supplier "
+                "responses identify candidate REST responses. Compare fields, errors, "
+                "direction, missing/altered values and multiple error cases. "
+                "Never claim a verified mapping or root cause solely from a matching "
+                "filename, sequence, structural field, or correlation hint. "
+                "When ZIP evidence is missing say so explicitly and propose the "
+                "specific Kibana search / additional sample required. "
                 "Return the complete required analysis, including briefing and "
                 "priorityFactors (businessImpact 0-25, urgency 0-25, dependencies 0-20, "
                 "baDecision 0-20, actionability 0-10) and queueScore equal to their sum. "
@@ -245,7 +253,50 @@ def request_analysis(settings, instructions, task_context, note="", opener=None)
         raise ValueError("Model response is invalid JSON or missing required structured fields.") from None
 
 
-def task_source(context, task, notes):
+def evidence_for_issue(root, key, limit=30):
+    """Load bounded, locally prepared ZIP manifests without exposing raw logs."""
+    folder = Path(root) / "data/evidence" / key
+    if not folder.is_dir():
+        return [], "none"
+    reports, fingerprints = [], []
+    for path in sorted(folder.glob("*.json"))[:60]:
+        if path.stat().st_size > 4 * 1024 * 1024:
+            continue
+        try:
+            result = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (ValueError, OSError):
+            continue
+        if not isinstance(result, dict) or result.get("issueKey") != key:
+            continue
+        fingerprints.append(str(result.get("sourceSha256") or ""))
+        # Keep source filenames and correlation IDs bounded; do not move
+        # original passenger/customer XML and JSON into a model prompt.
+        reports.append({
+            "supplier": result.get("supplier"),
+            "sourceSha256": result.get("sourceSha256"),
+            "flowId": result.get("flowId"),
+            "counts": result.get("counts", {}),
+            "totalMatchingFiles": result.get("totalMatchingFiles", 0),
+            "errorCodes": (result.get("errorCodes") or [])[:50],
+            "questionsUk": (result.get("questionsUk") or [])[:30],
+            "warnings": (result.get("warnings") or [])[:30],
+            "correlationCandidates": (result.get("correlationCandidates") or [])[:60],
+            "samples": [{
+                "id": item.get("id"), "layer": item.get("layer"),
+                "kind": item.get("kind"), "format": item.get("format"),
+                "sha256": item.get("sha256"),
+                "fields": (item.get("fields") or [])[:45],
+                "errors": (item.get("errors") or [])[:20],
+                "correlationHashes": (item.get("correlationHashes") or [])[:10],
+                "parseWarning": item.get("parseWarning"),
+            } for item in (result.get("samples") or [])[:limit]]
+        })
+    signature = hashlib.sha256(
+        json.dumps(sorted(fingerprints), ensure_ascii=False).encode()).hexdigest()[:16]
+    return reports, signature
+
+
+def task_source(context, task, notes, evidence_reports=None):
     key = task["key"]
     issue = context["issues"][key]
     related = {ref["linkedKey"]: context.get("issues", {}).get(ref["linkedKey"]) or
@@ -256,6 +307,7 @@ def task_source(context, task, notes):
         "linkedIssues": {k: v for k, v in related.items() if v is not None},
         "unavailableLinkedIssues": [v for v in context.get("unavailableLinkedIssues", [])
                                    if v.get("key") in related],
+        "evidenceReports": evidence_reports or [],
         "sprint": {"active": task.get("activeSprint"),
                    "verification": task.get("activeSprintStatus"),
                    "names": task.get("activeSprintNames", [])},
@@ -285,9 +337,11 @@ def analyze_all(root=ROOT, model_call=request_analysis):
         previous = prev.get("analysis") or {}
         notes = prev.get("note") or ""
         note_hash = hashlib.sha256(notes.encode("utf-8")).hexdigest()[:16]
-        source = task_source(context, task, notes)
+        log_reports, evidence_version = evidence_for_issue(root, key)
+        source = task_source(context, task, notes, log_reports)
         sprint_version = sprint_cache_version(source)
         if (previous.get("contextFingerprint") == fingerprint and
+                previous.get("evidenceVersion", "none") == evidence_version and
                 previous.get("sprintVersion") == sprint_version and
                 not previous.get("stale") and
                 previous.get("promptVersion") == prompt_version and
@@ -304,6 +358,7 @@ def analyze_all(root=ROOT, model_call=request_analysis):
         analysis["promptVersion"] = prompt_version
         analysis["manualNoteVersion"] = note_hash
         analysis["sprintVersion"] = sprint_version
+        analysis["evidenceVersion"] = evidence_version
         validate_analysis(analysis)
         analyses[key] = analysis
         generated += 1
