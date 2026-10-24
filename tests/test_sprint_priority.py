@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from sprint_priority import active_sprint_snapshot, sprint_fields, validate_board_id
 from jira_sync import sync
-from tests.test_jira_sync import FakeJira
+from test_jira_sync import FakeJira
 
 
 class FakeSprintClient:
