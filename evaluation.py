@@ -144,6 +144,40 @@ def prepare(root=ROOT, count=30):
                             for name in sorted({i["topic"] for i in cases})}}
 
 
+def attach_predictions(root, variant, analysis_file):
+    """Freeze a full analyzed output for the preselected cohort without uploading it."""
+    if variant not in ("baseline", "candidate"):
+        raise ValueError("variant must be baseline or candidate.")
+    directory = eval_directory(root)
+    pack = json.loads((directory / "selected_cases.json").read_text(encoding="utf-8"))
+    payload = json.loads(Path(analysis_file).read_text(encoding="utf-8-sig"))
+    if isinstance(payload.get("analyses"), dict):
+        predictions = payload["analyses"]
+    elif isinstance(payload.get("tasks"), list):
+        predictions = {task["key"]: task.get("analysis") for task in payload["tasks"]}
+    else:
+        raise ValueError("Expected analyses map or analyzed snapshot tasks.")
+    selected = {}
+    for case in pack["cases"]:
+        key = case["key"]
+        analysis = predictions.get(key)
+        if not isinstance(analysis, dict) or not analysis.get("signal"):
+            raise ValueError(f"{variant}: analysis missing for {key}; no file saved.")
+        if analysis.get("contextFingerprint") != case["contextFingerprint"]:
+            raise ValueError(f"{variant}: source fingerprint mismatch for {key}; "
+                             "evaluate the same frozen Jira context.")
+        selected[key] = analysis
+    target = directory / (variant + "_predictions.json")
+    if target.exists():
+        raise ValueError(f"{variant} predictions already frozen; do not replace an evaluated version.")
+    write_json(target, {
+        "variant": variant, "createdAt": utc_now(), "cohort": len(selected),
+        "policy": "LOCAL_ONLY_DO_NOT_COMMIT_OR_UPLOAD",
+        "analyses": selected,
+    })
+    return {"variant": variant, "count": len(selected), "path": str(target)}
+
+
 def empty_review():
     return {
         "scores": {name: None for name in RUBRIC},
@@ -264,6 +298,12 @@ def evaluate(root=ROOT):
     cases = json.loads((directory / "selected_cases.json").read_text(encoding="utf-8"))
     reviews = json.loads((directory / "reviews.json").read_text(encoding="utf-8"))
     report = score_pack(cases, reviews)
+    frozen = [label for label in ("baseline", "candidate")
+              if not (directory / (label + "_predictions.json")).exists()]
+    if frozen:
+        report["status"] = "INCOMPLETE"
+        report["missingPredictionSets"] = frozen
+        report["candidateMeetsTargets"] = False
     write_json(directory / "results.json", report)
     (directory / "results.md").write_text(render_score(report), encoding="utf-8")
     return report
@@ -275,11 +315,19 @@ def main():
     create = sub.add_parser("prepare", help="select 20–30 real cached Jira issues for manual A/B review")
     create.add_argument("--count", type=int, default=30)
     grade = sub.add_parser("score", help="score completed human review forms")
-    for cmd in (create, grade):
+    attach = sub.add_parser("attach", help="freeze baseline/candidate predictions for the selected cohort")
+    attach.add_argument("--variant", choices=("baseline", "candidate"), required=True)
+    attach.add_argument("--analysis-file", required=True, type=Path)
+    for cmd in (create, grade, attach):
         cmd.add_argument("--root", type=Path, default=ROOT)
     args = parser.parse_args()
     try:
-        result = prepare(args.root, args.count) if args.command == "prepare" else evaluate(args.root)
+        if args.command == "prepare":
+            result = prepare(args.root, args.count)
+        elif args.command == "attach":
+            result = attach_predictions(args.root, args.variant, args.analysis_file)
+        else:
+            result = evaluate(args.root)
     except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
         parser.exit(1, "Evaluation failed: " + str(exc) + "\n")
     print(json.dumps(result, ensure_ascii=False, indent=2))
