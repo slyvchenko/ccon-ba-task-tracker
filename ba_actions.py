@@ -57,7 +57,8 @@ def display_actions(root, key, *, today=None):
     data = _read(root, key)
     actions = []
     for item in data["actions"]:
-        deadline = item.get("dueDate") or item.get("nextReviewDate") or ""
+        dates = [value for value in (item.get("dueDate"), item.get("nextReviewDate")) if value]
+        deadline = min(dates) if dates else ""
         is_open = item.get("status") != "DONE"
         actions.append({**item,
             "overdue": bool(is_open and deadline and deadline < date_today.isoformat()),
