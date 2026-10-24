@@ -30,6 +30,7 @@
   "mail_service.py",
   "pipeline_lock.py",
   "release_manifest.json",
+  "review_report.py",
   "schema.py",
   "server.py",
   "storage.py",
@@ -42,6 +43,8 @@
   "tests/test_email_rules.py",
   "tests/test_jira_sync.py",
   "tests/test_log_attachments.py",
+  "tests/test_review_integration.py",
+  "tests/test_review_report.py",
   "tests/test_static_release.py",
   "tests/test_storage.py",
   "tests/test_supplier_logs.py"
