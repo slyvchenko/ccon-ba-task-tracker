@@ -15,6 +15,7 @@ from app_config import ROOT, STATUSES, LIMIT, CONTEXT_LIMIT, VERSION, SIGNALS, u
 from desk_store import Desk
 from mail_service import open_email_batch
 from schema import text_field, validate_draft, validate_analysis
+from review_report import render_markdown
 
 STATIC_FILES = {
     '/': ('dashboard.html', 'text/html; charset=utf-8'),
@@ -62,6 +63,25 @@ def handler(desk):
                 return self.send(200, desk.view())
             if path == '/api/health':
                 return self.send(200, {'app': 'CCON BA Desk', 'version': VERSION})
+            if path in ('/api/daily-report', '/api/daily-report.md'):
+                source = desk.root / 'data' / 'daily_review_report.json'
+                if not source.exists():
+                    if path.endswith('.md'):
+                        return self.send(200, 'Щоденний звіт ще не сформовано.'.encode('utf-8'),
+                                         'text/plain; charset=utf-8')
+                    return self.send(200, {'available': False, 'message': 'No completed review yet.'})
+                try:
+                    if source.stat().st_size > LIMIT:
+                        raise ValueError('Daily report is too large.')
+                    report = json.loads(source.read_text(encoding='utf-8-sig'))
+                    if not isinstance(report, dict) or not isinstance(report.get('summary'), dict):
+                        raise ValueError('Invalid daily report.')
+                    if path.endswith('.md'):
+                        return self.send(200, render_markdown(report).encode('utf-8'),
+                                         'text/markdown; charset=utf-8')
+                    return self.send(200, report)
+                except (OSError, ValueError, KeyError, TypeError):
+                    return self.send(400, {'error': 'Daily report is invalid.'})
             if path == '/api/logs' or path.startswith('/api/logs/'):
                 from log_attachments import log_catalog, download_archive
                 try:
