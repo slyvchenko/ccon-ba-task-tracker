@@ -252,7 +252,12 @@ def analyze_zip_bytes(raw, supplier, source_name="download.zip"):
         questions.append("Які error codes зіставляються із конкретними REST-відповідями та supplier-викликами?")
     if any(item["kind"] == "unknown" for item in samples):
         questions.append("Як визначати напрямок request/response для файлів без відповідного позначення?")
+    # Compare ephemeral private scalar values only after ZIP names, expansion
+    # sizes and supplier selection passed inspection. Persist no raw values.
+    from value_mapping import compare_for_manifest
+    value_review = compare_for_manifest(raw, supplier["aliases"])
     return {
+        "valueReview": value_review,
         "schemaVersion": VERSION, "source": source_name[:200],
         "sourceSha256": checksum(raw), "supplier": supplier["name"],
         "counts": dict(counts), "totalMatchingFiles": total,
