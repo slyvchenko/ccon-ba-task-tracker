@@ -126,7 +126,9 @@ def make_plan(root=ROOT, analysis_file=None, issue_key=None, mode='mail'):
             analysis = proposed.get(key, {}) if proposed is not None else task.get('analysis', {})
             if mode not in ('mail', 'evidence'):
                 raise ValueError('Unknown log plan mode.')
-            if not task.get('active') or task.get('manualStatus') == 'DONE':
+            if not task.get('active'):
+                continue
+            if mode == 'mail' and task.get('manualStatus') == 'DONE':
                 continue
             if mode == 'mail' and (task.get('manualStatus', 'AUTO') != 'AUTO' or
                                    analysis.get('signal') != 'WRITE' or analysis.get('needsEmail') is not True):
@@ -276,7 +278,7 @@ def ingest(root, key, flow, source_path):
             raise ValueError('Jira context changed; regenerate the log plan.')
         from desk_store import Desk
         task = next((task for task in Desk(root).view()['tasks'] if task['key'] == key), None)
-        if not task or not task['active'] or task['manualStatus'] == 'DONE' or (plan.get('mode', 'mail') == 'mail' and task['manualStatus'] != 'AUTO'):
+        if not task or not task['active'] or (plan.get('mode', 'mail') == 'mail' and task['manualStatus'] != 'AUTO'):
             raise ValueError('Task is no longer eligible for automatic log preparation.')
         source_path = Path(source_path)
         if source_path.stat().st_size > MAX_ZIP:
@@ -341,6 +343,20 @@ def ingest(root, key, flow, source_path):
         index = read_json(directory / 'index.json', {})
         index[key + '/' + flow] = entry
         write_json(directory / 'index.json', index)
+        # Full ZIP is evidence. Outgoing archive remains ONLY selected supplier
+        # XML; REST/errors never enter the supplier attachment.
+        try:
+            from layered_evidence import analyze_zip_bytes
+            review = analyze_zip_bytes(raw, job['supplier'], source_path.name)
+            review.update(issueKey=key, flowId=flow, createdAt=now())
+            write_json(root / 'data/evidence' / key / (flow + '.json'), review,
+                       4 * 1024 * 1024)
+            entry['evidencePrepared'] = True
+        except (ValueError, OSError, TypeError, KeyError) as error:
+            # Evidence is supplemental; do not destroy a safely verified ZIP
+            # when a metadata analyzer fails. Keep a non-sensitive status.
+            entry['evidencePrepared'] = False
+            entry['evidenceWarning'] = type(error).__name__
         return entry
 
 
