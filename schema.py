@@ -3,6 +3,7 @@ import math
 from urllib.parse import urlparse
 from app_config import SIGNALS
 from ba_briefing import validate_briefing
+from priority_score import validate_priority_factors
 
 def text_field(value, label, maximum):
     if not isinstance(value, str) or len(value) > maximum:
@@ -36,6 +37,10 @@ def validate_analysis(analysis):
         score = analysis['queueScore']
         if isinstance(score, bool) or not isinstance(score, (int, float)) or not (0 <= score <= 100) or not math.isfinite(score):
             raise ValueError('analysis.queueScore must be a finite number from 0 to 100.')
+    if 'priorityFactors' in analysis:
+        if 'queueScore' not in analysis:
+            raise ValueError('analysis.queueScore required with priorityFactors.')
+        validate_priority_factors(analysis['priorityFactors'], analysis['queueScore'])
     if 'missingInfo' in analysis:
         missing = analysis['missingInfo']
         if not isinstance(missing, list) or len(missing) > 100:
