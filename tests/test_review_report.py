@@ -75,8 +75,8 @@ class DailyReportTests(unittest.TestCase):
         codes = {finding["code"] for finding in result["warnings"]}
         self.assertEqual(codes, {"WAIT_NOT_VERIFIED", "WRITE_EMAIL_CONFLICT",
                                  "ACTION_WITHOUT_EVIDENCE", "DONE_HAS_QUESTIONS",
-                                 "DESCRIPTION_WITHOUT_QA"})
-        self.assertEqual(result["summary"]["warnings"], 5)
+                                 "DESCRIPTION_WITHOUT_QA", "BRIEF_MISSING"})
+        self.assertEqual(result["summary"]["warnings"], 8)
 
 
 if __name__ == "__main__":
