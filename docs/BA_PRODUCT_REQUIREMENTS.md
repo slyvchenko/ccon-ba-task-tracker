@@ -40,7 +40,7 @@ The human analyst is responsible for deciding whether to use generated outputs.
 
 ## Scope risk: active sprint vs personal task selection
 
-The current Jira JQL still contains `assignee = currentUser()`. The
+The local default JQL contains `assignee = currentUser()`. Cloud mode now **requires** `CCON_JIRA_ASSIGNEE_ACCOUNT_ID`, which replaces the `currentUser()` query with the explicit single analyst identity, so a Jira API service account cannot silently change the user's task scope. The
 sprint membership probe fetches all sprint issue keys, but the UI and
 AI import only **issues already returned by this personal JQL**.
 Thus "active sprint first" is implemented for the user's selected task
