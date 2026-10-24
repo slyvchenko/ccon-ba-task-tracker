@@ -208,7 +208,15 @@ def request_analysis(settings, instructions, task_context, note="", opener=None)
                 "email or other external writes. Return one JSON object with only "
                 "an 'analysis' field, following these authoritative rules:\n\n" + instructions)},
             {"role": "user", "content": (
-                 "
+                "Read-only Jira issue, related tickets, local REST/supplier/errors "
+                "evidence manifests and previous BA context follow. "
+                "For REST requests identify candidate supplier requests; for supplier "
+                "responses identify candidate REST responses. Compare fields, errors, "
+                "direction, missing/altered values and multiple error cases. "
+                "Never claim a verified mapping or root cause solely from a matching "
+                "filename, sequence, structural field, or correlation hint. "
+                "When ZIP evidence is missing say so explicitly and propose the "
+                "specific Kibana search / additional sample required. "
                 "Return the complete required analysis, including briefing and "
                 "priorityFactors (businessImpact 0-25, urgency 0-25, dependencies 0-20, "
                 "baDecision 0-20, actionability 0-10) and queueScore equal to their sum. "
