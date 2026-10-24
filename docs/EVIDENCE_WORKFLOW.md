@@ -158,3 +158,15 @@ python error_series.py --issue CCON-123 --error-code AF_REJECTED --max-cases 30
 Статус **`ROOT_CAUSE_UNCONFIRMED`** зберігається завжди, доки немає окремого експертного підтвердження з raw REST/Supplier RQ/RS, mapping/spec та контрприкладами. Помилка в supplier response **не** доводить, що supplier винен: CCON міг надіслати некоректний RQ. Усі висновки подаються як гіпотези з альтернативою й планом перевірки.
 
 Серійне дослідження входить у наступний model-based BA аналіз через `errorSeriesInvestigation` (скорочений safety-bounded snapshot) і в існуючу згорнуту секцію доказів у dashboard. Всі ZIP та персональні дані залишаються тільки локально.
+
+## v2.10: локальний browser-to-ZIP handoff
+
+**Python не входить у Kibana і не отримує cookies/tokens.** Локальний Codex/Work відкриває CCON downloadUrl у вже авторизованій сесії браузера, перевіряє фактичний файл та зберігає ZIP в точний локальний шлях.
+
+1. Після Jira sync запусти `python local_downloads.py prepare --issue CCON-123` (без `--issue`: всі активні твої задачі). Читай приватний `data/browser_handoff.json`: у ньому є issue, flow, supplier, Kibana URL, CCON downloadUrl, cached і saveAs.
+2. Для cached=false відкрити тільки наведений downloadUrl в авторизованому браузері. Browser download capture повинен повернути справжній ZIP, який треба зберегти в точний saveAs, наприклад `downloads/ccon/CCON-123/11111111-2222-4333-8444-555555555555.zip`. ERR_ABORTED під час навігації можливий, але сам по собі не доводить завантаження.
+3. `python local_downloads.py process --issue CCON-123` обробляє лише ці локальні ZIP. Перевіряє Jira fingerprint, дату, розмір, ZIP header, постачальника; готує **supplier-only ZIP** для листа та **окремий REST/errors/supplier** evidence manifest.
+4. Перевір `data/download_handoff_status.json` і звичайний блок «Логи до листа»: по flow видно READY/PENDING/PARTIAL/STALE/NEEDS_REVIEW/FAILED/BLOCKED та причину. НЕ вважай PENDING або NEEDS_REVIEW готовим без перевірки.
+5. Не переносити браузерні cookies/token чи приватні ZIP у GitHub. Повний ZIP залишається локально, вихідний архів містить **тільки supplier XML вибраного постачальника**, без REST/errors/інших suppliers.
+
+Сам `prepare` не завантажує файл. Без чинної авторизації/використання браузера залишити чесний статус і причину. Синтетичні CI тести не є live Kibana UAT.

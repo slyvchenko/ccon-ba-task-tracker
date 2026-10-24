@@ -55,7 +55,7 @@
 | EVD-02 | P0 | IMPLEMENTED (code) | Виявлення shared-flow/correlation кандидатів | Без фальшивої впевненості у спарюванні |
 | EVD-03 | P0 | PARTIAL | REST request→supplier request; supplier response→REST response value equality/difference | Позначати `CANDIDATE_ONLY`; підтверджувати transformation rule проти специфікації |
 | EVD-04 | P0 | IMPLEMENTED (code) | Supplier-only ZIP для листа з перевіреною цілісністю | Лише XML конкретного supplier; не залежить від needsEmail |
-| EVD-05 | P0 | PARTIAL | Автоматизоване завантаження авторизованих CCON ZIP через локальний Codex | Flow plan вже є; реально перевірити браузер→локальний ZIP→ingest→download |
+| EVD-05 | P0 | IMPLEMENTED (local handoff); live browser UAT pending | Автоматизоване завантаження авторизованих CCON ZIP через локальний Codex | Flow plan вже є; реально перевірити браузер→локальний ZIP→ingest→download |
 | EVD-06 | P0 | PARTIAL | Kibana discovery по issue, cconFlowId, error links | Action plan вже є; потрібні локальні браузерні перевірки |
 | EVD-07 | P0 | IMPLEMENTED (code); live UAT pending | **Kibana error-series: до 30 репрезентативних випадків однієї помилки** | Дедуп flow, групування за error code/stage/method, coverage/gaps, proof links, без змішування supplier |
 | EVD-08 | P0 | IMPLEMENTED (code); live UAT pending | **RCA evidence matrix: що підтверджено, що лише гіпотеза** | Hypothesis/alternative/counterexample/missing proof; заборона фальшивої definitive cause |
@@ -68,7 +68,7 @@
 | EVD-15 | P2 | PLANNED | Кероване зберігання raw ZIP: retention, cleanup, quota | Encrypt-at-rest/ACL, TTL, аудит, no commit/no egress |
 | OUT-01 | P0 | PARTIAL | Самодостатній BA dossier із короткою дією, правилами, QA, gaps | Реальні приклади без зайвих формулювань; scenario-based grading |
 | OUT-02 | P0 | PARTIAL | Чернетка листа, subject/method, контекст попередніх відповідей | Ситуативне формулювання, ручне редагування, без auto-send |
-| OUT-03 | P1 | PLANNED | Готовий supplier ZIP та evidence status без прихованої недоступності | Показувати ready/stale/blocked + причина і flow у поточній картці |
+| OUT-03 | P1 | IMPLEMENTED (code); live UAT pending | Готовий supplier ZIP та evidence status без прихованої недоступності | Показувати ready/stale/blocked + причина і flow у поточній картці |
 | OUT-04 | P1 | PARTIAL | Контроль фактичності вставлених доказів і PDF/логів | Кожна вимога та тест мають джерело, або чітко OPEN |
 | UX-01 | P0 | IMPLEMENTED (code) | Зберігати стандартну сторінку, без окремих режимів | Меню/поля/status/email/лог ZIP збережені |
 | UX-02 | P1 | PARTIAL | Compact descriptions і progressive disclosure | Скорочення повторів, не ховати основний результат |
@@ -92,8 +92,8 @@
 | Блок | Обсяг (не більше 2–3 функцій) | Гейт |
 |---|---|---|
 | **#9 — CODE COMPLETE; LIVE UAT OPEN** | EVD-07: 1–30 error cases з локально підготовлених flow reports; EVD-08: evidence-based RCA із альтернативами й прогалинами | Synthetic multi-flow regression + flow/supplier isolation + baseline CI. Реальний Kibana UAT окремо |
-| **#10 — NEXT** | EVD-05: локальний browser-to-ZIP handoff із журналом помилок; OUT-03: ready/stale/blocked ZIP в existing card | Реальний авторизований download без cookies/API leaks |
-| **#11** | BA-04 + OUT-04: перевірка зв'язку claim→source; BA-07: QA traceability | Невідтворювана вимога залишається OPEN |
+| **#10 — CODE COMPLETE; LIVE BROWSER UAT OPEN** | EVD-05: локальний browser-to-ZIP handoff із журналом помилок; OUT-03: ready/stale/blocked ZIP в existing card | Реальний авторизований download без cookies/API leaks |
+| **#11 — NEXT** | BA-04 + OUT-04: перевірка зв'язку claim→source; BA-07: QA traceability | Невідтворювана вимога залишається OPEN |
 | **#12** | BA-06: question answer suggestions; BA-10: decision register | Не закривати питання автоматично |
 | **#13** | EVD-09/EVD-11: mapping contracts + flow timeline | Два request paths, retry/timeout, ordering |
 | **#14** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
