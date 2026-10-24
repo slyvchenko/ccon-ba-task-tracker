@@ -52,7 +52,7 @@ and not suitable as the cloud outbound-mail pattern.
 | Module | Current job | Input/output | Cloud or product decision |
 | --- | --- | --- | --- |
 | `jira_sync.py` | Jira API search, pagination, comments, dependencies, stale fingerprint | Jira → context/snapshot JSON | Keep; split fetch and source-normalization; read-only OAuth/secret |
-| `sprint_priority.py` | Board-specific verified active sprint membership | Jira Software Agile → per-task lane | Keep; configure `CCON_JIRA_BOARD_ID` |
+| `sprint_priority.py` | Board-specific verified active sprint membership | Jira Software Agile → per-task lane | Keep; configure `CCON_JIRA_BOARD_ID` or local `.jira-board.json` |
 | `configure_jira.py` | Interactive Windows Jira credential setup | DPAPI local secret | Legacy only; cloud must use managed secret |
 | `ROVO_PROMPT.txt` | Manual alternate snapshot creation | Rovo → inbox JSON | Deprecate as primary; retain explicit offline fallback |
 | `DAILY_REVIEW.md` | Work/Codex orchestration instructions | source + rules → analysis | Keep until cloud worker replaces Work dependency |
