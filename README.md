@@ -278,3 +278,7 @@ production-фазою. Прямий публічний доступ до Python-
 ## v2.16: Prompt A/B із людським підтвердженням
 
 `prompt_experiments.py` забезпечує локальний цикл `stage → generate baseline/candidate → assess → approve → rollback` з незмінними cohort і prompt hash. Під час generate використовується тільки компанією дозволена модель, два набори output оцінює людина за поточним `evaluation.py`; базові prompt файли не змінюються. До схвалення і успішного оцінювання на 20–30 **реальних** задачах addendum не потрапляє в `model_analysis.approved_prompts`. При відкаті відновлюється попередній prompt hash. Чинна структура dashboard без змін. Докладні кроки: [BA Evaluation Runbook](docs/BA_EVALUATION_RUNBOOK.md).
+
+## v2.17: покриття ZIP та попередня типізація помилок
+
+`evidence_health.py` обчислює покриття окремих Jira flow повними REST+supplier доказами, позначає неповні/missing ZIP та попередньо групує error codes у категорії й повтори. Вміст обмежений локальними верифікованими manifests одного supplier; не експортує жодних приватних payload values. Результат показується у звичному згорнутому блоці доказів без нових режимів. **Heuristic category не дорівнює доведеній причині збою.**
