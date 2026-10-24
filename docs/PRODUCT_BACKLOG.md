@@ -76,10 +76,10 @@
 | UX-04 | P2 | IMPLEMENTED (copy/edit mail, next/save); live UAT open | Copy task/email + quick next/open/save | Можливість проходити список без зайвих кліків, UAT |
 | QA-01 | P0 | IMPLEMENTED (code) | Python/Node/Release/Compose CI | Required checks + merge only when green |
 | QA-02 | P0 | GATE | Live Jira + Kibana + CCON auth UAT з 2–3 реальними задачами | Browser session, 1 normal flow, 1 multi-error flow, 1 ambiguous flow |
-| QA-03 | P0 | GATE | Реальні 20–30 gold cases, blinded AI vs analyst | Measure false facts, missed conditions, task/edit quality |
+| QA-03 | P0 | GATE (frozen 20–30 real-case workflow implemented, scores not yet collected) | Реальні 20–30 gold cases, blinded AI vs analyst | Measure false facts, missed conditions, task/edit quality |
 | QA-04 | P1 | PARTIAL | AI quality metrics, reject invalid dossier | Structured schema / briefing/factors checks implemented; factual support pending |
 | QA-05 | P1 | PARTIAL | Safe daily prompt calibration checklist | Whitelisted diagnostics implemented; prompt version change evaluated separately |
-| QA-06 | P1 | PLANNED | Prompt A/B regression / automatic candidate proposal | Human gate, compare gold set, rollback, no unreviewed auto-prompts |
+| QA-06 | P1 | IMPLEMENTED (staged A/B + human approval + rollback); real reviews pending | Prompt A/B regression / automatic candidate proposal | Human gate, compare gold set, rollback, no unreviewed auto-prompts |
 | QA-07 | P2 | PLANNED | Offline fixtures for realistic REST/XML/multi-error formats | Coverage by supplier method, nested ZIP cases, pagination, retries |
 | QA-08 | P1 | PLANNED | Data minimization/security for prompt, manifests, debug logs | PII/credentials, safe link stripping, prompt injection regression |
 | INF-01 | P3 | DEFERRED | Cloud deployment: SSO/OIDC/HTTPS/hosting | Cloud pilot code exists, real infra and security approval not started |
