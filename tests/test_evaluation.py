@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from evaluation import RUBRIC, prepare, score_pack, select_cases, evaluate
+from evaluation import RUBRIC, prepare, score_pack, select_cases, evaluate, attach_predictions
 
 
 def issue(i):
@@ -74,6 +74,27 @@ class EvaluationTests(unittest.TestCase):
         result = score_pack(cases, {"reviews": rows})
         self.assertFalse(result["candidateMeetsTargets"])
 
+    def test_attach_requires_exact_frozen_context_and_never_overwrites(self):
+        with tempfile.TemporaryDirectory(prefix="ccon-eval-") as folder:
+            root = Path(folder)
+            path = root / "data" / "jira_context.json"
+            path.parent.mkdir()
+            path.write_text(json.dumps({"complete": True, "issues": self.dataset()}))
+            prepare(root, 20)
+            cases = json.loads((root / "data/evaluation/selected_cases.json").read_text())["cases"]
+            predictions = {"analyses": {c["key"]: {"signal": "REVIEW",
+                            "contextFingerprint": c["contextFingerprint"]} for c in cases}}
+            sample = root / "data" / "candidate.json"
+            sample.write_text(json.dumps(predictions))
+            result = attach_predictions(root, "candidate", sample)
+            self.assertEqual(result["count"], 20)
+            with self.assertRaisesRegex(ValueError, "already frozen"):
+                attach_predictions(root, "candidate", sample)
+            predictions["analyses"][cases[0]["key"]]["contextFingerprint"] = "stale"
+            sample.write_text(json.dumps(predictions))
+            with self.assertRaisesRegex(ValueError, "fingerprint mismatch"):
+                attach_predictions(root, "baseline", sample)
+            self.assertFalse((root / "data/evaluation/baseline_predictions.json").exists())
     def test_partial_reviews_are_not_sold_as_passed(self):
         cases = {"cases": [{"key": f"CCON-{i}"} for i in range(1, 21)]}
         reviews = [{"key": f"CCON-{i}", "reviewer": "", "baseline": {}, "candidate": {}}
