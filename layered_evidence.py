@@ -256,7 +256,10 @@ def analyze_zip_bytes(raw, supplier, source_name="download.zip"):
     # sizes and supplier selection passed inspection. Persist no raw values.
     from value_mapping import compare_for_manifest
     value_review = compare_for_manifest(raw, supplier["aliases"])
+    from flow_diagnostics import diagnose_zip
+    flow_review = diagnose_zip(raw, supplier, value_review)
     return {
+        "flowDiagnostics": flow_review,
         "valueReview": value_review,
         "schemaVersion": VERSION, "source": source_name[:200],
         "sourceSha256": checksum(raw), "supplier": supplier["name"],
