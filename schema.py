@@ -2,6 +2,7 @@
 import math
 from urllib.parse import urlparse
 from app_config import SIGNALS
+from ba_briefing import validate_briefing
 
 def text_field(value, label, maximum):
     if not isinstance(value, str) or len(value) > maximum:
@@ -52,5 +53,7 @@ def validate_analysis(analysis):
             text_field(item.get('url'), 'analysis.evidence.url', 2000)
             if item['url'] and urlparse(item['url']).scheme not in ('http', 'https'):
                 raise ValueError('analysis.evidence.url must be an HTTP or HTTPS URL.')
+    if 'briefing' in analysis:
+        validate_briefing(analysis['briefing'])
     if 'emailDraft' in analysis and analysis['emailDraft'] is not None:
         validate_draft(analysis['emailDraft'], 'analysis.emailDraft')
