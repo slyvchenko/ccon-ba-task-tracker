@@ -66,9 +66,31 @@ def validate_briefing(briefing):
     for i, item in enumerate(briefing.get("sourceAudit", [])):
         if item["status"] not in SOURCE_STATES:
             raise ValueError(f"briefing.sourceAudit[{i}].status is invalid.")
+    ids = set()
+    for i, item in enumerate(briefing.get("confirmedFacts", [])):
+        if "sourceExcerpt" in item:
+            value_text(item["sourceExcerpt"], f"briefing.confirmedFacts[{i}].sourceExcerpt", 2000)
     for i, item in enumerate(briefing["rules"]):
         if item["certainty"] not in CERTAINTY:
             raise ValueError(f"briefing.rules[{i}].certainty is invalid.")
+        if "sourceExcerpt" in item:
+            value_text(item["sourceExcerpt"], f"briefing.rules[{i}].sourceExcerpt", 2000)
+        if "id" in item:
+            import re
+            identifier = item["id"]
+            if not isinstance(identifier, str) or not re.fullmatch(r"R[0-9]{1,3}", identifier):
+                raise ValueError(f"briefing.rules[{i}].id must be R1, R2, ...")
+            if identifier in ids:
+                raise ValueError("Duplicate rule ID in briefing.rules.")
+            ids.add(identifier)
+    for i, item in enumerate(briefing["verification"]):
+        if "ruleIds" in item:
+            refs = item["ruleIds"]
+            if (not isinstance(refs, list) or len(refs) > 30 or
+                    any(not isinstance(ref, str) or len(ref) > 30 for ref in refs)):
+                raise ValueError(f"briefing.verification[{i}].ruleIds must be string IDs.")
+        if "kind" in item and item["kind"] not in ("POSITIVE", "NEGATIVE", "EDGE"):
+            raise ValueError(f"briefing.verification[{i}].kind is invalid.")
 
 
 def audit_briefing(analysis, context=None):
