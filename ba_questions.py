@@ -130,11 +130,16 @@ def all_evidence(root, key):
         return []
     results = []
     for path in sorted(directory.glob("*.json"))[:60]:
-        if path.stat().st_size > 4 * 1024 * 1024:
+        if path.is_symlink() or path.stat().st_size > 4 * 1024 * 1024:
             continue
         payload = read_json(path, {})
         if isinstance(payload, dict) and payload.get("issueKey") == key:
             results.append(payload)
+    investigation = Path(root) / "data/investigations" / (key + ".json")
+    if investigation.is_file() and not investigation.is_symlink() and investigation.stat().st_size < 4 * 1024 * 1024:
+        report = read_json(investigation, {})
+        if isinstance(report, dict) and report.get("issueKey") == key:
+            results.append({"questionsUk": report.get("questionsUk") or []})
     return results
 
 
