@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from sprint_priority import active_sprint_snapshot, sprint_fields, validate_board_id
+from sprint_priority import active_sprint_snapshot, sprint_fields, validate_board_id, load_board_id
 from jira_sync import sync
 from test_jira_sync import FakeJira
 
@@ -41,6 +41,17 @@ class SprintTests(unittest.TestCase):
             with self.subTest(wrong=wrong), self.assertRaises(ValueError):
                 validate_board_id(wrong)
 
+    def test_board_config_survives_process_restart_without_env(self):
+        import json
+        with tempfile.TemporaryDirectory() as dirname:
+            root = Path(dirname)
+            (root / '.jira-board.json').write_text(json.dumps({'boardId': 12}))
+            with patch.dict(os.environ, {'CCON_JIRA_BOARD_ID': ''}):
+                self.assertIsNone(load_board_id(root))
+            with patch.dict(os.environ, {}, clear=True):
+                self.assertEqual(load_board_id(root), 12)
+            with patch.dict(os.environ, {'CCON_JIRA_BOARD_ID': '55'}):
+                self.assertEqual(load_board_id(root), 55)
     def test_unconfigured_board_never_guesses_membership(self):
         client = FakeSprintClient()
         result = active_sprint_snapshot(client, None)
