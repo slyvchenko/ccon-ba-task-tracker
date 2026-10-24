@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {valueMappingMarkup, investigationMarkup, flowDiagnosticsMarkup} from '../assets/evidence-ui.mjs';
+import {valueMappingMarkup, investigationMarkup, flowDiagnosticsMarkup, evidenceHealthMarkup} from '../assets/evidence-ui.mjs';
 
 const escape = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -86,4 +86,25 @@ test('flow diagnostics never expose unsafe method names as HTML', () => {
   }},escape);
   assert.doesNotMatch(html, /<img/);
   assert.match(html, /&lt;img/);
+});
+
+test('evidence coverage keeps missing source and candidate error categories explicit', () => {
+  const html = evidenceHealthMarkup({
+    expectedFlowCount: 3, restSupplierCoverage: 0.333,
+    taxonomy: [{code:'AF_TIMEOUT',category:'TIMEOUT_OR_CONNECTIVITY_CANDIDATE',caseCount:2}],
+    recurrence:[{code:'AF_TIMEOUT',caseCount:2}],
+    flows:[{flowId:'12345678-1234-4234-8234-123456789012',gaps:['REST_MISSING']}]
+  }, escape);
+  assert.match(html, /33% REST \+ supplier із 3/);
+  assert.match(html, /TIMEOUT_OR_CONNECTIVITY_CANDIDATE/);
+  assert.match(html, /REST_MISSING/);
+  assert.match(html, /класифікація попередня/);
+});
+test('taxonomy HTML escapes arbitrary codes and does not fabricate coverage', () => {
+  const html = evidenceHealthMarkup({restSupplierCoverage:null,
+    taxonomy:[{code:'<script>',category:'UNCLASSIFIED',caseCount:1}],
+    flows:[],recurrence:[]}, escape);
+  assert.match(html, /Немає підтвердженого списку/);
+  assert.doesNotMatch(html, /<script>/);
+  assert.match(html, /&lt;script&gt;/);
 });
