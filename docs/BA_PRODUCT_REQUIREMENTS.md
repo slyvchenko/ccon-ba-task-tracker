@@ -38,6 +38,30 @@ The human analyst is responsible for deciding whether to use generated outputs.
 - If more than one active sprint exists on a configured board, each is
   considered in scope, with named membership exposed for review.
 
+## Scope risk: active sprint vs personal task selection
+
+The current Jira JQL still contains `assignee = currentUser()`. The
+sprint membership probe fetches all sprint issue keys, but the UI and
+AI import only **issues already returned by this personal JQL**.
+Thus "active sprint first" is implemented for the user's selected task
+scope, **not necessarily all team issues in active sprint**. If the product
+goal is to analyze *every* CCON issue in the sprint, a separate authorized
+sprint-scope ingestion requirement and assignee/ownership filter are needed.
+No silent broadening to other people's Jira tasks has been deployed.
+
+**Unresolved acceptance:** confirm whether the main queue includes:
+(A) my assigned tickets currently in active sprint; or
+(B) all CCON tickets in active sprint, then my outside-sprint tickets.
+
+## Scoring governance gap
+
+The 0–100 numeric range is enforced and deterministic ranking respects
+the sprint lane, but the underlying `queueScore` is still assigned by
+the analysis agent. The suggested factor weights below are **not coded**
+as a deterministic scoring algorithm or validated against real BA outcomes.
+A score breakdown, explanation and consistency checks should precede
+claims of a fully agreed scoring policy.
+
 ## Definition of task changes
 
 - **New:** first analyzed occurrence.
