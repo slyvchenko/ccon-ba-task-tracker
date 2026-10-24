@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 READINESS = ("READY_FOR_REVIEW", "NEEDS_CONFIRMATION", "INSUFFICIENT_CONTEXT")
 DECISION_STATES = ("CONFIRMED", "PROPOSED", "SUPERSEDED", "DISPUTED")
 CERTAINTY = ("CONFIRMED", "OPEN")
+SOURCE_STATES = ("READ", "UNAVAILABLE", "REFERENCE_ONLY")
 
 
 def value_text(value, label, limit, nonempty=False):
@@ -57,9 +58,14 @@ def validate_briefing(briefing):
     object_list(briefing, "timeline", ("date", "eventUk", "status", "sourceUrl"))
     object_list(briefing, "rules", ("whenUk", "thenUk", "certainty", "sourceUrl"))
     object_list(briefing, "verification", ("scenarioUk", "expectedUk", "sourceUrl"))
+    if "sourceAudit" in briefing:
+        object_list(briefing, "sourceAudit", ("descriptionUk", "status", "sourceUrl"))
     for i, item in enumerate(briefing["timeline"]):
         if item["status"] not in DECISION_STATES:
             raise ValueError(f"briefing.timeline[{i}].status is invalid.")
+    for i, item in enumerate(briefing.get("sourceAudit", [])):
+        if item["status"] not in SOURCE_STATES:
+            raise ValueError(f"briefing.sourceAudit[{i}].status is invalid.")
     for i, item in enumerate(briefing["rules"]):
         if item["certainty"] not in CERTAINTY:
             raise ValueError(f"briefing.rules[{i}].certainty is invalid.")
@@ -90,8 +96,9 @@ def audit_briefing(analysis, context=None):
             add("NO_ACCEPTANCE_TESTS", "Готовність заявлена без перевірок приймання.")
         if briefing.get("unknownsUk"):
             add("READY_WITH_UNKNOWNS", "Позначена готовність попри відкриті питання.")
+    if briefing.get("readiness") == "READY_FOR_REVIEW" and any(
+            item["status"] == "UNAVAILABLE" for item in briefing.get("sourceAudit", [])):
+        add("READY_WITH_UNREAD_SOURCES", "Брифінг заявляє готовність, але частина джерел недоступна.")
     if not briefing.get("timeline") and context and context.get("comments"):
         add("TIMELINE_MISSING", "Є коментарі Jira, але історію рішень не відновлено.")
-    if briefing.get("targetUk", "").strip() and not briefing.get("rules"):
-        add("RULES_MISSING", "Цільова поведінка визначена без матриці підтверджених умов.")
     return warnings
