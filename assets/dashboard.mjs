@@ -1,6 +1,7 @@
 import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueTier, priorityLane, rankTasks, filterTasks} from './task-rules.mjs';
 import {createLogsController} from './logs.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
+import {loadTaskDecisions} from './decisions-ui.mjs';
 
 
 const $ = id => document.getElementById(id);
@@ -231,6 +232,9 @@ function renderDetail() {
           <details class="description"><summary>Історія питань і відповіді</summary>
             <div id="questionTracker" class="question-tracker muted">Завантажую…</div>
           </details>
+          <details class="description"><summary>Рішення та їхня історія</summary>
+            <div id="decisionTracker" class="question-tracker muted">Завантажую рішення…</div>
+          </details>
           ${missing.length ? '<ol class="missing-info">' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : `<p class="muted">${analyzed ? 'Аналіз не виявив додаткових питань. Перевір пояснення та джерела нижче.' : 'Поки не визначено — потрібен аналіз контексту.'}</p>`}
           <details class="description"><summary>Підтвердження з REST / Supplier / Errors</summary>
             <div id="evidenceSummary" class="muted">Завантажую…</div>
@@ -285,6 +289,7 @@ function renderDetail() {
   updateFormStatus();
   loadTaskEvidence(task.key, api, escapeHtml, () => selected);
   loadTaskQuestions(task.key, api, escapeHtml, message, () => selected);
+  loadTaskDecisions(task.key, api, escapeHtml, message, () => selected);
   loadLogs(task.key);
 }
 function captureForm() {

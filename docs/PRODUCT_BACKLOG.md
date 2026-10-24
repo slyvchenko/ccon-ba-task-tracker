@@ -45,11 +45,11 @@
 | BA-03 | P0 | IMPLEMENTED (code) | 30-second context: confirmed/current/target/action/why | Зрозумілий стислий briefing із proof/uncertainty |
 | BA-04 | P0 | IMPLEMENTED (mechanical excerpt gate); semantic UAT open | Source-grounded facts vs interpretations vs assumptions | Для кожного важливого твердження source offset/URL і support test |
 | BA-05 | P0 | PARTIAL | BA questions ID, status, owner, answer, evidence | OPEN → ANSWERED / SUPERSEDED / NOT_APPLICABLE; пропажа з AI ≠ answered |
-| BA-06 | P1 | PLANNED | Розпізнавання реальної відповіді на питання з Jira/документів | Запропонувати кандидата відповіді з цитатою; без auto-close |
+| BA-06 | P1 | IMPLEMENTED (new-comment candidates); semantic UAT pending | Розпізнавання реальної відповіді на питання з Jira/документів | Запропонувати кандидата відповіді з цитатою; без auto-close |
 | BA-07 | P0 | IMPLEMENTED (explicit rule/QA references); real-case UAT open | Requirement → QA traceability | Зіставити позитивні/негативні/edge-cases із кожною підтвердженою вимогою |
 | BA-08 | P1 | PLANNED | On-demand deep re-analysis однієї задачі | Перезапуск без повного щоденного проходу, повага до збережених ручних правок |
 | BA-09 | P1 | PARTIAL | Related Jira + wiki/documentation cross-check | Читати доступні джерела, фіксувати непрочитані та конфлікти |
-| BA-10 | P1 | PLANNED | Decision register: confirmed/superseded/disputed | Хронологія рішень, хто підтвердив, коли, що змінюється |
+| BA-10 | P1 | IMPLEMENTED (local event history); human UAT pending | Decision register: confirmed/superseded/disputed | Хронологія рішень, хто підтвердив, коли, що змінюється |
 | BA-11 | P2 | PLANNED | Порівняння готової чернетки з останнім погодженим текстом задачі | Не переписувати схвалене без необхідності |
 | EVD-01 | P0 | IMPLEMENTED (code) | Зчитування повного ZIP за шарами REST/errors/selected supplier | Ніякого аналізу чужих supplier папок; parsing and ZIP safeguards |
 | EVD-02 | P0 | IMPLEMENTED (code) | Виявлення shared-flow/correlation кандидатів | Без фальшивої впевненості у спарюванні |
@@ -94,8 +94,8 @@
 | **#9 — CODE COMPLETE; LIVE UAT OPEN** | EVD-07: 1–30 error cases з локально підготовлених flow reports; EVD-08: evidence-based RCA із альтернативами й прогалинами | Synthetic multi-flow regression + flow/supplier isolation + baseline CI. Реальний Kibana UAT окремо |
 | **#10 — CODE COMPLETE; LIVE BROWSER UAT OPEN** | EVD-05: локальний browser-to-ZIP handoff із журналом помилок; OUT-03: ready/stale/blocked ZIP в existing card | Реальний авторизований download без cookies/API leaks |
 | **#11 — CODE COMPLETE; HUMAN CONTENT UAT OPEN** | BA-04 + OUT-04: перевірка зв'язку claim→source; BA-07: QA traceability | Невідтворювана вимога залишається OPEN |
-| **#12 — NEXT** | BA-06: question answer suggestions; BA-10: decision register | Не закривати питання автоматично |
-| **#13** | EVD-09/EVD-11: mapping contracts + flow timeline | Два request paths, retry/timeout, ordering |
+| **#12 — CODE COMPLETE; LIVE UAT OPEN** | BA-06: question answer suggestions; BA-10: decision register | Не закривати питання автоматично |
+| **#13 — NEXT** | EVD-09/EVD-11: mapping contracts + flow timeline | Два request paths, retry/timeout, ordering |
 | **#14** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
 | **#15** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
 | **#16** | QA-03/QA-06: real gold-set test + prompt A/B | No critical false claims |
