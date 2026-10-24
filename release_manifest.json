@@ -34,6 +34,7 @@
   "docs/CLOUD_MIGRATION_PLAN.md",
   "docs/CLOUD_PILOT_RUNBOOK.md",
   "docs/EVIDENCE_WORKFLOW.md",
+  "draft_output.py",
   "email_rules.py",
   "evaluation.py",
   "examples/log_config.json",
@@ -79,5 +80,7 @@
   "tests/test_sprint_priority.py",
   "tests/test_static_release.py",
   "tests/test_storage.py",
-  "tests/test_supplier_logs.py"
+  "tests/test_supplier_logs.py",
+  "tests/test_value_mapping.py",
+  "value_mapping.py"
 ]
