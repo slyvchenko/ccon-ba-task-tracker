@@ -368,7 +368,7 @@ def task_source(context, task, notes, evidence_reports=None, investigation=None)
     return source
 
 
-def analyze_all(root=ROOT, model_call=request_analysis):
+def analyze_all(root=ROOT, model_call=request_analysis, issue_key=None):
     root = Path(root)
     settings = model_settings()
     instructions, prompt_version = approved_prompts(root)
@@ -377,9 +377,28 @@ def analyze_all(root=ROOT, model_call=request_analysis):
     if context.get("complete") is not True or snapshot.get("complete") is not True:
         raise ValueError("Refusing model analysis of incomplete Jira source.")
     current_keys = set(context.get("issues", {}))
+    if issue_key is not None and (not isinstance(issue_key, str) or
+                                  not re.fullmatch(r"CCON-\d+", issue_key) or
+                                  issue_key not in current_keys):
+        raise ValueError("Issue is not in the complete personal Jira task scope.")
     if current_keys != {t["key"] for t in snapshot["tasks"]}:
         raise ValueError("Jira snapshot and source task sets differ.")
     existing = {task["key"]: task for task in Desk(root).view()["tasks"]}
+    if issue_key is not None:
+        # Preflight BEFORE even one model call. Never consume model tokens or
+        # partially generate a focused report that cannot be imported safely.
+        for task in snapshot["tasks"]:
+            key = task["key"]
+            if key == issue_key:
+                continue
+            fingerprint = context["issues"][key]["fingerprint"]
+            previous = (existing.get(key) or {}).get("analysis") or {}
+            if (not isinstance(previous, dict) or
+                    previous.get("contextFingerprint") != fingerprint or
+                    previous.get("stale") or
+                    task.get("contextFingerprint") != fingerprint):
+                raise ValueError("Other tasks have stale/missing analyses; run the full daily review first.")
+            validate_analysis(previous)
     analyses = {}
     generated = 0
     reused = 0
@@ -388,6 +407,18 @@ def analyze_all(root=ROOT, model_call=request_analysis):
         fingerprint = context["issues"][key]["fingerprint"]
         prev = existing.get(key) or {}
         previous = prev.get("analysis") or {}
+        if issue_key is not None and key != issue_key:
+            # A focused analysis MUST NOT call the model for other tasks or
+            # silently copy analyses from a different Jira-context revision.
+            if (not isinstance(previous, dict) or
+                    previous.get("contextFingerprint") != fingerprint or
+                    previous.get("stale") or
+                    task.get("contextFingerprint") != fingerprint):
+                raise ValueError("Other tasks have stale/missing analyses; run the full daily review first.")
+            validate_analysis(previous)
+            analyses[key] = previous
+            reused += 1
+            continue
         notes = prev.get("note") or ""
         note_hash = hashlib.sha256(notes.encode("utf-8")).hexdigest()[:16]
         log_reports, evidence_version = evidence_for_issue(root, key)
@@ -412,7 +443,7 @@ def analyze_all(root=ROOT, model_call=request_analysis):
                                  "questionsUk": ["Серійний аналіз не може бути перевірений за поточними evidence manifests."]}
         source = task_source(context, task, notes, log_reports, investigation)
         sprint_version = sprint_cache_version(source)
-        if (previous.get("contextFingerprint") == fingerprint and
+        if (issue_key is None and previous.get("contextFingerprint") == fingerprint and
                 previous.get("evidenceVersion", "none") == evidence_version and
                 previous.get("sprintVersion") == sprint_version and
                 not previous.get("stale") and
@@ -438,4 +469,4 @@ def analyze_all(root=ROOT, model_call=request_analysis):
     target = root / "data/daily_analysis.json"
     write_json(target, {"analyses": analyses, "promptVersion": prompt_version})
     return {"path": str(target), "total": len(analyses), "generated": generated,
-            "reused": reused, "promptVersion": prompt_version}
+            "reused": reused, "focusIssue": issue_key, "promptVersion": prompt_version}

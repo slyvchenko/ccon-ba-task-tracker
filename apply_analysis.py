@@ -15,11 +15,11 @@ from ba_decisions import sync_decision_proposals
 from ba_quality_gate import quality_gate
 
 
-def apply(path,root=ROOT):
+def apply(path,root=ROOT,focus_issue=None):
     with pipeline_lock(root):
-        return _apply(path,root)
+        return _apply(path,root,focus_issue)
 
-def _apply(path,root):
+def _apply(path,root,focus_issue=None):
     root=Path(root)
     source=json.loads(Path(path).read_text(encoding='utf-8-sig'))
     analyses=source.get('analyses')
@@ -34,6 +34,8 @@ def _apply(path,root):
         raise ValueError('Jira context retrieval is incomplete.')
     snapshot=json.loads(snapshot_raw.decode('utf-8-sig'))
     keys={t['key'] for t in snapshot['tasks']}
+    if focus_issue is not None and focus_issue not in keys:
+        raise ValueError('Focus issue not in current personal task scope.')
     if set(context.get('issues',{}))!=keys:
         raise ValueError('Snapshot and Jira context cover different tasks; run Jira sync again.')
     if set(analyses)!=keys:
@@ -59,6 +61,10 @@ def _apply(path,root):
         if not required.issubset(analysis):
             raise ValueError('Incomplete analysis fields for '+task['key'])
         Desk.validate_analysis(analysis)
+        if focus_issue is not None and task['key'] != focus_issue:
+            # Verified untouched analysis: do not normalize, retimestamp,
+            # run quality checks, or rewrite the existing optional email.
+            continue
         analysis['emailDraft']=make_ready_draft(
             task['key'], analysis,
             method=verified_method(root, task['key'], current['fingerprint']),
@@ -108,6 +114,8 @@ def _apply(path,root):
         report_error = str(error)
     question_errors = []
     for task in snapshot['tasks']:
+        if focus_issue is not None and task['key'] != focus_issue:
+            continue
         try:
             sync_questions(root, task['key'], task['analysis'],
                            all_evidence(root, task['key']))
@@ -117,6 +125,8 @@ def _apply(path,root):
             question_errors.append({'key': task['key'], 'error': str(error)[:180]})
     decision_errors = []
     for task in snapshot['tasks']:
+        if focus_issue is not None and task['key'] != focus_issue:
+            continue
         try:
             sync_decision_proposals(root, task['key'], task['analysis'])
         except (ValueError, OSError, TypeError, KeyError) as error:

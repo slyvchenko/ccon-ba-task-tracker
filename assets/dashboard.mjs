@@ -275,7 +275,7 @@ function renderDetail() {
           <label for="draftSubject">Тема</label><input id="draftSubject" maxlength="2000" placeholder="Тема листа" value="${escapeHtml(form.emailDraft.subject)}">
           <label for="draftBody">Текст листа</label><textarea id="draftBody" maxlength="50000" placeholder="Чернетка за описом, коментарями та відкритими питаннями задачі…">${escapeHtml(form.emailDraft.body)}</textarea>
           <section id="emailLogs" class="email-logs" aria-label="Логи до листа"><div class="logs-heading"><h4>Логи до листа</h4></div><p class="muted" role="status">Перевіряю архіви задачі…</p></section>
-          <div class="actions"><button id="email" class="primary">Відкрити в пошті ↗</button></div>
+          <div class="actions"><button id="copyEmail" class="quiet">Скопіювати лист</button><button id="email" class="primary">Відкрити в пошті ↗</button></div>
           </div>
         </details>
       </div>
@@ -289,6 +289,13 @@ function renderDetail() {
   $('save').addEventListener('click', () => saveTask(false));
   $('done').addEventListener('click', () => saveTask(true));
   $('discard').addEventListener('click', discardForm);
+  $('copyEmail').addEventListener('click', () => {
+    const subject = $('draftSubject').value.trim();
+    const body = $('draftBody').value.trim();
+    if (!subject && !body) return message('Немає тексту листа для копіювання.', true);
+    copyText((subject ? 'Subject: ' + subject + '\n\n' : '') + body,
+             'Тему й текст листа скопійовано.');
+  });
   $('email').addEventListener('click', openEmail);
   if (cloudMode) $('email').textContent = 'Зберегти й скопіювати лист';
   $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
