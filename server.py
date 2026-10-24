@@ -24,6 +24,7 @@ STATIC_FILES = {
     '/assets/dashboard.mjs': ('assets/dashboard.mjs', 'text/javascript; charset=utf-8'),
     '/assets/task-rules.mjs': ('assets/task-rules.mjs', 'text/javascript; charset=utf-8'),
     '/assets/logs.mjs': ('assets/logs.mjs', 'text/javascript; charset=utf-8'),
+    '/assets/evidence-ui.mjs': ('assets/evidence-ui.mjs', 'text/javascript; charset=utf-8'),
 }
 
 class LocalServer(ThreadingHTTPServer):
