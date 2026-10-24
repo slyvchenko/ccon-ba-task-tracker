@@ -11,6 +11,7 @@ from supplier_logs import verified_method
 from review_report import build_report, write_report
 from prompt_calibration import update_daily
 from ba_questions import sync_questions, all_evidence
+from ba_quality_gate import quality_gate
 
 
 def apply(path,root=ROOT):
@@ -61,6 +62,21 @@ def _apply(path,root):
             task['key'], analysis,
             method=verified_method(root, task['key'], current['fingerprint']),
             attachment_ready=supplier_zip_ready(root, task['key']))
+        related = {ref['linkedKey']: context.get('issues', {}).get(ref['linkedKey'])
+                   or context.get('linkedIssues', {}).get(ref['linkedKey'])
+                   for ref in current.get('links', []) if isinstance(ref, dict)
+                   and isinstance(ref.get('linkedKey'), str)}
+        gate = quality_gate(analysis, current, related)
+        analysis['qualityGate'] = gate
+        # A machine-verified link/excerpt is not semantic correctness.
+        # Do not allow a READY_FOR_REVIEW badge when the checks have gaps.
+        brief = analysis.get('briefing')
+        if (isinstance(brief, dict) and brief.get('readiness') == 'READY_FOR_REVIEW'
+                and not gate['isReadyForReview']):
+            brief['readiness'] = 'NEEDS_CONFIRMATION'
+            brief['readinessReasonUk'] = (
+                'Потрібна перевірка джерел, покриття умов тестами або точності опису. '
+                'Див. Quality Gate у картці задачі.')
         analysis.update(analyzedAt=stamp,stale=False)
         task['analysis']=analysis
         task['contextFingerprint']=current['fingerprint']
