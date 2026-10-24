@@ -112,6 +112,7 @@ function briefingMarkup(briefing, stale) {
   const field = (heading, value) => `<div class="section-label">${heading}</div><p class="pre">${escapeHtml(value || 'Не встановлено з доступних джерел.')}</p>`;
   const facts = entries(briefing.confirmedFacts, item => `${escapeHtml(item.textUk)}${source(item.sourceUrl)}`);
   const history = entries(briefing.timeline, item => `${escapeHtml(item.date || 'Дата невідома')} · ${escapeHtml(item.status)}: ${escapeHtml(item.eventUk)}${source(item.sourceUrl)}`);
+  const sourceAudit = entries(briefing.sourceAudit, item => `${escapeHtml(item.status)}: ${escapeHtml(item.descriptionUk)}${source(item.sourceUrl)}`);
   const rules = entries(briefing.rules, item => `<b>IF</b> ${escapeHtml(item.whenUk)} <b>THEN</b> ${escapeHtml(item.thenUk)} · ${escapeHtml(item.certainty)}${source(item.sourceUrl)}`);
   const tests = entries(briefing.verification, item => `<b>Сценарій:</b> ${escapeHtml(item.scenarioUk)} <b>Очікування:</b> ${escapeHtml(item.expectedUk)}${source(item.sourceUrl)}`);
   const plain = values => entries(values, item => escapeHtml(item));
@@ -122,6 +123,7 @@ function briefingMarkup(briefing, stale) {
     ${field('Що відбувається зараз', briefing.currentUk)}
     ${field('Що має бути в результаті', briefing.targetUk)}
     <details class="description" open><summary>Підтверджені факти та джерела</summary>${facts}</details>
+    <details class="description"><summary>Перевірені й недоступні джерела</summary>${sourceAudit}</details>
     <details class="description"><summary>Історія рішень і суперечностей</summary>${history}</details>
     <details class="description"><summary>Правила IF / THEN</summary>${rules}</details>
     <details class="description"><summary>QA та перевірки приймання</summary>${tests}</details>
