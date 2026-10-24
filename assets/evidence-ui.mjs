@@ -99,6 +99,13 @@ export async function loadTaskQuestions(key, api, escape, notify, current) {
     destination.innerHTML = data.questions.map(q =>
       '<section class="question-record" data-question="' + escape(q.id) + '">' +
       '<b>' + escape(q.text) + '</b>' +
+      (q.answerCandidates?.length ? '<details><summary>Можлива відповідь у нових коментарях (' +
+        escape(q.answerCandidates.length) + '). Не підтверджено</summary><div class="question-candidates">' +
+        q.answerCandidates.slice(0, 3).map(c => '<div class="question-candidate">' +
+          '<p>' + escape(c.excerpt) + '</p><a target="_blank" rel="noopener noreferrer" href="' +
+          escape(c.sourceUrl) + '">Джерело Jira</a> · <button class="suggest-answer quiet" ' +
+          'data-comment="' + escape(c.commentId) + '">Підставити для перевірки</button>' +
+          '</div>').join('') + '</div></details>' : '') +
       '<label>Стан <select class="question-state">' +
         Object.keys(stateLabels).map(s => '<option value="' + s + '"' +
           (q.status === s ? ' selected' : '') + '>' + stateLabels[s] + '</option>').join('') +
@@ -112,6 +119,17 @@ export async function loadTaskQuestions(key, api, escape, notify, current) {
         (q.status === 'ANSWERED' && !q.answerVerified ? 'Відповідь без підтвердженого джерела' :
         q.presentInLatestAnalysis === false ? 'Немає в аналізі, але не закрито автоматично' : '') +
       '</span></div></section>').join('');
+    // Fill fields for review, never update OPEN status or persist without
+    // the analyst explicitly choosing a status and clicking Save.
+    destination.querySelectorAll('.suggest-answer').forEach(button => button.addEventListener('click', () => {
+      const box = button.closest('.question-record');
+      const question = data.questions.find(q => q.id === box.dataset.question);
+      const match = question?.answerCandidates?.find(c => c.commentId === button.dataset.comment);
+      if (!match) return;
+      box.querySelector('.question-answer').value = match.excerpt;
+      box.querySelector('.question-url').value = match.sourceUrl;
+      notify('Коментар підставлено. Це лише кандидат: перевір зміст, обери стан і збережи вручну.');
+    }));
     destination.querySelectorAll('.save-question').forEach(button => button.addEventListener('click', async () => {
       const box = button.closest('.question-record');
       button.disabled = true;
