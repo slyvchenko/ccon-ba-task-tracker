@@ -110,10 +110,26 @@ def prepare(root=ROOT, count=30):
                 "description": issue.get("description", ""),
                 "jiraStatus": issue.get("jiraStatus", ""),
                 "comments": [
-                    {k: comment.get(k) for k in ("id", "created", "updated", "body")}
+                    {k: comment.get(k) for k in ("id", "created", "updated", "body", "author")}
                     for comment in issue.get("comments", [])
                 ],
                 "links": issue.get("links", []),
+                "attachments": [
+                    {k: attachment.get(k) for k in ("id", "filename", "mimeType", "size", "created")}
+                    for attachment in issue.get("attachments", [])
+                ],
+                "linkedContexts": [
+                    {"key": linked, "summary": linked_issue.get("summary", ""),
+                     "description": linked_issue.get("description", ""),
+                     "comments": [
+                        {k: comment.get(k) for k in ("id", "created", "updated", "body", "author")}
+                        for comment in linked_issue.get("comments", [])
+                     ], "url": linked_issue.get("url", "")}
+                    for linked in [relation.get("linkedKey") for relation in issue.get("links", [])]
+                    for linked_issue in [source["issues"].get(linked) or
+                                         source.get("linkedIssues", {}).get(linked)]
+                    if isinstance(linked_issue, dict)
+                ],
                 "blockedBy": issue.get("blockedBy", []),
                 "parentKey": issue.get("parentKey", ""),
                 "url": issue.get("url", ""),
