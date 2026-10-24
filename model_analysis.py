@@ -31,9 +31,9 @@ MAX_CONTEXT_BYTES = 150000
 SECRET_KEYS = frozenset(("password", "token", "apikey", "api_key", "secret",
                          "authorization", "cookie", "totp", "otpauth"))
 SECRET_TEXT = re.compile(
-    r"(?i)(?:Bearer\\s+[A-Za-z0-9_.~+/=-]{12,}|"
-    r"(?:password|api[_-]?key|token|secret|totp)\\s*[:=]\\s*[^\\s,;]{6,}|"
-    r"otpauth://\\S+)"
+    r"(?i)(?:Bearer\s+[A-Za-z0-9_.~+/=-]{12,}|"
+    r"(?:password|api[_-]?key|token|secret|totp)\s*[:=]\s*[^\s,;]{6,}|"
+    r"otpauth://\S+)"
 )
 
 
