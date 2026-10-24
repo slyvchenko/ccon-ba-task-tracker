@@ -50,10 +50,10 @@ def classify(path, aliases):
             if i + 1 < len(parts) and is_selected(parts[i + 1]):
                 return "supplier"
             return None
-    if any(x in ("rest", "restlayer", "rest-layer", "rest_api", "rest-api") for x in low[:-1]):
-        return "rest"
     if any(x in ("errors", "error", "rest-errors", "rest_errors", "exceptions") for x in low[:-1]):
         return "errors"
+    if any(x in ("rest", "restlayer", "rest-layer", "rest_api", "rest-api") for x in low[:-1]):
+        return "rest"
     # Files may be exported in a flat root folder named "REST-response...".
     base = low[-1]
     if base.startswith(("rest-", "rest_", "rest.")):
