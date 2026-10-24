@@ -39,6 +39,7 @@ _CREDENTIAL_NAME = (
     r"(?:password|passphrase|api[_-]?key|access[_-]?token|refresh[_-]?token|"
     r"token|client[_-]?secret|secret|authorization|totp|private[_-]?key)"
 )
+_BEARER_TOKEN = re.compile(r"(?i)\\bBearer\\s+[A-Za-z0-9_.~+/=-]{12,}")
 SECRET_TEXT = re.compile(
     r"(?i)(?:Bearer\s+[A-Za-z0-9_.~+/=-]{12,}|otpauth://\S+|"
     r"(?<![\w])(?:\\?[\"'])?" + _CREDENTIAL_NAME +
@@ -103,7 +104,8 @@ def sanitize_source(value):
     if isinstance(value, list):
         return [sanitize_source(v) for v in value]
     if isinstance(value, str):
-        return SECRET_TEXT.sub("[REDACTED_CREDENTIAL]", value)
+        return SECRET_TEXT.sub("[REDACTED_CREDENTIAL]",
+                               _BEARER_TOKEN.sub("[REDACTED_CREDENTIAL]", value))
     return value
 
 
