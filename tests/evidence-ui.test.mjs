@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {valueMappingMarkup, investigationMarkup} from '../assets/evidence-ui.mjs';
+import {valueMappingMarkup, investigationMarkup, flowDiagnosticsMarkup} from '../assets/evidence-ui.mjs';
 
 const escape = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -59,4 +59,31 @@ test('Kibana labels and hypotheses are escaped', () => {
   assert.match(html, /&lt;script&gt;/);
   assert.doesNotMatch(html, /<script>/);
   assert.doesNotMatch(html, /<img/);
+});
+
+test('flow diagnostics show explicit timestamp coverage without claiming inferred retries', () => {
+  const report = {flowDiagnostics: {
+    entriesExamined: 3, timestampedEntries: 2,
+    contractCandidates: [{direction:'REST_REQUEST_TO_SUPPLIER_REQUEST',
+      supplierMethod:'doOrder',exactValueCandidates:[{restField:'A',supplierField:'RQ.B'}],
+      differentValueCandidates:[],restNullFields:['Extra'],
+      supplierNullFields:[],restRepeatedFields:[],supplierRepeatedFields:['RQ.Items']}],
+    timeline: [{layer:'rest',direction:'request',eventTimeUtc:'2026-10-24T08:00:00+00:00'},
+      {layer:'supplier',direction:'request',method:'doOrder',eventTimeUtc:null}],
+    repeatedMethodCandidates:[{supplierMethod:'doOrder',requestCount:2}]
+  }};
+  const html = flowDiagnosticsMarkup(report, escape);
+  assert.match(html, /2\/3/);
+  assert.match(html, /REST request → Supplier request/);
+  assert.match(html, /Час невідомий/);
+  assert.match(html, /не доведений retry/);
+  assert.match(html, /null REST\/supplier: 1\/0/);
+});
+test('flow diagnostics never expose unsafe method names as HTML', () => {
+  const html = flowDiagnosticsMarkup({flowDiagnostics:{
+    entriesExamined:1,timestampedEntries:0,contractCandidates:[],
+    timeline:[{layer:'supplier',direction:'request',method:'<img src=x>',eventTimeUtc:null}]
+  }},escape);
+  assert.doesNotMatch(html, /<img/);
+  assert.match(html, /&lt;img/);
 });
