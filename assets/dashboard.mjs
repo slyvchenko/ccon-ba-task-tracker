@@ -92,6 +92,52 @@ function sourceMarkup(analysis) {
     return `<li class="wordbreak">${escapeHtml(item.text || 'Джерело')}${url ? ` · <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити ↗</a>` : ''}</li>`;
   }).join('') + '</ul>';
 }
+
+function briefingMarkup(briefing, stale) {
+  if (!briefing || typeof briefing !== 'object') {
+    return '<section class="panel ba-brief"><h3>Ситуація за 30 секунд</h3><p class="muted">Структурований BA-брифінг ще не підготовлено. Перевір поточний аналіз та джерела нижче.</p></section>';
+  }
+  const readiness = {
+    READY_FOR_REVIEW:'Чернетка готова до перевірки BA',
+    NEEDS_CONFIRMATION:'Є відкриті рішення',
+    INSUFFICIENT_CONTEXT:'Недостатньо підтверджених даних'
+  }[briefing.readiness] || 'Рівень готовності не визначено';
+  const source = (url, label='Джерело') => {
+    const safe = safeUrl(url);
+    return safe ? ` <a href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer">${label} ↗</a>` : '<span class="muted"> (не підтверджено джерелом)</span>';
+  };
+  const entries = (items, render) => Array.isArray(items) && items.length
+    ? `<ul class="brief-list">${items.map(item => `<li>${render(item)}</li>`).join('')}</ul>`
+    : '<p class="muted">Не встановлено з доступних джерел.</p>';
+  const field = (heading, value) => `<div class="section-label">${heading}</div><p class="pre">${escapeHtml(value || 'Не встановлено з доступних джерел.')}</p>`;
+  const facts = entries(briefing.confirmedFacts, item => `${escapeHtml(item.textUk)}${source(item.sourceUrl)}`);
+  const history = entries(briefing.timeline, item => `${escapeHtml(item.date || 'Дата невідома')} · ${escapeHtml(item.status)}: ${escapeHtml(item.eventUk)}${source(item.sourceUrl)}`);
+  const sourceAudit = entries(briefing.sourceAudit, item => `${escapeHtml(item.status)}: ${escapeHtml(item.descriptionUk)}${source(item.sourceUrl)}`);
+  const rules = entries(briefing.rules, item => `<b>IF</b> ${escapeHtml(item.whenUk)} <b>THEN</b> ${escapeHtml(item.thenUk)} · ${escapeHtml(item.certainty)}${source(item.sourceUrl)}`);
+  const tests = entries(briefing.verification, item => `<b>Сценарій:</b> ${escapeHtml(item.scenarioUk)} <b>Очікування:</b> ${escapeHtml(item.expectedUk)}${source(item.sourceUrl)}`);
+  const plain = values => entries(values, item => escapeHtml(item));
+  return `<section class="panel ba-brief" aria-label="Розбір ситуації та вимог">
+    <div class="panel-title"><h3>Ситуація за 30 секунд</h3><span class="badge ${briefing.readiness === 'READY_FOR_REVIEW' ? 'tone-green' : 'tone-amber'}">${escapeHtml(readiness)}</span></div>
+    ${stale ? '<p class="analysis-missing">Брифінг застарів: використовуй лише після оновлення джерел.</p>' : ''}
+    <p class="pre brief-overview">${escapeHtml(briefing.overviewUk || 'Контекст поки не сформовано.')}</p>
+    ${field('Що відбувається зараз', briefing.currentUk)}
+    ${field('Що має бути в результаті', briefing.targetUk)}
+    <details class="description" open><summary>Підтверджені факти та джерела</summary>${facts}</details>
+    <details class="description"><summary>Перевірені й недоступні джерела</summary>${sourceAudit}</details>
+    <details class="description"><summary>Історія рішень і суперечностей</summary>${history}</details>
+    <details class="description"><summary>Правила IF / THEN</summary>${rules}</details>
+    <details class="description"><summary>QA та перевірки приймання</summary>${tests}</details>
+    <details class="description"><summary>Scope, бізнес-вплив і ризики</summary>
+      ${field('Технічні межі', briefing.technicalScopeUk)}
+      ${field('Бізнес-вплив', briefing.businessImpactUk)}
+      <div class="section-label">Ризики</div>${plain(briefing.risksUk)}
+    </details>
+    <details class="description"><summary>Що не встановлено</summary>${plain(briefing.unknownsUk)}</details>
+    ${field('Чому саме такий рівень готовності', briefing.readinessReasonUk)}
+    <p class="muted">Це підготовлений аналіз, а не гарантія правильності. Перед рішенням перевір першоджерела та непідтверджені припущення.</p>
+  </section>`;
+}
+
 function legacyMarkup(task) {
   const parts = [['Попереднє пояснення', task.statusReason], ['Попередня дія', task.nextAction], ['Попередній підготовлений текст', task.readyOutput]].filter(item => item[1]);
   if (!parts.length) return '';
@@ -126,6 +172,7 @@ function renderDetail() {
     </div>
     <div id="staleNotice" class="saved-note" hidden></div>
     ${stale ? '<div class="analysis-missing"><b>Контекст Jira змінився — попередній аналіз застарів.</b><br>Черга й сигнали потребують нового аналізу опису, коментарів та залежностей. Твій ручний стан і збережена чернетка залишаються чинними.</div>' : !analyzed ? '<div class="analysis-missing"><b>Для цієї задачі ще немає повного аналізу українською.</b><br>Потрібно прочитати опис, коментарі й залежності. Попередній snapshot не дає достатніх підстав для нової оцінки.</div>' : ''}
+    ${briefingMarkup(analyzed ? analysis.briefing : undefined, stale)}
     <div class="detail-grid">
       <div>
         <section class="panel analysis-lead" aria-label="Пояснення та наступна дія">

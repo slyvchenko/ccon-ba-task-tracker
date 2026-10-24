@@ -59,7 +59,7 @@ class ReportIntegrationTests(unittest.TestCase):
         self.assertEqual(report["summary"]["total"], 1)
         self.assertEqual(report["summary"]["NEW"], 1)
         self.assertEqual(report["summary"]["questionsAdded"], 1)
-        self.assertEqual(report["warnings"], [])
+        self.assertEqual([item["code"] for item in report["warnings"]], ["BRIEF_MISSING"])
         task = self.desk.view()["tasks"][0]
         self.assertEqual(task["manualStatus"], "IN PROGRESS")
         self.assertEqual(task["note"], "Keep")

@@ -3,6 +3,7 @@ from collections import Counter
 from pathlib import Path
 
 from storage import write_json
+from ba_briefing import audit_briefing
 
 
 def normalize(value):
@@ -16,6 +17,14 @@ def questions(analysis):
             if isinstance(value, str) and value.strip()}
 
 
+def normalize_briefing(briefing):
+    if not briefing:
+        return None
+    # Preserve semantic ordering of decisions/rules; ignore cosmetic whitespace.
+    import json
+    return normalize(json.dumps(briefing, ensure_ascii=False, sort_keys=True))
+
+
 def signature(analysis):
     draft = analysis.get("emailDraft") or {}
     return {
@@ -26,6 +35,7 @@ def signature(analysis):
         "nextActionUk": normalize(analysis.get("nextActionUk")),
         "missingInfo": tuple(sorted(questions(analysis))),
         "standardDescription": normalize(analysis.get("standardDescription")),
+        "briefing": normalize_briefing(analysis.get("briefing")),
         "emailDraft": tuple(normalize(draft.get(field)) for field in ("to", "subject", "body")),
     }
 
@@ -96,6 +106,7 @@ def build_report(previous_tasks, current_tasks, generated_at):
             "manualStatus": old.get("manualStatus", "AUTO"),
         })
         warnings.extend(diagnostics(key, analysis))
+        warnings.extend({"key": key, **warning} for warning in audit_briefing(analysis))
     result = {
         "generatedAt": generated_at,
         "summary": {

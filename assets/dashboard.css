@@ -1221,3 +1221,33 @@ body,button,input,select,textarea,option {
 .bulk-logs a {
   font-size:12px
 }
+
+/* Source-grounded BA briefing remains readable without a frontend build step. */
+.ba-brief {
+  margin-bottom:14px;
+}
+.ba-brief .brief-overview {
+  font-size:16px;
+  font-weight:550;
+  line-height:1.55;
+}
+.ba-brief .section-label {
+  margin-top:12px;
+}
+.ba-brief .brief-list {
+  padding-left:22px;
+  line-height:1.55;
+}
+.ba-brief .brief-list li {
+  margin:7px 0;
+  overflow-wrap:anywhere;
+}
+.ba-brief .panel-title {
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.ba-brief details.description {
+  margin:7px 0;
+}
