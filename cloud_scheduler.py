@@ -31,7 +31,17 @@ def scheduler_iteration(root=ROOT, clock=None, worker=run):
     receipt = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     if not eligible(clock, receipt):
         return {"executed": False, "localDate": clock.astimezone(WARSAW).date().isoformat()}
-    result = worker(root)
+    attempt = root / "data/last_daily_attempt.json"
+    try:
+        result = worker(root)
+    except Exception as error:
+        # Do not persist potentially sensitive provider/Jira response text.
+        write_json(attempt, {"status": "FAILED", "attemptedAtUtc": utc_now(),
+                             "localDate": clock.astimezone(WARSAW).date().isoformat(),
+                             "errorType": type(error).__name__})
+        raise
+    write_json(attempt, {"status": "SUCCESS", "attemptedAtUtc": utc_now(),
+                         "localDate": clock.astimezone(WARSAW).date().isoformat()})
     # Record success only after full sync+analysis+import.
     write_json(path, {
         "successfulLocalDate": clock.astimezone(WARSAW).date().isoformat(),
