@@ -82,6 +82,28 @@ export function flowDiagnosticsMarkup(report, escape) {
     '</details>';
 }
 
+export function evidenceHealthMarkup(health, escape) {
+  if (!health) return '';
+  const ratio = health.restSupplierCoverage;
+  const coverage = ratio === null || ratio === undefined ?
+    'Немає підтвердженого списку cconFlowId з Jira' :
+    Math.round(ratio * 100) + '% REST + supplier із ' + Number(health.expectedFlowCount || 0) + ' очікуваних flows';
+  const codes = (health.taxonomy || []).slice(0, 12).map(x =>
+    '<li><b>' + escape(x.code) + '</b>: ' + escape(x.category) +
+    ' · ' + escape(x.caseCount) + ' незалежних flow(s) · класифікація попередня</li>').join('');
+  const gaps = (health.flows || []).slice(0, 20).filter(x => x.gaps?.length).map(x =>
+    '<li>' + escape(x.flowId) + ': ' + escape(x.gaps.join(', ')) + '</li>').join('');
+  const repeat = (health.recurrence || []).slice(0, 10).map(x =>
+    '<li>' + escape(x.code) + ': ' + escape(x.caseCount) + ' локально завантажених flows</li>').join('');
+  return '<details><summary>Покриття доказів · ' + escape(coverage) + '</summary>' +
+    '<p class="muted">Помилка може спостерігатися у supplier, але мати причину в запиті CCON. ' +
+    'Коди не підтверджують root cause; ця вибірка не репрезентативна.</p>' +
+    (codes ? '<div class="section-label">Гіпотези категорій помилок</div><ul>' + codes + '</ul>' : '') +
+    (repeat ? '<div class="section-label">Повторення у доступних flows</div><ul>' + repeat + '</ul>' : '') +
+    (gaps ? '<div class="section-label">Прогалини в ZIP</div><ul>' + gaps + '</ul>' : '') +
+    '</details>';
+}
+
 export async function loadTaskEvidence(key, api, escape, current) {
   const destination = document.getElementById('evidenceSummary');
   if (!destination) return;
@@ -90,7 +112,8 @@ export async function loadTaskEvidence(key, api, escape, current) {
     if (current() !== key) return;
     const reports = data.reports || [];
     if (!reports.length) {
-      destination.textContent = 'Потрібні ZIP-логи. Запусти Evidence Flow у локальному Codex.';
+      destination.innerHTML = '<p class="muted">Потрібні ZIP-логи. Запусти Evidence Flow у локальному Codex.</p>' +
+        evidenceHealthMarkup(data.health, escape);
       return;
     }
     destination.innerHTML = reports.map(report => {
@@ -114,7 +137,8 @@ export async function loadTaskEvidence(key, api, escape, current) {
         flowDiagnosticsMarkup(report, escape) +
         (questions ? '<div class="section-label">Що уточнити</div><ul>' + questions + '</ul>' : '') +
         '</div>';
-    }).join('') + investigationMarkup(data.investigation, escape);
+    }).join('') + investigationMarkup(data.investigation, escape) +
+      evidenceHealthMarkup(data.health, escape);
   } catch (error) {
     if (current() === key) destination.textContent = 'Evidence недоступні: ' + error.message;
   }
