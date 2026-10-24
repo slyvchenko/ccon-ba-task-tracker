@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from model_analysis import model_settings, request_analysis, approved_prompts
+from model_analysis import model_settings, request_analysis, approved_prompts, sanitize_source
 from run_daily import run
 from cloud_scheduler import eligible, scheduler_iteration, WARSAW
 
@@ -51,6 +51,24 @@ class ModelAndSchedulerTests(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         self.assertEqual(calls[0].get_method(), "POST")
 
+    def test_model_source_strips_common_credentials_and_duplicate_raw_adf(self):
+        original = {
+            'issue': {'summary': 'NDC workflow', 'description':
+                      'Authorization: Bearer abcdefghijklmnop and password=abcdef123456',
+                      'descriptionAdf': {'secret': 'should-not-be-sent'},
+                      'reporter': {'emailAddress': 'person@example.test'},
+                      'comments': [{'body': 'API_KEY: testsecret12345678'}],
+                      'attachments': [{'content': 'https://jira/private_attachment'}]},
+        }
+        filtered = sanitize_source(original)
+        dump = json.dumps(filtered)
+        self.assertNotIn('abcdefghijklmnop', dump)
+        self.assertNotIn('abcdef123456', dump)
+        self.assertNotIn('testsecret12345678', dump)
+        self.assertNotIn('person@example.test', dump)
+        self.assertNotIn('descriptionAdf', dump)
+        self.assertNotIn('private_attachment', dump)
+        self.assertEqual(filtered['issue']['summary'], 'NDC workflow')
     def test_cloud_runner_fails_before_network_for_missing_analyst(self):
         with patch.dict(os.environ, {"CCON_CLOUD_MODE": "1",
                                      "CCON_JIRA_ASSIGNEE_ACCOUNT_ID": "",
