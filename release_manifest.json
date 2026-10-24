@@ -23,6 +23,7 @@
   "configure_jira.py",
   "dashboard.html",
   "desk_store.py",
+  "docs/BA_EVALUATION_RUNBOOK.md",
   "email_rules.py",
   "evaluation.py",
   "examples/log_config.json",
