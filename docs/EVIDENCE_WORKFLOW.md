@@ -20,9 +20,9 @@ never modifies Jira/Confluence and never sends emails.
    task's supplier; **never include REST, errors or other suppliers in the
    outgoing ZIP**. Keep the full original ZIP in private local storage for
    analysis, not for forwarding.
-4. **Quick context**: WHAT'S HAPPENING / WHAT TO VERIFY / NEXT STEP / WHY,
+4. **Standard task context**: WHAT'S HAPPENING / WHAT TO VERIFY / NEXT STEP / WHY,
    with visible confidence, outstanding BA questions and references.
-   Make the long technical investigation available under "Глибокий аналіз".
+   Keep detailed log evidence and question history in collapsed sections of the original task page; no separate UI modes.
 
 ## Priority contract
 
