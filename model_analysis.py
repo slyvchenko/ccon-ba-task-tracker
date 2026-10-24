@@ -11,7 +11,7 @@ import re
 import urllib.error
 import urllib.request
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunsplit
 
 from app_config import ROOT
 from ba_briefing import validate_briefing
@@ -28,25 +28,90 @@ MAX_CONTEXT_BYTES = 150000
 # Jira/source text is data, not executable instructions. Strip common secret
 # forms before any opted-in company-approved model request. This is defensive,
 # not a substitute for upstream data classification.
-SECRET_KEYS = frozenset(("password", "token", "apikey", "api_key", "secret",
-                         "authorization", "cookie", "totp", "otpauth"))
+SECRET_KEYS = frozenset((
+    "password", "passphrase", "token", "access_token", "refresh_token",
+    "apikey", "api_key", "client_secret", "secret", "authorization",
+    "cookie", "totp", "otpauth", "private_key",
+))
+# Handles unquoted assignments, quoted JSON fields, and escaped JSON quotes
+# embedded in Jira comments. This is defense in depth, not formal DLP.
+_CREDENTIAL_NAME = (
+    r"(?:password|passphrase|api[_-]?key|access[_-]?token|refresh[_-]?token|"
+    r"token|client[_-]?secret|secret|authorization|totp|private[_-]?key)"
+)
 SECRET_TEXT = re.compile(
-    r"(?i)(?:Bearer\s+[A-Za-z0-9_.~+/=-]{12,}|"
-    r"(?:password|api[_-]?key|token|secret|totp)\s*[:=]\s*[^\s,;]{6,}|"
-    r"otpauth://\S+)"
+    r"(?i)(?:Bearer\s+[A-Za-z0-9_.~+/=-]{12,}|otpauth://\S+|"
+    r"(?<![\w])(?:\\?[\"'])?" + _CREDENTIAL_NAME +
+    r"(?:\\?[\"'])?\s*[:=]\s*"
+    r"(?:\\?[\"'][^\r\n\"']{0,1000}\\?[\"']|[^\s,;}\]]{1,1000}))"
 )
 
 
+def extract_adf_links(adf):
+    """Extract named HTTP(S) URLs from ADF link marks/cards without raw ADF."""
+    links, seen = [], set()
+
+    def remember(url, label):
+        if not isinstance(url, str) or len(url) > 2000:
+            return
+        parsed = urlparse(url)
+        if parsed.scheme not in ("https", "http") or not parsed.hostname or (
+                parsed.username or parsed.password):
+            return
+        # Query strings/fragments may carry credentials or tracking tokens.
+        cleaned = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
+        cleaned = SECRET_TEXT.sub("[REDACTED_CREDENTIAL]", cleaned)
+        if cleaned not in seen and len(links) < 100:
+            seen.add(cleaned)
+            links.append({"label": sanitize_source(label or "Linked source"),
+                          "url": cleaned})
+
+    def walk(node):
+        if isinstance(node, list):
+            for item in node:
+                walk(item)
+        elif isinstance(node, dict):
+            label = node.get("text") or node.get("type") or "Linked source"
+            for mark in node.get("marks") or []:
+                if isinstance(mark, dict) and mark.get("type") == "link":
+                    remember((mark.get("attrs") or {}).get("href"), label)
+            if node.get("type") in ("inlineCard", "blockCard"):
+                remember((node.get("attrs") or {}).get("url"), label)
+            for value in node.values():
+                if isinstance(value, (dict, list)):
+                    walk(value)
+
+    walk(adf)
+    return links
+
+
 def sanitize_source(value):
+    """Strip secrets and flatten only ADF URL references needed for evidence."""
     if isinstance(value, dict):
-        return {k: sanitize_source(v) for k, v in value.items()
-                if str(k).lower() not in SECRET_KEYS
-                and str(k) not in ("bodyAdf", "descriptionAdf", "emailAddress", "content")}
+        clean = {}
+        for key, item in value.items():
+            label = str(key)
+            if label.lower() in SECRET_KEYS or label in ("emailAddress", "content"):
+                continue
+            if label in ("bodyAdf", "descriptionAdf"):
+                links = extract_adf_links(item)
+                if links:
+                    clean[label + "Links"] = links
+                continue
+            clean[key] = sanitize_source(item)
+        return clean
     if isinstance(value, list):
         return [sanitize_source(v) for v in value]
     if isinstance(value, str):
         return SECRET_TEXT.sub("[REDACTED_CREDENTIAL]", value)
     return value
+
+
+def sprint_cache_version(source):
+    """Invalidate model analysis when board-derived sprint state changes."""
+    state = json.dumps(source.get("sprint", {}), sort_keys=True,
+                       ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(state.encode("utf-8")).hexdigest()[:16]
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -218,7 +283,10 @@ def analyze_all(root=ROOT, model_call=request_analysis):
         previous = prev.get("analysis") or {}
         notes = prev.get("note") or ""
         note_hash = hashlib.sha256(notes.encode("utf-8")).hexdigest()[:16]
+        source = task_source(context, task, notes)
+        sprint_version = sprint_cache_version(source)
         if (previous.get("contextFingerprint") == fingerprint and
+                previous.get("sprintVersion") == sprint_version and
                 not previous.get("stale") and
                 previous.get("promptVersion") == prompt_version and
                 previous.get("manualNoteVersion") == note_hash and
@@ -227,13 +295,13 @@ def analyze_all(root=ROOT, model_call=request_analysis):
             analyses[key] = previous
             reused += 1
             continue
-        source = task_source(context, task, notes)
         analysis = model_call(settings, instructions, source, notes)
         if not isinstance(analysis, dict):
             raise ValueError("Analysis must be an object for " + key)
         analysis["contextFingerprint"] = fingerprint
         analysis["promptVersion"] = prompt_version
         analysis["manualNoteVersion"] = note_hash
+        analysis["sprintVersion"] = sprint_version
         validate_analysis(analysis)
         analyses[key] = analysis
         generated += 1
