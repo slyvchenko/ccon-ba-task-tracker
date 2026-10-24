@@ -60,6 +60,7 @@ Jira, Confluence, вихідні листи, статуси користувач
 - businessImpactUk: релевантні наслідки; без вигаданих revenue/impact.
 - technicalScopeUk: постачальник(и), продукт, метод, версія, поля, межі; лише
   перевірені. Не поширюй постачальницьку умову на всіх без погодження.
+- sourceAudit: [{descriptionUk,status,sourceUrl}]. status READ для реально прочитаного вмісту; REFERENCE_ONLY для посилання/метаданих без прочитаного вмісту; UNAVAILABLE для недоступного джерела. Зокрема PDF/ZIP, Confluence і листи, якщо на них посилаються. Не став READY_FOR_REVIEW, якщо недоступне джерело критичне.
 - confirmedFacts: [{textUk,sourceUrl}]. sourceUrl конкретний прочитаний документ,
   Jira коментар або issue; без джерела не називай факт підтвердженим.
 - timeline: [{date,eventUk,status,sourceUrl}], status одне з
