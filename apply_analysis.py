@@ -11,6 +11,7 @@ from supplier_logs import verified_method
 from review_report import build_report, write_report
 from prompt_calibration import update_daily
 from ba_questions import sync_questions, all_evidence
+from ba_decisions import sync_decision_proposals
 from ba_quality_gate import quality_gate
 
 
@@ -114,6 +115,12 @@ def _apply(path,root):
             # Do not claim a failed local questions update was successful,
             # but never undo an already-committed snapshot.
             question_errors.append({'key': task['key'], 'error': str(error)[:180]})
+    decision_errors = []
+    for task in snapshot['tasks']:
+        try:
+            sync_decision_proposals(root, task['key'], task['analysis'])
+        except (ValueError, OSError, TypeError, KeyError) as error:
+            decision_errors.append({'key': task['key'], 'error': str(error)[:180]})
     calibration_error = None
     calibration = None
     try:
@@ -127,7 +134,7 @@ def _apply(path,root):
                       'changes':report['summary'], 'qualityWarnings':report['warnings'],
                       'promptCalibrationDate':calibration['date'] if calibration else None,
                       'calibrationError':calibration_error,
-                      'questionErrors':question_errors},
+                      'questionErrors':question_errors, 'decisionErrors':decision_errors},
                      ensure_ascii=False))
 
 if __name__=='__main__':
