@@ -46,3 +46,32 @@ test('recipient defaults keep the approved supplier mappings', () => {
   assert.match(defaultRecipients({summary: 'SQ213. PNR Modify'}), /leon_woon@singaporeair\.com\.sg.*NDC_Support@singaporeair\.com\.sg/);
   assert.equal(defaultRecipients({summary: 'Other supplier'}), '');
 });
+
+
+test('verified active sprint outranks any outside-sprint score including urgent backlog', () => {
+  const item = (key, score, activeSprint, signal='READY') => task(key, signal, score, {
+    activeSprintStatus: 'VERIFIED', activeSprint,
+  });
+  const items = [item('backlog-max', 100, false), item('sprint-low', 0, true),
+    item('sprint-wait', 0, true, 'WAIT'), item('backlog-high', 99, false)];
+  assert.deepEqual(rankTasks(items).map(x => x.key),
+    ['sprint-low', 'sprint-wait', 'backlog-max', 'backlog-high']);
+  assert.deepEqual(filterTasks(items, {sprint: 'active'}).map(x => x.key),
+    ['sprint-low', 'sprint-wait']);
+  assert.deepEqual(filterTasks(items, {sprint: 'outside'}).map(x => x.key),
+    ['backlog-max', 'backlog-high']);
+});
+
+test('unverified sprint membership is not silently treated as in sprint', () => {
+  const items = [task('not-configured', 'WRITE', 100),
+    task('in-sprint', 'READY', 0, {activeSprintStatus:'VERIFIED',activeSprint:true})];
+  assert.deepEqual(rankTasks(items).map(x => x.key), ['in-sprint','not-configured']);
+  assert.deepEqual(filterTasks(items, {sprint:'unverified'}).map(x => x.key), ['not-configured']);
+});
+
+test('manual done remains below open backlog even if its sprint membership is true', () => {
+  const items = [task('manual-done', 'READY', 100, {activeSprintStatus:'VERIFIED',
+      activeSprint:true,manualStatus:'DONE'}),
+    task('backlog-ready', 'READY', 0, {activeSprintStatus:'VERIFIED',activeSprint:false})];
+  assert.deepEqual(rankTasks(items).map(x=>x.key), ['backlog-ready','manual-done']);
+});
