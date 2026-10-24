@@ -95,6 +95,12 @@ def handler(desk, cloud=None):
                         raise ValueError('Daily report is too large.')
                     report = json.loads(source.read_text(encoding='utf-8-sig'))
                     validate_report(report)
+                    latest = desk.view().get('latest')
+                    if (latest and latest.get('generated_at') != report['generatedAt']):
+                        # A newer Jira sync may already have been imported by
+                        # the server watcher; never present an old report as
+                        # the current task state.
+                        return self.send(409, {'error': 'Daily report is stale relative to imported snapshot.'})
                     if path.endswith('.md'):
                         return self.send(200, render_markdown(report).encode('utf-8'),
                                          'text/markdown; charset=utf-8')
