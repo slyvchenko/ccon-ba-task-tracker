@@ -556,7 +556,8 @@ $('export').addEventListener('click', async () => {
   } catch (error) { message(error.message, true); }
 });
 window.addEventListener('beforeunload', event => { if (hasUnsaved()) { event.preventDefault(); event.returnValue = ''; } });
-let lastCloudAttemptState = null;\nasync function loadCloudCapabilities() {
+let lastCloudAttemptState = null;
+async function loadCloudCapabilities() {
   try {
     const health = await api('/api/health');
     cloudMode = health.cloud === true;
