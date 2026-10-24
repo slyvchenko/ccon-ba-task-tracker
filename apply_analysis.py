@@ -8,6 +8,7 @@ from app_config import LIMIT, ROOT, utc_now
 from pipeline_lock import pipeline_lock, replace_file
 from email_rules import normalize_draft
 from supplier_logs import verified_method
+from review_report import build_report, write_report
 
 
 def apply(path,root=ROOT):
@@ -61,6 +62,8 @@ def _apply(path,root):
         task['contextFingerprint']=current['fingerprint']
     snapshot['generatedAt']=stamp
     desk=Desk(root)
+    previous = {item['key']: item for item in desk.view()['tasks'] if item.get('active')}
+    report = build_report(previous, snapshot['tasks'], stamp)
     # Preflight nested types before replacing the import file.
     if hasattr(desk,'validate_analysis'):
         for task in snapshot['tasks']:
@@ -75,7 +78,16 @@ def _apply(path,root):
     temp.write_text(raw,encoding='utf-8')
     replace_file(temp,target)
     result=desk.import_snapshot()
-    print(json.dumps({'analyzed':len(keys),'message':result['message']},ensure_ascii=False))
+    report_path = None
+    report_error = None
+    try:
+        report_path = str(write_report(report, root))
+    except OSError as error:
+        report_error = str(error)
+    print(json.dumps({'analyzed':len(keys), 'message':result['message'],
+                      'dailyReport':report_path, 'reportError':report_error,
+                      'changes':report['summary'], 'qualityWarnings':report['warnings']},
+                     ensure_ascii=False))
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
