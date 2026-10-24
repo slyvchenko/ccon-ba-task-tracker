@@ -5,6 +5,10 @@ from pathlib import Path
 
 from storage import write_json
 from ba_briefing import audit_briefing
+from app_config import LIMIT
+
+# A delta may contain both a prior and current 5 MiB question set.
+REPORT_LIMIT = 2 * LIMIT + 2 * 1024 * 1024
 
 
 def normalize(value):
@@ -257,5 +261,5 @@ def render_markdown(report):
 def write_report(report, root):
     validate_report(report)
     destination = Path(root) / "data" / "daily_review_report.json"
-    write_json(destination, report)
+    write_json(destination, report, REPORT_LIMIT)
     return destination
