@@ -341,7 +341,7 @@ def analyze_all(root=ROOT, model_call=request_analysis):
         source = task_source(context, task, notes, log_reports)
         sprint_version = sprint_cache_version(source)
         if (previous.get("contextFingerprint") == fingerprint and
-                previous.get("evidenceVersion") == evidence_version and
+                previous.get("evidenceVersion", "none") == evidence_version and
                 previous.get("sprintVersion") == sprint_version and
                 not previous.get("stale") and
                 previous.get("promptVersion") == prompt_version and
