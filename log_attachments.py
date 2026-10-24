@@ -37,6 +37,8 @@ def _state_for_archives(items, expected, current_fingerprint, handoff, key, brok
             state, reason = 'FAILED', 'ARCHIVE_INTEGRITY_FAILED'
         elif fresh:
             state, reason = ('NEEDS_REVIEW', 'SUPPLIER_ZIP_READY_WITH_WARNINGS') if fresh['needsReview'] else ('READY', 'SUPPLIER_ONLY_ZIP_READY')
+        elif attempted.get('contextFingerprint') and not current_attempt:
+            state, reason = 'STALE', 'JIRA_CONTEXT_CHANGED'
         elif current_attempt and attempted.get('state') in ('FAILED', 'STALE', 'NEEDS_REVIEW'):
             state, reason = attempted['state'], attempted.get('reasonCode') or 'CHECK_DOWNLOAD'
         elif stale:
