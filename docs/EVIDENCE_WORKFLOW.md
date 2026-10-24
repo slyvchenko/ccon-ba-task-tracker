@@ -170,3 +170,13 @@ python error_series.py --issue CCON-123 --error-code AF_REJECTED --max-cases 30
 5. Не переносити браузерні cookies/token чи приватні ZIP у GitHub. Повний ZIP залишається локально, вихідний архів містить **тільки supplier XML вибраного постачальника**, без REST/errors/інших suppliers.
 
 Сам `prepare` не завантажує файл. Без чинної авторизації/використання браузера залишити чесний статус і причину. Синтетичні CI тести не є live Kibana UAT.
+
+## v2.13: Method / Contract shape і timeline одного flow
+
+Після локального `supplier_logs.py ingest` або `layered_evidence.py` у приватному JSON з’являється `flowDiagnostics`. Це два окремі результати:
+- **Контрактні кандидати**: напрям REST request → supplier request / supplier response → REST response, назва нативного supplier method із підтвердженого імені XML, кількість полів, `null` та повторювані масиви/XML-елементи, збіги/розбіжності зі `valueReview`. REST endpoint **не вигадується**, якщо його немає в джерелі; результати мають стан `CANDIDATE_NOT_CONFIRMED_CONTRACT`.
+- **Події в часі**: порядок лише за явно прочитаними offset-aware ISO timestamp у ZIP payload (наприклад `timestamp`, `eventTime`, `createdAt`). ZIP order, останній modified time, supplier sequence і номер файлу **не є** часовими мітками. Якщо timestamp відсутній або в одному файлі кілька різних моментів, статус явно неповний/неоднозначний. Повторний метод означає лише можливість retry.
+
+Інші постачальники і значення PNR/пасажирів не включаються в результат. Для спірного mapping перевіряти raw ZIP тільки у локальному Codex разом із підтвердженим supplier/API контрактом і Jira-вимогою. Серія не доводить причину бага автоматично. Вихідний ZIP для листа як і раніше містить **тільки XML вибраного supplier**.
+
+Для підтвердженої хронології Kibana потрібні подієві timestamps конкретного flow, а не час ZIP. Без них звіт залишається неповним.
