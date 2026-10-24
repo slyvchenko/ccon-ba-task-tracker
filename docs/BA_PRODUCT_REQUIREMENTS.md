@@ -21,7 +21,7 @@ The human analyst is responsible for deciding whether to use generated outputs.
 
 ## Source of sprint truth and priority
 
-- Jira board configured by `CCON_JIRA_BOARD_ID`; uses read-only
+- Jira board configured by `CCON_JIRA_BOARD_ID` or local `.jira-board.json`; uses read-only
   Jira Software endpoints to get active sprints and every issue key.
 - A missing configuration means `NOT_CONFIGURED`. The UI explicitly
   labels unverified sprint membership; it must never silently assume it.
