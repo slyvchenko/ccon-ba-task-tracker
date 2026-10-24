@@ -25,3 +25,7 @@
 ## v2.10: ZIP handoff у локальному Codex
 
 Після Jira sync і перед AI-аналізом запусти `python local_downloads.py prepare`, прочитай `data/browser_handoff.json`. Для кожного cached=false у вже авторизованому браузері відкрий тільки заданий downloadUrl та збережи фактичний ZIP у saveAs відповідного issue і flow. Не передавай cookies, токени чи пароль Python-скриптам. Сторінку логіну/HTML не видавай за ZIP. Після завершення браузерних дій запусти `python local_downloads.py process` та перевір журнал `data/download_handoff_status.json`. Використовуй підготовлені докази лише якщо реально отримані, ZIP для Outlook містить тільки supplier XML. Dashboard не перебудовувати.
+
+## v2.11: перевірка доказовості і QA перед прийняттям тексту
+
+У `briefing.confirmedFacts` та CONFIRMED `briefing.rules` додавай короткий `sourceExcerpt` лише зі справді прочитаної Jira/linked issue, підставляй точний `sourceUrl`. Не використовуй неперевірений wiki/attachment URL як підтвердження. Для кожного правила додай стабільний `id` (R1/R2), для QA-сценаріїв `ruleIds` і `kind`: POSITIVE/NEGATIVE/EDGE. Особливо для складених IF/THEN AND/OR перевір позитивний, негативний та крайовий сценарій. Не вигадуй джерел/QA; матеріальні прогалини залишай як OPEN і не називай результат готовим до рев’ю. Опис Jira максимально стислий, але з точними полями, scope і expected output; без обмеження двома реченнями.
