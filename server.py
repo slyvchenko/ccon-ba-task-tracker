@@ -125,8 +125,11 @@ def handler(desk, cloud=None):
                                     'analyzedCases', 'availableUniqueFlows',
                                     'requestedErrorCode', 'groups', 'hypotheses', 'questionsUk')
                             }
+                    from evidence_health import health_for_issue
+                    health = health_for_issue(desk.root, key)
                     return self.send(200, {'key': key, 'version': version,
-                                           'reports': reports, 'investigation': investigation})
+                                           'reports': reports, 'investigation': investigation,
+                                           'health': health})
                 except (ValueError, OSError) as error:
                     return self.send(400, {'error': str(error)})
             if path == '/api/export':
