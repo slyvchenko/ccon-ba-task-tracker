@@ -26,6 +26,26 @@ from sprint_priority import active_sprint_snapshot, sprint_fields, load_board_id
 JIRA_URL = 'https://aerticket.atlassian.net'
 JQL = ('project = CCON AND statusCategory != Done AND assignee = currentUser() '
        'AND issuetype != Epic ORDER BY priority DESC, updated DESC')
+def query_for_owner(account_id=None, cloud_mode=False):
+    """Restrict every primary issue to the one authorized analyst.
+
+    currentUser() refers to the Jira API principal, NOT necessarily the
+    person using the web UI. Cloud sync therefore requires the analyst's
+    explicit Jira account ID and must fail closed if it is absent.
+    """
+    if account_id is None:
+        account_id = os.environ.get("CCON_JIRA_ASSIGNEE_ACCOUNT_ID")
+    if not account_id:
+        if cloud_mode:
+            raise ValueError("Cloud sync requires CCON_JIRA_ASSIGNEE_ACCOUNT_ID; "
+                             "currentUser() would select the service account's tasks.")
+        return JQL
+    if not isinstance(account_id, str) or len(account_id) > 128 or not re.fullmatch(
+            r"[A-Za-z0-9:_-]+", account_id):
+        raise ValueError("Invalid Jira assignee account ID.")
+    return JQL.replace("assignee = currentUser()", 'assignee = "' + account_id + '"')
+
+
 FIELDS = ('summary,status,priority,updated,description,issuetype,reporter,'
           'assignee,issuelinks,labels,created,attachment,resolution,parent')
 MANUAL_FIELDS = {'manualStatus', 'note', 'active', 'importedAt', 'modifiedAt'}
@@ -164,11 +184,11 @@ def person(value, include_email=False):
     return result
 
 
-def fetch_issues(client):
+def fetch_issues(client, jql=None):
     issues, tokens = {}, set()
     next_token = None
     while True:
-        params = {'jql': JQL, 'maxResults': 100, 'fields': FIELDS}
+        params = {'jql': jql or JQL, 'maxResults': 100, 'fields': FIELDS}
         if next_token:
             params['nextPageToken'] = next_token
         page = client.get('/rest/api/3/search/jql', params)
@@ -365,7 +385,8 @@ def _sync(root, client):
     if client is None:
         client = JiraClient(*load_credentials(root))
     prior = read_existing(root)
-    raw_issues = fetch_issues(client)
+    jql = query_for_owner(cloud_mode=os.environ.get('CCON_CLOUD_MODE') == '1')
+    raw_issues = fetch_issues(client, jql)
     left_scope = inspect_departed_issues(root, raw_issues, client)
     # Board-based membership is authoritative; no inference from past sprint labels.
     sprint = active_sprint_snapshot(client, load_board_id(root))
@@ -392,13 +413,13 @@ def _sync(root, client):
     generated = now()
     tasks = [make_task(context, prior.get(key, {}), sprint) for key, context in contexts.items()]
     snapshot = {'generatedAt': generated, 'source': 'Jira API — read-only full context sync',
-                'jql': JQL, 'complete': True, 'retrievedCount': len(tasks),
+                'jql': jql, 'complete': True, 'retrievedCount': len(tasks),
                 'sprint': {key: val for key, val in sprint.items() if key != 'members'},
                 'leftScope': left_scope, 'tasks': tasks}
     # Check size before touching either file, preserving the previous complete import on failure.
     if len(json.dumps(snapshot, ensure_ascii=False, indent=2).encode('utf-8')) > SNAPSHOT_LIMIT:
         raise ValueError('Compact snapshot exceeds 5 MB; no import performed.')
-    cache = {'generatedAt': generated, 'retrievedAt': stamp, 'jql': JQL, 'complete': True,
+    cache = {'generatedAt': generated, 'retrievedAt': stamp, 'jql': jql, 'complete': True,
              'retrievedCount': len(tasks), 'issues': contexts, 'linkedIssues': linked_contexts,
              'unavailableLinkedIssues': inaccessible_links,
              'sprint': {key: val for key, val in sprint.items() if key != 'members'},
