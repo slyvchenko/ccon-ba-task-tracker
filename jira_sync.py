@@ -18,6 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from datetime import datetime
 from pipeline_lock import pipeline_lock
 from storage import write_json as atomic_json
 from app_config import ROOT, SNAPSHOT_LIMIT, utc_now as now
@@ -342,37 +343,71 @@ def make_task(context, prior, sprint=None):
 
 
 def inspect_departed_issues(root, current_keys, client):
-    """Verify previously visible issues that left the search; never guess Done."""
-    source = Path(root) / "inbox" / "CCON_BA_Snapshot.json"
-    if not source.exists():
-        return []
-    document = json.loads(source.read_text(encoding="utf-8-sig"))
-    old = {item["key"] for item in document.get("tasks", [])}
-    departed = []
-    for key in sorted(old - set(current_keys)):
+    """Retain unreported departures across repeated syncs and live server imports.
+
+    A previous report consumes a departure only if it was generated after
+    its first detection. A later return/re-departure is a new event.
+    """
+    root = Path(root)
+    current_keys = set(current_keys)
+    source = root / "inbox" / "CCON_BA_Snapshot.json"
+    cache = root / "data/jira_context.json"
+    report_file = root / "data/daily_review_report.json"
+    snapshot = json.loads(source.read_text(encoding="utf-8-sig")) if source.exists() else {}
+    previous_cache = json.loads(cache.read_text(encoding="utf-8-sig")) if cache.exists() else {}
+    last_report = json.loads(report_file.read_text(encoding="utf-8-sig")) if report_file.exists() else {}
+    old = {task["key"] for task in snapshot.get("tasks", [])}
+    pending = {item["key"]: item for item in previous_cache.get("leftScope", [])}
+    reported = {item["key"] for item in last_report.get("changes", [])
+                if item.get("category") in ("JIRA_DONE", "LEFT_SCOPE")}
+    try:
+        report_time = datetime.fromisoformat(
+            last_report.get("generatedAt", "").replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        report_time = None
+    for key, item in list(pending.items()):
+        if key in current_keys:
+            del pending[key]
+            continue
+        first = item.get("firstSeenAt")
+        try:
+            first_time = datetime.fromisoformat(first.replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            first_time = None
+        if report_time and first_time and report_time >= first_time and key in reported:
+            del pending[key]
+    observed = old - current_keys
+    keys = sorted((observed | set(pending)) - current_keys)
+    departures = []
+    for key in keys:
+        # If this task was already acknowledged in a prior report, it does
+        # not re-enter the inbox until Jira returns it again.
+        prior = pending.get(key, {})
+        if key not in pending and key not in observed:
+            continue
         try:
             result = client.get("/rest/api/3/issue/" + urllib.parse.quote(key, safe=""),
                                 {"fields": "status,resolution,updated"})
             fields = result.get("fields") or {}
             status = fields.get("status") or {}
             category = (status.get("statusCategory") or {}).get("key") or "unknown"
-            departed.append({
+            item = {
                 "key": key, "jiraStatus": status.get("name", ""),
-                "statusCategory": category,
-                "confirmedDone": category == "done",
+                "statusCategory": category, "confirmedDone": category == "done",
                 "sourceUrl": JIRA_URL + "/browse/" + key,
                 "verification": "VERIFIED",
-            })
+            }
         except ValueError as error:
             if "HTTP 403" not in str(error) and "HTTP 404" not in str(error):
                 raise
-            departed.append({
-                "key": key, "jiraStatus": "",
-                "statusCategory": "unknown", "confirmedDone": False,
-                "sourceUrl": JIRA_URL + "/browse/" + key,
+            item = {
+                "key": key, "jiraStatus": "", "statusCategory": "unknown",
+                "confirmedDone": False, "sourceUrl": JIRA_URL + "/browse/" + key,
                 "verification": "UNAVAILABLE",
-            })
-    return departed
+            }
+        item["firstSeenAt"] = prior.get("firstSeenAt") or now()
+        departures.append(item)
+    return departures
 
 
 def sync(root=ROOT, client=None):
