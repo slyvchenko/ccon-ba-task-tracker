@@ -48,7 +48,10 @@ def approved_prompts(root):
     root = Path(root)
     chunks = []
     for path in PROMPT_FILES:
-        content = (root / path).read_text(encoding="utf-8-sig")
+        # On cloud workers, prompt source code is immutable in /srv/app;
+        # only Jira cache and user state live on the mounted runtime volume.
+        path_on_disk = root / path if (root / path).is_file() else ROOT / path
+        content = path_on_disk.read_text(encoding="utf-8-sig")
         chunks.append("# " + path + "\n" + content)
     checklist = root / "data/prompt_calibration/current.md"
     if checklist.is_file():
