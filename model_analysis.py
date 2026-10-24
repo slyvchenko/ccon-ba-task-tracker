@@ -86,12 +86,38 @@ def approved_prompts(root):
         path_on_disk = root / path if (root / path).is_file() else ROOT / path
         content = path_on_disk.read_text(encoding="utf-8-sig")
         chunks.append("# " + path + "\n" + content)
-    checklist = root / "data/prompt_calibration/current.md"
+    # Version only substantive instructions: counts and local report dates
+    # must not force the whole task queue to be re-analyzed every morning.
+    checklist = root / "data/prompt_calibration/current.json"
     if checklist.is_file():
-        content = checklist.read_text(encoding="utf-8-sig")
-        if len(content.encode("utf-8")) > 20000:
-            raise ValueError("Adaptive checklist is too long.")
-        chunks.append("# Adaptive checklist (LOWER priority than core rules)\n" + content)
+        document = json.loads(checklist.read_text(encoding="utf-8-sig"))
+        hints = document.get("checklist") or []
+        quality = document.get("humanQualityWarnings") or []
+        if not isinstance(hints, list) or not isinstance(quality, list):
+            raise ValueError("Invalid adaptive checklist.")
+        instructions = sorted({
+            item["instructionUk"] for item in hints
+            if isinstance(item, dict) and isinstance(item.get("instructionUk"), str)
+        })
+        instructions.extend(sorted({
+            item["actionUk"] for item in quality
+            if isinstance(item, dict) and isinstance(item.get("actionUk"), str)
+        }))
+        if instructions:
+            chunks.append("# Low-priority adaptive BA checks\n" +
+                          "\n".join("- " + item for item in instructions))
+    elif (root / "data/prompt_calibration/current.md").is_file():
+        # Older installations may have only the Markdown checklist. Ignore
+        # date/count metadata; use versioned JSON on the next successful run.
+        content = (root / "data/prompt_calibration/current.md").read_text(
+            encoding="utf-8-sig")
+        hints = []
+        for line in content.splitlines():
+            if line.startswith("- [") and "] " in line:
+                hints.append(line.split("] ", 1)[1].strip())
+        if hints:
+            chunks.append("# Low-priority adaptive BA checks\n" +
+                          "\n".join(sorted(set(hints))))
     joined = "\n\n".join(chunks)
     if len(joined.encode("utf-8")) > MAX_PROMPT_BYTES:
         raise ValueError("System analysis instructions exceed configured limit.")
