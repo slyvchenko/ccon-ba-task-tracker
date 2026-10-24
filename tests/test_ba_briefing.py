@@ -13,6 +13,7 @@ def briefing():
         "technicalScopeUk": "REST PullPNR; інші методи не перевірялися.",
         "readiness": "NEEDS_CONFIRMATION",
         "readinessReasonUk": "Потрібна відповідь постачальника.",
+        "sourceAudit": [{"descriptionUk": "Jira issue/comments", "status": "READ", "sourceUrl": "https://jira.example/1"}],
         "confirmedFacts": [{"textUk": "У логах є CANCELLED.", "sourceUrl": "https://jira.example/1"}],
         "timeline": [{"date": "2026-10-24", "status": "CONFIRMED", "eventUk": "Показано payload.",
                       "sourceUrl": "https://jira.example/1"}],
@@ -65,6 +66,16 @@ class BriefingTests(unittest.TestCase):
         result = audit_briefing({"signal": "REVIEW"})
         self.assertEqual([v["code"] for v in result], ["BRIEF_MISSING"])
 
+    def test_unavailable_source_blocks_ready_claim(self):
+        draft = briefing()
+        draft["readiness"] = "READY_FOR_REVIEW"
+        draft["unknownsUk"] = []
+        draft["sourceAudit"].append({
+            "descriptionUk": "Vendor ZIP evidence", "status": "UNAVAILABLE",
+            "sourceUrl": "https://jira.example/1",
+        })
+        self.assertIn("READY_WITH_UNREAD_SOURCES",
+                      {w["code"] for w in audit_briefing({"briefing": draft})})
     def test_timeline_gap_flagged_with_existing_comments(self):
         draft = briefing()
         draft["timeline"] = []
