@@ -4,6 +4,27 @@ No arbitrary Sprint customfield parsing and no inference from JQL alone.
 If a configured board cannot be verified, the sync fails before replacing data.
 """
 
+import json
+import os
+from pathlib import Path
+
+
+def load_board_id(root):
+    """Environment overrides the persisted local board configuration.
+
+    The config carries no credentials, but is user-specific and Git-ignored.
+    """
+    environment = os.environ.get("CCON_JIRA_BOARD_ID")
+    if environment is not None:
+        return validate_board_id(environment)
+    path = Path(root) / ".jira-board.json"
+    if not path.exists():
+        return None
+    value = json.loads(path.read_text(encoding="utf-8-sig"))
+    if not isinstance(value, dict) or "boardId" not in value:
+        raise ValueError(".jira-board.json must contain a positive boardId.")
+    return validate_board_id(value["boardId"])
+
 
 def validate_board_id(value):
     if value is None or value == "":
