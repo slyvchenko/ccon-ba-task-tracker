@@ -238,3 +238,9 @@ production-фазою. Прямий публічний доступ до Python-
 
 Консолідований функціональний план і критерії готовності:
 [`docs/PRODUCT_BACKLOG.md`](docs/PRODUCT_BACKLOG.md).
+
+## v2.10: браузерний handoff і статус ZIP
+
+`python local_downloads.py prepare` формує локальний план точних URL і шляхів saveAs; **лише авторизований Codex/Work у браузері** здійснює завантаження. `python local_downloads.py process` обробляє реально збережені ZIP, запускає supplier-only ingest та показує готовність кожного flow. Сам Python не входить у Kibana/CCON і не керує браузером. У звичному блоці «Логи до листа» показано готово/частково/очікує/застаріло/помилка та причину.
+
+Детальний процес: [Evidence Workflow](docs/EVIDENCE_WORKFLOW.md). Фактична перевірка браузера на твоєму комп'ютері ще потрібна.
