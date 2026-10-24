@@ -69,6 +69,26 @@ def handler(desk, cloud=None):
                 return self.send(200, (ROOT / filename).read_bytes(), content_type)
             if path == '/api/tasks':
                 return self.send(200, desk.view())
+            if path == '/api/action-plan':
+                from ba_actions import all_actions
+                return self.send(200, all_actions(desk.root, desk.view()['tasks']))
+            if re.fullmatch(r'/api/actions/CCON-\d+', path):
+                from ba_actions import display_actions
+                key = path.rsplit('/', 1)[-1]
+                try:
+                    return self.send(200, display_actions(desk.root, key))
+                except (ValueError, OSError) as error:
+                    return self.send(400, {'error': str(error)})
+            if re.fullmatch(r'/api/history/CCON-\d+', path):
+                from urllib.parse import parse_qs
+                key = path.rsplit('/', 1)[-1]
+                try:
+                    qs = parse_qs(urlparse(self.path).query)
+                    limit = int(qs.get('limit', ['20'])[0])
+                    offset = int(qs.get('offset', ['0'])[0])
+                    return self.send(200, desk.history(key, limit, offset))
+                except (ValueError, OSError, TypeError) as error:
+                    return self.send(400, {'error': str(error)})
             if re.fullmatch(r'/api/questions/CCON-\d+', path):
                 from question_candidates import questions_with_candidates
                 key = path.rsplit('/', 1)[-1]
@@ -204,6 +224,17 @@ def handler(desk, cloud=None):
                                             impact=data.get('impact', ''),
                                             reason=data.get('reason', ''))
                     return self.send(200, result)
+                if re.fullmatch(r'/api/actions/CCON-\d+', path):
+                    from ba_actions import edit_action
+                    key = path.rsplit('/', 1)[-1]
+                    return self.send(200, edit_action(
+                        desk.root, key, action=data.get('action', 'add'),
+                        identifier=data.get('id'),
+                        description=data.get('description', ''),
+                        owner=data.get('owner', ''), due_date=data.get('dueDate', ''),
+                        next_review_date=data.get('nextReviewDate', ''),
+                        status=data.get('status', 'OPEN'),
+                        waiting_on=data.get('waitingOn', ''), source='MANUAL'))
                 if re.fullmatch(r'/api/questions/CCON-\d+/Q-[a-f0-9]{14}', path):
                     from ba_questions import update_question
                     parts = path.split('/')
