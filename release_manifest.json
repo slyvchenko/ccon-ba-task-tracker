@@ -57,6 +57,7 @@
   "sprint_priority.py",
   "storage.py",
   "supplier_logs.py",
+  "tests/evidence-ui.test.mjs",
   "tests/logs.test.mjs",
   "tests/task_rules.test.mjs",
   "tests/test_apply_analysis.py",
