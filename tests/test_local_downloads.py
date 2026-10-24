@@ -145,7 +145,7 @@ class LocalBrowserHandoffTests(unittest.TestCase):
         self.assertEqual(self.desk.view()["tasks"][0]["note"], 'completed')
 
     def test_download_path_rejects_traversal(self):
-        for key, flow in (("../CCON-1", FLOW), ("CCON-1", "../invalid"), ("CCON-1", FLOW.upper())):
+        for key, flow in (("../CCON-1", FLOW), ("CCON-1", "../invalid"), ("CCON-1", SECOND.upper())):
             with self.subTest(key=key, flow=flow), self.assertRaises(ValueError):
                 download_path(self.root, key, flow)
 
