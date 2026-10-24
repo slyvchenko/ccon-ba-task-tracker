@@ -33,8 +33,8 @@ def validate_analysis(analysis):
         raise ValueError('analysis.stale must be true or false.')
     if 'queueScore' in analysis:
         score = analysis['queueScore']
-        if isinstance(score, bool) or not isinstance(score, (int, float)) or abs(score) > 1000000 or not math.isfinite(score):
-            raise ValueError('analysis.queueScore must be a finite number between -1000000 and 1000000.')
+        if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score) or score < 0 or score > 100:
+            raise ValueError('analysis.queueScore must be a finite number from 0 to 100.')
     if 'missingInfo' in analysis:
         missing = analysis['missingInfo']
         if not isinstance(missing, list) or len(missing) > 100:
