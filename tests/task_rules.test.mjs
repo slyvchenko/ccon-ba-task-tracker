@@ -75,3 +75,18 @@ test('manual done remains below open backlog even if its sprint membership is tr
     task('backlog-ready', 'READY', 0, {activeSprintStatus:'VERIFIED',activeSprint:false})];
   assert.deepEqual(rankTasks(items).map(x=>x.key), ['backlog-ready','manual-done']);
 });
+
+test('search finds mixed technical method, supplier alias and linked issue tokens', () => {
+  const entry = task('CCON-888','REVIEW',32,{
+    summary: 'AF/KL. retrievePNR. Cancelled segment',
+    jiraStatus:'In Progress',
+    links:[{linkedKey:'CCON-456'}]
+  });
+  entry.analysis.briefing = {technicalScopeUk:'REST GetOrder',rules:[
+    {whenUk:'StatusCode=CANCELLED AND DeliveryStatusCode=REMOVED',thenUk:'Omit segment'}]};
+  const list = [entry, task('CCON-999')];
+  assert.deepEqual(filterTasks(list, {search:'afkl retrievepnr'}).map(x=>x.key), ['CCON-888']);
+  assert.deepEqual(filterTasks(list, {search:'CCON-456 REMOVED'}).map(x=>x.key), ['CCON-888']);
+  assert.deepEqual(filterTasks(list, {search:'rest GetOrder'}).map(x=>x.key), ['CCON-888']);
+  assert.deepEqual(filterTasks(list, {search:'unknown method'}), []);
+});

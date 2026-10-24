@@ -90,6 +90,13 @@ def handler(desk, cloud=None):
                     return self.send(200, desk.history(key, limit, offset))
                 except (ValueError, OSError, TypeError) as error:
                     return self.send(400, {'error': str(error)})
+            if re.fullmatch(r'/api/approved/CCON-\d+', path):
+                from approved_draft import describe
+                key = path.rsplit('/', 1)[-1]
+                try:
+                    return self.send(200, describe(desk.root, key))
+                except (ValueError, OSError) as error:
+                    return self.send(400, {'error': str(error)})
             if re.fullmatch(r'/api/questions/CCON-\d+', path):
                 from question_candidates import questions_with_candidates
                 key = path.rsplit('/', 1)[-1]
@@ -239,6 +246,10 @@ def handler(desk, cloud=None):
                         next_review_date=data.get('nextReviewDate', ''),
                         status=data.get('status', 'OPEN'),
                         waiting_on=data.get('waitingOn', ''), source='MANUAL'))
+                if re.fullmatch(r'/api/approved/CCON-\d+', path):
+                    from approved_draft import approve
+                    key = path.rsplit('/', 1)[-1]
+                    return self.send(200, approve(desk.root, key))
                 if re.fullmatch(r'/api/questions/CCON-\d+/Q-[a-f0-9]{14}', path):
                     from ba_questions import update_question
                     parts = path.split('/')

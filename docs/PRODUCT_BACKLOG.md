@@ -38,7 +38,7 @@
 | CORE-06 | P0 | IMPLEMENTED (code) | New/updated/reopened/done/left-scope daily delta | Verified Jira Done ≠ disappeared from JQL; tests + live UAT |
 | CORE-07 | P1 | IMPLEMENTED (local revision history); real UAT pending | Повний task-history 360° з ревізіями рішень/листування | Зберігати й порівнювати snapshots, аналіз, відповідь, дату, джерело |
 | CORE-08 | P1 | IMPLEMENTED (human action plans); real UAT pending | Personal action plan / черга на сьогодні | Що перевірити, кому написати, хто блокує, next follow-up, робочий стан |
-| CORE-09 | P2 | PLANNED | Швидкий пошук і фільтрація за методами, supplier, issue, залежностями | Search/filter без переробки основної картки |
+| CORE-09 | P2 | IMPLEMENTED (supplier, method, technical fields, links in existing search); UAT pending | Швидкий пошук і фільтрація за методами, supplier, issue, залежностями | Search/filter без переробки основної картки |
 | CORE-10 | P2 | PARTIAL | Узгодженість оцінок між задачами та ретроспектива пріоритетів | Виявляти протиріччя в 0–100 і bias, review проти результату |
 | BA-01 | P0 | PARTIAL (description quality checks); expert UAT open | Готовий короткий англомовний task description | Кожна умова IF/THEN, field, expected output, QA зчитані коректно; human gold set |
 | BA-02 | P0 | PARTIAL | Готовий фактологічний emailDraft для **кожної** задачі | Незалежно від WRITE; не вигадувати адресата/метод/прикріплений ZIP; коректний follow-up |
@@ -50,7 +50,7 @@
 | BA-08 | P1 | IMPLEMENTED (approved-model single-task CLI); live UAT open | On-demand deep re-analysis однієї задачі | Перезапуск без повного щоденного проходу, повага до збережених ручних правок |
 | BA-09 | P1 | PARTIAL | Related Jira + wiki/documentation cross-check | Читати доступні джерела, фіксувати непрочитані та конфлікти |
 | BA-10 | P1 | IMPLEMENTED (local event history); human UAT pending | Decision register: confirmed/superseded/disputed | Хронологія рішень, хто підтвердив, коли, що змінюється |
-| BA-11 | P2 | PLANNED | Порівняння готової чернетки з останнім погодженим текстом задачі | Не переписувати схвалене без необхідності |
+| BA-11 | P2 | IMPLEMENTED (human approved reference and diff); UAT pending | Порівняння готової чернетки з останнім погодженим текстом задачі | Не переписувати схвалене без необхідності |
 | EVD-01 | P0 | IMPLEMENTED (code) | Зчитування повного ZIP за шарами REST/errors/selected supplier | Ніякого аналізу чужих supplier папок; parsing and ZIP safeguards |
 | EVD-02 | P0 | IMPLEMENTED (code) | Виявлення shared-flow/correlation кандидатів | Без фальшивої впевненості у спарюванні |
 | EVD-03 | P0 | PARTIAL | REST request→supplier request; supplier response→REST response value equality/difference | Позначати `CANDIDATE_ONLY`; підтверджувати transformation rule проти специфікації |

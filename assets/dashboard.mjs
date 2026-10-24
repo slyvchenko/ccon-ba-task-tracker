@@ -194,6 +194,24 @@ function qualityGateMarkup(gate) {
     (findings ? '<div class="section-label">Що виправити</div><ul>' + findings + '</ul>' : '') + '</details>';
 }
 
+async function loadApprovedDescription(key) {
+  const node = $('approvedReview');
+  if (!node) return;
+  try {
+    const data = await api('/api/approved/' + encodeURIComponent(key));
+    if (selected !== key || !$('approvedReview')) return;
+    const labels = {NO_APPROVED_REFERENCE:'Ще немає вручну схваленого опису',
+      UNCHANGED:'Опис збігається з останнім схваленим',
+      NEW_DRAFT_DIFFERS:'Новий опис відрізняється від схваленого',
+      SOURCE_CHANGED:'Jira-контекст змінився: потрібна повторна перевірка'};
+    node.innerHTML = '<p>' + escapeHtml(labels[data.state] || 'Статус невідомий') + '</p>' +
+      (data.diff ? '<details><summary>Показати зміни від схваленої версії</summary>' +
+       '<pre class="pre">' + escapeHtml(data.diff) + '</pre></details>' : '');
+  } catch (error) {
+    if (selected === key && $('approvedReview')) $('approvedReview').textContent = 'Порівняння недоступне: ' + error.message;
+  }
+}
+
 function renderDetail() {
   const task = tasks.find(item => item.key === selected);
   if (!task) {
@@ -246,7 +264,7 @@ function renderDetail() {
           <div class="section-label">На чому ґрунтується оцінка</div>
           ${sourceMarkup(analysis)}
           ${qualityGateMarkup(analysis.qualityGate)}
-          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? '<button id="copyDescription" class="quiet">Скопіювати опис</button>' : ''}</details>
+          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? '<button id="copyDescription" class="quiet">Скопіювати опис</button> <button id="approveDescription" class="quiet">Схвалити опис</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details>
           ${previousAnalysisMarkup(task)}
           <details class="description"><summary>Історія змін задачі</summary>
             <div id="taskHistory" class="muted">Завантажую історію…</div>
@@ -286,6 +304,14 @@ function renderDetail() {
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
   if ($('copyNext')) $('copyNext').addEventListener('click', () => copyText(analysis.nextActionUk, 'Наступну дію скопійовано.'));
   if ($('copyDescription')) $('copyDescription').addEventListener('click', () => copyText(analysis.standardDescription, 'Чернетку опису скопійовано.'));
+  if ($('approveDescription')) $('approveDescription').addEventListener('click', async () => {
+    if (!confirm('Схвалити поточний BA-опис як контрольну версію? Це не змінює Jira.')) return;
+    try {
+      await api('/api/approved/' + encodeURIComponent(task.key), {});
+      message('BA-опис схвалено локально. Jira не змінено.');
+      if (selected === task.key) loadApprovedDescription(task.key);
+    } catch (error) { message('Опис не схвалено: ' + error.message, true); }
+  });
   $('save').addEventListener('click', () => saveTask(false));
   $('done').addEventListener('click', () => saveTask(true));
   $('discard').addEventListener('click', discardForm);
@@ -307,6 +333,7 @@ function renderDetail() {
   loadTaskActions(task.key, api, escapeHtml, message, () => selected,
                   analysis.nextActionUk || '');
   loadTaskHistory(task.key, api, escapeHtml, () => selected);
+  loadApprovedDescription(task.key);
   loadLogs(task.key);
 }
 function captureForm() {
