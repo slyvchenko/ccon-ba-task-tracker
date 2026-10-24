@@ -60,11 +60,11 @@
 | EVD-07 | P0 | IMPLEMENTED (code); live UAT pending | **Kibana error-series: до 30 репрезентативних випадків однієї помилки** | Дедуп flow, групування за error code/stage/method, coverage/gaps, proof links, без змішування supplier |
 | EVD-08 | P0 | IMPLEMENTED (code); live UAT pending | **RCA evidence matrix: що підтверджено, що лише гіпотеза** | Hypothesis/alternative/counterexample/missing proof; заборона фальшивої definitive cause |
 | EVD-09 | P1 | IMPLEMENTED (contract-shape candidates); live contract UAT pending | Детальний endpoint/method mapping і контракти request/response | Розрізняти REST та supplier native method, status/field/null/repetition |
-| EVD-10 | P1 | PLANNED | Error taxonomy та регресія по кількох supplier версіях | Bad request, provider reject, mapping, timeout, CCON internal із підтвердженим stage |
+| EVD-10 | P1 | PARTIAL (heuristic taxonomy, source origin unverified) | Error taxonomy та регресія по кількох supplier версіях | Bad request, provider reject, mapping, timeout, CCON internal із підтвердженим stage |
 | EVD-11 | P1 | IMPLEMENTED (explicit payload timestamps); Kibana live timeline UAT pending | Часова послідовність по flow з Kibana timestamps | Причинно-часові залежності, pagination, timezone, retries |
-| EVD-12 | P1 | PLANNED | Confidence+coverage dashboard для доказів | Відсоток flows із REST+supplier+errors, причини прогалин |
+| EVD-12 | P1 | IMPLEMENTED (local flow coverage with explicit missing sources); live UAT open | Confidence+coverage dashboard для доказів | Відсоток flows із REST+supplier+errors, причини прогалин |
 | EVD-13 | P1 | PLANNED | Вкладення Jira (PDF/JSON/XML/ZIP), Confluence/wiki | Read-only extraction, не просто метадані; bounded/safe parser, source audit |
-| EVD-14 | P2 | PLANNED | Cross-case anomaly detection: recurring errors across time | Порівняння case signatures з попереднім аналізом без PII |
+| EVD-14 | P2 | PARTIAL (distinct-flow recurrence, no historical prevalence) | Cross-case anomaly detection: recurring errors across time | Порівняння case signatures з попереднім аналізом без PII |
 | EVD-15 | P2 | PLANNED | Кероване зберігання raw ZIP: retention, cleanup, quota | Encrypt-at-rest/ACL, TTL, аудит, no commit/no egress |
 | OUT-01 | P0 | PARTIAL | Самодостатній BA dossier із короткою дією, правилами, QA, gaps | Реальні приклади без зайвих формулювань; scenario-based grading |
 | OUT-02 | P0 | PARTIAL | Чернетка листа, subject/method, контекст попередніх відповідей | Ситуативне формулювання, ручне редагування, без auto-send |
