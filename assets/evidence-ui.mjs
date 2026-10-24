@@ -1,19 +1,7 @@
-/* Progressive disclosure for a fast BA queue: quick / deep / supplier email. */
+/* Optional evidence/questions within the original BA Desk task layout. */
 const stateLabels = {OPEN:'Відкрите', ANSWERED:'Отримано відповідь',
   SUPERSEDED:'Замінене', NOT_APPLICABLE:'Не стосується'};
 
-export function setTaskMode(node, mode) {
-  if (!node || !['quick','deep','email'].includes(mode)) return;
-  node.classList.toggle('focus-quick', mode === 'quick');
-  node.classList.toggle('focus-deep', mode === 'deep');
-  node.classList.toggle('focus-email', mode === 'email');
-  node.querySelectorAll('[data-mode]').forEach(button =>
-    button.classList.toggle('selected', button.dataset.mode === mode));
-  if (mode === 'email') {
-    const draft = node.querySelector('#emailDetails');
-    if (draft) draft.open = true;
-  }
-}
 export async function loadTaskEvidence(key, api, escape, current) {
   const destination = document.getElementById('evidenceSummary');
   if (!destination) return;
