@@ -15,6 +15,7 @@
   "apply_analysis.py",
   "assets/dashboard.css",
   "assets/dashboard.mjs",
+  "assets/evidence-ui.mjs",
   "assets/logs.mjs",
   "assets/task-rules.mjs",
   "ba_briefing.py",
