@@ -1,0 +1,173 @@
+"""Persistent human-owned BA questions with source provenance and explicit resolution.
+
+AI can PROPOSE questions but cannot mark them ANSWERED. Disappearance from
+missingInfo does NOT mean an answer was found. No Jira/Confluence write API.
+"""
+import argparse
+import hashlib
+import json
+import re
+from pathlib import Path
+from urllib.parse import urlparse
+
+from app_config import ROOT, utc_now
+from storage import read_json, write_json
+
+STATES = {"OPEN", "ANSWERED", "SUPERSEDED", "NOT_APPLICABLE"}
+MAX_QUESTIONS = 200
+
+
+def normalize(text):
+    return " ".join(text.split()).casefold()
+
+
+def question_id(key, text):
+    return "Q-" + hashlib.sha256((key + ":" + normalize(text)).encode()).hexdigest()[:14]
+
+
+def question_file(root, key):
+    if not re.fullmatch(r"CCON-\d+", str(key)):
+        raise ValueError("Invalid task key.")
+    return Path(root) / "data/questions" / (key + ".json")
+
+
+def task_in_scope(root, key):
+    context = read_json(Path(root) / "data/jira_context.json", {})
+    if context.get("complete") is not True or key not in context.get("issues", {}):
+        raise ValueError("Question task must belong to complete personal Jira scope.")
+
+
+def proposed_questions(analysis=None, evidence=None):
+    proposals = []
+    analysis = analysis or {}
+    for text in analysis.get("missingInfo") or []:
+        if isinstance(text, str) and text.strip():
+            proposals.append({"text": text.strip(), "origin": "AI_MISSING_INFO"})
+    briefing = analysis.get("briefing") or {}
+    if isinstance(briefing, dict):
+        for text in briefing.get("unknownsUk") or []:
+            if isinstance(text, str) and text.strip():
+                proposals.append({"text": text.strip(), "origin": "AI_BRIEFING"})
+    for artifact in evidence or []:
+        for text in artifact.get("questionsUk") or []:
+            if isinstance(text, str) and text.strip():
+                proposals.append({"text": text.strip(), "origin": "LOG_EVIDENCE"})
+    result, seen = [], set()
+    for proposal in proposals:
+        norm = normalize(proposal["text"])
+        if norm and norm not in seen:
+            result.append(proposal)
+            seen.add(norm)
+    return result[:MAX_QUESTIONS]
+
+
+def read_questions(root, key):
+    source = read_json(question_file(root, key), {"key": key, "questions": []})
+    if not isinstance(source, dict) or not isinstance(source.get("questions"), list):
+        raise ValueError("Invalid local question state.")
+    return source
+
+
+def sync_questions(root, key, analysis=None, evidence=None):
+    task_in_scope(root, key)
+    source = read_questions(root, key)
+    prior = {item["id"]: item for item in source["questions"]}
+    date = utc_now()
+    seen = set()
+    for proposal in proposed_questions(analysis, evidence):
+        text = proposal["text"][:3000]
+        identifier = question_id(key, text)
+        seen.add(identifier)
+        if identifier in prior:
+            prior[identifier]["lastSeenAt"] = date
+            # No automatic status change. An answered question stays answered.
+        else:
+            prior[identifier] = {
+                "id": identifier, "text": text, "status": "OPEN",
+                "origin": proposal["origin"], "firstSeenAt": date,
+                "lastSeenAt": date, "presentInLatestAnalysis": True,
+                "owner": "", "answer": "", "evidenceUrl": "",
+                "updatedAt": date,
+            }
+    for q in prior.values():
+        q["presentInLatestAnalysis"] = q["id"] in seen
+    source = {"key": key, "updatedAt": date,
+              "questions": sorted(prior.values(), key=lambda q: (q["status"] != "OPEN", q["firstSeenAt"], q["id"]))}
+    write_json(question_file(root, key), source, 1 * 1024 * 1024)
+    return source
+
+
+def update_question(root, key, identifier, *, status, owner="", answer="", evidence_url=""):
+    task_in_scope(root, key)
+    if status not in STATES:
+        raise ValueError("Invalid question state.")
+    for name, value, limit in (("owner", owner, 180), ("answer", answer, 8000),
+                               ("evidenceUrl", evidence_url, 2000)):
+        if not isinstance(value, str) or len(value) > limit:
+            raise ValueError(name + " must be bounded text.")
+    if evidence_url:
+        url = urlparse(evidence_url)
+        if url.scheme not in ("http", "https") or not url.hostname or url.username or url.password:
+            raise ValueError("Evidence must be an HTTP(S) URL.")
+    if status == "ANSWERED" and not answer.strip():
+        raise ValueError("ANSWERED requires a written answer.")
+    source = read_questions(root, key)
+    match = next((item for item in source["questions"] if item.get("id") == identifier), None)
+    if not match:
+        raise ValueError("Unknown question ID.")
+    # Even a human-entered answer without a source is flagged, not called verified.
+    match.update({"status": status, "owner": owner, "answer": answer,
+                  "evidenceUrl": evidence_url, "updatedAt": utc_now(),
+                  "answerVerified": status == "ANSWERED" and bool(evidence_url)})
+    source["updatedAt"] = utc_now()
+    write_json(question_file(root, key), source, 1 * 1024 * 1024)
+    return match
+
+
+def all_evidence(root, key):
+    directory = Path(root) / "data/evidence" / key
+    if not directory.is_dir():
+        return []
+    results = []
+    for path in sorted(directory.glob("*.json"))[:60]:
+        if path.stat().st_size > 4 * 1024 * 1024:
+            continue
+        payload = read_json(path, {})
+        if isinstance(payload, dict) and payload.get("issueKey") == key:
+            results.append(payload)
+    return results
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("command", choices=["sync", "list", "update"])
+    p.add_argument("--root", type=Path, default=ROOT)
+    p.add_argument("--issue", required=True)
+    p.add_argument("--id")
+    p.add_argument("--status", choices=sorted(STATES))
+    p.add_argument("--owner", default="")
+    p.add_argument("--answer", default="")
+    p.add_argument("--evidence-url", default="")
+    args = p.parse_args()
+    if args.command == "sync":
+        from desk_store import Desk
+        task = next((item for item in Desk(args.root).view()["tasks"]
+                     if item["key"] == args.issue), None)
+        if not task:
+            raise ValueError("Issue is not imported.")
+        result = sync_questions(args.root, args.issue, task.get("analysis"),
+                                all_evidence(args.root, args.issue))
+    elif args.command == "list":
+        task_in_scope(args.root, args.issue)
+        result = read_questions(args.root, args.issue)
+    else:
+        if not args.id or not args.status:
+            raise ValueError("Updating requires --id and --status.")
+        result = update_question(args.root, args.issue, args.id, status=args.status,
+                                 owner=args.owner, answer=args.answer,
+                                 evidence_url=args.evidence_url)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()
