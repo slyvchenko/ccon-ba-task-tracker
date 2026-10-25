@@ -432,7 +432,7 @@ function renderDetail() {
           <div class="section-label">На чому ґрунтується оцінка</div>
           ${sourceMarkup(analysis)}
           ${qualityGateMarkup(analysis.qualityGate)}
-          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? (handoff.showFallbackCopy ? '<button id="copyDescription" class="quiet" title="'+escapeHtml(handoff.warning)+'">'+escapeHtml(handoff.fallbackLabel)+'</button> ' : '') + '<button id="approveDescription" class="quiet">'+escapeHtml(handoff.approvalLabel)+'</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details>
+          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? (handoff.showFallbackCopy ? '<button id="copyDescription" class="quiet" aria-describedby="fallbackCopyWarning">'+escapeHtml(handoff.fallbackLabel)+'</button><p id="fallbackCopyWarning" class="analysis-missing">'+escapeHtml(handoff.warning)+'</p> ' : '') + '<button id="approveDescription" class="quiet">'+escapeHtml(handoff.approvalLabel)+'</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details>
           ${previousAnalysisMarkup(task)}
           <details class="description"><summary>Історія змін задачі</summary>
             <div id="taskHistory" class="muted">Завантажую історію…</div>
