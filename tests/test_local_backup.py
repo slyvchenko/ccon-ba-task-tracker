@@ -130,8 +130,9 @@ class OfflineRecoveryTests(unittest.TestCase):
             with sqlite3.connect(root/"ba_state.db") as connection:
                 connection.executescript("""
                   CREATE TABLE tasks(key TEXT PRIMARY KEY, snapshot TEXT NOT NULL,
-                   manual_status TEXT NOT NULL, note TEXT NOT NULL, imported_at TEXT NOT NULL);
-                  INSERT INTO tasks VALUES ('CCON-1',
+                   manual_status TEXT NOT NULL, note TEXT NOT NULL,
+                   imported_at TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1);
+                  INSERT INTO tasks(key,snapshot,manual_status,note,imported_at) VALUES ('CCON-1',
                    '{"key":"CCON-1","summary":"Old sample"}',
                    'IN PROGRESS','Earlier note','2026-10-25T08:00:00Z');
                 """)
