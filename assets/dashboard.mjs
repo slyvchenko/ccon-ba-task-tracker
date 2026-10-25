@@ -437,7 +437,7 @@ function renderDetail() {
             <summary>${escapeHtml(evidenceSectionLabel(analysis.evidence?.length||0))}</summary>
             ${sourceMarkup(analysis)}
           </details>
-          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? (handoff.showFallbackCopy ? '<button id="copyDescription" class="quiet" title="'+escapeHtml(handoff.warning)+'">'+escapeHtml(handoff.fallbackLabel)+'</button> ' : '') + '<button id="approveDescription" class="quiet">'+escapeHtml(handoff.approvalLabel)+'</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details>
+          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? (handoff.showFallbackCopy ? '<button id="copyDescription" class="quiet" aria-describedby="fallbackCopyWarning">'+escapeHtml(handoff.fallbackLabel)+'</button><p id="fallbackCopyWarning" class="analysis-missing">'+escapeHtml(handoff.warning)+'</p> ' : '') + '<button id="approveDescription" class="quiet">'+escapeHtml(handoff.approvalLabel)+'</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details>
           <details class="description" aria-label="Історія та минулі версії">
             <summary>Історія й аудит</summary>
             ${previousAnalysisMarkup(task)}
