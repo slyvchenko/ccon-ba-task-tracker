@@ -13,6 +13,7 @@ from pathlib import Path
 from app_config import ROOT, utc_now
 from storage import read_json
 from supplier_logs import flow_references, supplier_hint
+from evidence_trends import event_window, recurrence_window
 
 UUID = re.compile(r"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$")
 CODE = re.compile(r"^[A-Za-z0-9_.:-]{2,90}$")
@@ -56,6 +57,7 @@ def analyze_health(issue, manifests):
             "codes": sorted({str(v["code"]) for v in (record.get("errorCodes") or [])[:100]
                              if isinstance(v, dict) and CODE.fullmatch(str(v.get("code") or ""))}),
             "pairedCandidates": len(((record.get("valueReview") or {}).get("comparisons") or [])[:30]),
+            "eventWindow": event_window(record),
         }
         # Replacement exported same flow should not inflate frequency.
         prior = cases.get(flow)
@@ -97,7 +99,9 @@ def analyze_health(issue, manifests):
                  "status": "HEURISTIC_NOT_CONFIRMED_CAUSE"}
                 for (code, category), v in category_groups.items()]
     taxonomy.sort(key=lambda x: (-x["caseCount"], x["code"]))
-    repeated = [{**item, "repeatSignal": "REPEATED_ONLY_IN_DOWNLOADED_FLOWS"}
+    windows = recurrence_window(list(cases.values()))
+    repeated = [{**item, "repeatSignal": "REPEATED_ONLY_IN_DOWNLOADED_FLOWS",
+                 "temporalEvidence": windows.get(item["code"])}
                 for item in taxonomy if item["caseCount"] > 1][:30]
 
     count = len(expected) if expected else None
@@ -115,6 +119,7 @@ def analyze_health(issue, manifests):
         "uncertainty": (
             "Codes identify potential classes, not origin or root cause. "
             "No statistically representative prevalence is claimed. "
+            "Flow payload event timestamps do not establish error onset. "
             "A missing error folder does not prove absence of errors."
         ),
     }
