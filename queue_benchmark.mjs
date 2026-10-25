@@ -1,8 +1,6 @@
-"""Synthetic-only frontend queue benchmark (Node, not a browser DOM test).
-
-Usage: node queue_benchmark.mjs --sizes 100 500 1000 --iterations 15
-No corporate data, network calls or runtime dependencies.
-"""
+/* Synthetic-only frontend queue benchmark (Node, not browser DOM).
+   Usage: node queue_benchmark.mjs --sizes 100 500 1000 --iterations 15
+   No corporate data, network calls or runtime dependencies. */
 import {performance} from 'node:perf_hooks';
 import {createQueueModel} from './assets/queue-performance.mjs';
 import {rankTasks,filterTasks} from './assets/task-rules.mjs';
