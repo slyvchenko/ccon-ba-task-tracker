@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після злиття PR #18 (v2.18). **Поточний кандидат:** PR #19 (v2.19), human-UAT після зеленого CI.  
+**Базовий код:** `main` після PR #21 (v2.21). **Поточний кандидат:** PR #22 (v2.22), пакет надійності доказів; live UAT окремо.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -15,7 +15,7 @@
 7. Вхідний REST request → перетворення → supplier request; supplier response → перетворення → REST response. Не підмінювати кореляцію доказом mapping чи причини збою.
 8. **Локальний Codex/Work** користується наявною авторизованою браузерною сесією Jira/Kibana/CCON, коли це можливо; не вилучати cookies, TOTP, токени й не відправляти корпоративні логи в публічний GitHub. Вебсервер Python не має власного інтерактивного браузера.
 9. Jira та Confluence тільки read-only, листи тільки як drafts. Ніякого автоматичного запису, зміни тасок чи зовнішніх листів.
-10. **Жоден великий PR:** рухатись блоками по 2–3 пов'язані можливості, синтетичні й реальні acceptance cases, зелений CI до merge; після merge перевіряти також CI на `main`.
+10. **Тематичні пакетні PR:** групувати 3–5 суміжних пунктів за спільними контрактами, тестами та ризиками; для кожного пакета перевіряти Python/Node/release/Compose до merge і CI на `main` після merge. Великий розмір не замінює перевірку.
 
 ## 1. Легенда
 
@@ -64,8 +64,8 @@
 | EVD-11 | P1 | IMPLEMENTED (explicit payload timestamps); Kibana live timeline UAT pending | Часова послідовність по flow з Kibana timestamps | Причинно-часові залежності, pagination, timezone, retries |
 | EVD-12 | P1 | IMPLEMENTED (local flow coverage with explicit missing sources); live UAT open | Confidence+coverage dashboard для доказів | Відсоток flows із REST+supplier+errors, причини прогалин |
 | EVD-13 | P1 | PARTIAL (v2.21 local JSON/XML/ZIP structure; PDF text & Confluence unread, live UAT open) | Вкладення Jira (PDF/JSON/XML/ZIP), Confluence/wiki | Read-only extraction, не просто метадані; bounded/safe parser, source audit |
-| EVD-14 | P2 | PARTIAL (distinct-flow recurrence, no historical prevalence) | Cross-case anomaly detection: recurring errors across time | Порівняння case signatures з попереднім аналізом без PII |
-| EVD-15 | P2 | PLANNED | Кероване зберігання raw ZIP: retention, cleanup, quota | Encrypt-at-rest/ACL, TTL, аудит, no commit/no egress |
+| EVD-14 | P2 | PARTIAL (distinct-flow recurrence + explicit flow-event windows; no production prevalence) | Cross-case anomaly detection: recurring errors across time | Порівняння case signatures з попереднім аналізом без PII |
+| EVD-15 | P2 | PARTIAL (opt-in dry-run retention/quota, pinned-index protection, local decision audit; encryption & ACL validation open) | Кероване зберігання raw ZIP: retention, cleanup, quota | Encrypt-at-rest/ACL, TTL, аудит, no commit/no egress |
 | OUT-01 | P0 | PARTIAL | Самодостатній BA dossier із короткою дією, правилами, QA, gaps | Реальні приклади без зайвих формулювань; scenario-based grading |
 | OUT-02 | P0 | PARTIAL | Чернетка листа, subject/method, контекст попередніх відповідей | Ситуативне формулювання, ручне редагування, без auto-send |
 | OUT-03 | P1 | IMPLEMENTED (code); live UAT pending | Готовий supplier ZIP та evidence status без прихованої недоступності | Показувати ready/stale/blocked + причина і flow у поточній картці |
@@ -80,16 +80,16 @@
 | QA-04 | P1 | PARTIAL | AI quality metrics, reject invalid dossier | Structured schema / briefing/factors checks implemented; factual support pending |
 | QA-05 | P1 | PARTIAL | Safe daily prompt calibration checklist | Whitelisted diagnostics implemented; prompt version change evaluated separately |
 | QA-06 | P1 | IMPLEMENTED (staged A/B + human approval + rollback); real reviews pending | Prompt A/B regression / automatic candidate proposal | Human gate, compare gold set, rollback, no unreviewed auto-prompts |
-| QA-07 | P2 | PLANNED | Offline fixtures for realistic REST/XML/multi-error formats | Coverage by supplier method, nested ZIP cases, pagination, retries |
+| QA-07 | P2 | PARTIAL (synthetic AF/KL/Finnair multi-error, retry, malformed and nested ZIP matrix; live formats UAT open) | Offline fixtures for realistic REST/XML/multi-error formats | Coverage by supplier method, nested ZIP cases, pagination, retries |
 | QA-08 | P1 | PARTIAL (v2.20 model egress sanitizer and synthetic regressions; full DLP/log audit pending) | Data minimization/security for prompt, manifests, debug logs | PII/credentials, safe link stripping, prompt injection regression |
 | INF-01 | P3 | DEFERRED | Cloud deployment: SSO/OIDC/HTTPS/hosting | Cloud pilot code exists, real infra and security approval not started |
 | INF-02 | P3 | DEFERRED | Backups, PostgreSQL, multi-worker safety, operations alerts | After local feature quality/infra approval |
 | INF-03 | P3 | DEFERRED | Real unattended scheduling and live model setup | Does not block local Codex project |
 | INF-04 | P3 | DEFERRED | Formal secrets manager, brand/legal approvals | Production security gate |
 
-## 3. Рекомендовані невеликі PR / порядок
+## 3. Тематичні пакетні PR / порядок
 
-| Блок | Обсяг (не більше 2–3 функцій) | Гейт |
+| Блок | Згрупований обсяг | Гейт |
 |---|---|---|
 | **#9 — CODE COMPLETE; LIVE UAT OPEN** | EVD-07: 1–30 error cases з локально підготовлених flow reports; EVD-08: evidence-based RCA із альтернативами й прогалинами | Synthetic multi-flow regression + flow/supplier isolation + baseline CI. Реальний Kibana UAT окремо |
 | **#10 — CODE COMPLETE; LIVE BROWSER UAT OPEN** | EVD-05: локальний browser-to-ZIP handoff із журналом помилок; OUT-03: ready/stale/blocked ZIP в existing card | Реальний авторизований download без cookies/API leaks |
@@ -98,8 +98,8 @@
 | **#13 — CODE COMPLETE; LIVE UAT OPEN** | EVD-09/EVD-11: mapping contracts + flow timeline | Два request paths, retry/timeout, ordering |
 | **#14 — CODE COMPLETE; LOCAL UAT OPEN** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
 | **#15 — CODE COMPLETE; LIVE UAT OPEN** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
-| **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — MERGED; HUMAN UAT OPEN** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI green, без auto-ranking |\n| **#20 — MERGED; SECURITY UAT OPEN** | QA-08: безпечна мінімізація даних перед відправленням у схвалену модель | Synthetic prompt payload, URL/PII/secrets tests + CI |\n| **#21 — IN PROGRESS** | EVD-13: локальний браузерний handoff JSON/XML/ZIP, прив'язка доказів до Jira fingerprint | ZIP safety, structure only, PDF explicitly unread |
-| **Далі** | EVD-13b (PDF/wiki extraction after approved parser), EVD-15 (ZIP retention), UX-02/QA-07 | Окремі невеликі PR після перевірки попереднього |
+| **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — MERGED; HUMAN UAT OPEN** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI green, без auto-ranking |\n| **#20 — MERGED; SECURITY UAT OPEN** | QA-08: безпечна мінімізація даних перед відправленням у схвалену модель | Synthetic prompt payload, URL/PII/secrets tests + CI |\n| **#21 — MERGED; BROWSER UAT OPEN** | EVD-13: локальний браузерний handoff JSON/XML/ZIP, прив'язка доказів до Jira fingerprint | ZIP safety, structure only, PDF explicitly unread |
+| **#22 — IN PROGRESS, GROUPED** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | Dry-run default, pinned versions, no false error onset, CI + real UAT separate |\n| **Далі, GROUPED** | BA-01/BA-02/OUT-01/UX-02 (output quality); EVD-13b/PDF/wiki after parser approval | Спільні контракти, інваріанти, CI та людина як reviewer |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
 ## 4. Definition of Done для кожного наступного блоку
