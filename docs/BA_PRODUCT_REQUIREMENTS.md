@@ -117,3 +117,12 @@ future user story. Windows mailto is manual draft opening only.
 - [ ] Approve corporate brand tokens/asset use
 - [ ] Select company hosting, identity, DB and approved LLM provider
 - [ ] Cloud deployment and private access validated independently
+
+## v2.26 update: throughput-first product refinement
+
+The earlier P0/P1 user stories remain relevant; however, a dense personal backlog changes the primary product question from how to list issues to how quickly a BA can safely *move work forward*. The authoritative **new** functional backlog with 73 granular items and staged priorities is `docs/PRODUCT_BACKLOG.md`; the source-code-grounded review, time-to-handoff metrics, layout constraints and performance/reliability acceptance are documented in:
+- `docs/PRODUCTIVITY_UX_AUDIT.md`
+- `docs/LOCAL_PERFORMANCE_RELIABILITY.md`
+- `docs/UX_TEST_COVERAGE_MATRIX.md`
+
+The local v2.26 revision transport and no-query search shortcut are implemented in code, with synthetic integration regressions. The speed improvements on a real Windows laptop, ergonomics of fast Jira handoffs and business-correctness of large BA analyses are **not** established until field UAT, real synthetic-browser profiling and independent human gold-case review.
