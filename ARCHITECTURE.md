@@ -116,3 +116,11 @@ remain absent. See `docs/CLOUD_PILOT_RUNBOOK.md`.
 ### Межа перевірки
 
 Монотонна ревізія є сигналом синхронізації **лише змін, зроблених цим застосунком**; вона не замінює compare-and-swap для двох вкладок. SQLite зберігає ручний статус і нотатки, але CAS та crash-backup залишаються окремими P0. У CI немає підстав стверджувати виміряну p95 latency на Windows або семантичну якість BA.
+
+## v2.28: quick-action BA policy within the original task card
+
+`assets/fast-handoff.mjs` holds a pure, independently testable presentation policy: current next action, conditional shortcut to a structurally checked Jira draft, ranked-lane explanation and explicit confirmation prompt for **manual** work completion. It imports the authoritative `assets/task-rules.mjs` so no second ranking algorithm or new task modes are introduced.
+
+`assets/dashboard.mjs` puts the current action at the top of the **same existing detail card**, no extra tabs or separate Quick/Deep mode. Copying a text changes only the clipboard and never confirms an external Jira/email operation. The shortcut stays disabled for missing, stale, BLOCKED or merely NEEDS_REVIEW reports. The original detailed review remains accessible. Both Done→Next and manual Done status require user confirmation. Existing per-task SQLite CAS continues to protect edits.
+
+On same-task refresh, selection, sidebar/main scroll and open details are retained where available; user-entered drafts are guarded by the existing form and conflict-policy mechanism. This is a UI convenience, not a semantic or live supplier validation.
