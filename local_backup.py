@@ -9,6 +9,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import sqlite3
 import sys
 from datetime import datetime, timezone, timedelta
@@ -77,6 +78,26 @@ def _check_database(path):
         connection.close()
 
 
+def _ordered_manifests(folder):
+    """Sort by UTC creation timestamp, not same-second random filename suffix."""
+    entries = []
+    for path in folder.glob("backup-*.sqlite3.json"):
+        try:
+            if path.is_symlink() or path.stat().st_size > 4096:
+                continue
+            value = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(value, dict):
+                continue
+            when = datetime.fromisoformat(str(value.get("createdAt", "")).replace("Z", "+00:00"))
+            if when.tzinfo is None:
+                continue
+            entries.append((when, path.stat().st_mtime_ns, path))
+        except (OSError, ValueError, TypeError):
+            continue
+    entries.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return [entry[2] for entry in entries]
+
+
 def backup_status(root):
     """Read metadata only; never expose a file path or private task content."""
     root = Path(root)
@@ -84,8 +105,7 @@ def backup_status(root):
         return {"available": False, "status": "NO_DATABASE"}
     try:
         folder = _folder(root)
-        manifests = sorted(folder.glob("backup-*.sqlite3.json"), reverse=True)
-        for manifest in manifests:
+        for manifest in _ordered_manifests(folder):
             try:
                 if manifest.is_symlink() or manifest.stat().st_size > 4096:
                     continue
@@ -171,18 +191,21 @@ def create_backup(root, *, force=False, interval_hours=24, keep=7):
 
 
 def _trim(folder, count):
-    manifests = sorted(folder.glob("backup-*.sqlite3.json"), reverse=True)
-    for manifest in manifests[count:]:
-        if manifest.is_symlink():
-            continue
+    # Invalid/corrupted files are NEVER counted as successful backup points.
+    valid = []
+    for manifest in _ordered_manifests(folder):
         name = manifest.name[:-5]
-        if not NAME.fullmatch(name):
+        try:
+            verify_backup(folder.parent, name)
+            valid.append(manifest)
+        except (OSError, ValueError, sqlite3.Error, TypeError):
             continue
+    for manifest in valid[count:]:
+        name = manifest.name[:-5]
         path = folder / name
         if path.is_symlink():
             continue
-        # Remove manifest FIRST; a crash should leave an ineligible .db,
-        # never a dangling valid-looking manifest.
+        # Remove manifest FIRST: a crash must not leave a valid-looking entry.
         manifest.unlink()
         path.unlink(missing_ok=True)
 
@@ -208,6 +231,28 @@ def verify_backup(root, filename):
             "createdAt": metadata.get("createdAt")}
 
 
+def _quarantine_corrupt_database(root, database):
+    """Preserve damaged raw bytes for forensics, NEVER mark restorable/verified."""
+    folder = _folder(root)
+    filename = ("damaged-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-") +
+                secrets.token_hex(6) + ".sqlite3")
+    stage = folder / (filename + ".pending")
+    destination = folder / filename
+    try:
+        _private_new(stage)
+        with database.open("rb") as source, stage.open("wb") as output:
+            shutil.copyfileobj(source, output, length=1024*1024)
+            output.flush()
+            os.fsync(output.fileno())
+        if stage.stat().st_size != database.stat().st_size:
+            raise ValueError("Damaged database could not be safely preserved.")
+        replace_file(stage, destination)
+        return filename
+    finally:
+        if stage.exists():
+            stage.unlink()
+
+
 def restore_backup(root, filename, confirmation):
     """Refuse when desktop server owns its lock, protect current DB first."""
     if confirmation != CONFIRM:
@@ -218,23 +263,41 @@ def restore_backup(root, filename, confirmation):
     with pipeline_lock(root / ".local-server"):
         verified = verify_backup(root, filename)
         database = root / "ba_state.db"
+        sidecars = (root / "ba_state.db-wal", root / "ba_state.db-shm")
+        # Orphaned WAL can replay AFTER the validated replacement even if
+        # no main DB exists: refuse rather than silently alter recovered data.
+        if not database.exists() and any(path.exists() or path.is_symlink() for path in sidecars):
+            raise ValueError("Orphaned SQLite WAL files present. Preserve them offline before recovery.")
         if database.exists():
             if database.is_symlink() or not database.is_file():
                 raise ValueError("Refusing unsafe database path.")
-            # Create an additional verified rescue copy BEFORE any write.
-            rescue = create_backup(root, force=True, keep=0)
-            if not rescue.get("created"):
-                raise ValueError("Could not safeguard existing local data.")
-            # Do not replace db while an uncheckpointed WAL could replay
-            # old transactions over the restored file on the next launch.
-            connection = sqlite3.connect(database, timeout=10)
+            rescue_valid = False
             try:
-                checkpoint = connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
-                if checkpoint and checkpoint[0] != 0:
-                    raise ValueError("SQLite WAL is busy. Close all readers before restore.")
-            finally:
-                connection.close()
-            if (root / "ba_state.db-wal").exists() or (root / "ba_state.db-shm").exists():
+                rescue = create_backup(root, force=True, keep=0)
+                rescue_valid = bool(rescue.get("created"))
+                if not rescue_valid:
+                    raise ValueError("Could not safeguard existing local data.")
+            except (sqlite3.DatabaseError, ValueError):
+                # Only a genuinely broken DB can bypass verified rescue: a
+                # raw forensic copy is explicitly NOT a restorable backup.
+                try:
+                    _check_database(database)
+                except (sqlite3.DatabaseError, ValueError):
+                    if any(path.exists() or path.is_symlink() for path in sidecars):
+                        raise ValueError("Damaged SQLite has WAL sidecars. Preserve and disconnect offline.")
+                    _quarantine_corrupt_database(root, database)
+                else:
+                    raise
+            if rescue_valid:
+                # Healthy SQLite: safely checkpoint before replacing file.
+                connection = sqlite3.connect(database, timeout=10)
+                try:
+                    checkpoint = connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+                    if checkpoint and checkpoint[0] != 0:
+                        raise ValueError("SQLite WAL is busy. Close all readers before restore.")
+                finally:
+                    connection.close()
+            if any(path.exists() or path.is_symlink() for path in sidecars):
                 raise ValueError("SQLite WAL files still present. Close all clients before restore.")
         folder = _folder(root)
         source = folder / filename
