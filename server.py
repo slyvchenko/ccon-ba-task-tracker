@@ -32,6 +32,7 @@ STATIC_FILES = {
     '/assets/manual-edit-policy.mjs': ('assets/manual-edit-policy.mjs', 'text/javascript; charset=utf-8'),
     '/assets/draft-recovery.mjs': ('assets/draft-recovery.mjs', 'text/javascript; charset=utf-8'),
     '/assets/fast-handoff.mjs': ('assets/fast-handoff.mjs', 'text/javascript; charset=utf-8'),
+    '/assets/visual-clarity.mjs': ('assets/visual-clarity.mjs', 'text/javascript; charset=utf-8'),
     '/assets/focus-navigation.mjs': ('assets/focus-navigation.mjs', 'text/javascript; charset=utf-8'),
     '/assets/effort-planning.mjs': ('assets/effort-planning.mjs', 'text/javascript; charset=utf-8'),
     '/assets/queue-performance.mjs': ('assets/queue-performance.mjs', 'text/javascript; charset=utf-8'),

@@ -1,0 +1,35 @@
+// View-only consolidation. Never merges Jira status with local manual status
+// or the computed BA signal: these are independent provenance domains.
+export function queueSummary({visible=0,sprint=0,write=0,active=0,analyzed=0,unverified=0,quick=0}={}) {
+  return {
+    primary:`${visible} у списку · спринт ${sprint} · листи ${write}`,
+    diagnostics:`Поточних: ${active} · аналіз: ${analyzed}/${active} · короткі кандидати: ${quick} · спринт не підтверджено: ${unverified}`
+  };
+}
+export function conciseSnapshotInfo(latest, dateLabel) {
+  return latest ? 'Оновлено ' + dateLabel(latest.generated_at) : 'Очікую snapshot';
+}
+export function statusPresentation({jiraStatus='',manualStatus='AUTO',manualLabel='',
+  activeSprintStatus='',activeSprint=false,activeSprintNames=[],blocking=false,
+  active=true,email,waiting,waitingLabel='',isWrite=false}={}) {
+  const provenance=[
+    'Jira: '+(jiraStatus||'Не вказано'),
+    'Мій стан: '+(manualStatus==='AUTO'?'Автоматично':manualLabel||manualStatus)
+  ];
+  if(activeSprintStatus==='VERIFIED') provenance.push(activeSprint ?
+    'Активний спринт'+(activeSprintNames.length?': '+activeSprintNames.join(', '):'') :
+    'Поза активним спринтом');
+  else provenance.push('Спринт не підтверджено');
+  const alerts=[];
+  if(blocking) alerts.push('Блокує інших');
+  if(!active) alerts.push('Поза поточним snapshot');
+  if(isWrite&&email===true) alerts.push('Потрібен лист');
+  if(waiting===true) alerts.push(waitingLabel||'Очікуємо відповідь');
+  return {provenance,alerts};
+}
+export function shouldRenderBriefing(value) {
+  return !!value && typeof value==='object' && !Array.isArray(value);
+}
+export function assessmentReason(value) {
+  return typeof value==='string'?value.trim():'';
+}

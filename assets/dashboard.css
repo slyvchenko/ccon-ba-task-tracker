@@ -1488,3 +1488,12 @@ a:focus-visible {
   .badge,.panel,.question-record {border:1px solid CanvasText}
   .saved-note,.analysis-missing {border:2px solid Highlight}
 }
+
+/* v2.35: one action first, separate Jira/manual provenance without badge noise. */
+.queue-diagnostics {font-size:12px;color:var(--muted);}
+.queue-diagnostics summary {cursor:pointer;line-height:1.4}
+.queue-diagnostics p {margin:5px 0;overflow-wrap:anywhere}
+.task-meta-compact {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:7px 0 12px;font-size:12px;color:var(--muted);}
+.task-status-provenance {display:inline;overflow-wrap:anywhere}
+.task-status-alerts {display:inline-flex;align-items:center;flex-wrap:wrap;gap:5px}
+.task-status-provenance span {white-space:normal}

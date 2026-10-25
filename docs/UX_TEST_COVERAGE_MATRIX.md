@@ -148,3 +148,7 @@ The existing Data menu now exposes draft-recovery actions. Queue selection uses 
 - Dedicated CI browser job installs the pinned optional Playwright test dependency; core desktop runtime stays stdlib Python/SQLite. Failure screenshots and synthetic timing artifacts available for 3 days, no supplier/PNR/credentials.
 - **Gaps:** real Windows Chrome and Edge, NVDA/screen reader, native 200–400% zoom, 8-hour heap/leak study and gold BA observation. These remain human UAT, not claimed complete.
 - **UI redundancy:** `docs/UX_REDUNDANCY_SIMPLIFICATION_AUDIT.md` provides 16 source-backed candidates and grouped #35–#38 acceptance. No removals in v2.34.
+
+## v2.35: visually quiet first-screen coverage
+
+`tests/visual-clarity.test.mjs` verifies scan-only queue summary, all retained secondary counts, nonduplicated snapshot timestamp, Jira/manual/sprint provenance separation, blocking/WAIT/WRITE warnings, omission of neutral false signals and no repeated empty briefing. Existing Chromium browser E2E covers keyboard/CAS/modal/responsive and unchanged API. Real human time-to-action and screen-reader comprehension before/after remain OPEN: capture five BA archetypes and ensure warnings remain visible without scrolling.

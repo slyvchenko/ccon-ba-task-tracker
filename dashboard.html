@@ -22,7 +22,7 @@
           <select id="signalFilter" aria-label="Тип дії"><option value="all">Усі типи дій</option><option value="READY">Можна працювати</option><option value="WRITE">Написати листа</option><option value="DECIDE">Потрібне рішення</option><option value="REVIEW">Проаналізувати</option><option value="WAIT">Очікуємо</option></select>
         </div>
         <select id="sprintFilter" aria-label="Приналежність до активного спринту"><option value="all">Усі спринти та беклог</option><option value="active">Активний спринт</option><option value="outside">Поза активним спринтом</option><option value="unverified">Спринт не підтверджено</option></select>
-        <span id="count" class="muted"></span><p id="queueAnnouncer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+        <span id="count" class="muted"></span><details class="queue-diagnostics"><summary>Деталі черги</summary><p id="countDetails" class="muted"></p></details><p id="queueAnnouncer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
         <details class="keyboard-guide"><summary>Швидкі клавіші</summary>
           <p><kbd>/</kbd> пошук · <kbd>Alt+↓</kbd>/<kbd>Alt+↑</kbd> наступна/попередня задача</p>
           <p><kbd>Alt+C</kbd> копіювати наступну дію · <kbd>Ctrl+Enter</kbd> зберегти правки у формі</p>
