@@ -288,3 +288,7 @@ production-фазою. Прямий публічний доступ до Python-
 Пошук у стандартній черзі тепер підтримує кілька незалежних слів, Jira key, AF/KL чи AFKL, метод постачальника, REST scope, назви точних полів IF/THEN і пов'язані задачі. Спринт і пріоритет листів залишаються незмінними.
 
 У вже наявній згорнутій секції «Чернетка опису задачі» додано **«Схвалити опис»** і перегляд відмінностей від попереднього вручну схваленого тексту. Схвалений примірник зберігається лише локально, не редагується AI і не передається в Jira. Після змін джерела Jira повторне схвалення вимагає актуального аналізу. Листи, нотатки та статуси залишаються без змін.
+
+## v2.19: retrospective audit of BA priority scores
+
+The daily review records 0–100 score changes (and changes to the five underlying factors), even when the issue text is unchanged. A >=20-point shift with the same verified Jira fingerprint and sprint status is flagged for **manual review**, not asserted to be AI bias or a Jira error. Scores without factor explanations receive a non-blocking quality warning. Legacy scores still load. The current dashboard, sprint/email ordering, manual statuses, notes, and drafts are unchanged. No external writes or score auto-correction.
