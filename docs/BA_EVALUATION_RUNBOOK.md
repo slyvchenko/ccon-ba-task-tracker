@@ -173,3 +173,13 @@ They are not human-reviewed evidence that the analysis is correct.
 7. `python prompt_experiments.py rollback --reason "Observed regression on a real issue"` вимикає addendum, зберігаючи історію approval та digest. Загальні BA-правила не переписуються ні при approve, ні при rollback.
 
 Заборонено замінювати незалежну людську оцінку auto-score AI або автоматично схвалювати prompt при гарних synthetic CI тестах. Всі файли залишаються у приватному `data/` (Git-ignored).
+
+## v2.25: deterministic preflight integrated into the frozen evaluation
+
+`python evaluation.py score` now validates that **both** frozen prediction sets have exactly the same 20–30 selected Jira keys and matching context fingerprints. With both sets present, the local evaluator additionally computes an **automatic diagnostic**: blocker/review counts, unique case-level QA warning codes, excerpt string occurrence only within the frozen Jira issue/linked content, missing rule-to-test links, and average draft length. It saves **aggregate counts only** in `data/evaluation/results.json`, never excerpts, customer details, payloads, code values or case identifiers.
+
+These figures do **not** prove that a generated requirement, supplier mapping, or RCA is correct. They are independent structural preflight checks for the human reviewer. The existing seven human rubric scores, zero critical false claims, and time-to-decision remain the only substantive acceptance gate. `INCOMPLETE` continues until **all** 20–30 reviewed cases and both frozen outputs are present. This code change does not fabricate or fetch real Jira cases.
+
+Generated Jira description lines are now normalized only when **exact adjacent nonheading lines** duplicate one another; field names, AND/OR, method, negation, examples, QA checks, source excerpts and approved/manual drafts are never shortened or semantically rewritten. The existing dashboard Quality Gate details (without another mode or tab) shows word count, QA check count and conservative length hints. Read-only Jira and mail-draft behavior are unchanged.
+
+**Release gate remains OPEN** until independent real-case evaluations have been performed under corporate access. A green PR, static tests or a lower warning count cannot close QA-03.
