@@ -13,6 +13,7 @@ let tasks = [], selected = null, latest = null, busy = false, browserRecoveryAva
 let signature = '', renderedTaskVersion = '', pendingDetail = false;
 let currentRevision = null, currentRevisionError = '', pollingInFlight = false, pollCycle = 0;
 const forms = new Map();
+const manualConflicts = new Map();
 const expandedEmails = new Set();
 const recoveredForms = readRecoveredForms();
 const {loadLogs} = createLogsController({api, escapeHtml, message, getSelected: () => selected});
@@ -34,7 +35,9 @@ function formFor(task) {
     const base = savedForm(task), recovered = recoveredForms[task.key];
     const value = recovered && STATUS_LABELS[recovered.manualStatus] && typeof recovered.note === 'string'
       ? {manualStatus:recovered.manualStatus, note:recovered.note, emailDraft:normalizedDraft(recovered.emailDraft)} : base;
-    forms.set(task.key, {value, base:JSON.stringify(base), changedAt:recovered?.changedAt || null});
+    forms.set(task.key, {value, base:JSON.stringify(base),
+      baseRevision:recovered ? (Number.isSafeInteger(recovered.baseRevision) ? recovered.baseRevision : null)
+        : task.manualRevision, changedAt:recovered?.changedAt || null});
     delete recoveredForms[task.key];
   }
   return forms.get(task.key);
@@ -43,7 +46,8 @@ function isDirty(key) { const form = forms.get(key); return !!form && JSON.strin
 function hasUnsaved() { return [...forms.keys()].some(isDirty) || Object.keys(recoveredForms).length > 0; }
 function rememberEdits() {
   const data = {...recoveredForms};
-  forms.forEach((form, key) => { if (isDirty(key)) data[key] = {...form.value, changedAt:form.changedAt}; });
+  forms.forEach((form, key) => { if (isDirty(key)) data[key] = {...form.value,
+    changedAt:form.changedAt, baseRevision:form.baseRevision}; });
   try { if (Object.keys(data).length) localStorage.setItem(LOCAL_EDITS_KEY, JSON.stringify(data)); else localStorage.removeItem(LOCAL_EDITS_KEY); }
   catch { browserRecoveryAvailable = false; }
 }
@@ -58,7 +62,12 @@ function message(text, error = false) { $('message').textContent = text; $('stat
 async function api(path, data) {
   const response = await fetch(path, data === undefined ? {cache:'no-store'} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
   const result = await response.json();
-  if (!response.ok) throw Error(result.error || 'Не вдалося виконати дію.');
+  if (!response.ok) {
+    const error = Error(result.error || 'Не вдалося виконати дію.');
+    error.code = result.code || '';
+    error.currentManualRevision = result.currentManualRevision;
+    throw error;
+  }
   return result;
 }
 function signalBadge(task) {
@@ -292,6 +301,18 @@ function renderDetail() {
           <label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Додай домовленість або наступний контакт…">${escapeHtml(form.note)}</textarea>
           <div class="actions state-actions"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Готово → Далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
           <div id="saved" class="save-state" role="status"></div>
+          <div id="manualConflict" class="analysis-missing" role="alert" hidden>
+            <b>Конфлікт ручних правок</b>
+            <p>Цю задачу збережено в іншій вкладці. Твій текст залишився у формі.
+            Перед перезаписом порівняй його з актуальною версією.</p>
+            <details><summary>Показати актуальний збережений статус, нотатку й лист</summary>
+              <pre class="pre" id="conflictSavedText"></pre>
+            </details>
+            <div class="actions">
+              <button id="conflictOverwrite" class="quiet">Перевірив, зберегти мої правки</button>
+              <button id="conflictUseSaved" class="quiet">Взяти збережену версію</button>
+            </div>
+          </div>
         </section>
         <details id="emailDetails" class="panel email-panel ${email === true || form.emailDraft.body ? 'email-first' : ''}" ${email === true || form.emailDraft.body || form.emailDraft.subject || expandedEmails.has(task.key) ? 'open' : ''}>
           <summary class="email-summary"><span>${email === false && !form.emailDraft.body && !form.emailDraft.subject ? 'Лист зараз не потрібен' : 'Чернетка листа'}</span><span class="email-toggle">Підготувати лист</span></summary>
@@ -324,6 +345,8 @@ function renderDetail() {
   $('save').addEventListener('click', () => saveTask(false));
   $('done').addEventListener('click', () => saveTask(true));
   $('discard').addEventListener('click', discardForm);
+  $('conflictOverwrite').addEventListener('click', overwriteAfterReview);
+  $('conflictUseSaved').addEventListener('click', takeSavedVersion);
   $('copyEmail').addEventListener('click', () => {
     const subject = $('draftSubject').value.trim();
     const body = $('draftBody').value.trim();
@@ -336,6 +359,7 @@ function renderDetail() {
   $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
   $('loadContext').addEventListener('click', () => loadContext(task.key));
   updateFormStatus();
+  showManualConflict();
   loadTaskEvidence(task.key, api, escapeHtml, () => selected);
   loadTaskQuestions(task.key, api, escapeHtml, message, () => selected);
   loadTaskDecisions(task.key, api, escapeHtml, message, () => selected);
@@ -360,11 +384,13 @@ function updateFormStatus() {
   const task = tasks.find(item => item.key === selected);
   if (!task || !$('saved')) return;
   const dirty = isDirty(task.key);
+  const conflict = manualConflicts.has(task.key);
   $('saved').textContent = '';
   $('saved').hidden = true;
-  $('savedIndicator').hidden = dirty;
+  $('savedIndicator').hidden = dirty || conflict;
   $('save').hidden = !dirty;
-  $('save').disabled = !dirty || busy;
+  $('save').disabled = !dirty || busy || conflict;
+  $('done').disabled = busy || conflict;
   $('saved').classList.toggle('unsaved', dirty);
   $('discard').hidden = !dirty;
   $('discard').disabled = !dirty || busy;
@@ -377,6 +403,7 @@ function discardForm() {
   if (busy || !isDirty(selected)) return;
   if (!confirm('Скинути незбережені зміни статусу, нотаток і чернетки цієї задачі?')) return;
   forms.delete(selected);
+  manualConflicts.delete(selected);
   delete recoveredForms[selected];
   rememberEdits();
   renderList();
@@ -397,12 +424,19 @@ async function saveStatus(status) {
   setBusy(true);
   try {
     // Only persist the status; keep typed note/draft buffers separate.
-    await api('/api/tasks/' + encodeURIComponent(task.key), {manualStatus:status, note:task.note || ''});
-    task.manualStatus = status;
-    task.modifiedAt = new Date().toISOString();
     const form = formFor(task);
+    if (!Number.isSafeInteger(form.baseRevision)) {
+      await loadManualConflict(task.key);
+      return;
+    }
+    const saved = await api('/api/tasks/' + encodeURIComponent(task.key),
+      {manualStatus:status, note:task.note || '', expectedManualRevision:form.baseRevision});
+    task.manualStatus = status;
+    task.manualRevision = saved.manualRevision;
+    task.modifiedAt = new Date().toISOString();
     form.value.manualStatus = status;
     form.base = JSON.stringify(savedForm(task));
+    form.baseRevision = saved.manualRevision;
     rememberEdits();
     signature = '';
     renderList();
@@ -410,21 +444,32 @@ async function saveStatus(status) {
     $('detail').scrollTop = scroll;
     $('manual')?.focus({preventScroll:true});
     message('Мій статус збережено автоматично.');
-  } catch (error) { message(error.message, true); }
-  finally { setBusy(false); }
+  } catch (error) {
+    if (error.code === 'TASK_REVISION_CONFLICT') await loadManualConflict(task.key);
+    else message(error.message, true);
+  } finally { setBusy(false); }
 }
 async function saveTask(done = false) {
   if (busy) return false;
   const task = tasks.find(item => item.key === selected);
   if (!task) return false;
   captureForm();
-  const value = structuredClone(formFor(task).value);
+  const form = formFor(task);
+  const value = structuredClone(form.value);
   if (done) value.manualStatus = 'DONE';
   setBusy(true);
   try {
-    await api('/api/tasks/' + encodeURIComponent(task.key), value);
-    Object.assign(task, {manualStatus:value.manualStatus, note:value.note, savedEmailDraft:value.emailDraft, modifiedAt:new Date().toISOString()});
+    if (!Number.isSafeInteger(form.baseRevision)) {
+      await loadManualConflict(task.key);
+      return false;
+    }
+    const saved = await api('/api/tasks/' + encodeURIComponent(task.key),
+      {...value, expectedManualRevision:form.baseRevision});
+    Object.assign(task, {manualStatus:value.manualStatus, note:value.note,
+      savedEmailDraft:value.emailDraft, manualRevision:saved.manualRevision,
+      modifiedAt:new Date().toISOString()});
     forms.delete(task.key);
+    manualConflicts.delete(task.key);
     delete recoveredForms[task.key];
     rememberEdits();
     signature = '';
@@ -434,7 +479,8 @@ async function saveTask(done = false) {
     message(cloudMode ? 'Статус, нотатки та чернетку збережено у приватній базі.' : 'Статус, нотатки та чернетку збережено в локальній базі.');
     return true;
   } catch (error) {
-    message(error.message, true);
+    if (error.code === 'TASK_REVISION_CONFLICT') await loadManualConflict(task.key);
+    else message(error.message, true);
     return false;
   } finally { setBusy(false); }
 }
@@ -567,7 +613,12 @@ async function load() {
       tasks = data.tasks;
       signature = nextSignature;
       // A new snapshot must never overwrite a typed note or email draft.
-      forms.forEach((form, key) => { if (!isDirty(key)) forms.delete(key); });
+      forms.forEach((form, key) => {
+        if (!isDirty(key)) { forms.delete(key); return; }
+        const remote = tasks.find(task => task.key === key);
+        if (remote && remote.manualRevision !== form.baseRevision)
+          manualConflicts.set(key, {remote});
+      });
       if (!selected || !tasks.some(task => task.key === selected)) selected = visibleTasks()[0]?.key || null;
       renderList();
       updateSnapshotInfo();
