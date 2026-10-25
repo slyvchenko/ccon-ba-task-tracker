@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #31 (v2.31). **Поточний кандидат:** PR #32 (v2.32), приватні SQLite backups + validated offline rescue restore (damaged DB forensic copy, strict WAL), quiet watcher retry and startup health; Windows crash/browser UAT окремо.  
+**Базовий код:** `main` після PR #32 (v2.32). **Поточний кандидат:** PR #33 (v2.33), per-tab durable browser drafts, consent restore/retention, 320px/keyboard accessibility improvements; live Windows/browser UAT окремо.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -145,10 +145,10 @@
 | REL-09 | P2 | PLANNED | Bound old history/reports while preserving important user audit | No unexpected data deletion, archive user-approved |
 | REL-10 | P2 | PLANNED | Safe signed release/backup metadata and rollback rehearsal | Verify hashes; old app loads additive migration |
 | A11Y-01 | P1 | PARTIAL (v2.30 native keyboard shortcuts and guide; screen reader & real keyboard UAT open) | Keyboard full quick-task flow + shortcuts usability | A-01/J-03/J-08 with focus protection |
-| A11Y-02 | P1 | NEXT | 200%-400% zoom and 320px mobile acceptance | A-03/A-04; primary actions reachable |
-| A11Y-03 | P1 | PLANNED | Screen reader semantics for task list, selected and status | A-02, announcements not noisy |
+| A11Y-02 | P1 | PARTIAL (v2.33 320px reflow CSS; real 200–400% zoom browser UAT open) | 200%-400% zoom and 320px mobile acceptance | A-03/A-04; primary actions reachable |
+| A11Y-03 | P1 | PARTIAL (v2.33 labeled task queue, low-noise aria-live selection; NVDA/VoiceOver UAT open) | Screen reader semantics for task list, selected and status | A-02, announcements not noisy |
 | A11Y-04 | P1 | PARTIAL (v2.30 native modal Close initial focus and return focus on close/Escape; browser UAT open) | Bulk email dialog focus trap/return, escape | A-11; no unintended send |
-| A11Y-05 | P2 | PLANNED | Forced color/high contrast and reduced-motion support | A-05/A-10 |
+| A11Y-05 | P2 | PARTIAL (v2.33 forced-colors focus/borders and reduced-motion CSS; Windows high contrast UAT open) | Forced color/high contrast and reduced-motion support | A-05/A-10 |
 | A11Y-06 | P2 | PLANNED | Readable labels/tooltips without mouse hover | A-09 and touch accuracy |
 | QA-09 | P0 | PARTIAL (v2.31 synthetic 100/500/1000 CI + exact ranking parity; Chrome/Edge E2E pending) | Synthetic 100/500/1000 browser E2E performance baseline | Windows DevTools p95 + startup/long session |
 | QA-10 | P0 | GATE (v2.29 synthetic archetype cases; observed BA handoff times and semantic review not performed) | Human observation of 5 BA task archetypes, repeated runs | TTNA/TTSH/MRI with 0 critical false-ready decisions |
@@ -165,7 +165,7 @@
 | SEC-01 | P0 | PARTIAL (v2.27 CAS in new UI, legacy no-token API remains compatible; stronger enforcement after migration) | Cross-tab and concurrent browser save authorization plus revision CAS | No CSRF/security relaxation |
 | SEC-02 | P1 | PLANNED | Full localhost/cloud auth tests for new small endpoints | Host restrictions and current OIDC origin untouched |
 | SEC-03 | P1 | PLANNED | No personal/Jira/source content in perf report or public CI | Synthetic samples only; cross-check on PR |
-| SEC-04 | P2 | PARTIAL (v2.32 private backup folder POSIX perms, Windows ACL/BitLocker guidance; localStorage retention unaddressed) | Browser storage retention and private recovery data review | No stale PII in unsafe storage without retention policy |
+| SEC-04 | P2 | PARTIAL (v2.33 per-tab private localStorage recovery, explicit 30d cleanup, v2 legacy migration; browser profile encryption/UAT pending) | Browser storage retention and private recovery data review | No stale PII in unsafe storage without retention policy |
 
 **Визначення effort (не змінює Jira/score):** XS ≤2 хв, S 2–5 хв, M 5–20 хв, L 20–60 хв, XL >60 хв, UNKNOWN. Estimate — окремий факт із confidence/джерелом, а не прибуток у priority formula. Реальний WRITE залишається попереду інших сигналів у тому самому sprint/backlog lane. High-risk blockers залишаються вищими за номінальний quick win при однакових нормативних пріоритетах.
 
@@ -179,7 +179,7 @@
 4. **#29 current: PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork:** effort-aware review hints в незмінній sprint/WRITE lane, transparent ordering and timed BA UAT.
 5. **#30 current: FOCUS-02/03/06 + A11Y-01/04 + UI-06:** keyboard/navigation/focus+dirty warning regression.
 6. **#31 current: PERF-04/05/06/07 + QA-09 groundwork:** browser traces and measured large-list optimizations, WCAG/browser proof.
-7. **#32 current: REL-03/04/05 + OPS-03/05 + SEC-04:** local recovery safety, quiet importer retries and readiness UI; Windows forced-crash/ACL UAT open. **#33+:** A11Y-02/03/05, secure browser storage retention, source-data backup scope, remaining backlog after measured UAT.
+7. **#32 MERGED:** REL-03/04/05 + OPS-03/05. **#33 current:** SEC-04 + A11Y-02/03/05 + browser recovery collision protection. **#34+:** remaining real UAT, source evidence backups, DOM E2E/8h endurance and gold-case validation.
 
 **Dependency rule:** conduct QA-10 human observation before changing task ordering, manual Done behavior or showing effort as absolute truth. Browser E2E instrumentation requires approved runner, no corporate data in public CI. Do not claim full business correctness from passing synthetic tests.
 
@@ -200,7 +200,8 @@
 | **#29 — MERGED; REAL EFFORT UAT OPEN** | PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork: manual band, provenance-aware heuristic, quick hint, no reordering | Python/Node CI + 20–30 real-case effort/time calibration still required |
 | **#30 — MERGED; LIVE KEYBOARD UAT OPEN** | FOCUS-02/03/06 + A11Y-01/04 + UI-06: shortcuts, per-tab context/caret, focus-safe refresh, honest save status | CI + synthetic keyboard policies, Windows/Chrome two-tab assistive-technology UAT open |
 | **#31 — MERGED; BROWSER PERFORMANCE UAT OPEN** | PERF-04/05/06/07 + QA-09: cached rank/search/index/HTTP JSON + synthetic 100/500/1000 benchmarks; native DOM virtual list deferred | Exact Node parity, cross-process SQLite revisions and CI; real Windows DevTools p95/heap 8h pending |
-| **#32 — IN PROGRESS; WINDOWS CRASH/RESTORE UAT OPEN** | REL-03/04/05 + OPS-03/05 + SEC-04: private SQLite backup/verified restore, server lock, quiet watcher retry and Data menu status | Python synthetic restore/locking/legacy tests + CI; live Windows forced crash, ACL and data folder recovery remain open |
+| **#32 — MERGED; WINDOWS CRASH/RESTORE UAT OPEN** | REL-03/04/05 + OPS-03/05 + SEC-04: private SQLite backup/verified restore, server lock, quiet watcher retry and Data menu status | Python synthetic restore/locking/legacy tests + CI; live Windows forced crash, ACL and data folder recovery remain open |
+| **#33 — IN PROGRESS; BROWSER UAT OPEN** | SEC-04 + A11Y-02/03/05: tab-scoped unsaved drafts, explicit cross-tab recovery, consent 30d cleanup, 320px/ARIA/contrast | Pure JS + backend CAS CI; Windows Chrome/Edge duplicate-tab, NVDA/400% and 8-hour browser still open |
 | **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
@@ -255,6 +256,14 @@
 - **Watcher:** `SnapshotMonitor` пропускає незмінений успішно імпортований snapshot, повторно пробує незмінений з помилкою не частіше 30 с, публікує анонімні health counts, не створює повторювані toast. У старому меню «Дані» з'явився локальний статус backup та importer; немає нового UX-режиму.
 - **Limits:** тільки DB, не `data/`, незбережені browser drafts, supplier ZIP/XML і Jira context. Windows ACL, crash/hard power-off, lock contention, 400%-zoom, screen reader, 8h stability і source truth необхідно перевірити вручну.
 - **Evidence:** `tests/test_local_backup.py`, `docs/PRIVATE_BACKUP_RESTORE.md`; лише synthetic, без бізнес-даних у CI.
+
+### #33: браузерні чернетки й доступність без зміни робочої сторінки
+
+- **Виправлено** спільний `localStorage` ключ, що дозволяв вкладкам витісняти одна одну. Кожна вкладка має незалежний v3 record, при reload він лишається; duplicated `sessionStorage` ID відокремлюється через `BroadcastChannel`, якщо API доступний.
+- **Відновлення:** v2 запис безпечно мігрує у v3; іншій вкладці не відправляється нічого. У меню «Дані» можна вручну перенести чернетки з іншої вкладки після підтвердження, без overwrite поточних unsaved forms і без видалення оригіналу. `baseRevision` зберігається, CAS як і раніше захищає saved SQLite.
+- **Приватність і TTL:** 30+ днів лише для **ручного очищення** чужих застарілих записів; непідтверджені drafts не видаляються автоматично. Quota/storage failure позначено як незбережене в браузері. SQLite backup **не** включає localStorage.
+- **A11Y:** task queue region + low-noise role=status on intentional selection, CSS 320px wrapping, forced-colors focus border and reduced-motion.
+- **Coverage:** `tests/draft-recovery.test.mjs` для двох вкладок, clone, stale/legacy, CAS token preservation, quota і ручної ротації; Windows 200–400%, NVDA, Duplicate Tab, 8h UAT відкриті в `docs/BROWSER_RECOVERY_ACCESSIBILITY.md`.
 
 ## 4. Definition of Done для кожного наступного блоку
 
