@@ -151,6 +151,7 @@ def create_backup(root, *, force=False, interval_hours=24, keep=7):
         # manifest and therefore is not eligible for recovery.
         replace_file(temporary, target)
         replace_file(temporary_meta, manifest)
+        verify_backup(root, filename)
         if keep > 0:
             _trim(folder, keep)
         return {"created": True, "filename": filename,
@@ -218,8 +219,11 @@ def restore_backup(root, filename, confirmation):
                 raise ValueError("Could not safeguard existing local data.")
             # Do not replace db while an uncheckpointed WAL could replay
             # old transactions over the restored file on the next launch.
-            with sqlite3.connect(database, timeout=10) as connection:
+            connection = sqlite3.connect(database, timeout=10)
+            try:
                 connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            finally:
+                connection.close()
             if (root / "ba_state.db-wal").exists() or (root / "ba_state.db-shm").exists():
                 raise ValueError("SQLite WAL files still present. Close all clients before restore.")
         folder = _folder(root)
@@ -229,9 +233,15 @@ def restore_backup(root, filename, confirmation):
             _private_new(stage)
             # Restore with SQLite backup API rather than copying a raw file:
             # the result is standalone (not tied to its previous journal).
-            with sqlite3.connect(source.as_uri() + "?mode=ro", uri=True) as origin:
-                with sqlite3.connect(stage, timeout=10) as destination:
+            origin = sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)
+            try:
+                destination = sqlite3.connect(stage, timeout=10)
+                try:
                     origin.backup(destination)
+                finally:
+                    destination.close()
+            finally:
+                origin.close()
             _check_database(stage)
             replace_file(stage, database)
         finally:
