@@ -77,6 +77,11 @@ class OfflineRecoveryTests(unittest.TestCase):
             restore_backup(self.root,snapshot["filename"],CONFIRM)
         self.assertEqual(hashlib.sha256(self.desk.db.read_bytes()).hexdigest(),baseline)
         self.assertEqual(self.desk.view()["tasks"][0]["note"],"protected")
+        # Corrupt but recent copy cannot suppress an automatic new backup.
+        self.assertFalse(backup_status(self.root)["available"])
+        regenerated=create_backup(self.root,force=False)
+        self.assertTrue(regenerated["created"])
+        self.assertTrue(verify_backup(self.root,regenerated["filename"])["verified"])
 
     def test_live_server_lock_blocks_offline_restore_and_preserves_db(self):
         snapshot=create_backup(self.root,force=True)
