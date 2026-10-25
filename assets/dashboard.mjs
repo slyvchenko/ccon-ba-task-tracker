@@ -398,7 +398,105 @@ function updateFormStatus() {
     $('staleNotice').hidden = !pendingDetail;
     $('staleNotice').textContent = 'Надійшли нові дані. Поточний текст залишається у формі; новий аналіз з’явиться після збереження правок. Якщо правок немає, достатньо вийти з поля.';
   }
+  showManualConflict();
 }
+function showManualConflict() {
+  const node = $('manualConflict');
+  if (!node) return;
+  const conflict = manualConflicts.get(selected);
+  node.hidden = !conflict;
+  if (!conflict) return;
+  const remote = conflict.remote;
+  const draft = normalizedDraft(remote.savedEmailDraft ?? remote.analysis?.emailDraft);
+  // textContent prevents HTML execution and preserves the raw private value
+  // in the local browser only; no notes or email bodies enter GitHub/logs.
+  $('conflictSavedText').textContent =
+    'Статус: ' + (STATUS_LABELS[remote.manualStatus] || remote.manualStatus) +
+    '\nНотатка:\n' + (remote.note || '(порожньо)') +
+    '\n\nЛист кому: ' + draft.to +
+    '\nТема: ' + draft.subject + '\nТекст:\n' + draft.body;
+}
+
+async function loadManualConflict(key) {
+  try {
+    const payload = await api('/api/tasks');
+    const remote = payload.tasks.find(task => task.key === key);
+    if (!remote) throw Error('Задачу вже немає у збереженому списку.');
+    manualConflicts.set(key, {remote});
+    if (selected === key) {
+      showManualConflict();
+      updateFormStatus();
+    }
+    message('Зміни в іншій вкладці. Твої правки залишено. Порівняй версії перед збереженням.', true);
+  } catch (error) {
+    message('Не вдалося отримати актуальний стан. Твої правки збережені у формі: ' +
+      error.message, true);
+  }
+}
+
+async function takeSavedVersion() {
+  const key = selected;
+  if (!manualConflicts.has(key) || busy) return;
+  if (!confirm('Відкинути МОЇ незбережені правки цієї задачі та взяти актуальну збережену версію?')) return;
+  setBusy(true);
+  try {
+    const payload = await api('/api/tasks');
+    tasks = payload.tasks;
+    latest = payload.latest;
+    signature = JSON.stringify(payload);
+    currentRevision = payload.revision;
+    currentRevisionError = payload.error || '';
+    forms.delete(key);
+    delete recoveredForms[key];
+    manualConflicts.delete(key);
+    rememberEdits();
+    renderList();
+    renderDetail();
+    message('Актуальну збережену версію завантажено. Інші задачі не змінено.');
+  } catch (error) {
+    message('Сервер недоступний. Твої правки залишилися у формі: ' + error.message, true);
+  } finally { setBusy(false); }
+}
+
+async function overwriteAfterReview() {
+  const key = selected, viewed = manualConflicts.get(key);
+  if (!viewed || busy) return;
+  setBusy(true);
+  try {
+    // Re-read immediately before the explicit overwrite. If the stored
+    // version changed since preview, user must compare again.
+    const payload = await api('/api/tasks');
+    const remote = payload.tasks.find(task => task.key === key);
+    if (!remote) throw Error('Актуальну задачу не знайдено.');
+    if (remote.manualRevision !== viewed.remote.manualRevision) {
+      manualConflicts.set(key, {remote});
+      showManualConflict();
+      message('Збережена версія ще раз змінилася. Перевір новий текст і повтори дію.', true);
+      return;
+    }
+    if (!confirm('Після порівняння перезаписати актуальний локальний статус, нотатку й лист МОЄЮ версією? Jira та пошта не змінюються.')) return;
+    const task = tasks.find(item => item.key === key);
+    const form = formFor(task);
+    const own = structuredClone(form.value);
+    const response = await api('/api/tasks/' + encodeURIComponent(key),
+      {...own, expectedManualRevision:remote.manualRevision});
+    Object.assign(task, {manualStatus:own.manualStatus, note:own.note,
+      savedEmailDraft:own.emailDraft, manualRevision:response.manualRevision,
+      modifiedAt:new Date().toISOString()});
+    forms.delete(key);
+    delete recoveredForms[key];
+    manualConflicts.delete(key);
+    rememberEdits();
+    signature = '';
+    renderList();
+    renderDetail();
+    message('Твою версію свідомо збережено. Jira та листи не змінено.');
+  } catch (error) {
+    if (error.code === 'TASK_REVISION_CONFLICT') await loadManualConflict(key);
+    else message('Твої правки не перезаписано: ' + error.message, true);
+  } finally { setBusy(false); }
+}
+
 function discardForm() {
   if (busy || !isDirty(selected)) return;
   if (!confirm('Скинути незбережені зміни статусу, нотаток і чернетки цієї задачі?')) return;
@@ -411,7 +509,8 @@ function discardForm() {
 }
 function setBusy(value) {
   busy = value;
-  ['manual', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard'].forEach(id => { if ($(id)) $(id).disabled = value; });
+  ['manual', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard',
+    'conflictOverwrite', 'conflictUseSaved'].forEach(id => { if ($(id)) $(id).disabled = value; });
   $('import').disabled = value;
   if (!value) updateFormStatus();
 }
