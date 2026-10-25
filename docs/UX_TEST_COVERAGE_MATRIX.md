@@ -114,3 +114,9 @@ Manual UAT to close #28: run 5 independent task archetypes in the locally instal
 - `tests/test_effort_persistence.py` checks `manual_effort` SQLite migration, save/restart/duplicate import, revision CAS and stale tab conflict, status-only + email draft preservation, invalid values atomic rejection and return to UNKNOWN.
 - CI is intentionally free of real Jira descriptions/logs/PNR/personal data. Confirm in the actual installed Chrome/Edge app that select+Save are keyboard accessible, manual estimate survives browser restart and dual-tab conflicts, and quick indicators are not interpreted as priority overrides.
 - BA gold-set acceptance remains **open**. Independently time 20–30 cases and compare predicted effort bands with actual time, incorrect >1-band outliers, interruptions, blocking work displacement and false-ready. Do not report speed gains or estimation accuracy solely from synthetic tests.
+
+## v2.30: keyboard focus, interruption and truthful status coverage
+
+Added `tests/focus-navigation.test.mjs` (shortcut map, editable target, IME and dialog guards; queue wrap without priority mutation; semantic disclosure matching even if sections reorder; cursor restoration without overwriting text; private view-state sanitization). Existing HTTP/SQLite CAS tests still cover concurrent writes and crash restart semantics. The UI now includes an in-place keyboard guide, alertable saving/unsaved/conflict states and native-dialog focus return.
+
+**Not a DOM test suite.** Windows Chrome/Edge keyboard-only navigation, focus order under rerenders, Ctrl+Enter inside all fields, Escape dialog return, 200/400% zoom, screen reader status announcements, private localStorage cross-tab collisions and actual time-to-resume remain unverified. `docs/FOCUS_KEYBOARD_UX.md` has a stepwise UAT checklist; capture observations and action counts before closing FOCUS-02/03/06, UI-06, A11Y-01/04.
