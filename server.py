@@ -30,6 +30,7 @@ STATIC_FILES = {
     '/assets/task-rules.mjs': ('assets/task-rules.mjs', 'text/javascript; charset=utf-8'),
     '/assets/revision-policy.mjs': ('assets/revision-policy.mjs', 'text/javascript; charset=utf-8'),
     '/assets/manual-edit-policy.mjs': ('assets/manual-edit-policy.mjs', 'text/javascript; charset=utf-8'),
+    '/assets/draft-recovery.mjs': ('assets/draft-recovery.mjs', 'text/javascript; charset=utf-8'),
     '/assets/fast-handoff.mjs': ('assets/fast-handoff.mjs', 'text/javascript; charset=utf-8'),
     '/assets/focus-navigation.mjs': ('assets/focus-navigation.mjs', 'text/javascript; charset=utf-8'),
     '/assets/effort-planning.mjs': ('assets/effort-planning.mjs', 'text/javascript; charset=utf-8'),

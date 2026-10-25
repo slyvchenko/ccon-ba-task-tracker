@@ -160,3 +160,11 @@ The local server holds `pipeline_lock(root/'.local-server')` for its full lifeti
 `snapshot_monitor.py` avoids processing unchanged successful source snapshots every 3 seconds, retries unchanged failed imports only after 30 seconds, and publishes generic diagnostic state without supplier logs/PII. The previous `Desk.import_snapshot` transaction, CAS state revision and Jira/Email read-only guarantees are unchanged. After server shutdown the watcher stop event is set, the port closes and the thread is joined.
 
 Backups contain **DB saved state only**, not `data/`, uncommitted browser localStorage, external supplier downloads or Jira source evidence files. Windows ACL/BitLocker and real forced-crash/restore E2E remain untested until manual UAT. See `docs/PRIVATE_BACKUP_RESTORE.md`.
+
+## v2.33: tab-scoped recovery without replacing the durable SQLite/CAS protocol
+
+`assets/draft-recovery.mjs` is a pure injected-storage policy: per-tab `sessionStorage` UUID, a distinct durable `localStorage` document per tab (`ccon-ba-desk.unsaved-tab.v3.<id>`), bounded schema validation, original CAS `baseRevision`, and a deliberate legacy-v2 copy-before-remove migration. A browser `BroadcastChannel` distinguishes two concurrently live tabs with cloned session IDs. All rediscovery/adoption and 30-day cleanup of abandoned *other-tab* records requires explicit user confirmation. The original tab's record remains intact; no automatic localStorage TTL data loss. Quota/blocked storage is a visible failure, not success.
+
+Existing note/email editors, task rank and `Desk.save(expectedManualRevision)` are unchanged. SQLite is the only acknowledged save source. `/api/tasks` authorization/CSP unchanged, with one new same-origin JS module in static allowlist. A second editor still receives 409 even if a recovered draft is retained by multiple browser tabs.
+
+The task queue has a labeled region and a separate polite screen-reader selection status that is updated only on intentional task navigation. CSS adds narrow 320px reflow, Windows forced-color focus borders and reduced-motion preference. Automated Node policy tests do not prove NVDA, browser event semantics, Chrome memory stability or WCAG conformance; these remain UAT gates in `docs/BROWSER_RECOVERY_ACCESSIBILITY.md`.

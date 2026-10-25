@@ -1460,3 +1460,31 @@ a:focus-visible {
     outline-offset:2px;
   }
 }
+
+/* v2.33: restrained and keyboard-accessible controls inside the original page. */
+.data-menu-items {min-width:min(350px,calc(100vw - 24px));max-width:calc(100vw - 24px)}
+.data-menu-items button {white-space:normal;text-align:left;overflow-wrap:anywhere}
+#recoveryState {margin:3px 0;line-height:1.45;overflow-wrap:anywhere}
+#queueAnnouncer {white-space:nowrap}
+.row:focus-visible {outline:3px solid #2258a9;outline-offset:-3px}
+@media (max-width:380px) {
+  .layout {padding:6px;max-width:100vw}
+  header,.statusbar {padding-left:9px;padding-right:9px}
+  aside,main {max-width:100%;min-width:0}
+  main {padding:10px}
+  .panel {padding:10px}
+  .detail-grid,.filter-row {grid-template-columns:minmax(0,1fr)}
+  .task-top,.task-toolbar,.actions,.quick-handoff-actions {flex-wrap:wrap}
+  .actions > button {max-width:100%;white-space:normal;overflow-wrap:anywhere}
+  .data-menu-items {max-width:calc(100vw - 18px)}
+  .statusbar,#snapshotInfo {overflow-wrap:anywhere;white-space:normal}
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after {scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+@media (forced-colors:active) {
+  .row.selected {border-left-color:Highlight}
+  .row:focus-visible {outline:3px solid Highlight}
+  .badge,.panel,.question-record {border:1px solid CanvasText}
+  .saved-note,.analysis-missing {border:2px solid Highlight}
+}
