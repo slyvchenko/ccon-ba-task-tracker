@@ -561,6 +561,10 @@ async function saveStatus(status) {
   if (busy || !STATUS_LABELS[status]) return;
   const task = tasks.find(item => item.key === selected);
   if (!task || task.manualStatus === status) return;
+  if (status === 'DONE' && !confirm(completionPrompt(task))) {
+    $('manual').value = formFor(task).value.manualStatus;
+    return;
+  }
   captureForm();
   if (manualConflicts.has(task.key)) {
     message('Спочатку порівняй незбережені правки з актуальною версією.', true);
