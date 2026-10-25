@@ -1497,3 +1497,27 @@ a:focus-visible {
 .task-status-provenance {display:inline;overflow-wrap:anywhere}
 .task-status-alerts {display:inline-flex;align-items:center;flex-wrap:wrap;gap:5px}
 .task-status-provenance span {white-space:normal}
+
+/* v2.37: native progressive disclosure keeps all actions keyboard-available. */
+.advanced-filters {
+  border-top:1px solid var(--line);
+  padding-top:5px;
+}
+.advanced-filters > summary {
+  cursor:pointer;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:600;
+  padding:5px 0;
+}
+.advanced-filters .filter-row {padding-top:8px}
+#advancedFilterCount {color:var(--blue);font-weight:700}
+.data-menu-group + .data-menu-group {border-top:1px solid var(--line);margin-top:5px;padding-top:8px}
+.data-menu-group > strong {
+  display:block;
+  padding:6px 10px 2px;
+  font-size:12px;
+  color:var(--muted);
+  font-weight:700;
+}
+.data-menu-group > p {padding-left:10px;padding-right:10px}

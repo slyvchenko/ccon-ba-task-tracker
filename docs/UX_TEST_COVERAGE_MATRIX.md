@@ -156,3 +156,7 @@ The existing Data menu now exposes draft-recovery actions. Queue selection uses 
 ## v2.36: clarity of copy vs approve and email actions
 
 `tests/handoff-ui-policy.test.mjs` verifies exactly one enabled copy for structurally verified Jira drafts, explicit unverified/blocked manual rework fallback in detail, independent local approval and mail copy/open/batch labels without false sent status. Existing Chromium DOM E2E still covers the original controls. Human BA checks: false-ready=0 for unverified cases, approvals remain explicit, original description/supplier evidence remains available.
+
+## v2.37: progressive disclosure preserved semantics
+
+New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, evidence count and canonical rank/filter invariants. The existing Playwright Chromium runner now tests the actual collapsed filter opened via summary, WRITE/outside sprint result counts, all Data menu actions after grouping, visible source and historical detail elements. Missing: human Windows 400% zoom, NVDA disclosures and deep-case fact/ZIP comparison.

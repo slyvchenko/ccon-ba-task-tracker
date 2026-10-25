@@ -204,6 +204,29 @@ class BrowserRegression(unittest.TestCase):
         self.assertEqual(self.page.locator("#note").input_value(),"Pending snapshot change")
         self.assertTrue(self.page.locator("#save").is_visible())
 
+    def test_progressive_filters_and_data_grouping_keep_controls_accessible(self):
+        advanced=self.page.locator("#advancedFilters")
+        self.assertFalse(advanced.evaluate("(el)=>el.open"))
+        advanced.locator("summary").click()
+        self.page.locator("#signalFilter").select_option("WRITE")
+        self.page.locator("#advancedFilterCount").wait_for(state="visible")
+        self.assertIn("1 активний",self.page.locator("#advancedFilterCount").inner_text())
+        self.assertEqual(self.page.locator("#list button[data-key]").count(),1)
+        self.page.locator("#signalFilter").select_option("all")
+        self.page.locator("#sprintFilter").select_option("outside")
+        self.assertEqual(self.page.locator("#list button[data-key]").count(),1)
+        self.page.locator("#sprintFilter").select_option("all")
+        self.assertEqual(self.page.locator("#list button[data-key]").count(),3)
+        self.page.locator("#dataMenu > summary").click()
+        self.assertEqual(self.page.locator(".data-menu-group").count(),3)
+        self.assertEqual(self.page.locator("#recoverOther").count(),1)
+        self.assertEqual(self.page.locator("#import").count(),1)
+        self.page.locator("#dataMenu > summary").click()
+        self.choose("CCON-1")
+        self.assertEqual(self.page.locator('details[aria-label="Джерела оцінки"]').count(),1)
+        self.assertEqual(self.page.locator('details[aria-label="Історія та минулі версії"]').count(),1)
+        self.assertEqual(self.page.locator("#taskHistory").count(),1)
+
     def test_three_viewports_and_short_soak_no_external_writes(self):
         self.choose("CCON-2")
         for width,height in [(320,800),(768,900),(1440,900)]:
