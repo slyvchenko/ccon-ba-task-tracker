@@ -17,7 +17,7 @@ from pathlib import Path
 from pipeline_lock import pipeline_lock, replace_file
 
 NAME = re.compile(r"backup-\d{8}T\d{6}Z-[a-f0-9]{12}\.sqlite3\Z")
-REQUIRED = frozenset(("tasks", "imports", "state_revision", "task_history"))
+REQUIRED = frozenset(("tasks",))
 CONFIRM = "RESTORE LOCAL BA DATA"
 
 
@@ -58,12 +58,21 @@ def _check_database(path):
             "SELECT name FROM sqlite_master WHERE type='table'")}
         if not REQUIRED.issubset(tables):
             raise ValueError("Backup is missing expected BA Desk tables.")
-        revision = connection.execute(
-            "SELECT revision FROM state_revision WHERE id=1").fetchone()
-        if revision is None or type(revision[0]) is not int or revision[0] < 0:
-            raise ValueError("Missing or invalid application revision.")
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(tasks)")}
+        if not {"key", "snapshot", "manual_status", "note", "imported_at"}.issubset(columns):
+            raise ValueError("SQLite is missing BA Desk task fields.")
+        # Preserve backups from earlier releases, before history/version
+        # migrations. Desk startup will add these columns and tables.
+        if "state_revision" in tables:
+            revision = connection.execute(
+                "SELECT revision FROM state_revision WHERE id=1").fetchone()
+            if revision is None or type(revision[0]) is not int or revision[0] < 0:
+                raise ValueError("Missing or invalid application revision.")
+            number = revision[0]
+        else:
+            number = 0
         count = connection.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
-        return {"revision": revision[0], "tasks": count}
+        return {"revision": number, "tasks": count}
     finally:
         connection.close()
 
