@@ -1,5 +1,6 @@
 """Quiet and observable local snapshot watcher with bounded retry."""
 import time
+import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -36,7 +37,7 @@ class SnapshotMonitor:
         stamp = datetime.now(timezone.utc).isoformat()
         try:
             self.desk.import_snapshot()
-        except (OSError, ValueError):
+        except (OSError, ValueError, sqlite3.Error):
             self.status["state"] = "FAILED"
             self.status["failures"] += 1
             self.status["lastFailureAt"] = stamp
