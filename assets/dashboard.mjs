@@ -8,6 +8,7 @@ import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
 import {handoffCopyPolicy,mailActionLabels} from './handoff-ui-policy.mjs';
+import {advancedFilterSummary,evidenceSectionLabel} from './progressive-layout.mjs';
 import {queueSummary,conciseSnapshotInfo,statusPresentation,shouldRenderBriefing,assessmentReason} from './visual-clarity.mjs';
 import {createQueueModel,createSearchDebouncer,selectedAfterFilter} from './queue-performance.mjs';
 import {createReconnectPolicy} from './reconnect-policy.mjs';
@@ -179,6 +180,8 @@ function renderList() {
     unverified:current.length-verified});
   $('count').textContent=summary.primary;
   $('countDetails').textContent=summary.diagnostics;
+  $('advancedFilterCount').textContent=advancedFilterSummary({
+    signal:$('signalFilter').value,sprint:$('sprintFilter').value});
   let previousGroup = '';
   $('list').innerHTML = items.map((task, index) => {
     const scope = ['Активний спринт · головна черга', 'Поза активним спринтом / не підтверджено', 'Завершені', 'Архів'][priorityLane(task)];
@@ -429,15 +432,20 @@ function renderDetail() {
           <details class="description"><summary>Підтвердження з REST / Supplier / Errors</summary>
             <div id="evidenceSummary" class="muted">Завантажую…</div>
           </details>
-          <div class="section-label">На чому ґрунтується оцінка</div>
-          ${sourceMarkup(analysis)}
           ${qualityGateMarkup(analysis.qualityGate)}
-          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? (handoff.showFallbackCopy ? '<button id="copyDescription" class="quiet" title="'+escapeHtml(handoff.warning)+'">'+escapeHtml(handoff.fallbackLabel)+'</button> ' : '') + '<button id="approveDescription" class="quiet">'+escapeHtml(handoff.approvalLabel)+'</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details>
-          ${previousAnalysisMarkup(task)}
-          <details class="description"><summary>Історія змін задачі</summary>
-            <div id="taskHistory" class="muted">Завантажую історію…</div>
+          <details class="description" aria-label="Джерела оцінки">
+            <summary>${escapeHtml(evidenceSectionLabel(analysis.evidence?.length||0))}</summary>
+            ${sourceMarkup(analysis)}
           </details>
-          ${legacyMarkup(task)}
+          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? (handoff.showFallbackCopy ? '<button id="copyDescription" class="quiet" title="'+escapeHtml(handoff.warning)+'">'+escapeHtml(handoff.fallbackLabel)+'</button> ' : '') + '<button id="approveDescription" class="quiet">'+escapeHtml(handoff.approvalLabel)+'</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details>
+          <details class="description" aria-label="Історія та минулі версії">
+            <summary>Історія й аудит</summary>
+            ${previousAnalysisMarkup(task)}
+            <details class="description"><summary>Історія змін задачі</summary>
+              <div id="taskHistory" class="muted">Завантажую історію…</div>
+            </details>
+            ${legacyMarkup(task)}
+          </details>
         </section>
         <section class="panel" aria-label="Контекст Jira">
           <div class="panel-title"><h3>Контекст Jira</h3><button id="loadContext" class="quiet">Показати опис і коментарі</button></div>
