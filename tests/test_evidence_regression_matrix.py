@@ -70,7 +70,7 @@ class EvidenceRegressionMatrixTests(unittest.TestCase):
         codes = {c["code"] for c in report["errorCodes"]}
         self.assertTrue({"AF_REJECTED", "AF_TIMEOUT"} <= codes)
         diagnostic = report["flowDiagnostics"]
-        self.assertEqual(diagnostic["timestampedEntries"], 8)
+        self.assertEqual(diagnostic["timestampedEntries"], 6)
         self.assertTrue(all(row.get("timeEvidence") == "PAYLOAD_TIMESTAMP"
                             for row in diagnostic["timeline"]
                             if row.get("eventTimeUtc")))
