@@ -2,6 +2,9 @@ import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalys
 import {createLogsController} from './logs.mjs';
 import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './manual-edit-policy.mjs';
+import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
+  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus}
+  from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
 import {EFFORT_LABELS, effortInfo, quickWinCandidate, quickWinExplanation} from './effort-planning.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
@@ -12,15 +15,42 @@ import {loadTaskActions, loadTaskHistory} from './action-history.mjs';
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const LOCAL_EDITS_KEY = 'ccon-ba-desk.unsaved-forms.v2';
-let tasks = [], selected = null, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
+const LOCAL_VIEW_KEY = 'ccon-ba-desk.view-context.v1';
+const restoredFocusView = readViewContext();
+let tasks = [], selected = restoredFocusView.selected, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
 let signature = '', renderedTaskVersion = '', renderedTaskKey = null, pendingDetail = false;
 let currentRevision = null, currentRevisionError = '', pollingInFlight = false, pollCycle = 0;
 const forms = new Map();
 const manualConflicts = new Map();
+const taskViews = new Map(Object.entries(restoredFocusView.views));
+const saveFailures = new Map();
 const expandedEmails = new Set();
 const recoveredForms = readRecoveredForms();
 const {loadLogs} = createLogsController({api, escapeHtml, message, getSelected: () => selected});
 
+function readViewContext() {
+  try { return sanitizeSessionFocus(JSON.parse(sessionStorage.getItem(LOCAL_VIEW_KEY) || '{}')); }
+  catch { return {selected:null,views:{}}; }
+}
+function storeCurrentTaskView() {
+  if (renderedTaskKey && document.getElementById('detail')?.hasChildNodes()) {
+    const previous = taskViews.get(renderedTaskKey);
+    const current = captureTaskView($('detail'));
+    const activeFocus = captureEditorFocus(document.activeElement, $('detail'));
+    taskViews.set(renderedTaskKey, {
+      ...current,...((activeFocus || previous?.focus) ? {focus:activeFocus || previous.focus} : {})
+    });
+    if (taskViews.size > 12) taskViews.delete(taskViews.keys().next().value);
+  }
+}
+function rememberViewContext() {
+  storeCurrentTaskView();
+  try {
+    const views = Object.fromEntries(taskViews);
+    sessionStorage.setItem(LOCAL_VIEW_KEY,
+      JSON.stringify(sanitizeSessionFocus({selected,views})));
+  } catch { /* A disabled session store never blocks work. */ }
+}
 function readRecoveredForms() {
   try { const data = JSON.parse(localStorage.getItem(LOCAL_EDITS_KEY) || '{}'); return data && typeof data === 'object' ? data : {}; }
   catch { return {}; }
@@ -83,6 +113,7 @@ function signalBadge(task) {
   return `<span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(label)}</span>`;
 }
 function renderList() {
+  const focusedRow = document.activeElement?.closest?.('#list [data-key]')?.dataset.key || null;
   const previousListScroll = $('list').scrollTop;
   const previousSidebarScroll = $('list').closest('aside')?.scrollTop || 0;
   updateSnapshotInfo();
@@ -107,14 +138,22 @@ function renderList() {
   $('list').querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => selectTask(button.dataset.key)));
   $('list').scrollTop = previousListScroll;
   if ($('list').closest('aside')) $('list').closest('aside').scrollTop = previousSidebarScroll;
+  // innerHTML replaces buttons: restore keyboard focus only if it WAS on
+  // the queue, never steal focus from a typed note, search or a dialog.
+  if (focusedRow) {
+    const replacementRow = [...$('list').querySelectorAll('[data-key]')]
+      .find(button => button.dataset.key === focusedRow);
+    replacementRow?.focus({preventScroll:true});
+  }
 }
 function selectTask(key) {
   if (busy || selected === key) return;
+  storeCurrentTaskView();
   selected = key;
   pendingDetail = false;
   renderList();
   renderDetail();
-  $('detail').scrollTop = 0;
+  rememberViewContext();
 }
 function sourceMarkup(analysis) {
   if (!Array.isArray(analysis.evidence) || !analysis.evidence.length) return '<p class="muted">Джерела оцінки ще не додані.</p>';
@@ -251,9 +290,9 @@ function renderDetail() {
     return;
   }
   const retainPosition = renderedTaskKey === task.key;
-  const previousDetailScroll = retainPosition ? $('detail').scrollTop : 0;
-  const priorOpenDetails = retainPosition
-    ? [...$('detail').querySelectorAll('details')].map(node => node.open) : null;
+  const state = retainPosition ? {...captureTaskView($('detail')),
+    focus:taskViews.get(task.key)?.focus} : taskViews.get(task.key);
+  const focusedEditor = retainPosition ? captureEditorFocus(document.activeElement, $('detail')) : null;
   const analyzed = hasAnalysis(task), stale = analysisIsStale(task), analysis = analyzed ? analysisOf(task) : {};
   const form = formFor(task).value, info = signalInfo(task), url = safeUrl(task.url);
   const savedDraft = task.savedEmailDraft !== null && task.savedEmailDraft !== undefined;
@@ -371,13 +410,12 @@ function renderDetail() {
   renderedTaskVersion = taskVersion(task);
   renderedTaskKey = task.key;
   pendingDetail = false;
-  if (retainPosition) {
-    const details = [...$('detail').querySelectorAll('details')];
-    details.forEach((node, i) => {
-      if (i < priorOpenDetails.length) node.open = priorOpenDetails[i];
-    });
-    $('detail').scrollTop = previousDetailScroll;
-  }
+  restoreTaskView($('detail'), state);
+  // Renders triggered by Save must preserve an active note/email caret.
+  // A background refresh intentionally doesn't rerender while the editor
+  // is focused; this also safely handles explicit same-task rerenders.
+  restoreEditorFocus($('detail'), focusedEditor || state?.focus,
+    {focusElement:Boolean(focusedEditor)});
   ['note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener('input', captureForm));
   $('manualEffort').addEventListener('change', captureForm);
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
@@ -428,6 +466,7 @@ function captureForm() {
   form.value = {manualStatus:$('manual').value, manualEffort:$('manualEffort').value,
     note:$('note').value, emailDraft:{to:$('draftTo').value, subject:$('draftSubject').value, body:$('draftBody').value}};
   form.changedAt = new Date().toISOString();
+  saveFailures.delete(task.key);
   $('manual').className = 'status-select tone-' + statusTone(form.value.manualStatus, task);
   rememberEdits();
   updateFormStatus();
@@ -438,9 +477,14 @@ function updateFormStatus() {
   if (!task || !$('saved')) return;
   const dirty = isDirty(task.key);
   const conflict = manualConflicts.has(task.key);
-  $('saved').textContent = '';
-  $('saved').hidden = true;
-  $('savedIndicator').hidden = dirty || conflict;
+  const failure = saveFailures.get(task.key);
+  const state = conflict ? 'Конфлікт версій. Правки не перезаписано.' :
+    busy ? 'Зберігаю зміни…' :
+    failure ? 'Не збережено: ' + failure :
+    dirty ? 'Є незбережені правки.' : '';
+  $('saved').textContent = state;
+  $('saved').hidden = !state;
+  $('savedIndicator').hidden = dirty || conflict || busy || !!failure;
   $('save').hidden = !dirty;
   $('save').disabled = !dirty || busy || conflict;
   $('done').disabled = busy || conflict;
@@ -512,6 +556,7 @@ async function takeSavedVersion() {
     forms.delete(key);
     delete recoveredForms[key];
     manualConflicts.delete(key);
+    saveFailures.delete(key);
     rememberEdits();
     renderList();
     renderDetail();
@@ -549,6 +594,7 @@ async function overwriteAfterReview() {
     forms.delete(key);
     delete recoveredForms[key];
     manualConflicts.delete(key);
+    saveFailures.delete(key);
     rememberEdits();
     signature = '';
     renderList();
@@ -565,6 +611,7 @@ function discardForm() {
   if (!confirm('Скинути незбережені зміни статусу, нотаток і чернетки цієї задачі?')) return;
   forms.delete(selected);
   manualConflicts.delete(selected);
+  saveFailures.delete(selected);
   delete recoveredForms[selected];
   rememberEdits();
   renderList();
@@ -575,7 +622,7 @@ function setBusy(value) {
   ['manual', 'manualEffort', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard',
     'conflictOverwrite', 'conflictUseSaved'].forEach(id => { if ($(id)) $(id).disabled = value; });
   $('import').disabled = value;
-  if (!value) updateFormStatus();
+  updateFormStatus();
 }
 async function saveStatus(status) {
   if (busy || !STATUS_LABELS[status]) return;
@@ -607,6 +654,7 @@ async function saveStatus(status) {
     form.value.manualStatus = status;
     form.base = JSON.stringify(savedForm(task));
     form.baseRevision = saved.manualRevision;
+    saveFailures.delete(task.key);
     rememberEdits();
     signature = '';
     renderList();
@@ -616,7 +664,10 @@ async function saveStatus(status) {
     message('Мій статус збережено автоматично.');
   } catch (error) {
     if (error.code === 'TASK_REVISION_CONFLICT') await loadManualConflict(task.key);
-    else message(error.message, true);
+    else {
+      saveFailures.set(task.key, error.message);
+      message(error.message, true);
+    }
   } finally { setBusy(false); }
 }
 async function saveTask(done = false) {
@@ -641,6 +692,7 @@ async function saveTask(done = false) {
       modifiedAt:new Date().toISOString()});
     forms.delete(task.key);
     manualConflicts.delete(task.key);
+    saveFailures.delete(task.key);
     delete recoveredForms[task.key];
     rememberEdits();
     signature = '';
@@ -651,7 +703,10 @@ async function saveTask(done = false) {
     return true;
   } catch (error) {
     if (error.code === 'TASK_REVISION_CONFLICT') await loadManualConflict(task.key);
-    else message(error.message, true);
+    else {
+      saveFailures.set(task.key, error.message);
+      message(error.message, true);
+    }
     return false;
   } finally { setBusy(false); }
 }
@@ -661,7 +716,9 @@ async function copyText(text, notice) {
 }
 let bulkItems = [];
 let bulkPreviewRequest = 0;
+let bulkReturnFocus = null;
 async function previewBulkEmails() {
+  bulkReturnFocus = document.activeElement;
   const request = ++bulkPreviewRequest;
   const candidates = rankedTasks().filter(task => task.active && effectiveSignal(task) === 'WRITE');
   bulkItems = [];
@@ -675,6 +732,8 @@ async function previewBulkEmails() {
   $('bulkOpen').textContent = `Відкрити чернетки (${bulkItems.length})`;
   $('bulkOpen').disabled = !bulkItems.length;
   $('bulkDialog').showModal();
+  // Focus the safe Close action, not a potentially external mail opener.
+  $('bulkClose').focus({preventScroll:true});
   try {
     const catalog = await api('/api/logs');
     if (request !== bulkPreviewRequest || !$('bulkDialog').open) return;
@@ -701,6 +760,11 @@ async function openBulkEmails() {
 $('bulkEmail').addEventListener('click', previewBulkEmails);
 $('bulkOpen').addEventListener('click', openBulkEmails);
 $('bulkClose').addEventListener('click', () => $('bulkDialog').close());
+$('bulkDialog').addEventListener('close', () => {
+  // Native <dialog> handles Escape and modal focus containment.
+  if (bulkReturnFocus?.isConnected) bulkReturnFocus.focus({preventScroll:true});
+  bulkReturnFocus = null;
+});
 async function openEmail() {
   captureForm();
   const draft = structuredClone(forms.get(selected)?.value.emailDraft);
@@ -765,7 +829,9 @@ function renderContext(context) {
   if (context.retrievedAt) output.push('<p class="footer-note">Контекст отримано ' + escapeHtml(dateLabel(context.retrievedAt)) + '</p>');
   $('contextPreview').innerHTML = output.join('') || 'Контекст отримано; опис і коментарі відсутні.';
 }
-function editorFocused() { return ['manual', 'note', 'draftTo', 'draftSubject', 'draftBody'].includes(document.activeElement?.id); }
+function detailInteractionFocused() {
+  return $('detail').contains(document.activeElement);
+}
 function updateSnapshotInfo() {
   $('snapshotInfo').textContent = latest ? tasks.filter(task => task.active).length + ' задач · ' + tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length + ' листів · Оновлено ' + dateLabel(latest.generated_at) : 'Очікую snapshot';
 }
@@ -797,7 +863,10 @@ async function load() {
     const selectedTask = tasks.find(task => task.key === selected);
     const detailChanged = selectedTask ? taskVersion(selectedTask) !== renderedTaskVersion : renderedTaskVersion !== '';
     if (detailChanged || pendingDetail || !$('detail').hasChildNodes()) {
-      if (isDirty(selected) || editorFocused()) { pendingDetail = true; updateFormStatus(); }
+      if (isDirty(selected) || detailInteractionFocused()) {
+        pendingDetail = true;
+        updateFormStatus();
+      }
       else renderDetail();
     }
     if (data.error) message(data.error, true);
@@ -846,6 +915,32 @@ function applyFilters() {
 }
 document.addEventListener('click', event => { if (!$('dataMenu').contains(event.target)) $('dataMenu').open = false; });
 document.addEventListener('keydown', event => { if (event.key === 'Escape') { $('dataMenu').open = false; document.querySelectorAll('.status-help[open]').forEach(help => help.open = false); } });
+document.addEventListener('keydown', event => {
+  const action = shortcutAction(event, {
+    dialogOpen:$('bulkDialog').open,editing:isTextEditingTarget(event.target)
+  });
+  if (!action || busy) return;
+  if (action === 'SAVE' && !$('detail').contains(event.target)) return;
+  event.preventDefault();
+  if (action === 'SEARCH') {
+    $('search').focus({preventScroll:true});
+    $('search').select();
+  } else if (action === 'NEXT' || action === 'PREVIOUS') {
+    const keys = visibleTasks().map(task => task.key);
+    const key = adjacentTaskKey(keys, selected, action === 'NEXT' ? 1 : -1);
+    if (key && key !== selected) selectTask(key);
+    const button = [...$('list').querySelectorAll('[data-key]')]
+      .find(row => row.dataset.key === key);
+    button?.focus({preventScroll:true});
+    button?.scrollIntoView({block:'nearest'});
+  } else if (action === 'COPY_ACTION') {
+    if ($('copyNext') && !$('copyNext').disabled) $('copyNext').click();
+    else message('Немає актуальної дії для копіювання.', true);
+  } else if (action === 'SAVE') {
+    if (isDirty(selected)) saveTask(false);
+    else message('Незбережених змін у цій задачі немає.');
+  }
+});
 $('search').addEventListener('input', applyFilters);
 $('filter').addEventListener('change', applyFilters);
 $('signalFilter').addEventListener('change', applyFilters);
@@ -867,7 +962,25 @@ $('export').addEventListener('click', async () => {
     message(hasUnsaved() ? 'Експортовано збережений стан. Незбережені правки спочатку збережи в задачах.' : 'Експортовано статуси, нотатки та збережені чернетки.');
   } catch (error) { message(error.message, true); }
 });
-window.addEventListener('beforeunload', event => { if (hasUnsaved()) { event.preventDefault(); event.returnValue = ''; } });
+window.addEventListener('beforeunload', event => {
+  rememberViewContext();
+  if (hasUnsaved()) { event.preventDefault(); event.returnValue = ''; }
+});
+window.addEventListener('pagehide', rememberViewContext);
+$('detail').addEventListener('focusout', event => {
+  // Preserve the caret when the user switches from an unfinished deep task
+  // to the queue. This stores positions, never the content of the edit.
+  const cursor = captureEditorFocus(event.target, $('detail'));
+  if (cursor && renderedTaskKey) {
+    const existing = taskViews.get(renderedTaskKey) || captureTaskView($('detail'));
+    taskViews.set(renderedTaskKey,{...existing,focus:cursor});
+  }
+  // Finish deferred snapshot refresh only after moving away from the editor.
+  setTimeout(() => {
+    if (!busy && pendingDetail && !isDirty(selected) && !detailInteractionFocused())
+      renderDetail();
+  }, 0);
+});
 let lastCloudAttemptState = null;
 async function loadCloudCapabilities() {
   try {
@@ -918,6 +1031,7 @@ async function pollChanges() {
 setInterval(pollChanges, 5000);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') pollChanges();
+  else rememberViewContext();
 });
 
 function rankedTasks() { return rankTasks(tasks); }

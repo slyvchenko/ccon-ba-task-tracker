@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #28 (v2.28). **Поточний кандидат:** PR #29 (v2.29), ручні XS–XL оцінки, low-confidence автоматичні підказки та display-only quick wins; реальні часи/UX UAT відкриті.  
+**Базовий код:** `main` після PR #29 (v2.29). **Поточний кандидат:** PR #30 (v2.30), safe keyboard navigation, per-task view/caret recovery, conflict-aware save feedback and modal focus; реальний Windows/Chrome UAT окремо.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -102,11 +102,11 @@
 | QUICK-07 | P1 | PLANNED | Compact card action/proof line без шуму з чіпів | User 5-second scan, no loss of proof status |
 | QUICK-08 | P2 | PLANNED | Кандидатні шаблони для повторюваних дрібних BA задач | Template never invents source/method; gold QA |
 | FOCUS-01 | P0 | PARTIAL (v2.28 retain selected key, list scroll and open details on same-task refresh; browser UAT open) | Зберігати selected task і позицію списку при оновленні | No jump on background import, user edits preserved; J-07 |
-| FOCUS-02 | P0 | PLANNED | Відновлення scroll, open details, cursor при поверненні | Resume p95 goal ≤45 s; browser UAT |
-| FOCUS-03 | P1 | PLANNED | Keyboard shortcuts Next / Search / Copy / Save із захистом input focus | Keyboard-only critical path A-01; no destructive collision |
+| FOCUS-02 | P0 | PARTIAL (v2.30 tab-local selected issue, scroll/disclosures and caret coordinates; browser UAT pending) | Відновлення scroll, open details, cursor при поверненні | Resume p95 goal ≤45 s; browser UAT |
+| FOCUS-03 | P1 | PARTIAL (v2.30 Alt+arrow, / search, Alt+C, Ctrl/Cmd+Enter; keyboard UAT pending) | Keyboard shortcuts Next / Search / Copy / Save із захистом input focus | Keyboard-only critical path A-01; no destructive collision |
 | FOCUS-04 | P1 | PLANNED | Розділити high-signal інфо та deep evidence в existing details | No extra tabs/modes; J-03/J-06 |
 | FOCUS-05 | P1 | PLANNED | Sticky next-action/progress microheader в існуючій detail pane | No page redesign; responsive A-03/A-04 |
-| FOCUS-06 | P1 | PLANNED | Захист від фонових тостів/DOM rerender під час набору тексту | No focus loss, cursor jump, stale overwrite |
+| FOCUS-06 | P1 | PARTIAL (v2.30 never rerender focused detail, restore keyboard row and typed cursor; browser traces pending) | Захист від фонових тостів/DOM rerender під час набору тексту | No focus loss, cursor jump, stale overwrite |
 | FOCUS-07 | P2 | PLANNED | Pin personal deep-work task без зміни official Jira priority | Manual pin only within lane; clear override and reset |
 | FOCUS-08 | P2 | PLANNED | Відновити фокус після bulk dialog/mailto/error | A-01/A-11; action accessible |
 | PRIOR-01 | P0 | PARTIAL (v2.29 manual XS–XL persisted + LOW confidence heuristic; real effort calibration pending) | EffortEstimate XS/S/M/L/XL/UNKNOWN, provenance and confidence | Human-reviewed or source-derived; never business truth guess |
@@ -119,7 +119,7 @@
 | PRIOR-08 | P2 | PLANNED | Feedback on wrong priority captured as manual correction | Never silently retrain queue ranking; human UAT |
 | PRIOR-09 | P2 | PLANNED | Show weekly WIP / blockers / completion versus rework | Not a gamified Done count, J-01 |
 | UI-05 | P1 | PLANNED | Density and hierarchy audit at 320/768/1440 viewport | A-03; no horizontal overflow/hidden primary action |
-| UI-06 | P1 | PLANNED | Clear statuses saved, unsaved, saving, failed, stale | A-07/A-12 and race tests |
+| UI-06 | P1 | PARTIAL (v2.30 unsaved/saving/error/CAS conflict states; real error and screen reader UAT open) | Clear statuses saved, unsaved, saving, failed, stale | A-07/A-12 and race tests |
 | UI-07 | P1 | PLANNED | Distinct empty / unavailable / permissions / stale / no matches states | Correct recovery action in each state |
 | UI-08 | P2 | PLANNED | Readable PNR/field/code formatting and safe wrapping | No truncation in clipboard/export, A-06 |
 | UI-09 | P2 | PLANNED | Default collapsed evidence sections after human 5-sec test | Keep main results visible, never bury next action |
@@ -144,10 +144,10 @@
 | REL-08 | P1 | PLANNED | OS folder permissions/encryption checks for private local ZIP | Fail closed/notice for insecure ACL configuration |
 | REL-09 | P2 | PLANNED | Bound old history/reports while preserving important user audit | No unexpected data deletion, archive user-approved |
 | REL-10 | P2 | PLANNED | Safe signed release/backup metadata and rollback rehearsal | Verify hashes; old app loads additive migration |
-| A11Y-01 | P1 | NEXT | Keyboard full quick-task flow + shortcuts usability | A-01/J-03/J-08 with focus protection |
+| A11Y-01 | P1 | PARTIAL (v2.30 native keyboard shortcuts and guide; screen reader & real keyboard UAT open) | Keyboard full quick-task flow + shortcuts usability | A-01/J-03/J-08 with focus protection |
 | A11Y-02 | P1 | NEXT | 200%-400% zoom and 320px mobile acceptance | A-03/A-04; primary actions reachable |
 | A11Y-03 | P1 | PLANNED | Screen reader semantics for task list, selected and status | A-02, announcements not noisy |
-| A11Y-04 | P1 | PLANNED | Bulk email dialog focus trap/return, escape | A-11; no unintended send |
+| A11Y-04 | P1 | PARTIAL (v2.30 native modal Close initial focus and return focus on close/Escape; browser UAT open) | Bulk email dialog focus trap/return, escape | A-11; no unintended send |
 | A11Y-05 | P2 | PLANNED | Forced color/high contrast and reduced-motion support | A-05/A-10 |
 | A11Y-06 | P2 | PLANNED | Readable labels/tooltips without mouse hover | A-09 and touch accuracy |
 | QA-09 | P0 | NEXT | Synthetic 100/500/1000 browser E2E performance baseline | Windows DevTools p95 + startup/long session |
@@ -177,7 +177,7 @@
 2. **#27 current: REL-01/02 + SEC-01 + QA-11:** per-task revision compare-and-swap, recovery, two-tab conflict notice and undo, щоб виключити last-writer-wins.
 3. **#28 current: QUICK-01/02/03 + FOCUS-01 + PRIOR-02:** максимально швидкий read → verified artifact → handoff → record → next в існуючій картці; тест 5 archetypes.
 4. **#29 current: PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork:** effort-aware review hints в незмінній sprint/WRITE lane, transparent ordering and timed BA UAT.
-5. **#30 recommended: FOCUS-02/03/06 + A11Y-01/04 + UI-06:** keyboard/navigation/focus+dirty warning regression.
+5. **#30 current: FOCUS-02/03/06 + A11Y-01/04 + UI-06:** keyboard/navigation/focus+dirty warning regression.
 6. **#31 recommended: PERF-04/05/06/07 + QA-09:** browser traces and measured large-list optimizations, WCAG/browser proof.
 7. **#32+:** A11Y-02/03/05, REL-03/04/05, UX polish, all other backlog rows; prioritize from actual field measurements and human BA gold set.
 
@@ -197,7 +197,8 @@
 | **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — MERGED; HUMAN UAT OPEN** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI green, без auto-ranking |\n| **#20 — MERGED; SECURITY UAT OPEN** | QA-08: безпечна мінімізація даних перед відправленням у схвалену модель | Synthetic prompt payload, URL/PII/secrets tests + CI |\n| **#21 — MERGED; BROWSER UAT OPEN** | EVD-13: локальний браузерний handoff JSON/XML/ZIP, прив'язка доказів до Jira fingerprint | ZIP safety, structure only, PDF explicitly unread |
 | **#22 — MERGED; LIVE UAT OPEN** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | CI on PR & main green, host ACL/encryption unverified |\n| **#23 — MERGED; HUMAN UAT OPEN** | BA-01/BA-02/OUT-01/QA-04: exact conditions, email evidence checks, dossier readiness | CI + semantic gold-case UAT, no Jira/email writes |\n| **#24 — MERGED; BROWSER UAT OPEN** | EVD-13 + BA-09 + OUT-04: local PDF/JSON/XML/ZIP text, Confluence browser handoff, verified quote cross-check | Zero raw document egress; source hash/fingerprint validation; CI + human UAT |\n| **#25 — MERGED; REAL GOLD-SET UAT OPEN** | UX-02 + QA-04 + QA-03 preflight: safe description dedup, in-place density warnings, local frozen 20–30 A/B metrics | Green CI, no actual gold-case verdict without independent human review |\n| **#26 — MERGED; WINDOWS PERFORMANCE UAT OPEN** | UX audit + PERF-01/02/03 + OPS-01 + local regression coverage; no redesign | Synthetic 100/500/1000 benchmark, CI green; Windows human UAT remains open |\n| **#27 — MERGED; REAL BROWSER UAT OPEN** | REL-01/02 + SEC-01 + QA-11: per-task CAS and conflict review | Python/Node CI; two real Chrome tabs still require UAT |
 | **#28 — MERGED; QUICK-UX UAT OPEN** | QUICK-01/02/03 + FOCUS-01 + PRIOR-02: top-of-card next action, gated copy, manual done confirmation, queue explanation and scroll retention | CI + source-honest synthetic archetypes; real time-to-handoff UAT required |
-| **#29 — IN PROGRESS; REAL EFFORT UAT OPEN** | PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork: manual band, provenance-aware heuristic, quick hint, no reordering | Python/Node CI + 20–30 real-case effort/time calibration still required |
+| **#29 — MERGED; REAL EFFORT UAT OPEN** | PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork: manual band, provenance-aware heuristic, quick hint, no reordering | Python/Node CI + 20–30 real-case effort/time calibration still required |
+| **#30 — IN PROGRESS; LIVE KEYBOARD UAT OPEN** | FOCUS-02/03/06 + A11Y-01/04 + UI-06: shortcuts, per-tab context/caret, focus-safe refresh, honest save status | CI + synthetic keyboard policies, Windows/Chrome two-tab assistive-technology UAT open |
 | **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
@@ -226,6 +227,15 @@
 - **Швидкі кандидати:** тільки READY/WRITE з актуальним аналізом, структурно перевіреним Gate і відсутніми питаннями. У списку це маленька підказка `S?` і лічильник, **жодного нового сортування**. XS з невідомими доказами не вважається quick win.
 - **Перевірки:** матриця з 180 комбінацій status/sprint/signal/score × 6 варіантів effort плюс edge випадки для багатокрокових BA-задач, автоматична міграція старої DB, приватність, багато вкладок, збережений email/status.
 - **Опис критеріїв і фактичні прогалини:** `docs/EFFORT_PRIORITIZATION.md`; без real UAT не заявляти, що оцінка тривалості точна або праця стала швидшою.
+
+### #30: keyboard-first BA flow і відновлення контексту
+
+- **Навігація:** у звичній черзі доступні `Alt+↑/↓` (тільки видимі задачі за чинним сортуванням), `/` (пошук), `Alt+C` (скопіювати актуальну дію), `Ctrl/Cmd+Enter` (збереження через CAS); показано у згорнутій підказці без нових режимів.
+- **Захист редагування:** ввод у textarea/select/contenteditable не перехоплюється shortcut-обробником; modal/dialog блокує глобальні дії. Фонове оновлення не замінює DOM активної картки з фокусом/незбереженими правками, а фокус на рядку списку відновлюється після render.
+- **Повернення:** обрана задача, scroll/open disclosures і позиція курсора зберігаються для цієї вкладки; лише номер задачі та технічні координати/хеші, без Jira-описів і текстів приватних чернеток.
+- **Save UX:** `збережено / незбережено / зберігаю / помилка / конфлікт версій` тепер різні стани; ніякого «збережено» перед HTTP acknowledgment. Діалог пакетних листів повертає фокус на opener після Escape/Close.
+- **Автоматичні тести:** `tests/focus-navigation.test.mjs` покриває чисту policy для клавіш, IME, модалки, фільтрів, disclosures, caret і privacy. Повні browser DOM E2E, вимірювання resume time і screen reader UAT залишаються OPEN.
+- **Детальний runbook:** `docs/FOCUS_KEYBOARD_UX.md`.
 
 ## 4. Definition of Done для кожного наступного блоку
 
