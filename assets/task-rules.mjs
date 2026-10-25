@@ -77,7 +77,7 @@ function rankTasks(tasks) {
   }).map(item => item.task);
 }
 
-function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprint = 'all'} = {}) {
+function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprint = 'all'} = {}, indexedText = null) {
   // Avoid rebuilding potentially long Jira descriptions for every task on
   // each no-search render; check cheap predicates before reading full text.
   const queryTerms = String(search).toLocaleLowerCase('uk-UA').trim().split(/\s+/).filter(Boolean);
@@ -93,17 +93,22 @@ function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprin
       (sprint === 'unverified' && task.activeSprintStatus !== 'VERIFIED');
     if (!sprintMatch || (signal !== 'all' && effectiveSignal(task) !== signal)) return false;
     if (!queryTerms.length) return true;
-    const analysis = analysisOf(task), brief = analysis.briefing || {};
-    const references = (task.links || task.linkedIssues || [])
-      .map(item => typeof item === 'string' ? item : (item.linkedKey || item.key || ''));
-    const text = [
-      task.key, task.summary, task.jiraStatus, task.priority,
-      analysis.nextActionUk, analysis.standardDescription,
-      brief.technicalScopeUk, brief.currentUk, brief.targetUk,
-      ...(brief.rules || []).slice(0, 30).flatMap(rule => [rule.whenUk, rule.thenUk]),
-      ...references, ...(task.blockedBy || [])
-    ].filter(x => typeof x === 'string').join(' ').toLocaleLowerCase('uk-UA');
-    const folded = text.replace(/[^\p{L}\p{N}]/gu, '');
+    const cached = indexedText?.(task);
+    let text, folded;
+    if (cached) ({text, folded} = cached);
+    else {
+      const analysis = analysisOf(task), brief = analysis.briefing || {};
+      const references = (task.links || task.linkedIssues || [])
+        .map(item => typeof item === 'string' ? item : (item.linkedKey || item.key || ''));
+      text = [
+        task.key, task.summary, task.jiraStatus, task.priority,
+        analysis.nextActionUk, analysis.standardDescription,
+        brief.technicalScopeUk, brief.currentUk, brief.targetUk,
+        ...(brief.rules || []).slice(0, 30).flatMap(rule => [rule.whenUk, rule.thenUk]),
+        ...references, ...(task.blockedBy || [])
+      ].filter(x => typeof x === 'string').join(' ').toLocaleLowerCase('uk-UA');
+      folded = text.replace(/[^\p{L}\p{N}]/gu, '');
+    }
     return queryTerms.every((term, index) => text.includes(term) ||
       folded.includes(cleanTerms[index]));
   });
