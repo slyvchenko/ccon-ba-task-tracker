@@ -125,6 +125,23 @@ export function createDraftRecoveryStore({local,session,newId,now=()=>Date.now()
       return {added,skipped};
     } catch {error='READ_FAILED';return {added:{},skipped:[],failed:true};}
   }
+  function rotateTabId() {
+    if (!id) return false;
+    const previousId=id;
+    try {
+      const next=newId();
+      if (!TAB.test(next) || next===id) return false;
+      const existing=parseRecord(local.getItem(ownKey()));
+      session.setItem(TAB_ID_KEY,next);
+      id=next;
+      if (existing && !persist(existing.forms)) {
+        id=previousId;
+        session.setItem(TAB_ID_KEY,previousId);
+        return false;
+      }
+      return true;
+    } catch {error='WRITE_FAILED';return false;}
+  }
   function clearExpired() {
     const expired=others().filter(x=>x.stale);
     let cleared=0;
@@ -136,6 +153,6 @@ export function createDraftRecoveryStore({local,session,newId,now=()=>Date.now()
     } catch {error='WRITE_FAILED';}
     return {cleared,remaining:expired.length-cleared};
   }
-  return {id,ownKey,load,persist,others,adopt,clearExpired,
-    get error(){return error;}};
+  return {ownKey,load,persist,others,adopt,rotateTabId,clearExpired,
+    get id(){return id;},get error(){return error;}};
 }
