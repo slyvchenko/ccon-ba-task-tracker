@@ -268,6 +268,11 @@ def restore_backup(root, filename, confirmation):
         # no main DB exists: refuse rather than silently alter recovered data.
         if not database.exists() and any(path.exists() or path.is_symlink() for path in sidecars):
             raise ValueError("Orphaned SQLite WAL files present. Preserve them offline before recovery.")
+        if database.exists() and any(path.exists() or path.is_symlink() for path in sidecars):
+            # Even sqlite3.connect() could replay or remove a damaged WAL.
+            # Refuse BEFORE touching existing SQLite bytes. An operator can
+            # perform an offline forensic recovery after preserving sidecars.
+            raise ValueError("SQLite WAL sidecars present. Stop all clients and preserve the WAL offline.")
         if database.exists():
             if database.is_symlink() or not database.is_file():
                 raise ValueError("Refusing unsafe database path.")
