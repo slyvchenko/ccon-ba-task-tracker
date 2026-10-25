@@ -13,6 +13,7 @@ from prompt_calibration import update_daily
 from ba_questions import sync_questions, all_evidence
 from ba_decisions import sync_decision_proposals
 from ba_quality_gate import quality_gate
+from ba_compactness import compact_generated
 from local_source_audit import local_sources
 
 
