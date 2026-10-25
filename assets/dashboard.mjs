@@ -2,6 +2,9 @@ import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalys
 import {createLogsController} from './logs.mjs';
 import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './manual-edit-policy.mjs';
+import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
+  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus}
+  from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
 import {EFFORT_LABELS, effortInfo, quickWinCandidate, quickWinExplanation} from './effort-planning.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
@@ -12,15 +15,37 @@ import {loadTaskActions, loadTaskHistory} from './action-history.mjs';
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const LOCAL_EDITS_KEY = 'ccon-ba-desk.unsaved-forms.v2';
-let tasks = [], selected = null, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
+const LOCAL_VIEW_KEY = 'ccon-ba-desk.view-context.v1';
+const restoredFocusView = readViewContext();
+let tasks = [], selected = restoredFocusView.selected, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
 let signature = '', renderedTaskVersion = '', renderedTaskKey = null, pendingDetail = false;
 let currentRevision = null, currentRevisionError = '', pollingInFlight = false, pollCycle = 0;
 const forms = new Map();
 const manualConflicts = new Map();
+const taskViews = new Map(Object.entries(restoredFocusView.views));
+const saveFailures = new Map();
 const expandedEmails = new Set();
 const recoveredForms = readRecoveredForms();
 const {loadLogs} = createLogsController({api, escapeHtml, message, getSelected: () => selected});
 
+function readViewContext() {
+  try { return sanitizeSessionFocus(JSON.parse(sessionStorage.getItem(LOCAL_VIEW_KEY) || '{}')); }
+  catch { return {selected:null,views:{}}; }
+}
+function storeCurrentTaskView() {
+  if (renderedTaskKey && document.getElementById('detail')?.hasChildNodes()) {
+    taskViews.set(renderedTaskKey, captureTaskView($('detail')));
+    if (taskViews.size > 12) taskViews.delete(taskViews.keys().next().value);
+  }
+}
+function rememberViewContext() {
+  storeCurrentTaskView();
+  try {
+    const views = Object.fromEntries(taskViews);
+    sessionStorage.setItem(LOCAL_VIEW_KEY,
+      JSON.stringify(sanitizeSessionFocus({selected,views})));
+  } catch { /* A disabled session store never blocks work. */ }
+}
 function readRecoveredForms() {
   try { const data = JSON.parse(localStorage.getItem(LOCAL_EDITS_KEY) || '{}'); return data && typeof data === 'object' ? data : {}; }
   catch { return {}; }
@@ -83,6 +108,7 @@ function signalBadge(task) {
   return `<span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(label)}</span>`;
 }
 function renderList() {
+  const focusedRow = document.activeElement?.closest?.('#list [data-key]')?.dataset.key || null;
   const previousListScroll = $('list').scrollTop;
   const previousSidebarScroll = $('list').closest('aside')?.scrollTop || 0;
   updateSnapshotInfo();
@@ -107,14 +133,22 @@ function renderList() {
   $('list').querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => selectTask(button.dataset.key)));
   $('list').scrollTop = previousListScroll;
   if ($('list').closest('aside')) $('list').closest('aside').scrollTop = previousSidebarScroll;
+  // innerHTML replaces buttons: restore keyboard focus only if it WAS on
+  // the queue, never steal focus from a typed note, search or a dialog.
+  if (focusedRow) {
+    const replacementRow = [...$('list').querySelectorAll('[data-key]')]
+      .find(button => button.dataset.key === focusedRow);
+    replacementRow?.focus({preventScroll:true});
+  }
 }
 function selectTask(key) {
   if (busy || selected === key) return;
+  storeCurrentTaskView();
   selected = key;
   pendingDetail = false;
   renderList();
   renderDetail();
-  $('detail').scrollTop = 0;
+  rememberViewContext();
 }
 function sourceMarkup(analysis) {
   if (!Array.isArray(analysis.evidence) || !analysis.evidence.length) return '<p class="muted">Джерела оцінки ще не додані.</p>';
@@ -251,9 +285,8 @@ function renderDetail() {
     return;
   }
   const retainPosition = renderedTaskKey === task.key;
-  const previousDetailScroll = retainPosition ? $('detail').scrollTop : 0;
-  const priorOpenDetails = retainPosition
-    ? [...$('detail').querySelectorAll('details')].map(node => node.open) : null;
+  const state = retainPosition ? captureTaskView($('detail')) : taskViews.get(task.key);
+  const focusedEditor = retainPosition ? captureEditorFocus(document.activeElement, $('detail')) : null;
   const analyzed = hasAnalysis(task), stale = analysisIsStale(task), analysis = analyzed ? analysisOf(task) : {};
   const form = formFor(task).value, info = signalInfo(task), url = safeUrl(task.url);
   const savedDraft = task.savedEmailDraft !== null && task.savedEmailDraft !== undefined;
@@ -371,13 +404,11 @@ function renderDetail() {
   renderedTaskVersion = taskVersion(task);
   renderedTaskKey = task.key;
   pendingDetail = false;
-  if (retainPosition) {
-    const details = [...$('detail').querySelectorAll('details')];
-    details.forEach((node, i) => {
-      if (i < priorOpenDetails.length) node.open = priorOpenDetails[i];
-    });
-    $('detail').scrollTop = previousDetailScroll;
-  }
+  restoreTaskView($('detail'), state);
+  // Renders triggered by Save must preserve an active note/email caret.
+  // A background refresh intentionally doesn't rerender while the editor
+  // is focused; this also safely handles explicit same-task rerenders.
+  restoreEditorFocus($('detail'), focusedEditor);
   ['note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener('input', captureForm));
   $('manualEffort').addEventListener('change', captureForm);
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
@@ -765,7 +796,9 @@ function renderContext(context) {
   if (context.retrievedAt) output.push('<p class="footer-note">Контекст отримано ' + escapeHtml(dateLabel(context.retrievedAt)) + '</p>');
   $('contextPreview').innerHTML = output.join('') || 'Контекст отримано; опис і коментарі відсутні.';
 }
-function editorFocused() { return ['manual', 'note', 'draftTo', 'draftSubject', 'draftBody'].includes(document.activeElement?.id); }
+function detailInteractionFocused() {
+  return $('detail').contains(document.activeElement);
+}
 function updateSnapshotInfo() {
   $('snapshotInfo').textContent = latest ? tasks.filter(task => task.active).length + ' задач · ' + tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length + ' листів · Оновлено ' + dateLabel(latest.generated_at) : 'Очікую snapshot';
 }
@@ -797,7 +830,10 @@ async function load() {
     const selectedTask = tasks.find(task => task.key === selected);
     const detailChanged = selectedTask ? taskVersion(selectedTask) !== renderedTaskVersion : renderedTaskVersion !== '';
     if (detailChanged || pendingDetail || !$('detail').hasChildNodes()) {
-      if (isDirty(selected) || editorFocused()) { pendingDetail = true; updateFormStatus(); }
+      if (isDirty(selected) || detailInteractionFocused()) {
+        pendingDetail = true;
+        updateFormStatus();
+      }
       else renderDetail();
     }
     if (data.error) message(data.error, true);
