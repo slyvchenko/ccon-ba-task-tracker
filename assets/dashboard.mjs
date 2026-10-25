@@ -1,5 +1,6 @@
 import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueTier, priorityLane, rankTasks, filterTasks} from './task-rules.mjs';
 import {createLogsController} from './logs.mjs';
+import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
 import {loadTaskDecisions} from './decisions-ui.mjs';
 import {loadTaskActions, loadTaskHistory} from './action-history.mjs';
@@ -679,8 +680,7 @@ async function pollChanges() {
   pollingInFlight = true;
   try {
     const revision = await api('/api/tasks/revision');
-    if (currentRevision === null || revision.revision !== currentRevision ||
-        (revision.error || '') !== currentRevisionError) await load();
+    if (needsFullTaskRefresh(currentRevision, currentRevisionError, revision)) await load();
     pollCycle++;
     if (pollCycle % 3 === 0) await loadLogs();
     if (pollCycle % 6 === 0) {
