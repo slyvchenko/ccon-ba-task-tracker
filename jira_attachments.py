@@ -255,8 +255,9 @@ def evidence_for_model(root, key, issue):
     """Only current Jira-bound local structural metadata; never raw contents."""
     if not KEY_RE.fullmatch(str(key)):
         return []
-    allowed = {str(x["id"]) for x in issue.get("attachments") or []
-               if isinstance(x, dict) and ID_RE.fullmatch(str(x.get("id", "")))}
+    allowed = {str(x["id"]): _attachment_spec(x) for x in issue.get("attachments") or []
+               if isinstance(x, dict) and ID_RE.fullmatch(str(x.get("id", "")))
+               and _attachment_spec(x) is not None}
     reports = []
     for ident in sorted(allowed)[:30]:
         item = read_json(Path(root) / "data/attachment_evidence" / key / (ident + ".json"), None)
@@ -264,6 +265,13 @@ def evidence_for_model(root, key, issue):
                 or item.get("attachmentId") != ident
                 or item.get("contextFingerprint") != issue.get("fingerprint")
                 or item.get("status") not in ("STRUCTURE_ONLY", "PDF_TEXT_NOT_EXTRACTED")):
+            continue
+        # Re-check the exact local bytes: stale or tampered manifests are never
+        # represented as current read evidence to the model.
+        target = attachment_path(root, key, ident, allowed[ident][1])
+        if not target.is_file() or target.is_symlink() or target.stat().st_size > MAX_FILE:
+            continue
+        if hashlib.sha256(target.read_bytes()).hexdigest() != item.get("sourceSha256"):
             continue
         reports.append({
             "attachmentId": ident, "sourceSha256": item.get("sourceSha256"),
