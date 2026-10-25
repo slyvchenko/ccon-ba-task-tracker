@@ -140,3 +140,11 @@ UI now shows authenticated local backup timestamp/revision and snapshot-watcher 
 `tests/draft-recovery.test.mjs` covers independent tabs, cloned-tab rotation, same-tab reload, pre-v3 localStorage migration, manual orphan recovery with unsaved collision refusal, 30-day consent-based cleanup, corrupted records, bounded field validation and simulated quota/storage denial. Original `tests/manual-edit-policy.test.mjs` and `tests/test_manual_edit_cas.py` still verify per-task CAS/409 protection at the actual HTTP/SQLite layer.
 
 The existing Data menu now exposes draft-recovery actions. Queue selection uses one polite aria-live announcer and a labeled region; 320px CSS, forced colors and reduced-motion additions have **no claimed automated pixel/AT proof**. Windows Chrome/Edge Duplicate Tab, NVDA, 200–400% zoom, privacy and 8-hour memory/endurance require real human UAT before closing SEC-04/A11Y-02/03/05/QA-12/15. `docs/BROWSER_RECOVERY_ACCESSIBILITY.md` provides the test cases.
+
+## v2.34: real Chromium DOM checks, short endurance and reconnection
+
+- `browser_e2e.py` is real Playwright Chromium HTTP/DOM E2E: synthetic active sprint/WRITE order, note Save/CAS, Alt+Down selection, duplicate task from two tabs + reload + 409, modal Escape without send, offline GET fail→recover without auto-POST, background snapshot change with unsaved note preserved, 320/768/1440 visibility, 90 physical DOM row transitions.
+- `tests/reconnect-policy.test.mjs` covers 5→60s bounded backoff, manual recheck, and no POST replay function.
+- Dedicated CI browser job installs the pinned optional Playwright test dependency; core desktop runtime stays stdlib Python/SQLite. Failure screenshots and synthetic timing artifacts available for 3 days, no supplier/PNR/credentials.
+- **Gaps:** real Windows Chrome and Edge, NVDA/screen reader, native 200–400% zoom, 8-hour heap/leak study and gold BA observation. These remain human UAT, not claimed complete.
+- **UI redundancy:** `docs/UX_REDUNDANCY_SIMPLIFICATION_AUDIT.md` provides 16 source-backed candidates and grouped #35–#38 acceptance. No removals in v2.34.
