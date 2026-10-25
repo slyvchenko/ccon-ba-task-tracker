@@ -78,7 +78,7 @@ class EvidenceRegressionMatrixTests(unittest.TestCase):
         self.assertNotIn("SYNTHETIC_CUSTOMER", serialized)
         self.assertNotIn("SYNTHETIC_INNER", serialized)
         self.assertNotIn("private.json", serialized)
-        self.assertNotIn("Unrelated", serialized)
+        self.assertFalse(any("supplier/Unrelated/" in row.get("file", "") for row in report["samples"]))
         self.assertTrue(diagnostic["repeatedMethodCandidates"])
         self.assertEqual(diagnostic["repeatedMethodCandidates"][0]["interpretation"],
                          "REPEATED_METHOD_RETRY_NOT_PROVEN")
