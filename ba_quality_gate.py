@@ -219,6 +219,7 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
     claims, source_findings = claim_audit(briefing, sources)
     coverage, qa_findings = rule_coverage(briefing)
     writing_findings = description_review(analysis.get("standardDescription"), briefing)
+    compact_findings = advisory_findings(analysis.get("standardDescription"))
     output_findings = dossier_checks(analysis) + email_checks(
         analysis.get("emailDraft"), attachment_ready=attachment_ready,
         verified_supplier_method=supplier_method)
