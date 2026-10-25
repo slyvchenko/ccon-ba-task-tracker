@@ -59,6 +59,12 @@ export function createQueueModel() {
   return {rankedTasks,visibleTasks,invalidate,stats};
 }
 
+export function selectedAfterFilter(visibleItems,selected,{protectEditor=false}={}) {
+  if (visibleItems.some(task=>task.key===selected)) return selected;
+  if (protectEditor && selected) return selected;
+  return visibleItems[0]?.key || null;
+}
+
 // Inject timer functions in tests; production uses browser timers.
 export function createSearchDebouncer(callback,delay=130,schedule=setTimeout,cancelTimer=clearTimeout) {
   let timer=null;
