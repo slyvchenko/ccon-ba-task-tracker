@@ -709,7 +709,9 @@ async function copyText(text, notice) {
 }
 let bulkItems = [];
 let bulkPreviewRequest = 0;
+let bulkReturnFocus = null;
 async function previewBulkEmails() {
+  bulkReturnFocus = document.activeElement;
   const request = ++bulkPreviewRequest;
   const candidates = rankedTasks().filter(task => task.active && effectiveSignal(task) === 'WRITE');
   bulkItems = [];
@@ -723,6 +725,8 @@ async function previewBulkEmails() {
   $('bulkOpen').textContent = `Відкрити чернетки (${bulkItems.length})`;
   $('bulkOpen').disabled = !bulkItems.length;
   $('bulkDialog').showModal();
+  // Focus the safe Close action, not a potentially external mail opener.
+  $('bulkClose').focus({preventScroll:true});
   try {
     const catalog = await api('/api/logs');
     if (request !== bulkPreviewRequest || !$('bulkDialog').open) return;
@@ -749,6 +753,11 @@ async function openBulkEmails() {
 $('bulkEmail').addEventListener('click', previewBulkEmails);
 $('bulkOpen').addEventListener('click', openBulkEmails);
 $('bulkClose').addEventListener('click', () => $('bulkDialog').close());
+$('bulkDialog').addEventListener('close', () => {
+  // Native <dialog> handles Escape and modal focus containment.
+  if (bulkReturnFocus?.isConnected) bulkReturnFocus.focus({preventScroll:true});
+  bulkReturnFocus = null;
+});
 async function openEmail() {
   captureForm();
   const draft = structuredClone(forms.get(selected)?.value.emailDraft);
@@ -899,6 +908,32 @@ function applyFilters() {
 }
 document.addEventListener('click', event => { if (!$('dataMenu').contains(event.target)) $('dataMenu').open = false; });
 document.addEventListener('keydown', event => { if (event.key === 'Escape') { $('dataMenu').open = false; document.querySelectorAll('.status-help[open]').forEach(help => help.open = false); } });
+document.addEventListener('keydown', event => {
+  const action = shortcutAction(event, {
+    dialogOpen:$('bulkDialog').open,editing:isTextEditingTarget(event.target)
+  });
+  if (!action || busy) return;
+  if (action === 'SAVE' && !$('detail').contains(event.target)) return;
+  event.preventDefault();
+  if (action === 'SEARCH') {
+    $('search').focus({preventScroll:true});
+    $('search').select();
+  } else if (action === 'NEXT' || action === 'PREVIOUS') {
+    const keys = visibleTasks().map(task => task.key);
+    const key = adjacentTaskKey(keys, selected, action === 'NEXT' ? 1 : -1);
+    if (key && key !== selected) selectTask(key);
+    const button = [...$('list').querySelectorAll('[data-key]')]
+      .find(row => row.dataset.key === key);
+    button?.focus({preventScroll:true});
+    button?.scrollIntoView({block:'nearest'});
+  } else if (action === 'COPY_ACTION') {
+    if ($('copyNext') && !$('copyNext').disabled) $('copyNext').click();
+    else message('Немає актуальної дії для копіювання.', true);
+  } else if (action === 'SAVE') {
+    if (isDirty(selected)) saveTask(false);
+    else message('Незбережених змін у цій задачі немає.');
+  }
+});
 $('search').addEventListener('input', applyFilters);
 $('filter').addEventListener('change', applyFilters);
 $('signalFilter').addEventListener('change', applyFilters);
@@ -920,7 +955,18 @@ $('export').addEventListener('click', async () => {
     message(hasUnsaved() ? 'Експортовано збережений стан. Незбережені правки спочатку збережи в задачах.' : 'Експортовано статуси, нотатки та збережені чернетки.');
   } catch (error) { message(error.message, true); }
 });
-window.addEventListener('beforeunload', event => { if (hasUnsaved()) { event.preventDefault(); event.returnValue = ''; } });
+window.addEventListener('beforeunload', event => {
+  rememberViewContext();
+  if (hasUnsaved()) { event.preventDefault(); event.returnValue = ''; }
+});
+window.addEventListener('pagehide', rememberViewContext);
+$('detail').addEventListener('focusout', () => {
+  // Finish deferred snapshot refresh only after moving away from the editor.
+  setTimeout(() => {
+    if (!busy && pendingDetail && !isDirty(selected) && !detailInteractionFocused())
+      renderDetail();
+  }, 0);
+});
 let lastCloudAttemptState = null;
 async function loadCloudCapabilities() {
   try {
@@ -971,6 +1017,7 @@ async function pollChanges() {
 setInterval(pollChanges, 5000);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') pollChanges();
+  else rememberViewContext();
 });
 
 function rankedTasks() { return rankTasks(tasks); }
