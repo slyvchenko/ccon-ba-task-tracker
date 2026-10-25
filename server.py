@@ -12,7 +12,7 @@ from urllib.parse import urlparse, unquote, quote
 from urllib.request import build_opener, ProxyHandler
 
 from app_config import ROOT, STATUSES, LIMIT, CONTEXT_LIMIT, VERSION, SIGNALS, utc_now as now
-from desk_store import Desk
+from desk_store import Desk, SaveConflict
 from mail_service import open_email_batch
 from schema import text_field, validate_draft, validate_analysis
 from review_report import render_markdown, validate_report, REPORT_LIMIT
@@ -24,6 +24,7 @@ STATIC_FILES = {
     '/assets/dashboard.mjs': ('assets/dashboard.mjs', 'text/javascript; charset=utf-8'),
     '/assets/task-rules.mjs': ('assets/task-rules.mjs', 'text/javascript; charset=utf-8'),
     '/assets/revision-policy.mjs': ('assets/revision-policy.mjs', 'text/javascript; charset=utf-8'),
+    '/assets/manual-edit-policy.mjs': ('assets/manual-edit-policy.mjs', 'text/javascript; charset=utf-8'),
     '/assets/logs.mjs': ('assets/logs.mjs', 'text/javascript; charset=utf-8'),
     '/assets/evidence-ui.mjs': ('assets/evidence-ui.mjs', 'text/javascript; charset=utf-8'),
     '/assets/action-history.mjs': ('assets/action-history.mjs', 'text/javascript; charset=utf-8'),
@@ -262,10 +263,13 @@ def handler(desk, cloud=None):
                                              answer=data.get('answer', ''),
                                              evidence_url=data.get('evidenceUrl', ''))
                     return self.send(200, {'question': answer})
-                if path.startswith('/api/tasks/'):
-                    desk.save(unquote(path.split('/')[-1]), data)
-                    return self.send(200, {'message': 'Saved locally.'})
+                if re.fullmatch(r'/api/tasks/CCON-\d+', path):
+                    result = desk.save(unquote(path.rsplit('/', 1)[-1]), data)
+                    return self.send(200, {'message': 'Saved locally.', **result})
                 return self.send(404, {'error': 'Not found.'})
+            except SaveConflict as e:
+                return self.send(409, {'error': str(e), 'code': 'TASK_REVISION_CONFLICT',
+                                       'currentManualRevision': e.current_revision})
             except (ValueError, OSError) as e:
                 return self.send(400, {'error': str(e)})
 

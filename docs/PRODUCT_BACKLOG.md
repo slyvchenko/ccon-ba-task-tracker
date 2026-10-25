@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #25 (v2.25). **Поточний кандидат:** PR #26 (v2.26), продуктовий аудит UX + локальна швидкість/надійність/тести; реальний human UAT окремо.  
+**Базовий код:** `main` після PR #26 (v2.26). **Поточний кандидат:** PR #27 (v2.27), per-task manual revision CAS, two-tab conflict preview and opt-in resolve; реальний browser/Windows UAT окремо.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -134,8 +134,8 @@
 | PERF-08 | P1 | PLANNED | Avoid repeated heavyweight detail fetch on list refresh | Fetch selected only on selection/revision, compare versions |
 | PERF-09 | P2 | PLANNED | Simplify 1374-line CSS cascade after visual/a11y regression | No unexpected fonts/spacing/contrast changes |
 | PERF-10 | P2 | PLANNED | Evaluate SQLite WAL, busy timeouts and JSON index with empirical trace | Do not enable blindly; Windows/backup compatibility |
-| REL-01 | P0 | NEXT | Per-task optimistic concurrency token and stale edit conflict UX | Two tabs cannot silently overwrite each other's note/draft |
-| REL-02 | P0 | NEXT | Atomic user-draft recovery and edit revision validation | Forced close/reopen/reload leaves acknowledged edits intact |
+| REL-01 | P0 | IMPLEMENTED (v2.27 per-task SQLite CAS, 409 and human resolution; live browser UAT open) | Per-task optimistic concurrency token and stale edit conflict UX | Two tabs cannot silently overwrite each other's note/draft |
+| REL-02 | P0 | PARTIAL (v2.27 recovered drafts pin original revision, explicit conflict; power-loss multi-tab recovery UAT open) | Atomic user-draft recovery and edit revision validation | Forced close/reopen/reload leaves acknowledged edits intact |
 | REL-03 | P0 | NEXT | Safe backup/restore of private SQLite + manifest without export secrets | Crash drill, documented recovery and permissions |
 | REL-04 | P1 | PLANNED | Watcher failure/retry diagnostics without toast spam | No error swallowed; error state shown, P-12 |
 | REL-05 | P1 | PLANNED | Graceful server shutdown and restart during import | No database damage/partial save, Windows UAT |
@@ -152,7 +152,7 @@
 | A11Y-06 | P2 | PLANNED | Readable labels/tooltips without mouse hover | A-09 and touch accuracy |
 | QA-09 | P0 | NEXT | Synthetic 100/500/1000 browser E2E performance baseline | Windows DevTools p95 + startup/long session |
 | QA-10 | P0 | NEXT | Human observation of 5 BA task archetypes, repeated runs | TTNA/TTSH/MRI with 0 critical false-ready decisions |
-| QA-11 | P0 | NEXT | Cross-tab edits, stale conflict and crash recovery integration | P-15/P-17/P-18, 0 silent overwrite |
+| QA-11 | P0 | PARTIAL (v2.27 synthetic concurrent instances/restarts/conflicts; real browser crash drill open) | Cross-tab edits, stale conflict and crash recovery integration | P-15/P-17/P-18, 0 silent overwrite |
 | QA-12 | P1 | NEXT | DOM behavior tests with approved Playwright/browser runner | Focus, click, screenreader, history, network reconnect |
 | QA-13 | P1 | PLANNED | Local-only 20–30 real-case semantic BA handoff study | Actual independent gold scores, not CI counts |
 | QA-14 | P1 | PLANNED | Quantified code/branch coverage baseline, gaps by critical path | No invented 100%; dev-only tooling approval |
@@ -162,7 +162,7 @@
 | OPS-03 | P1 | PLANNED | Version/upgrade and roll-back steps for local task scheduler | Main merge does not update installed local copy |
 | OPS-04 | P2 | PLANNED | Error budget dashboard for local app only, opt-in | No remote telemetry or background transfer |
 | OPS-05 | P2 | PLANNED | Daily clean startup health checklist with offline fallback | Speed and accurate stale flags |
-| SEC-01 | P0 | NEXT | Cross-tab and concurrent browser save authorization plus revision CAS | No CSRF/security relaxation |
+| SEC-01 | P0 | PARTIAL (v2.27 CAS in new UI, legacy no-token API remains compatible; stronger enforcement after migration) | Cross-tab and concurrent browser save authorization plus revision CAS | No CSRF/security relaxation |
 | SEC-02 | P1 | PLANNED | Full localhost/cloud auth tests for new small endpoints | Host restrictions and current OIDC origin untouched |
 | SEC-03 | P1 | PLANNED | No personal/Jira/source content in perf report or public CI | Synthetic samples only; cross-check on PR |
 | SEC-04 | P2 | PLANNED | Browser storage retention and private recovery data review | No stale PII in unsafe storage without retention policy |
@@ -174,7 +174,7 @@
 ### Групування наступних PR після продуктової оцінки
 
 1. **#26 current: PERF-01/02/03 + OPS-01 + QA coverage:** протокол зміни ревізії, пошук без зайвої роботи, синтетичний benchmark, інтеграційні тести і цей повний audit; без UI-перебудови.
-2. **#27 recommended: REL-01/02 + SEC-01 + QA-11:** per-task revision compare-and-swap, recovery, two-tab conflict notice and undo, щоб виключити last-writer-wins.
+2. **#27 current: REL-01/02 + SEC-01 + QA-11:** per-task revision compare-and-swap, recovery, two-tab conflict notice and undo, щоб виключити last-writer-wins.
 3. **#28 recommended: QUICK-01/02/03 + FOCUS-01 + PRIOR-02:** максимально швидкий read → verified artifact → handoff → record → next в існуючій картці; тест 5 archetypes.
 4. **#29 recommended: PRIOR-01/03/04 + QUICK-05 + QA-10:** effort-aware review hints в незмінній sprint/WRITE lane, transparent ordering and timed BA UAT.
 5. **#30 recommended: FOCUS-02/03/06 + A11Y-01/04 + UI-06:** keyboard/navigation/focus+dirty warning regression.
@@ -195,8 +195,16 @@
 | **#14 — CODE COMPLETE; LOCAL UAT OPEN** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
 | **#15 — CODE COMPLETE; LIVE UAT OPEN** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
 | **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — MERGED; HUMAN UAT OPEN** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI green, без auto-ranking |\n| **#20 — MERGED; SECURITY UAT OPEN** | QA-08: безпечна мінімізація даних перед відправленням у схвалену модель | Synthetic prompt payload, URL/PII/secrets tests + CI |\n| **#21 — MERGED; BROWSER UAT OPEN** | EVD-13: локальний браузерний handoff JSON/XML/ZIP, прив'язка доказів до Jira fingerprint | ZIP safety, structure only, PDF explicitly unread |
-| **#22 — MERGED; LIVE UAT OPEN** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | CI on PR & main green, host ACL/encryption unverified |\n| **#23 — MERGED; HUMAN UAT OPEN** | BA-01/BA-02/OUT-01/QA-04: exact conditions, email evidence checks, dossier readiness | CI + semantic gold-case UAT, no Jira/email writes |\n| **#24 — MERGED; BROWSER UAT OPEN** | EVD-13 + BA-09 + OUT-04: local PDF/JSON/XML/ZIP text, Confluence browser handoff, verified quote cross-check | Zero raw document egress; source hash/fingerprint validation; CI + human UAT |\n| **#25 — MERGED; REAL GOLD-SET UAT OPEN** | UX-02 + QA-04 + QA-03 preflight: safe description dedup, in-place density warnings, local frozen 20–30 A/B metrics | Green CI, no actual gold-case verdict without independent human review |\n| **#26 — IN PROGRESS, GROUPED** | UX audit + PERF-01/02/03 + OPS-01 + local regression coverage; no redesign | Synthetic 100/500/1000 benchmark, CI green; Windows human UAT remains open |\n| **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
+| **#22 — MERGED; LIVE UAT OPEN** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | CI on PR & main green, host ACL/encryption unverified |\n| **#23 — MERGED; HUMAN UAT OPEN** | BA-01/BA-02/OUT-01/QA-04: exact conditions, email evidence checks, dossier readiness | CI + semantic gold-case UAT, no Jira/email writes |\n| **#24 — MERGED; BROWSER UAT OPEN** | EVD-13 + BA-09 + OUT-04: local PDF/JSON/XML/ZIP text, Confluence browser handoff, verified quote cross-check | Zero raw document egress; source hash/fingerprint validation; CI + human UAT |\n| **#25 — MERGED; REAL GOLD-SET UAT OPEN** | UX-02 + QA-04 + QA-03 preflight: safe description dedup, in-place density warnings, local frozen 20–30 A/B metrics | Green CI, no actual gold-case verdict without independent human review |\n| **#26 — MERGED; WINDOWS PERFORMANCE UAT OPEN** | UX audit + PERF-01/02/03 + OPS-01 + local regression coverage; no redesign | Synthetic 100/500/1000 benchmark, CI green; Windows human UAT remains open |\n| **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
+
+### #27: фактичний обсяг і межі
+
+- **Implemented:** per-task `manualRevision` on SQLite, additive migration, atomic compare-and-increment `UPDATE ... WHERE manual_revision=?`, HTTP `409 TASK_REVISION_CONFLICT`, revision returned in task list and successful save.
+- **Implemented:** new browser writes pin the loaded version; recovered drafts keep their original baseRevision; conflict UI shows both sets locally and requires explicit confirmation to accept saved data or overwrite after review. No auto-Jira/edit/send.
+- **Covered synthetically:** two concurrent Desk instances, 409/no last-write-wins, status-only preserve email, issue isolation, restart, snapshot reimport, legacy DB migration, DOM policy helper tests.
+- **Open:** Chrome/Edge two-tab interaction and crash/restore UAT, formal cross-tab localStorage recovery isolation, legacy external API callers without CAS token; see next packages.
+- **Policy:** unrelated global task revision is NOT a per-task edit conflict. An edited task's manualRevision is the only CAS token, incremented on manual writes; snapshot imports do not reset it.
 
 ## 4. Definition of Done для кожного наступного блоку
 
