@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #24 (v2.24). **Поточний кандидат:** PR #25 (v2.25), пакет компактності та незалежних offline A/B метрик; human gold-case UAT окремо.  
+**Базовий код:** `main` після PR #25 (v2.25). **Поточний кандидат:** PR #26 (v2.26), продуктовий аудит UX + локальна швидкість/надійність/тести; реальний human UAT окремо.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -87,6 +87,102 @@
 | INF-03 | P3 | DEFERRED | Real unattended scheduling and live model setup | Does not block local Codex project |
 | INF-04 | P3 | DEFERRED | Formal secrets manager, brand/legal approvals | Production security gate |
 
+## 2A. Продуктивність BA: UX/UI, швидке виконання, performance, reliability і повне покриття
+
+**Пріоритизація:** P0 = довіра до пріоритетів, цілісність даних, швидка критична дія, відсутність блокувального лагу; P1 = прискорення типового потоку; P2 = polish/операційна підтримка після UAT. `NEXT` = кандидат наступного PR, не реалізовано. Зміни не мають порушувати незмінні інваріанти §0.
+
+| ID | P | Стан | Результат для користувача | Acceptance / proof |
+|---|---|---|---|---|
+| QUICK-01 | P0 | NEXT | Показати одну однозначну Next Action above the fold, не розгортати 4 секції | ≤5 с comprehension; J-03, J-06; KEEP existing page |
+| QUICK-02 | P0 | NEXT | Copy verified Jira description + Save/Next у спільному маршруті | ≤5 intentional actions; zero Jira write; J-03/J-08 |
+| QUICK-03 | P0 | PLANNED | Відділити Copy/Open Mail від фактичної Sent/Delivered події | Human confirmation and timestamp; no fabricated delivery proof |
+| QUICK-04 | P1 | PLANNED | Зберегти короткі recipient/method/ZIP readiness checks перед mailto | No false ready for missing ZIP/method/recipient; J-04 |
+| QUICK-05 | P1 | PLANNED | Batch quick handoffs тільки у межах коректного lane | Sprint/WRITE contract unchanged; reordering by time opt-in only |
+| QUICK-06 | P1 | PLANNED | Reversible manual Done / Undo без зовнішніх API записів | Cancel/reverse with preserved notes; J-08 |
+| QUICK-07 | P1 | PLANNED | Compact card action/proof line без шуму з чіпів | User 5-second scan, no loss of proof status |
+| QUICK-08 | P2 | PLANNED | Кандидатні шаблони для повторюваних дрібних BA задач | Template never invents source/method; gold QA |
+| FOCUS-01 | P0 | NEXT | Зберігати selected task і позицію списку при оновленні | No jump on background import, user edits preserved; J-07 |
+| FOCUS-02 | P0 | PLANNED | Відновлення scroll, open details, cursor при поверненні | Resume p95 goal ≤45 s; browser UAT |
+| FOCUS-03 | P1 | PLANNED | Keyboard shortcuts Next / Search / Copy / Save із захистом input focus | Keyboard-only critical path A-01; no destructive collision |
+| FOCUS-04 | P1 | PLANNED | Розділити high-signal інфо та deep evidence в existing details | No extra tabs/modes; J-03/J-06 |
+| FOCUS-05 | P1 | PLANNED | Sticky next-action/progress microheader в існуючій detail pane | No page redesign; responsive A-03/A-04 |
+| FOCUS-06 | P1 | PLANNED | Захист від фонових тостів/DOM rerender під час набору тексту | No focus loss, cursor jump, stale overwrite |
+| FOCUS-07 | P2 | PLANNED | Pin personal deep-work task без зміни official Jira priority | Manual pin only within lane; clear override and reset |
+| FOCUS-08 | P2 | PLANNED | Відновити фокус після bulk dialog/mailto/error | A-01/A-11; action accessible |
+| PRIOR-01 | P0 | NEXT | EffortEstimate XS/S/M/L/XL/UNKNOWN, provenance and confidence | Human-reviewed or source-derived; never business truth guess |
+| PRIOR-02 | P0 | NEXT | Explain order: sprint → real WRITE → signal → score → blocker | Ranking reason for 100% selected tasks; J-02 |
+| PRIOR-03 | P0 | PLANNED | Hard invariant tests for all sprint/WRITE/Done/stale permutations | Property-based synthetic test set, no cross-lane promotion |
+| PRIOR-04 | P1 | PLANNED | Visible quick win candidates only in same hard-priority bucket | Time benefit cannot overtake urgent sprint/blocker |
+| PRIOR-05 | P1 | PLANNED | Separate impact, urgency, effort and unblocking from arbitrary speed score | Explainable, human acceptance > 90% ordering confidence |
+| PRIOR-06 | P1 | PLANNED | Waiting sweep follow-up due date and owner with no repeat letter | Due status visible, source-backed, J-05 |
+| PRIOR-07 | P2 | PLANNED | Time-to-handoff metrics by real work archetype | Local opt-in, no PII, no cloud telemetry |
+| PRIOR-08 | P2 | PLANNED | Feedback on wrong priority captured as manual correction | Never silently retrain queue ranking; human UAT |
+| PRIOR-09 | P2 | PLANNED | Show weekly WIP / blockers / completion versus rework | Not a gamified Done count, J-01 |
+| UI-05 | P1 | PLANNED | Density and hierarchy audit at 320/768/1440 viewport | A-03; no horizontal overflow/hidden primary action |
+| UI-06 | P1 | PLANNED | Clear statuses saved, unsaved, saving, failed, stale | A-07/A-12 and race tests |
+| UI-07 | P1 | PLANNED | Distinct empty / unavailable / permissions / stale / no matches states | Correct recovery action in each state |
+| UI-08 | P2 | PLANNED | Readable PNR/field/code formatting and safe wrapping | No truncation in clipboard/export, A-06 |
+| UI-09 | P2 | PLANNED | Default collapsed evidence sections after human 5-sec test | Keep main results visible, never bury next action |
+| UI-10 | P2 | PLANNED | Visual diff regression for existing layout and copy buttons | Snapshot on 3 viewport sizes; no brand approval bypass |
+| PERF-01 | P0 | IMPLEMENTED (v2.26 code; live measurements pending) | Monotonic SQLite revision + light task token endpoint | P-01..P-08 + HTTP auth and payload reduction |
+| PERF-02 | P0 | IMPLEMENTED (v2.26 code; browser UAT pending) | Load full tasks only on revision change, hidden tab idle | P-02/P-11/P-12, no false staleness |
+| PERF-03 | P0 | IMPLEMENTED (v2.26 code; browser UAT pending) | Skip expensive no-query search path and early reject | P-09/P-10, Unicode and sprint regression |
+| PERF-04 | P1 | NEXT | Debounced full-text search with cached per-snapshot index | Search p95 target ≤100 ms at 1000 rich tasks |
+| PERF-05 | P1 | PLANNED | Event delegation and scrolling for large task list | No focus/aria regression; compare 500/1000 |
+| PERF-06 | P1 | PLANNED | Cache full server serialized task read by committed revision | Atomic invalidation on import/save; concurrent tests |
+| PERF-07 | P1 | PLANNED | Benchmark browser cold/warm, DOM scripting/paint, 8h session | Named Windows machine p50/p95, memory trend |
+| PERF-08 | P1 | PLANNED | Avoid repeated heavyweight detail fetch on list refresh | Fetch selected only on selection/revision, compare versions |
+| PERF-09 | P2 | PLANNED | Simplify 1374-line CSS cascade after visual/a11y regression | No unexpected fonts/spacing/contrast changes |
+| PERF-10 | P2 | PLANNED | Evaluate SQLite WAL, busy timeouts and JSON index with empirical trace | Do not enable blindly; Windows/backup compatibility |
+| REL-01 | P0 | NEXT | Per-task optimistic concurrency token and stale edit conflict UX | Two tabs cannot silently overwrite each other's note/draft |
+| REL-02 | P0 | NEXT | Atomic user-draft recovery and edit revision validation | Forced close/reopen/reload leaves acknowledged edits intact |
+| REL-03 | P0 | NEXT | Safe backup/restore of private SQLite + manifest without export secrets | Crash drill, documented recovery and permissions |
+| REL-04 | P1 | PLANNED | Watcher failure/retry diagnostics without toast spam | No error swallowed; error state shown, P-12 |
+| REL-05 | P1 | PLANNED | Graceful server shutdown and restart during import | No database damage/partial save, Windows UAT |
+| REL-06 | P1 | PLANNED | Data validation and schema migration matrix across releases | v2.23→current, old DB revision initialized once |
+| REL-07 | P1 | PLANNED | Retry strategy for recoverable local API failures with idempotency | No duplicate mailto or Done, bounded retry |
+| REL-08 | P1 | PLANNED | OS folder permissions/encryption checks for private local ZIP | Fail closed/notice for insecure ACL configuration |
+| REL-09 | P2 | PLANNED | Bound old history/reports while preserving important user audit | No unexpected data deletion, archive user-approved |
+| REL-10 | P2 | PLANNED | Safe signed release/backup metadata and rollback rehearsal | Verify hashes; old app loads additive migration |
+| A11Y-01 | P1 | NEXT | Keyboard full quick-task flow + shortcuts usability | A-01/J-03/J-08 with focus protection |
+| A11Y-02 | P1 | NEXT | 200%-400% zoom and 320px mobile acceptance | A-03/A-04; primary actions reachable |
+| A11Y-03 | P1 | PLANNED | Screen reader semantics for task list, selected and status | A-02, announcements not noisy |
+| A11Y-04 | P1 | PLANNED | Bulk email dialog focus trap/return, escape | A-11; no unintended send |
+| A11Y-05 | P2 | PLANNED | Forced color/high contrast and reduced-motion support | A-05/A-10 |
+| A11Y-06 | P2 | PLANNED | Readable labels/tooltips without mouse hover | A-09 and touch accuracy |
+| QA-09 | P0 | NEXT | Synthetic 100/500/1000 browser E2E performance baseline | Windows DevTools p95 + startup/long session |
+| QA-10 | P0 | NEXT | Human observation of 5 BA task archetypes, repeated runs | TTNA/TTSH/MRI with 0 critical false-ready decisions |
+| QA-11 | P0 | NEXT | Cross-tab edits, stale conflict and crash recovery integration | P-15/P-17/P-18, 0 silent overwrite |
+| QA-12 | P1 | NEXT | DOM behavior tests with approved Playwright/browser runner | Focus, click, screenreader, history, network reconnect |
+| QA-13 | P1 | PLANNED | Local-only 20–30 real-case semantic BA handoff study | Actual independent gold scores, not CI counts |
+| QA-14 | P1 | PLANNED | Quantified code/branch coverage baseline, gaps by critical path | No invented 100%; dev-only tooling approval |
+| QA-15 | P2 | PLANNED | Scheduled offline regression drill on diverse machine profiles | OS, Python version, locale, browser, power mode |
+| OPS-01 | P1 | NEXT | Standard synthetic performance smoke + fixed cohort sizes | Repeatable local script and measurement doc |
+| OPS-02 | P1 | PLANNED | Private local diagnostic bundle with PII redaction and consent | No production logs by default; explicit export |
+| OPS-03 | P1 | PLANNED | Version/upgrade and roll-back steps for local task scheduler | Main merge does not update installed local copy |
+| OPS-04 | P2 | PLANNED | Error budget dashboard for local app only, opt-in | No remote telemetry or background transfer |
+| OPS-05 | P2 | PLANNED | Daily clean startup health checklist with offline fallback | Speed and accurate stale flags |
+| SEC-01 | P0 | NEXT | Cross-tab and concurrent browser save authorization plus revision CAS | No CSRF/security relaxation |
+| SEC-02 | P1 | PLANNED | Full localhost/cloud auth tests for new small endpoints | Host restrictions and current OIDC origin untouched |
+| SEC-03 | P1 | PLANNED | No personal/Jira/source content in perf report or public CI | Synthetic samples only; cross-check on PR |
+| SEC-04 | P2 | PLANNED | Browser storage retention and private recovery data review | No stale PII in unsafe storage without retention policy |
+
+**Визначення effort (не змінює Jira/score):** XS ≤2 хв, S 2–5 хв, M 5–20 хв, L 20–60 хв, XL >60 хв, UNKNOWN. Estimate — окремий факт із confidence/джерелом, а не прибуток у priority formula. Реальний WRITE залишається попереду інших сигналів у тому самому sprint/backlog lane. High-risk blockers залишаються вищими за номінальний quick win при однакових нормативних пріоритетах.
+
+**Критичні критерії:** не втрачено manual edit; нуль false claims у human gold set; та сама активна sprint послідовність; без external writes/send; P95 interaction зафіксовано на вказаному Windows hardware, а не вигадано. `docs/PRODUCTIVITY_UX_AUDIT.md` містить продуктовий аналіз, `docs/LOCAL_PERFORMANCE_RELIABILITY.md` — технічні SLO/бенчмарки, `docs/UX_TEST_COVERAGE_MATRIX.md` — тестовий evidence matrix. Загалом **73 нових конкретних backlog items**, включно з частково реалізованими PERF-01..03.
+
+### Групування наступних PR після продуктової оцінки
+
+1. **#26 current: PERF-01/02/03 + OPS-01 + QA coverage:** протокол зміни ревізії, пошук без зайвої роботи, синтетичний benchmark, інтеграційні тести і цей повний audit; без UI-перебудови.
+2. **#27 recommended: REL-01/02 + SEC-01 + QA-11:** per-task revision compare-and-swap, recovery, two-tab conflict notice and undo, щоб виключити last-writer-wins.
+3. **#28 recommended: QUICK-01/02/03 + FOCUS-01 + PRIOR-02:** максимально швидкий read → verified artifact → handoff → record → next в існуючій картці; тест 5 archetypes.
+4. **#29 recommended: PRIOR-01/03/04 + QUICK-05 + QA-10:** effort-aware review hints в незмінній sprint/WRITE lane, transparent ordering and timed BA UAT.
+5. **#30 recommended: FOCUS-02/03/06 + A11Y-01/04 + UI-06:** keyboard/navigation/focus+dirty warning regression.
+6. **#31 recommended: PERF-04/05/06/07 + QA-09:** browser traces and measured large-list optimizations, WCAG/browser proof.
+7. **#32+:** A11Y-02/03/05, REL-03/04/05, UX polish, all other backlog rows; prioritize from actual field measurements and human BA gold set.
+
+**Dependency rule:** conduct QA-10 human observation before changing task ordering, manual Done behavior or showing effort as absolute truth. Browser E2E instrumentation requires approved runner, no corporate data in public CI. Do not claim full business correctness from passing synthetic tests.
+
 ## 3. Тематичні пакетні PR / порядок
 
 | Блок | Згрупований обсяг | Гейт |
@@ -99,7 +195,7 @@
 | **#14 — CODE COMPLETE; LOCAL UAT OPEN** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
 | **#15 — CODE COMPLETE; LIVE UAT OPEN** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
 | **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — MERGED; HUMAN UAT OPEN** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI green, без auto-ranking |\n| **#20 — MERGED; SECURITY UAT OPEN** | QA-08: безпечна мінімізація даних перед відправленням у схвалену модель | Synthetic prompt payload, URL/PII/secrets tests + CI |\n| **#21 — MERGED; BROWSER UAT OPEN** | EVD-13: локальний браузерний handoff JSON/XML/ZIP, прив'язка доказів до Jira fingerprint | ZIP safety, structure only, PDF explicitly unread |
-| **#22 — MERGED; LIVE UAT OPEN** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | CI on PR & main green, host ACL/encryption unverified |\n| **#23 — MERGED; HUMAN UAT OPEN** | BA-01/BA-02/OUT-01/QA-04: exact conditions, email evidence checks, dossier readiness | CI + semantic gold-case UAT, no Jira/email writes |\n| **#24 — MERGED; BROWSER UAT OPEN** | EVD-13 + BA-09 + OUT-04: local PDF/JSON/XML/ZIP text, Confluence browser handoff, verified quote cross-check | Zero raw document egress; source hash/fingerprint validation; CI + human UAT |\n| **#25 — IN PROGRESS, GROUPED** | UX-02 + QA-04 + QA-03 preflight: safe description dedup, in-place density warnings, local frozen 20–30 A/B metrics | Green CI, no actual gold-case verdict without independent human review |\n| **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
+| **#22 — MERGED; LIVE UAT OPEN** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | CI on PR & main green, host ACL/encryption unverified |\n| **#23 — MERGED; HUMAN UAT OPEN** | BA-01/BA-02/OUT-01/QA-04: exact conditions, email evidence checks, dossier readiness | CI + semantic gold-case UAT, no Jira/email writes |\n| **#24 — MERGED; BROWSER UAT OPEN** | EVD-13 + BA-09 + OUT-04: local PDF/JSON/XML/ZIP text, Confluence browser handoff, verified quote cross-check | Zero raw document egress; source hash/fingerprint validation; CI + human UAT |\n| **#25 — MERGED; REAL GOLD-SET UAT OPEN** | UX-02 + QA-04 + QA-03 preflight: safe description dedup, in-place density warnings, local frozen 20–30 A/B metrics | Green CI, no actual gold-case verdict without independent human review |\n| **#26 — IN PROGRESS, GROUPED** | UX audit + PERF-01/02/03 + OPS-01 + local regression coverage; no redesign | Synthetic 100/500/1000 benchmark, CI green; Windows human UAT remains open |\n| **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
 ## 4. Definition of Done для кожного наступного блоку
