@@ -2,6 +2,7 @@ import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalys
 import {createLogsController} from './logs.mjs';
 import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './manual-edit-policy.mjs';
+import {createDraftRecoveryStore,RETENTION_DAYS} from './draft-recovery.mjs';
 import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus}
   from './focus-navigation.mjs';
@@ -15,7 +16,10 @@ import {loadTaskActions, loadTaskHistory} from './action-history.mjs';
 
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-const LOCAL_EDITS_KEY = 'ccon-ba-desk.unsaved-forms.v2';
+const recoveryStore=createDraftRecoveryStore({
+  local:window.localStorage,session:window.sessionStorage,
+  newId:()=>window.crypto.randomUUID()
+});
 const LOCAL_VIEW_KEY = 'ccon-ba-desk.view-context.v1';
 const restoredFocusView = readViewContext();
 let tasks = [], selected = restoredFocusView.selected, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
@@ -28,7 +32,7 @@ const manualConflicts = new Map();
 const taskViews = new Map(Object.entries(restoredFocusView.views));
 const saveFailures = new Map();
 const expandedEmails = new Set();
-const recoveredForms = readRecoveredForms();
+const recoveredForms = recoveryStore.load();
 const {loadLogs} = createLogsController({api, escapeHtml, message, getSelected: () => selected});
 
 function readViewContext() {
@@ -54,9 +58,26 @@ function rememberViewContext() {
       JSON.stringify(sanitizeSessionFocus({selected,views})));
   } catch { /* A disabled session store never blocks work. */ }
 }
-function readRecoveredForms() {
-  try { const data = JSON.parse(localStorage.getItem(LOCAL_EDITS_KEY) || '{}'); return data && typeof data === 'object' ? data : {}; }
-  catch { return {}; }
+function pendingFormRecords() {
+  const records={...recoveredForms};
+  forms.forEach((form,key)=>{
+    if(isDirty(key))records[key]={...form.value,changedAt:form.changedAt,
+      baseRevision:form.baseRevision};
+    else delete records[key];
+  });
+  return records;
+}
+function updateRecoveryStatus() {
+  if (!$('recoveryState')) return;
+  const old=recoveryStore.others();
+  const pending=Object.keys(pendingFormRecords()).length;
+  $('recoveryState').textContent = recoveryStore.error || !browserRecoveryAvailable ?
+    'Браузерне відновлення недоступне. Перед закриттям збережи правки в SQLite.' :
+    'Незбережено в цій вкладці: '+pending+
+    ' · інші вкладки: '+old.length+' · старі ('+RETENTION_DAYS+'+ днів): '+
+    old.filter(x=>x.stale).length;
+  $('recoverOther').disabled = !old.length;
+  $('purgeOld').disabled = !old.some(x=>x.stale);
 }
 function normalizedDraft(value) {
   return {to:typeof value?.to === 'string' ? value.to : '', subject:typeof value?.subject === 'string' ? value.subject : '', body:typeof value?.body === 'string' ? value.body : ''};
@@ -85,11 +106,8 @@ function formFor(task) {
 function isDirty(key) { const form = forms.get(key); return !!form && JSON.stringify(form.value) !== form.base; }
 function hasUnsaved() { return [...forms.keys()].some(isDirty) || Object.keys(recoveredForms).length > 0; }
 function rememberEdits() {
-  const data = {...recoveredForms};
-  forms.forEach((form, key) => { if (isDirty(key)) data[key] = {...form.value,
-    changedAt:form.changedAt, baseRevision:form.baseRevision}; });
-  try { if (Object.keys(data).length) localStorage.setItem(LOCAL_EDITS_KEY, JSON.stringify(data)); else localStorage.removeItem(LOCAL_EDITS_KEY); }
-  catch { browserRecoveryAvailable = false; }
+  browserRecoveryAvailable=recoveryStore.persist(pendingFormRecords());
+  if ($('dataMenu')?.open) updateRecoveryStatus();
 }
 function safeUrl(value) {
   try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) ? url.href : ''; }
@@ -170,6 +188,7 @@ function selectTask(key) {
   selected = key;
   pendingDetail = false;
   updateQueueSelection(previous,key);
+  $('queueAnnouncer').textContent='Вибрано задачу '+key+'.';
   renderDetail();
   rememberViewContext();
 }
@@ -511,8 +530,10 @@ function updateFormStatus() {
   const state = conflict ? 'Конфлікт версій. Правки не перезаписано.' :
     busy ? 'Зберігаю зміни…' :
     failure ? 'Не збережено: ' + failure :
+    dirty && !browserRecoveryAvailable ?
+      'Є незбережені правки. Браузер не зміг створити резервну чернетку: збережи зміни вручну.' :
     dirty ? 'Є незбережені правки.' : '';
-  $('saved').textContent = state;
+  if ($('saved').textContent !== state) $('saved').textContent = state;
   $('saved').hidden = !state;
   $('savedIndicator').hidden = dirty || conflict || busy || !!failure;
   $('save').hidden = !dirty;
@@ -997,6 +1018,42 @@ for (const id of ['filter','signalFilter','sprintFilter']) {
     applyFilters();
   });
 }
+$('dataMenu').addEventListener('toggle',()=>{
+  if ($('dataMenu').open) updateRecoveryStatus();
+});
+$('recoverOther').addEventListener('click',()=>{
+  const others=recoveryStore.others();
+  if(!others.length){updateRecoveryStatus();return;}
+  const newest=others[0];
+  const own=pendingFormRecords();
+  const occupied=[...forms.keys()].filter(key=>isDirty(key));
+  const ready = Object.keys(own).length;
+  if (!window.confirm('Відновити до '+newest.count+' чернеток з іншої вкладки ('+
+      newest.ageDays+' днів тому)?\\nТвої '+ready+' незбережених чернеток не перезапишуться. '+
+      'Стан Jira не змінюється; перед Save буде перевірено версію. '+
+      'Якщо інша вкладка ще відкрита, вона збереже власний запис.')) return;
+  const result=recoveryStore.adopt(newest.id,own,occupied);
+  if(result.failed){message('Не вдалося зберегти відновлені чернетки у браузері.',true);return;}
+  Object.assign(recoveredForms,result.added);
+  const restored=Object.keys(result.added).length;
+  // On a previously opened clean form, prefer not to silently replace even
+  // in-memory defaults. The import remains visible after re-select/reload.
+  message('Відновлено '+restored+' чернеток. Пропущено конфліктних: '+
+    result.skipped.length+'. Перевір кожну та збережи вручну.'); 
+  updateRecoveryStatus();
+  $('dataMenu').open=false;
+  renderList();
+});
+$('purgeOld').addEventListener('click',()=>{
+  const old=recoveryStore.others().filter(item=>item.stale);
+  if(!old.length)return updateRecoveryStatus();
+  if(!window.confirm('Назавжди видалити '+old.length+' наборів чернеток з інших вкладок '+
+    'старших за '+RETENTION_DAYS+' днів? Їхній незбережений текст не можна повернути '+
+    'з SQLite backup. Дія НЕ торкнеться цієї вкладки.'))return;
+  const result=recoveryStore.clearExpired();
+  updateRecoveryStatus();
+  message('Видалено '+result.cleared+' застарілих наборів. Залишилось: '+result.remaining+'.');
+});
 $('import').addEventListener('click', async () => {
   $('dataMenu').open = false;
   $('import').disabled = true;
