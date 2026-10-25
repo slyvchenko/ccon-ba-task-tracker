@@ -124,3 +124,11 @@ remain absent. See `docs/CLOUD_PILOT_RUNBOOK.md`.
 `assets/dashboard.mjs` puts the current action at the top of the **same existing detail card**, no extra tabs or separate Quick/Deep mode. Copying a text changes only the clipboard and never confirms an external Jira/email operation. The shortcut stays disabled for missing, stale, BLOCKED or merely NEEDS_REVIEW reports. The original detailed review remains accessible. Both Done→Next and manual Done status require user confirmation. Existing per-task SQLite CAS continues to protect edits.
 
 On same-task refresh, selection, sidebar/main scroll and open details are retained where available; user-entered drafts are guarded by the existing form and conflict-policy mechanism. This is a UI convenience, not a semantic or live supplier validation.
+
+## v2.29: advisory effort estimates as separate local task state
+
+`desk_store.py` migrates `tasks.manual_effort` to `UNKNOWN` on old DBs. The optional `manualEffort` key is checked against exactly XS/S/M/L/XL/UNKNOWN; a save updates the value inside the existing per-task CAS transaction, preserving user notes, email drafts and status. Missing `manualEffort` on status-only or legacy saves means *no change* to the stored estimate.
+
+`assets/effort-planning.mjs` owns pure provenance-marked heuristics over **current structured analysis only**. `MANUAL/USER_SELECTED` indicates a selected band; `HEURISTIC/LOW` is a provisional guess. It offers display-only quick candidates where no source/QA gaps are present and does not alter `assets/task-rules.mjs` or the hard sprint/WRITE/signal/score/blocker priority order. Browser preview and editable band live inside the existing cards. Real task duration or efficiency gains remain unverified until human gold-case UAT.
+
+See `docs/EFFORT_PRIORITIZATION.md` for exact branch order and limitations.
