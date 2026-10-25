@@ -29,6 +29,7 @@
   "assets/reconnect-policy.mjs",
   "assets/revision-policy.mjs",
   "assets/task-rules.mjs",
+  "assets/visual-clarity.mjs",
   "ba_actions.py",
   "ba_briefing.py",
   "ba_compactness.py",
@@ -166,5 +167,6 @@
   "tests/test_storage.py",
   "tests/test_supplier_logs.py",
   "tests/test_value_mapping.py",
+  "tests/visual-clarity.test.mjs",
   "value_mapping.py"
 ]
