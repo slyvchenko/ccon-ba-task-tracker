@@ -7,6 +7,7 @@ import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus}
   from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
+import {queueSummary,conciseSnapshotInfo,statusPresentation,shouldRenderBriefing,assessmentReason} from './visual-clarity.mjs';
 import {createQueueModel,createSearchDebouncer,selectedAfterFilter} from './queue-performance.mjs';
 import {createReconnectPolicy} from './reconnect-policy.mjs';
 import {EFFORT_LABELS, effortInfo, quickWinCandidate, quickWinExplanation} from './effort-planning.mjs';
@@ -172,8 +173,11 @@ function renderList() {
   $('bulkEmail').hidden = cloudMode;
   const verified = current.filter(task => task.activeSprintStatus === 'VERIFIED').length;
   const sprintCount = current.filter(task => task.activeSprintStatus === 'VERIFIED' && task.activeSprint).length;
-  $('count').textContent = `${items.length} у списку · ${sprintCount} активний спринт · ${current.length} поточних · аналіз ${analyzed}/${current.length} · короткі кандидати ${potentialQuick} (без зміни черги)` +
-    (verified < current.length ? ' · спринт ще не підтверджено' : '');
+  const summary=queueSummary({visible:items.length,sprint:sprintCount,
+    write:mailCount,active:current.length,analyzed,quick:potentialQuick,
+    unverified:current.length-verified});
+  $('count').textContent=summary.primary;
+  $('countDetails').textContent=summary.diagnostics;
   let previousGroup = '';
   $('list').innerHTML = items.map((task, index) => {
     const scope = ['Активний спринт · головна черга', 'Поза активним спринтом / не підтверджено', 'Завершені', 'Архів'][priorityLane(task)];
@@ -227,9 +231,7 @@ function sourceMarkup(analysis) {
 }
 
 function briefingMarkup(briefing, stale) {
-  if (!briefing || typeof briefing !== 'object') {
-    return '<section class="panel ba-brief"><h3>Ситуація за 30 секунд</h3><p class="muted">Структурований BA-брифінг ще не підготовлено. Перевір поточний аналіз та джерела нижче.</p></section>';
-  }
+  if (!shouldRenderBriefing(briefing)) return '';
   const readiness = {
     READY_FOR_REVIEW:'Чернетка готова до перевірки BA',
     NEEDS_CONFIRMATION:'Є відкриті рішення',
@@ -367,12 +369,20 @@ function renderDetail() {
   const ranking = priorityExplanation(task);
   const effort = effortInfo({...task, manualEffort:form.manualEffort});
   const potentialQuick = quickWinCandidate({...task, manualEffort:form.manualEffort});
+  const statusView=statusPresentation({jiraStatus:task.jiraStatus,manualStatus:form.manualStatus,
+    manualLabel:STATUS_LABELS[form.manualStatus],activeSprintStatus:task.activeSprintStatus,
+    activeSprint:task.activeSprint,activeSprintNames:task.activeSprintNames||[],
+    active:task.active,blocking:task.blocking,email,waiting,
+    waitingLabel:manualWaiting?'Очікуємо за моїм статусом':
+      'Очікуємо: '+(analysis.waitingOnUk||'адресат не вказаний'),
+    isWrite:effectiveSignal(task)==='WRITE'});
+  const reason=assessmentReason(analysis.reasonUk);
   $('detail').innerHTML = `
     <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span><span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
     <h2>${escapeHtml(task.summary)}</h2>
-    <div class="task-badges signal-strip task-meta" aria-label="Статус Jira, листування та очікування"><span class="badge">Jira: ${escapeHtml(task.jiraStatus || 'Не вказано')}</span>${task.activeSprintStatus === "VERIFIED" ? `<span class="badge ${task.activeSprint ? 'tone-blue' : 'tone-gray'}">${escapeHtml(task.activeSprint ? 'Активний спринт: ' + (task.activeSprintNames || []).join(', ') : 'Поза активним спринтом')}</span>` : '<span class="badge tone-amber">Активний спринт не підтверджено</span>'}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${!task.active ? '<span class="badge tone-gray">Відсутня в останньому snapshot · стан збережений</span>' : ''}
-      ${effectiveSignal(task) === 'WRITE' && email === true ? '' : `<span class="signal-text text-${email === true ? 'blue' : email === false ? 'green' : 'gray'}">${email === true ? 'Потрібен лист' : email === false ? 'Лист не потрібен' : 'Потребу в листі не визначено'}</span>`}
-      <span class="signal-text text-${waiting === true ? 'red' : waiting === false ? 'green' : 'gray'}">${escapeHtml(waiting === true ? manualWaiting ? 'Очікуємо за моїм статусом' : 'Очікуємо: ' + (analysis.waitingOnUk || 'адресат не вказаний') : waiting === false ? 'Не очікуємо' : 'Очікування не визначено')}</span>
+    <div class="task-meta-compact" aria-label="Джерело станів задачі">
+      <span class="task-status-provenance">${statusView.provenance.map(value=>'<span>'+escapeHtml(value)+'</span>').join('<span aria-hidden="true"> · </span>')}</span>
+      ${statusView.alerts.length?'<span class="task-status-alerts">'+statusView.alerts.map(value=>'<span class="badge tone-amber">'+escapeHtml(value)+'</span>').join('')+'</span>':''}
     </div>
     <section class="panel quick-handoff" aria-label="Найближча дія та швидка передача">
       <div class="section-label">Що зробити зараз</div>
@@ -398,8 +408,7 @@ function renderDetail() {
     <div class="detail-grid">
       <div>
         <section class="panel analysis-lead" aria-label="Пояснення та наступна дія">
-          <div class="section-label">Чому така оцінка</div>
-          <p class="pre assessment-reason">${escapeHtml(analysis.reasonUk || (stale ? 'Попередні висновки не підтверджені новим контекстом. Потрібен повторний аналіз.' : 'Щоденний аналіз ще не підготовлений.'))}</p>
+          ${reason?'<div class="section-label">Підстава оцінки</div><p class="pre assessment-reason">'+escapeHtml(reason)+'</p>':''}
           ${priorityBreakdown(analysis)}
           <details class="description"><summary>Мій план дій і наступна перевірка</summary>
             <div id="actionPlan" class="muted">Завантажую план…</div>
@@ -913,7 +922,7 @@ function detailInteractionFocused() {
   return $('detail').contains(document.activeElement);
 }
 function updateSnapshotInfo() {
-  $('snapshotInfo').textContent = latest ? tasks.filter(task => task.active).length + ' задач · ' + tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length + ' листів · Оновлено ' + dateLabel(latest.generated_at) : 'Очікую snapshot';
+  $('snapshotInfo').textContent = conciseSnapshotInfo(latest,dateLabel);
 }
 async function load() {
   const request = ++loadRequest;
