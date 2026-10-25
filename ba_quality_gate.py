@@ -224,7 +224,8 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
         analysis.get("emailDraft"), attachment_ready=attachment_ready,
         verified_supplier_method=supplier_method)
     # Reserve space for generated-output warnings, even when source review has many findings.
-    findings = (output_findings + source_findings + qa_findings + writing_findings)[:MAX_FINDINGS]
+    findings = (output_findings + source_findings + qa_findings +
+                writing_findings + compact_findings)[:MAX_FINDINGS]
     if not claims:
         findings.append({"code": "NO_CONFIRMED_SOURCE_CLAIMS", "ref": "briefing",
                          "messageUk": "Немає підтверджених фактів або правил із перевірюваним джерелом."})
