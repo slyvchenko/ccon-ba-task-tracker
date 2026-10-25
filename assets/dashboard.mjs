@@ -34,7 +34,12 @@ function readViewContext() {
 }
 function storeCurrentTaskView() {
   if (renderedTaskKey && document.getElementById('detail')?.hasChildNodes()) {
-    taskViews.set(renderedTaskKey, captureTaskView($('detail')));
+    const previous = taskViews.get(renderedTaskKey);
+    const current = captureTaskView($('detail'));
+    const activeFocus = captureEditorFocus(document.activeElement, $('detail'));
+    taskViews.set(renderedTaskKey, {
+      ...current,...((activeFocus || previous?.focus) ? {focus:activeFocus || previous.focus} : {})
+    });
     if (taskViews.size > 12) taskViews.delete(taskViews.keys().next().value);
   }
 }
@@ -285,7 +290,8 @@ function renderDetail() {
     return;
   }
   const retainPosition = renderedTaskKey === task.key;
-  const state = retainPosition ? captureTaskView($('detail')) : taskViews.get(task.key);
+  const state = retainPosition ? {...captureTaskView($('detail')),
+    focus:taskViews.get(task.key)?.focus} : taskViews.get(task.key);
   const focusedEditor = retainPosition ? captureEditorFocus(document.activeElement, $('detail')) : null;
   const analyzed = hasAnalysis(task), stale = analysisIsStale(task), analysis = analyzed ? analysisOf(task) : {};
   const form = formFor(task).value, info = signalInfo(task), url = safeUrl(task.url);
@@ -408,7 +414,8 @@ function renderDetail() {
   // Renders triggered by Save must preserve an active note/email caret.
   // A background refresh intentionally doesn't rerender while the editor
   // is focused; this also safely handles explicit same-task rerenders.
-  restoreEditorFocus($('detail'), focusedEditor);
+  restoreEditorFocus($('detail'), focusedEditor || state?.focus,
+    {focusElement:Boolean(focusedEditor)});
   ['note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener('input', captureForm));
   $('manualEffort').addEventListener('change', captureForm);
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
@@ -960,7 +967,14 @@ window.addEventListener('beforeunload', event => {
   if (hasUnsaved()) { event.preventDefault(); event.returnValue = ''; }
 });
 window.addEventListener('pagehide', rememberViewContext);
-$('detail').addEventListener('focusout', () => {
+$('detail').addEventListener('focusout', event => {
+  // Preserve the caret when the user switches from an unfinished deep task
+  // to the queue. This stores positions, never the content of the edit.
+  const cursor = captureEditorFocus(event.target, $('detail'));
+  if (cursor && renderedTaskKey) {
+    const existing = taskViews.get(renderedTaskKey) || captureTaskView($('detail'));
+    taskViews.set(renderedTaskKey,{...existing,focus:cursor});
+  }
   // Finish deferred snapshot refresh only after moving away from the editor.
   setTimeout(() => {
     if (!busy && pendingDetail && !isDirty(selected) && !detailInteractionFocused())
