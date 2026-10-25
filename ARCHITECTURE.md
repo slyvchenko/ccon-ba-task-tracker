@@ -103,3 +103,16 @@ analyses and atomically publishes a complete output set;
 `cloud_scheduler.py` tracks successful Warsaw calendar dates.
 External Jira/Confluence write operations and auto-send email
 remain absent. See `docs/CLOUD_PILOT_RUNBOOK.md`.
+
+## v2.26: швидка локальна робота з великою чергою
+
+- `desk_store.py`: `state_revision` з одним монотонним інкрементом **у транзакції** snapshot import / manual save. Невдала або повторна операція не змінює revision. `Desk.revision()` читає тільки одне число, а не декодує всі JSON-снапшоти.
+- `server.py`: новий приватний GET `/api/tasks/revision` із тим самим auth/host/CSP контрактом, що й `/api/tasks`. Формат: `{"revision": integer, "error": string}`. GET `/api/tasks` лишився backward compatible, має додаткове поле `revision`.
+- `assets/dashboard.mjs`, `assets/revision-policy.mjs`: після першого повного завантаження кожні 5 с у видимій вкладці перевіряється маленький токен. Повний список знову завантажується **тільки при зміні revision/error** (або невалідному токені). Background tab не опитує сервер; focus запускає перевірку. Логи оновлюються раз на ~15 с, звіт і health раз на ~30 с.
+- `assets/task-rules.mjs`: спочатку cheap predicates active/sprint/signal, а без пошукового запиту не формується довгий текст із technical rules. Hard priority sprint/WRITE/score збережений.
+- `performance_smoke.py`: синтетичний SQLite benchmark для 100/500/1000 задач, **не** браузерний результат, не корпоративний контент. У `tests/` нові Python HTTP/restart/concurrency і Node пошук/revision тести.
+- Вся UX-програма: `docs/PRODUCTIVITY_UX_AUDIT.md`, `docs/LOCAL_PERFORMANCE_RELIABILITY.md`, `docs/UX_TEST_COVERAGE_MATRIX.md` і canonical backlog у `docs/PRODUCT_BACKLOG.md`. Це **не новий режим UI** і не автоматична відправка Jira/email.
+
+### Межа перевірки
+
+Монотонна ревізія є сигналом синхронізації **лише змін, зроблених цим застосунком**; вона не замінює compare-and-swap для двох вкладок. SQLite зберігає ручний статус і нотатки, але CAS та crash-backup залишаються окремими P0. У CI немає підстав стверджувати виміряну p95 latency на Windows або семантичну якість BA.
