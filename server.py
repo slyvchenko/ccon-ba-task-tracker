@@ -319,7 +319,7 @@ def main():
         # by offline recovery. An operator cannot replace the live database.
         with pipeline_lock(Path(args.data_dir) / ".local-server"):
             return serve_locked(args, cloud, url)
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, sqlite3.Error) as error:
         print("BA Desk startup/recovery check failed: " + str(error), flush=True)
         return 1
 
