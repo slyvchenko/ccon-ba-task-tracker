@@ -9,7 +9,7 @@
 <body>
   <header>
     <div class="brand-lockup"><div class="brand-wordmark" aria-label="AERTiCKET"><span class="brand-aer">AER</span><span class="brand-ticket">TiCKET</span></div><div class="brand-desk"><h1>CCON BA Desk</h1><p class="muted">BA analysis · Sprint priorities · Evidence-based decisions</p></div></div>
-    <div class="tools"><button id="bulkEmail">Відкрити всі листи (0)</button><details id="dataMenu" class="data-menu"><summary>Дані <span aria-hidden="true">▾</span></summary><div class="data-menu-items"><button id="import">Імпортувати snapshot</button><button id="export">Експорт мого стану</button><p id="backupState" class="muted" role="status" aria-live="off">Резервування: перевірка…</p><p id="watcherState" class="muted" role="status" aria-live="off">Імпорт: перевірка…</p><a href="/api/daily-report.md" target="_blank" rel="noopener noreferrer">Щоденний звіт змін і якості</a></div></details></div>
+    <div class="tools"><button id="bulkEmail">Відкрити всі листи (0)</button><details id="dataMenu" class="data-menu"><summary>Дані <span aria-hidden="true">▾</span></summary><div class="data-menu-items"><button id="import">Імпортувати snapshot</button><button id="export">Експорт мого стану</button><p id="recoveryState" class="muted" aria-live="off">Чернетки: перевірка…</p><button id="recoverOther" class="quiet">Відновити чернетки з іншої вкладки</button><button id="purgeOld" class="quiet">Очистити застарілі чернетки</button><p id="backupState" class="muted" role="status" aria-live="off">Резервування: перевірка…</p><p id="watcherState" class="muted" role="status" aria-live="off">Імпорт: перевірка…</p><a href="/api/daily-report.md" target="_blank" rel="noopener noreferrer">Щоденний звіт змін і якості</a></div></details></div>
   </header>
   <div id="statusbar" class="statusbar" role="status" aria-live="polite"><span id="message"></span><span id="snapshotInfo"></span></div>
   <div id="deltaStrip" class="delta-strip" role="status" aria-live="polite" hidden></div>
@@ -22,16 +22,16 @@
           <select id="signalFilter" aria-label="Тип дії"><option value="all">Усі типи дій</option><option value="READY">Можна працювати</option><option value="WRITE">Написати листа</option><option value="DECIDE">Потрібне рішення</option><option value="REVIEW">Проаналізувати</option><option value="WAIT">Очікуємо</option></select>
         </div>
         <select id="sprintFilter" aria-label="Приналежність до активного спринту"><option value="all">Усі спринти та беклог</option><option value="active">Активний спринт</option><option value="outside">Поза активним спринтом</option><option value="unverified">Спринт не підтверджено</option></select>
-        <span id="count" class="muted"></span>
+        <span id="count" class="muted"></span><p id="queueAnnouncer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
         <details class="keyboard-guide"><summary>Швидкі клавіші</summary>
           <p><kbd>/</kbd> пошук · <kbd>Alt+↓</kbd>/<kbd>Alt+↑</kbd> наступна/попередня задача</p>
           <p><kbd>Alt+C</kbd> копіювати наступну дію · <kbd>Ctrl+Enter</kbd> зберегти правки у формі</p>
           <p class="muted">Навігація не працює під час набору тексту або у вікні листів. Jira та пошта не змінюються автоматично.</p>
         </details>
       </div>
-      <div id="list"></div>
+      <div id="list" role="region" aria-label="Черга задач із клавіатурною навігацією" aria-describedby="count" tabindex="-1"></div>
     </aside>
-    <main id="detail" aria-label="Обрана задача"></main>
+    <main id="detail" aria-label="Обрана задача" tabindex="-1"></main>
   </div>
   <dialog id="bulkDialog" aria-labelledby="bulkTitle">
     <h3 id="bulkTitle">Чернетки для Outlook</h3>
