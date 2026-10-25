@@ -7,6 +7,7 @@ import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus}
   from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
+import {handoffCopyPolicy,mailActionLabels} from './handoff-ui-policy.mjs';
 import {queueSummary,conciseSnapshotInfo,statusPresentation,shouldRenderBriefing,assessmentReason} from './visual-clarity.mjs';
 import {createQueueModel,createSearchDebouncer,selectedAfterFilter} from './queue-performance.mjs';
 import {createReconnectPolicy} from './reconnect-policy.mjs';
@@ -168,7 +169,7 @@ function renderList() {
   const items = visibleTasks(), current = tasks.filter(task => task.active), analyzed = current.filter(hasAnalysis).length;
   const mailCount = tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length;
   const potentialQuick = current.filter(quickWinCandidate).length;
-  $('bulkEmail').textContent = `Відкрити всі листи (${mailCount})`;
+  $('bulkEmail').textContent = `${mailActionLabels().batch} (${mailCount})`;
   $('bulkEmail').disabled = !mailCount || busy;
   $('bulkEmail').hidden = cloudMode;
   const verified = current.filter(task => task.activeSprintStatus === 'VERIFIED').length;
@@ -369,6 +370,8 @@ function renderDetail() {
   const ranking = priorityExplanation(task);
   const effort = effortInfo({...task, manualEffort:form.manualEffort});
   const potentialQuick = quickWinCandidate({...task, manualEffort:form.manualEffort});
+  const handoff=handoffCopyPolicy({description:quick.description,
+    readyForCopy:quick.readyForCopy,qualityState:quick.state});
   const statusView=statusPresentation({jiraStatus:task.jiraStatus,manualStatus:form.manualStatus,
     manualLabel:STATUS_LABELS[form.manualStatus],activeSprintStatus:task.activeSprintStatus,
     activeSprint:task.activeSprint,activeSprintNames:task.activeSprintNames||[],
@@ -389,15 +392,15 @@ function renderDetail() {
       <p class="pre next-action" id="nextText">${escapeHtml(quick.nextAction || (stale ? 'Онови аналіз за актуальним контекстом Jira, перш ніж діяти.' : 'Перевір контекст і сформуй конкретну дію.'))}</p>
       <div class="actions quick-handoff-actions">
         ${quick.nextAction ? '<button id="copyNext" class="quiet">Скопіювати дію</button>' : ''}
-        ${quick.description ? `<button id="copyFastDescription" class="quiet" ${quick.readyForCopy ? '' : 'disabled'}>Скопіювати Jira-чернетку</button>` : ''}
+        ${handoff.showFastCopy ? `<button id="copyFastDescription" class="quiet" ${handoff.fastEnabled ? '' : 'disabled'}>${escapeHtml(handoff.fastLabel)}</button>` : ''}
       </div>
       <p class="muted quick-proof-note">${escapeHtml(quick.evidenceNote)}</p>
-      <p class="muted effort-summary">${escapeHtml('Обсяг: ' + effort.label +
-        (effort.source === 'MANUAL' ? ' · моя оцінка' : ' · автоматична гіпотеза, низька впевненість') +
-        '. ' + effort.reason)}
-        ${potentialQuick ? '<span class="effort-hint">Кандидат короткої дії, не новий пріоритет</span>' : ''}
-      </p>
-      <details class="description"><summary>Чому задача в цій позиції черги</summary>
+      <details class="description"><summary>Пріоритет і орієнтовний обсяг</summary>
+        <p class="muted effort-summary">${escapeHtml('Обсяг: ' + effort.label +
+          (effort.source === 'MANUAL' ? ' · моя оцінка' : ' · автоматична гіпотеза, низька впевненість') +
+          '. ' + effort.reason)}
+          ${potentialQuick ? '<span class="effort-hint">Кандидат короткої дії, не новий пріоритет</span>' : ''}
+        </p>
         <ol class="brief-list">${ranking.sourceOrder.map(item => '<li>' + escapeHtml(item) + '</li>').join('')}</ol>
         <p class="muted">Порядок: активний спринт, потреба в листі, тип дії, оцінка та блокування. Копіювання не змінює Jira.</p>
       </details>
@@ -429,7 +432,7 @@ function renderDetail() {
           <div class="section-label">На чому ґрунтується оцінка</div>
           ${sourceMarkup(analysis)}
           ${qualityGateMarkup(analysis.qualityGate)}
-          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? '<button id="copyDescription" class="quiet">Скопіювати опис</button> <button id="approveDescription" class="quiet">Схвалити опис</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details>
+          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? (handoff.showFallbackCopy ? '<button id="copyDescription" class="quiet" title="'+escapeHtml(handoff.warning)+'">'+escapeHtml(handoff.fallbackLabel)+'</button> ' : '') + '<button id="approveDescription" class="quiet">'+escapeHtml(handoff.approvalLabel)+'</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details>
           ${previousAnalysisMarkup(task)}
           <details class="description"><summary>Історія змін задачі</summary>
             <div id="taskHistory" class="muted">Завантажую історію…</div>
@@ -474,7 +477,7 @@ function renderDetail() {
           <label for="draftSubject">Тема</label><input id="draftSubject" maxlength="2000" placeholder="Тема листа" value="${escapeHtml(form.emailDraft.subject)}">
           <label for="draftBody">Текст листа</label><textarea id="draftBody" maxlength="50000" placeholder="Чернетка за описом, коментарями та відкритими питаннями задачі…">${escapeHtml(form.emailDraft.body)}</textarea>
           <section id="emailLogs" class="email-logs" aria-label="Логи до листа"><div class="logs-heading"><h4>Логи до листа</h4></div><p class="muted" role="status">Перевіряю архіви задачі…</p></section>
-          <div class="actions"><button id="copyEmail" class="quiet">Скопіювати лист</button><button id="email" class="primary">Відкрити в пошті ↗</button></div>
+          <div class="actions"><button id="copyEmail" class="quiet">${escapeHtml(mailActionLabels().copy)}</button><button id="email" class="primary">${escapeHtml(mailActionLabels().open)}</button></div>
           </div>
         </details>
       </div>
@@ -495,7 +498,9 @@ function renderDetail() {
     copyText(quick.nextAction, 'Дію скопійовано. Це не означає її виконання.'));
   if ($('copyFastDescription')) $('copyFastDescription').addEventListener('click', () =>
     copyText(quick.description, 'Jira-чернетку скопійовано. Перевір факти й передай вручну.'));
-  if ($('copyDescription')) $('copyDescription').addEventListener('click', () => copyText(analysis.standardDescription, 'Чернетку опису скопійовано.'));
+  if ($('copyDescription')) $('copyDescription').addEventListener('click', () =>
+    copyText(analysis.standardDescription,
+      'Неперевірену чернетку скопійовано лише для ручного доопрацювання. Це не передача Jira.'));
   if ($('approveDescription')) $('approveDescription').addEventListener('click', async () => {
     if (!confirm('Схвалити поточний BA-опис як контрольну версію? Це не змінює Jira.')) return;
     try {
@@ -517,7 +522,7 @@ function renderDetail() {
              'Тему й текст листа скопійовано.');
   });
   $('email').addEventListener('click', openEmail);
-  if (cloudMode) $('email').textContent = 'Зберегти й скопіювати лист';
+  if (cloudMode) $('email').textContent = mailActionLabels(true).open;
   $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
   $('loadContext').addEventListener('click', () => loadContext(task.key));
   updateFormStatus();
