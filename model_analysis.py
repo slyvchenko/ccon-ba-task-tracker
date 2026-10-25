@@ -18,6 +18,7 @@ from ba_briefing import validate_briefing
 from desk_store import Desk
 from priority_score import validate_priority_factors
 from prompt_safety import sensitive_key, strip_sensitive_text
+from jira_attachments import evidence_for_model
 from schema import validate_analysis
 from storage import write_json
 
@@ -356,7 +357,7 @@ def evidence_for_issue(root, key, limit=30):
     return reports, signature
 
 
-def task_source(context, task, notes, evidence_reports=None, investigation=None):
+def task_source(context, task, notes, evidence_reports=None, investigation=None, root=None):
     key = task["key"]
     issue = context["issues"][key]
     related = {ref["linkedKey"]: context.get("issues", {}).get(ref["linkedKey"]) or
@@ -368,6 +369,7 @@ def task_source(context, task, notes, evidence_reports=None, investigation=None)
         "unavailableLinkedIssues": [v for v in context.get("unavailableLinkedIssues", [])
                                    if v.get("key") in related],
         "evidenceReports": evidence_reports or [],
+        "attachmentEvidence": evidence_for_model(root, key, issue) if root is not None else [],
         "errorSeriesInvestigation": investigation or {},
         "sprint": {"active": task.get("activeSprint"),
                    "verification": task.get("activeSprintStatus"),
@@ -449,10 +451,14 @@ def analyze_all(root=ROOT, model_call=request_analysis, issue_key=None):
             except ValueError:
                 investigation = {"causality": "INSUFFICIENT_SOURCE",
                                  "questionsUk": ["Серійний аналіз не може бути перевірений за поточними evidence manifests."]}
-        source = task_source(context, task, notes, log_reports, investigation)
+        source = task_source(context, task, notes, log_reports, investigation, root=root)
+        attachment_version = ("none" if not source["attachmentEvidence"] else
+                              hashlib.sha256(json.dumps(source["attachmentEvidence"],
+                              sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16])
         sprint_version = sprint_cache_version(source)
         if (issue_key is None and previous.get("contextFingerprint") == fingerprint and
                 previous.get("evidenceVersion", "none") == evidence_version and
+                previous.get("attachmentEvidenceVersion", "none") == attachment_version and
                 previous.get("sprintVersion") == sprint_version and
                 not previous.get("stale") and
                 previous.get("promptVersion") == prompt_version and
@@ -470,6 +476,7 @@ def analyze_all(root=ROOT, model_call=request_analysis, issue_key=None):
         analysis["manualNoteVersion"] = note_hash
         analysis["sprintVersion"] = sprint_version
         analysis["evidenceVersion"] = evidence_version
+        analysis["attachmentEvidenceVersion"] = attachment_version
         validate_analysis(analysis)
         analyses[key] = analysis
         generated += 1
