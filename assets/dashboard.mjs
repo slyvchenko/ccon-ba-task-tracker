@@ -2,6 +2,7 @@ import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalys
 import {createLogsController} from './logs.mjs';
 import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './manual-edit-policy.mjs';
+import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
 import {loadTaskDecisions} from './decisions-ui.mjs';
 import {loadTaskActions, loadTaskHistory} from './action-history.mjs';
@@ -11,7 +12,7 @@ const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const LOCAL_EDITS_KEY = 'ccon-ba-desk.unsaved-forms.v2';
 let tasks = [], selected = null, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
-let signature = '', renderedTaskVersion = '', pendingDetail = false;
+let signature = '', renderedTaskVersion = '', renderedTaskKey = null, pendingDetail = false;
 let currentRevision = null, currentRevisionError = '', pollingInFlight = false, pollCycle = 0;
 const forms = new Map();
 const manualConflicts = new Map();
@@ -77,6 +78,8 @@ function signalBadge(task) {
   return `<span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(label)}</span>`;
 }
 function renderList() {
+  const previousListScroll = $('list').scrollTop;
+  const previousSidebarScroll = $('list').closest('aside')?.scrollTop || 0;
   updateSnapshotInfo();
   const items = visibleTasks(), current = tasks.filter(task => task.active), analyzed = current.filter(hasAnalysis).length;
   const mailCount = tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length;
@@ -96,6 +99,8 @@ function renderList() {
     return `${heading}<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`;
   }).join('') || '<div class="empty">Немає задач за цими фільтрами.</div>';
   $('list').querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => selectTask(button.dataset.key)));
+  $('list').scrollTop = previousListScroll;
+  if ($('list').closest('aside')) $('list').closest('aside').scrollTop = previousSidebarScroll;
 }
 function selectTask(key) {
   if (busy || selected === key) return;
@@ -236,8 +241,13 @@ function renderDetail() {
   if (!task) {
     $('detail').innerHTML = tasks.length ? '<div class="empty"><h2>Оберіть задачу з черги</h2>Зміни фільтр, щоб побачити інші задачі.</div>' : '<div class="empty"><h2>Почни зі snapshot</h2>Збережи <b>CCON_BA_Snapshot.json</b> у папку <b>inbox</b> поруч із застосунком.<br>Дані імпортуються автоматично. Ручні статуси, нотатки та збережені чернетки залишаються між днями.</div>';
     renderedTaskVersion = '';
+    renderedTaskKey = null;
     return;
   }
+  const retainPosition = renderedTaskKey === task.key;
+  const previousDetailScroll = retainPosition ? $('detail').scrollTop : 0;
+  const priorOpenDetails = retainPosition
+    ? [...$('detail').querySelectorAll('details')].map(node => node.open) : null;
   const analyzed = hasAnalysis(task), stale = analysisIsStale(task), analysis = analyzed ? analysisOf(task) : {};
   const form = formFor(task).value, info = signalInfo(task), url = safeUrl(task.url);
   const savedDraft = task.savedEmailDraft !== null && task.savedEmailDraft !== undefined;
@@ -245,6 +255,8 @@ function renderDetail() {
   const manualWaiting = ['WAITING INPUT','WAITING DEPENDENCY'].includes(task.manualStatus);
   const waiting = task.manualStatus !== 'AUTO' ? manualWaiting : analysis.waitingRequired, email = manualWaiting || task.manualStatus === 'DONE' ? false : analysis.needsEmail;
   const missing = Array.isArray(analysis.missingInfo) ? analysis.missingInfo : [];
+  const quick = quickHandoff(task);
+  const ranking = priorityExplanation(task);
   $('detail').innerHTML = `
     <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span><span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
     <h2>${escapeHtml(task.summary)}</h2>
@@ -252,6 +264,19 @@ function renderDetail() {
       ${effectiveSignal(task) === 'WRITE' && email === true ? '' : `<span class="signal-text text-${email === true ? 'blue' : email === false ? 'green' : 'gray'}">${email === true ? 'Потрібен лист' : email === false ? 'Лист не потрібен' : 'Потребу в листі не визначено'}</span>`}
       <span class="signal-text text-${waiting === true ? 'red' : waiting === false ? 'green' : 'gray'}">${escapeHtml(waiting === true ? manualWaiting ? 'Очікуємо за моїм статусом' : 'Очікуємо: ' + (analysis.waitingOnUk || 'адресат не вказаний') : waiting === false ? 'Не очікуємо' : 'Очікування не визначено')}</span>
     </div>
+    <section class="panel quick-handoff" aria-label="Найближча дія та швидка передача">
+      <div class="section-label">Що зробити зараз</div>
+      <p class="pre next-action" id="nextText">${escapeHtml(quick.nextAction || (stale ? 'Онови аналіз за актуальним контекстом Jira, перш ніж діяти.' : 'Перевір контекст і сформуй конкретну дію.'))}</p>
+      <div class="actions quick-handoff-actions">
+        ${quick.nextAction ? '<button id="copyNext" class="quiet">Скопіювати дію</button>' : ''}
+        ${quick.description ? `<button id="copyFastDescription" class="quiet" ${quick.readyForCopy ? '' : 'disabled'}>Скопіювати Jira-чернетку</button>` : ''}
+      </div>
+      <p class="muted quick-proof-note">${escapeHtml(quick.evidenceNote)}</p>
+      <details class="description"><summary>Чому задача в цій позиції черги</summary>
+        <ol class="brief-list">${ranking.sourceOrder.map(item => '<li>' + escapeHtml(item) + '</li>').join('')}</ol>
+        <p class="muted">Порядок: активний спринт, потреба в листі, тип дії, оцінка та блокування. Копіювання не змінює Jira.</p>
+      </details>
+    </section>
     <div id="staleNotice" class="saved-note" hidden></div>
     ${stale ? '<div class="analysis-missing"><b>Контекст Jira змінився — попередній аналіз застарів.</b><br>Черга й сигнали потребують нового аналізу опису, коментарів та залежностей. Твій ручний стан і збережена чернетка залишаються чинними.</div>' : !analyzed ? '<div class="analysis-missing"><b>Для цієї задачі ще немає повного аналізу українською.</b><br>Потрібно прочитати опис, коментарі й залежності. Попередній snapshot не дає достатніх підстав для нової оцінки.</div>' : ''}
     ${briefingMarkup(analyzed ? analysis.briefing : undefined, stale)}
@@ -261,9 +286,6 @@ function renderDetail() {
           <div class="section-label">Чому така оцінка</div>
           <p class="pre assessment-reason">${escapeHtml(analysis.reasonUk || (stale ? 'Попередні висновки не підтверджені новим контекстом. Потрібен повторний аналіз.' : 'Щоденний аналіз ще не підготовлений.'))}</p>
           ${priorityBreakdown(analysis)}
-          <div class="section-label">Наступна дія</div>
-          <p class="pre next-action" id="nextText">${escapeHtml(analysis.nextActionUk || (stale ? 'Онови аналіз за останнім описом, коментарями й залежностями, перш ніж діяти за старою рекомендацією.' : 'Спочатку перевір контекст задачі та визнач конкретну дію.'))}</p>
-          ${analysis.nextActionUk ? '<button id="copyNext" class="quiet">Скопіювати дію</button>' : ''}
           <details class="description"><summary>Мій план дій і наступна перевірка</summary>
             <div id="actionPlan" class="muted">Завантажую план…</div>
           </details>
@@ -300,7 +322,7 @@ function renderDetail() {
           <div class="manual-status-label"><label for="manual">Мій статус</label><details class="status-help"><summary aria-label="Як працює мій статус">ⓘ</summary><p>«Автоматично» використовує оцінку щоденного аналізу. Ручний вибір фіксує твій власний статус і має пріоритет. Вибір статусу зберігається автоматично.</p></details></div>
           <select id="manual" class="status-select tone-${statusTone(form.manualStatus, task)}">${['AUTO','IN PROGRESS','NEEDS DECISION','WAITING INPUT','WAITING DEPENDENCY','DONE'].map(value => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(STATUS_LABELS[value])}</option>`).join('')}</select>
           <label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Додай домовленість або наступний контакт…">${escapeHtml(form.note)}</textarea>
-          <div class="actions state-actions"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Готово → Далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
+          <div class="actions state-actions"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Виконано → Далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
           <div id="saved" class="save-state" role="status"></div>
           <div id="manualConflict" class="analysis-missing" role="alert" hidden>
             <b>Конфлікт ручних правок</b>
@@ -330,10 +352,21 @@ function renderDetail() {
       </div>
     </div>`;
   renderedTaskVersion = taskVersion(task);
+  renderedTaskKey = task.key;
   pendingDetail = false;
+  if (retainPosition) {
+    const details = [...$('detail').querySelectorAll('details')];
+    details.forEach((node, i) => {
+      if (i < priorOpenDetails.length) node.open = priorOpenDetails[i];
+    });
+    $('detail').scrollTop = previousDetailScroll;
+  }
   ['note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener('input', captureForm));
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
-  if ($('copyNext')) $('copyNext').addEventListener('click', () => copyText(analysis.nextActionUk, 'Наступну дію скопійовано.'));
+  if ($('copyNext')) $('copyNext').addEventListener('click', () =>
+    copyText(quick.nextAction, 'Дію скопійовано. Це не означає її виконання.'));
+  if ($('copyFastDescription')) $('copyFastDescription').addEventListener('click', () =>
+    copyText(quick.description, 'Jira-чернетку скопійовано. Перевір факти й передай вручну.'));
   if ($('copyDescription')) $('copyDescription').addEventListener('click', () => copyText(analysis.standardDescription, 'Чернетку опису скопійовано.'));
   if ($('approveDescription')) $('approveDescription').addEventListener('click', async () => {
     if (!confirm('Схвалити поточний BA-опис як контрольну версію? Це не змінює Jira.')) return;
@@ -566,6 +599,7 @@ async function saveTask(done = false) {
   if (busy) return false;
   const task = tasks.find(item => item.key === selected);
   if (!task) return false;
+  if (done && !confirm(completionPrompt(task))) return false;
   captureForm();
   const form = formFor(task);
   const value = structuredClone(form.value);
