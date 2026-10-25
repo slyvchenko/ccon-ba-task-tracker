@@ -296,3 +296,9 @@ The daily review records 0–100 score changes (and changes to the five underlyi
 ## v2.20: approved-model input minimization (QA-08)
 
 Defence in depth before the optional company-approved AI request: recursively drop credential-named fields (including camelCase/HTTP headers), strip URL query/fragment and reject URL userinfo, redact identifiable emails/phone labels, common access token formats and embedded private-key blocks. Synthetic payload tests inspect exactly what is handed to the HTTP client. Technical field names like TypeCode remain unchanged. This is **not formal DLP or authorization for real corporate-data egress**. Company permission and endpoint allowlist remain mandatory; no Jira writes or outgoing email.
+
+## v2.21: Jira attachment browser handoff and local structural inspection (EVD-13 partial)
+
+`python jira_attachments.py prepare --issue CCON-123` creates `data/jira_attachment_handoff.json` with **explicit Jira attachment IDs** and local `downloads/jira/` save targets. The already-authorized local browser must download each listed file to `saveAs`; Python does **not** open Jira URLs or extract credentials. Then `python jira_attachments.py process --issue CCON-123` inspects already-downloaded JSON/XML/ZIP with strict size, XML DTD, archive path/encryption and decompression checks. Source bytes stay private; only local hash-bound shape metadata can reach an approved model, and only while the Jira fingerprint and downloaded file hash still match.
+
+PDF contents are **not extracted** in this version (explicit `PDF_TEXT_NOT_EXTRACTED`). Confluence/wiki and any unsupported file are likewise **not read**, so no verified content claims may be made from them. Shape data is not evidence of business-correct field values or root cause; human Jira/CCON UAT still required. Neither Jira attachment contents nor customer logs belong in public GitHub.
