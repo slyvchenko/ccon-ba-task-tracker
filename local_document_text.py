@@ -75,7 +75,7 @@ def extract_text(raw, suffix, *, pdf_reader=None):
             return "TEXT_UNAVAILABLE", "", {"reason": "INVALID_XML"}
     if suffix == ".zip":
         try:
-            if not raw.startswith(b"PK\\x03\\x04"):
+            if not raw.startswith(bytes([80, 75, 3, 4])):
                 return "TEXT_UNAVAILABLE", "", {"reason": "NOT_ZIP"}
             with ZipFile(io.BytesIO(raw)) as archive:
                 items = archive.infolist()
@@ -86,7 +86,7 @@ def extract_text(raw, suffix, *, pdf_reader=None):
                 for entry in items:
                     if entry.is_dir():
                         continue
-                    name = entry.filename.replace("\\\\", "/")
+                    name = entry.filename.replace(chr(92), "/")
                     entry_path = PurePosixPath(name)
                     mode = (entry.external_attr >> 16) & 0o170000
                     total += entry.file_size
