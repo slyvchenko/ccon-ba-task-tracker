@@ -50,3 +50,7 @@
 ## Implementation note for #36
 
 VIS-02/05/08/11: single QA-checked Jira Copy visible above fold; unverified description remains available **only in detail** as clearly labeled manual rework copy, separate from local BA approval. Mail verbs explicitly separate copy/open/batch without claiming sent; XS–XL low-confidence heuristic and queue reasoning moved to collapsed explanation. No supplier evidence or raw description removed, and no Jira write/automatic email performed. Human UAT on READY/WRITE/BLOCKED remains pending.
+
+## Implementation note for #37
+
+VIS-06/07/10/12/13/14: signal/sprint filters now live in a native collapsed section with **always-visible active-count label**. Source provenance collapsed behind `Джерела оцінки (N)` without hiding Quality Gate, previous analyses/history/legacy material grouped under `Історія й аудит` (two expansions to individual history). Data menu groups snapshot operations, private draft tools and system status within the same menu. Questions/decisions keep separate semantics; keyboard guide remains collapsed. Tests are synthetic; no real BA evidence removed. 320px and Windows NVDA still need UAT.
