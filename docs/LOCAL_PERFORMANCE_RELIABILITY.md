@@ -81,3 +81,16 @@ It uses temporary generated fake SQLite tasks, does not call Jira, does not touc
 The implementation adds a `state_revision` table transparently on normal `Desk` startup and preserves all existing tasks and notes. If a regression occurs, stop the server, backup `ba_state.db` (no public upload), return to previously validated release; extra table is additive and older release should ignore it. Do not delete DB to "fix" a migration.
 
 Before deploying to the daily local task, perform: cold start → synthetic import → one status change → edited mail save → `Done → Next` → browser reload → duplicate import → new import → temporary server stop → restart; inspect both branches' system output. Real Jira/Confluence/Kibana must be tested separately using the authorized workstation.
+
+## v2.27: manual edit optimistic concurrency
+
+Every `tasks` SQLite row now carries an **integer `manual_revision`**, migrated additively from older local databases (default 0). Imported Jira snapshots preserve this version and all manually saved notes/email/status. A manual save **with** `expectedManualRevision` uses one atomic SQL UPDATE with both issue key and exact per-task version, then increments both task version and global `state_revision` in the same transaction.
+
+- Task GET returns `manualRevision`. Browser sends `expectedManualRevision` on every status/notes/email save. HTTP response includes updated `manualRevision`; stale writes return **409** with `code=TASK_REVISION_CONFLICT` and the current revision **without exposing another tab's draft in an error**.
+- Browser preserves the unsaved version, shows a clear conflict alert and allows reviewing the locally saved status/note/draft. Two explicit choices: use the current saved version (discard mine, with confirmation) or save my version **after preview and confirmation**, re-reading the server and using a new CAS token. A second concurrent change requires another review, not automatic retry.
+- Tab-local drafts include original `baseRevision` in their recovery state. Recovery from an old v2 storage entry without a token cannot blindly save; the user must review the live version. No automatic Jira or email writes.
+- **Legacy compatibility:** external/manual clients that OMIT `expectedManualRevision` remain accepted by the local HTTP API for backward compatibility, so they are **NOT CAS-protected**. Do not use legacy scripts for simultaneous editing. A future strict-token migration/feature gate should follow compatibility inventory and customer-visible error handling.
+- Snapshot imports are independent of manual CAS; they must not increment a task's manual revision. Diff across two unrelated tasks should never create a false edit conflict.
+- Existing global revision remains the cheap poll signal, NOT the per-task manual CAS version.
+
+**Synthetic verification:** `python -m unittest tests.test_manual_edit_cas`, `node --test tests/manual-edit-policy.test.mjs`; full `python check_project.py`. Open live UAT: two Chrome/Edge tabs, stale open notes, simultaneous mail changes, browser close/recovery, Windows restart, failed localStorage and temporary lost connection.
