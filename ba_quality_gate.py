@@ -7,6 +7,7 @@ No network access, no Jira mutations, no raw source text in output diagnostics.
 import re
 from urllib.parse import urlsplit, urlunsplit
 from ba_output_checks import dossier_checks, email_checks, technical_literals
+from ba_compactness import profile, advisory_findings
 
 MAX_FINDINGS = 100
 REQUIRED_KINDS = ("POSITIVE", "NEGATIVE")
