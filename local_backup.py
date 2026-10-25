@@ -139,6 +139,18 @@ def _recent_backup(root, interval_hours):
         return False
 
 
+def _sweep_old_pending(folder, max_age_seconds=3600):
+    # Interrupted copies may contain raw PRIVATE SQLite data. Do not follow
+    # symlinks and never touch recently written files from another CLI run.
+    cutoff = datetime.now(timezone.utc).timestamp() - max_age_seconds
+    for orphan in folder.glob("backup-*.pending"):
+        try:
+            if not orphan.is_symlink() and orphan.is_file() and orphan.stat().st_mtime < cutoff:
+                orphan.unlink()
+        except OSError:
+            pass
+
+
 def create_backup(root, *, force=False, interval_hours=24, keep=7):
     """Safe with a running local server; use SQLite online backup API."""
     root = Path(root).resolve()
@@ -147,9 +159,10 @@ def create_backup(root, *, force=False, interval_hours=24, keep=7):
         return {"created": False, "reason": "NO_DATABASE"}
     if database.is_symlink() or not database.is_file():
         raise ValueError("Refusing unsafe database path.")
+    folder = _folder(root)
+    _sweep_old_pending(folder)
     if not force and _recent_backup(root, interval_hours):
         return {"created": False, "reason": "RECENT_BACKUP"}
-    folder = _folder(root)
     moment = datetime.now(timezone.utc)
     timestamp = moment.strftime("%Y%m%dT%H%M%SZ")
     filename = f"backup-{timestamp}-{secrets.token_hex(6)}.sqlite3"
@@ -220,6 +233,8 @@ def verify_backup(root, filename):
             manifest.is_symlink() or manifest.stat().st_size > 4096):
         raise ValueError("Backup or manifest is missing or unsafe.")
     metadata = json.loads(manifest.read_text(encoding="utf-8"))
+    if not isinstance(metadata, dict):
+        raise ValueError("Invalid backup manifest format.")
     if metadata.get("format") != 1 or metadata.get("filename") != filename:
         raise ValueError("Unknown or mismatched backup manifest.")
     if metadata.get("bytes") != target.stat().st_size or metadata.get("sha256") != _sha(target):
