@@ -34,6 +34,30 @@ const saveFailures = new Map();
 const expandedEmails = new Set();
 const recoveredForms = recoveryStore.load();
 const {loadLogs} = createLogsController({api, escapeHtml, message, getSelected: () => selected});
+// SessionStorage may be cloned by Duplicate Tab. Detect a live same-ID peer
+// before accepting concurrent edits, and rotate only one copy. Native browser
+// channel is optional; without it, SQLite CAS still protects actual saves.
+const tabInstanceId=window.crypto.randomUUID();
+if (typeof BroadcastChannel === 'function' && recoveryStore.id) {
+  const channel=new BroadcastChannel('ccon-ba-desk-draft-owner-v3');
+  channel.onmessage=event=>{
+    const other=event.data;
+    if (!other || other.instance===tabInstanceId || other.tab!==recoveryStore.id) return;
+    if (other.type==='HELLO')
+      channel.postMessage({type:'ALIVE',tab:other.tab,instance:tabInstanceId});
+    if ((other.type==='HELLO'||other.type==='ALIVE') &&
+        tabInstanceId.localeCompare(other.instance)>0) {
+      if (recoveryStore.rotateTabId()) {
+        rememberEdits();
+        message('Виявлено дубль вкладки. Незбережені чернетки відокремлено.');
+      } else {
+        browserRecoveryAvailable=false;
+        message('Не вдалося розділити браузерні чернетки вкладок. Збережи правки вручну.',true);
+      }
+    }
+  };
+  channel.postMessage({type:'HELLO',tab:recoveryStore.id,instance:tabInstanceId});
+}
 
 function readViewContext() {
   try { return sanitizeSessionFocus(JSON.parse(sessionStorage.getItem(LOCAL_VIEW_KEY) || '{}')); }
@@ -1035,6 +1059,9 @@ $('recoverOther').addEventListener('click',()=>{
   const result=recoveryStore.adopt(newest.id,own,occupied);
   if(result.failed){message('Не вдалося зберегти відновлені чернетки у браузері.',true);return;}
   Object.assign(recoveredForms,result.added);
+  // Clean in-memory forms can be re-created from explicit recovered drafts;
+  // dirty forms are protected by 'occupied' and never overwritten.
+  for(const key of Object.keys(result.added)) if (forms.has(key) && !isDirty(key)) forms.delete(key);
   const restored=Object.keys(result.added).length;
   // On a previously opened clean form, prefer not to silently replace even
   // in-memory defaults. The import remains visible after re-select/reload.
@@ -1043,6 +1070,7 @@ $('recoverOther').addEventListener('click',()=>{
   updateRecoveryStatus();
   $('dataMenu').open=false;
   renderList();
+  if(Object.hasOwn(result.added,selected)) renderDetail();
 });
 $('purgeOld').addEventListener('click',()=>{
   const old=recoveryStore.others().filter(item=>item.stale);
