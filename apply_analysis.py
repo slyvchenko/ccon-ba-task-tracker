@@ -13,6 +13,7 @@ from prompt_calibration import update_daily
 from ba_questions import sync_questions, all_evidence
 from ba_decisions import sync_decision_proposals
 from ba_quality_gate import quality_gate
+from local_source_audit import local_sources
 
 
 def apply(path,root=ROOT,focus_issue=None):
@@ -74,9 +75,14 @@ def _apply(path,root,focus_issue=None):
                    or context.get('linkedIssues', {}).get(ref['linkedKey'])
                    for ref in current.get('links', []) if isinstance(ref, dict)
                    and isinstance(ref.get('linkedKey'), str)}
+        # The local source registry is revalidated against Jira fingerprint
+        # and exact on-disk bytes on every import, never copied into model data.
+        doc_sources, doc_audit = local_sources(root, task['key'], current)
         gate = quality_gate(analysis, current, related,
                             attachment_ready=attachment_ready,
-                            supplier_method=verified_supplier_method)
+                            supplier_method=verified_supplier_method,
+                            local_sources=doc_sources)
+        gate['sourceAudit'] = doc_audit
         analysis['qualityGate'] = gate
         # A machine-verified link/excerpt is not semantic correctness.
         # Do not allow a READY_FOR_REVIEW badge when the checks have gaps.
