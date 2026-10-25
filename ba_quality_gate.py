@@ -6,6 +6,7 @@ No network access, no Jira mutations, no raw source text in output diagnostics.
 """
 import re
 from urllib.parse import urlsplit, urlunsplit
+from ba_output_checks import dossier_checks, email_checks, technical_literals
 
 MAX_FINDINGS = 100
 REQUIRED_KINDS = ("POSITIVE", "NEGATIVE")
@@ -167,6 +168,9 @@ def description_review(description, briefing):
     if not re.search(r"(?im)^####\s+QA\s*$", desc) or not re.search(r"(?im)^\s*(?:[-*]\s*)?Check\b", desc):
         findings.append({"code": "DESCRIPTION_QA_MISSING", "ref": "description",
                          "messageUk": "Відсутні конкретні acceptance checks, що починаються з Check."})
+    if re.search(r"(?im)^\s*[-*]?\s*Check\s+(?:that\s+)?(?:everything\s+works|the\s+system\s+works|it\s+works)\s*\.?\s*$", desc):
+        findings.append({"code": "DESCRIPTION_QA_GENERIC", "ref": "description",
+                         "messageUk": "QA містить загальну перевірку без конкретного очікуваного результату."})
     if FILLER.search(desc):
         findings.append({"code": "DESCRIPTION_FILLER", "ref": "description",
                          "messageUk": "Прибери канцелярські фрази без технічного змісту."})
@@ -183,22 +187,36 @@ def description_review(description, briefing):
     for rule in (briefing.get("rules") or [])[:30]:
         if not isinstance(rule, dict) or rule.get("certainty") != "CONFIRMED":
             continue
-        tokens = set(TECHNICAL.findall(str(rule.get("whenUk") or "")))
+        when, then = str(rule.get("whenUk") or ""), str(rule.get("thenUk") or "")
+        tokens = set(TECHNICAL.findall(when + " " + then))
         for field in sorted(tokens):
             if not re.search(r"(?<![A-Za-z0-9_])" + re.escape(field) + r"(?![A-Za-z0-9_])", desc):
                 findings.append({"code": "CONFIRMED_FIELD_OMITTED", "ref": field[:80],
-                                 "messageUk": "Точне ім'я поля підтвердженої умови відсутнє в Jira описі."})
+                                 "messageUk": "Точне ім'я поля підтвердженої умови або результату відсутнє в Jira описі."})
+        for literal in sorted(technical_literals(when, then)):
+            if not re.search(r"(?<![A-Za-z0-9_])" + re.escape(literal) + r"(?![A-Za-z0-9_])", desc):
+                findings.append({"code": "CONFIRMED_LITERAL_OMITTED", "ref": rule.get("id") or "rule",
+                                 "messageUk": "У Jira описі відсутнє точне значення enum/code із підтвердженого правила."})
+        for operator in ("AND", "OR"):
+            if re.search(r"\b" + operator + r"\b", when, re.I) and not re.search(
+                    r"\b" + operator + r"\b", desc, re.I):
+                findings.append({"code": "COMPOUND_OPERATOR_OMITTED", "ref": rule.get("id") or "rule",
+                                 "messageUk": "Можливо втрачено AND/OR у складеній підтвердженій умові; перевір логіку."})
     return findings
 
 
-def quality_gate(analysis, issue, related=None):
+def quality_gate(analysis, issue, related=None, *, attachment_ready=None, supplier_method=None):
     """Inspect model output locally. Never claim semantic validation."""
     briefing = analysis.get("briefing") or {}
     sources = source_registry(issue, related)
     claims, source_findings = claim_audit(briefing, sources)
     coverage, qa_findings = rule_coverage(briefing)
     writing_findings = description_review(analysis.get("standardDescription"), briefing)
-    findings = (source_findings + qa_findings + writing_findings)[:MAX_FINDINGS]
+    output_findings = dossier_checks(analysis) + email_checks(
+        analysis.get("emailDraft"), attachment_ready=attachment_ready,
+        verified_supplier_method=supplier_method)
+    # Reserve space for generated-output warnings, even when source review has many findings.
+    findings = (output_findings + source_findings + qa_findings + writing_findings)[:MAX_FINDINGS]
     if not claims:
         findings.append({"code": "NO_CONFIRMED_SOURCE_CLAIMS", "ref": "briefing",
                          "messageUk": "Немає підтверджених фактів або правил із перевірюваним джерелом."})
@@ -208,11 +226,14 @@ def quality_gate(analysis, issue, related=None):
     findings = findings[:MAX_FINDINGS]
     critical = {"CLAIM_SOURCE_NOT_READ", "CLAIM_EXCERPT_NOT_FOUND",
                 "CLAIM_EXCERPT_MISSING", "RULE_QA_GAP", "QA_UNKNOWN_RULE_ID",
-                "RULE_ID_DUPLICATED", "CONFIRMED_FIELD_OMITTED"}
+                "RULE_ID_DUPLICATED", "CONFIRMED_FIELD_OMITTED",
+                "CONFIRMED_LITERAL_OMITTED", "COMPOUND_OPERATOR_OMITTED",
+                "EMAIL_UNVERIFIED_ATTACHMENT_CLAIM", "EMAIL_METHOD_CONFLICT",
+                "OPEN_REQUIREMENTS_PENDING", "OPEN_RULES_PENDING"}
     state = ("BLOCKED" if any(x["code"] in critical for x in findings)
              else "NEEDS_REVIEW" if findings else "STRUCTURALLY_VERIFIED")
     return {
-        "version": 1, "state": state,
+        "version": 2, "state": state,
         "isReadyForReview": state == "STRUCTURALLY_VERIFIED",
         "claims": claims[:60], "qaCoverage": coverage[:30],
         "findings": findings,
@@ -220,6 +241,7 @@ def quality_gate(analysis, issue, related=None):
                     "sourceExcerptsPresent": sum(x["sourceState"] == "TEXT_PRESENT_NOT_FACT_PROVEN"
                                                  for x in claims),
                     "rulesTracked": len(coverage),
-                    "rulesFullyCovered": sum(not x["missing"] for x in coverage)},
+                    "rulesFullyCovered": sum(not x["missing"] for x in coverage),
+                    "outputFindings": len(output_findings)},
         "limitation": "Excerpt presence and QA links verified mechanically; no semantic proof of correctness.",
     }
