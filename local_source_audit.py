@@ -29,7 +29,10 @@ def _attachment_sources(root, key, issue):
         original = _download_url(attachment)
         if not original:
             continue
-        record = read_json(Path(root) / "data/attachment_evidence" / key / (ident + ".json"), {})
+        try:
+            record = read_json(Path(root) / "data/attachment_evidence" / key / (ident + ".json"), {})
+        except (ValueError, OSError):
+            continue
         if (not isinstance(record, dict) or record.get("issueKey") != key
                 or record.get("attachmentId") != ident
                 or record.get("contextFingerprint") != issue.get("fingerprint")):
