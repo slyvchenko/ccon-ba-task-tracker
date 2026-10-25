@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #32 (v2.32). **Поточний кандидат:** PR #33 (v2.33), per-tab durable browser drafts, consent restore/retention, 320px/keyboard accessibility improvements; live Windows/browser UAT окремо.  
+**Базовий код:** `main` після PR #33 (v2.33). **Поточний кандидат:** PR #34 (v2.34), opt-in real Chromium browser E2E + read-only reconnect + preliminary 16-candidate visual simplification audit; Windows/NVDA/8h UAT open.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -140,7 +140,7 @@
 | REL-04 | P1 | PARTIAL (v2.32 signature-based watcher, 30s retry, generic health counters and quiet menu state; live file-lock UAT pending) | Watcher failure/retry diagnostics without toast spam | No error swallowed; error state shown, P-12 |
 | REL-05 | P1 | PARTIAL (v2.32 server lifetime cross-process lock, shutdown watcher join, SQLite backup pre-migration; forced kill UAT open) | Graceful server shutdown and restart during import | No database damage/partial save, Windows UAT |
 | REL-06 | P1 | PLANNED | Data validation and schema migration matrix across releases | v2.23→current, old DB revision initialized once |
-| REL-07 | P1 | PLANNED | Retry strategy for recoverable local API failures with idempotency | No duplicate mailto or Done, bounded retry |
+| REL-07 | P1 | PARTIAL (v2.34 bounded GET reconnection, no repeat manual POST; Windows client error UAT open) | Retry strategy for recoverable local API failures with idempotency | No duplicate mailto or Done, bounded retry |
 | REL-08 | P1 | PLANNED | OS folder permissions/encryption checks for private local ZIP | Fail closed/notice for insecure ACL configuration |
 | REL-09 | P2 | PLANNED | Bound old history/reports while preserving important user audit | No unexpected data deletion, archive user-approved |
 | REL-10 | P2 | PLANNED | Safe signed release/backup metadata and rollback rehearsal | Verify hashes; old app loads additive migration |
@@ -153,10 +153,10 @@
 | QA-09 | P0 | PARTIAL (v2.31 synthetic 100/500/1000 CI + exact ranking parity; Chrome/Edge E2E pending) | Synthetic 100/500/1000 browser E2E performance baseline | Windows DevTools p95 + startup/long session |
 | QA-10 | P0 | GATE (v2.29 synthetic archetype cases; observed BA handoff times and semantic review not performed) | Human observation of 5 BA task archetypes, repeated runs | TTNA/TTSH/MRI with 0 critical false-ready decisions |
 | QA-11 | P0 | PARTIAL (v2.27 synthetic concurrent instances/restarts/conflicts; real browser crash drill open) | Cross-tab edits, stale conflict and crash recovery integration | P-15/P-17/P-18, 0 silent overwrite |
-| QA-12 | P1 | NEXT | DOM behavior tests with approved Playwright/browser runner | Focus, click, screenreader, history, network reconnect |
+| QA-12 | P1 | PARTIAL (v2.34 dedicated Chromium Playwright synthetic DOM E2E CI; Windows/Edge/NVDA still open) | DOM behavior tests with approved Playwright/browser runner | Focus, click, screenreader, history, network reconnect |
 | QA-13 | P1 | PLANNED | Local-only 20–30 real-case semantic BA handoff study | Actual independent gold scores, not CI counts |
 | QA-14 | P1 | PLANNED | Quantified code/branch coverage baseline, gaps by critical path | No invented 100%; dev-only tooling approval |
-| QA-15 | P2 | PLANNED | Scheduled offline regression drill on diverse machine profiles | OS, Python version, locale, browser, power mode |
+| QA-15 | P2 | PARTIAL (v2.34 90-transition synthetic Chromium short-soak; real 8h/diverse OS scheduled drill open) | Scheduled offline regression drill on diverse machine profiles | OS, Python version, locale, browser, power mode |
 | OPS-01 | P1 | NEXT | Standard synthetic performance smoke + fixed cohort sizes | Repeatable local script and measurement doc |
 | OPS-02 | P1 | PLANNED | Private local diagnostic bundle with PII redaction and consent | No production logs by default; explicit export |
 | OPS-03 | P1 | PARTIAL (v2.32 offline backup/verify/restore runbook; Windows Scheduler/upgrade rehearsal still open) | Version/upgrade and roll-back steps for local task scheduler | Main merge does not update installed local copy |
@@ -179,7 +179,7 @@
 4. **#29 current: PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork:** effort-aware review hints в незмінній sprint/WRITE lane, transparent ordering and timed BA UAT.
 5. **#30 current: FOCUS-02/03/06 + A11Y-01/04 + UI-06:** keyboard/navigation/focus+dirty warning regression.
 6. **#31 current: PERF-04/05/06/07 + QA-09 groundwork:** browser traces and measured large-list optimizations, WCAG/browser proof.
-7. **#32 MERGED:** REL-03/04/05 + OPS-03/05. **#33 current:** SEC-04 + A11Y-02/03/05 + browser recovery collision protection. **#34+:** remaining real UAT, source evidence backups, DOM E2E/8h endurance and gold-case validation.
+7. **#32–33 MERGED. #34 current:** QA-12/15 + REL-07 partial (Chromium DOM E2E, short soak and bounded read-only reconnect), 16 source-backed UI simplification candidates. **#35–38 candidates:** visual consolidation, CTA de-duplication, progressive disclosure and CSS refactor, all gated by BA UAT.
 
 **Dependency rule:** conduct QA-10 human observation before changing task ordering, manual Done behavior or showing effort as absolute truth. Browser E2E instrumentation requires approved runner, no corporate data in public CI. Do not claim full business correctness from passing synthetic tests.
 
@@ -201,7 +201,9 @@
 | **#30 — MERGED; LIVE KEYBOARD UAT OPEN** | FOCUS-02/03/06 + A11Y-01/04 + UI-06: shortcuts, per-tab context/caret, focus-safe refresh, honest save status | CI + synthetic keyboard policies, Windows/Chrome two-tab assistive-technology UAT open |
 | **#31 — MERGED; BROWSER PERFORMANCE UAT OPEN** | PERF-04/05/06/07 + QA-09: cached rank/search/index/HTTP JSON + synthetic 100/500/1000 benchmarks; native DOM virtual list deferred | Exact Node parity, cross-process SQLite revisions and CI; real Windows DevTools p95/heap 8h pending |
 | **#32 — MERGED; WINDOWS CRASH/RESTORE UAT OPEN** | REL-03/04/05 + OPS-03/05 + SEC-04: private SQLite backup/verified restore, server lock, quiet watcher retry and Data menu status | Python synthetic restore/locking/legacy tests + CI; live Windows forced crash, ACL and data folder recovery remain open |
-| **#33 — IN PROGRESS; BROWSER UAT OPEN** | SEC-04 + A11Y-02/03/05: tab-scoped unsaved drafts, explicit cross-tab recovery, consent 30d cleanup, 320px/ARIA/contrast | Pure JS + backend CAS CI; Windows Chrome/Edge duplicate-tab, NVDA/400% and 8-hour browser still open |
+| **#33 — MERGED; BROWSER UAT OPEN** | SEC-04 + A11Y-02/03/05: tab-scoped unsaved drafts, explicit cross-tab recovery, consent 30d cleanup, 320px/ARIA/contrast | Pure JS + backend CAS CI; Windows Chrome/Edge duplicate-tab, NVDA/400% and 8-hour browser still open |
+| **#34 — IN PROGRESS; WINDOWS/8H UAT OPEN** | QA-12/15 + REL-07: synthetic Chromium DOM E2E, keyboard/CAS/reconnect, short soak, no auto POST; 16-item visual simplification audit | CI browser job + existing Python/Node/Compose; no claim of Windows NVDA or 8h |
+| **#35–38 — PROPOSED, NOT IMPLEMENTED** | VIS-01..16: source-backed duplicate/redundancy hypotheses → consolidate primary CTA/status, collapse deep evidence/history, simplify Data and filters, CSS parity | Five BA archetypes + screenshot/AT gold-set; do NOT delete distinct evidence or safety gates |
 | **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
@@ -264,6 +266,19 @@
 - **Приватність і TTL:** 30+ днів лише для **ручного очищення** чужих застарілих записів; непідтверджені drafts не видаляються автоматично. Quota/storage failure позначено як незбережене в браузері. SQLite backup **не** включає localStorage.
 - **A11Y:** task queue region + low-noise role=status on intentional selection, CSS 320px wrapping, forced-colors focus border and reduced-motion.
 - **Coverage:** `tests/draft-recovery.test.mjs` для двох вкладок, clone, stale/legacy, CAS token preservation, quota і ручної ротації; Windows 200–400%, NVDA, Duplicate Tab, 8h UAT відкриті в `docs/BROWSER_RECOVERY_ACCESSIBILITY.md`.
+
+## 2B. Попередній backlog потенційно зайвого або дубльованого функціоналу
+
+**Детальний аналіз:** `docs/UX_REDUNDANCY_SIMPLIFICATION_AUDIT.md` (16 кандидатів із конкретними частинами `dashboard.html`, `renderDetail`, `briefingMarkup`, evidence, history й data menu; чому виглядає повтором, що є різною функцією, ризик і acceptance). Це гіпотези **на спрощення візуального фінального сприйняття**, а не дозвіл видаляти корисні функції. Пріоритетний принцип: **одна головна дія зверху; усі докази/QA/REST і ручні операції залишаються доступні у знайомій картці.**
+
+| Пакет / пріоритет | Кандидати та короткий результат | Стан / гейт |
+|---|---|---|
+| **#35, P0** | VIS-01/03/04/09/16: прибрати повторний Next Action, упорядкувати статуси Jira/manual/signal, скоротити шум показників і дубльований empty state; зберегти правдиві conflict/stale warnings | **HYPOTHESIS / NOT IMPLEMENTED**. 5с comprehension, 0 false-ready, 0 hidden blockers |
+| **#36, P1** | VIS-02/05/08/11: перевірити дві Copy Jira кнопки та approval gate, узгодити коротке «чому», чітко назвати Copy/Open/Batch email, перестати дублювати low-confidence XS/S? | **HYPOTHESIS / NOT IMPLEMENTED**. Human QA + no auto-send/Jira write; 20–30 reviewed cases |
+| **#37, P1** | VIS-06/07/10/12/13/14: докази/джерела/ZIP, питання/рішення, стара історія, фільтри й адміністрування як progressive disclosures у старому екрані | **HYPOTHESIS / NOT IMPLEMENTED**. Full source trace, keyboard/ARIA, deep task accessible ≤2 expands |
+| **#38, P2** | VIS-15: consolidation `dashboard.css` після baseline screenshots/contrast/zoom на 320/768/1440 | **HYPOTHESIS / NOT IMPLEMENTED**. Visual diff/regressions, no unreviewed brand/layout change |
+
+**Не плутати схожі назви з дублюванням функцій:** скопіювати лист ≠ відкрити Outlook ≠ надіслати; source audit ≠ ZIP attachment; ручний DONE ≠ Jira DONE; QA-gated copy ≠ human-approved description. Спочатку 5 archetype screen recordings + виміри time-to-action, scrolls, CTA competing, critical facts retained, а потім згруповані PR.
 
 ## 4. Definition of Done для кожного наступного блоку
 

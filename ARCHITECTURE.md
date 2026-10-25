@@ -168,3 +168,11 @@ Backups contain **DB saved state only**, not `data/`, uncommitted browser localS
 Existing note/email editors, task rank and `Desk.save(expectedManualRevision)` are unchanged. SQLite is the only acknowledged save source. `/api/tasks` authorization/CSP unchanged, with one new same-origin JS module in static allowlist. A second editor still receives 409 even if a recovered draft is retained by multiple browser tabs.
 
 The task queue has a labeled region and a separate polite screen-reader selection status that is updated only on intentional task navigation. CSS adds narrow 320px reflow, Windows forced-color focus borders and reduced-motion preference. Automated Node policy tests do not prove NVDA, browser event semantics, Chrome memory stability or WCAG conformance; these remain UAT gates in `docs/BROWSER_RECOVERY_ACCESSIBILITY.md`.
+
+## v2.34: opt-in browser DOM E2E + read-only recovery
+
+The existing CI Python/Node/release/Compose job remains dependency-free for the operator. A separate GitHub Action installs pinned `playwright==1.56.0` and its Chromium browser **only on CI**, runs `browser_e2e.py` against synthetic `ThreadingHTTPServer(handler(Desk(temp_root)))`, uploads short-lived synthetic screenshots/metrics and never reads real Jira files. Scenarios cover focus/keyboards, bulk modal escape, two-tab distinct drafts + HTTP 409, GET connectivity failure/recovery, dirty snapshot refresh, 320/768/1440 responsive visibility, and a 90-transition short soak.
+
+`assets/reconnect-policy.mjs` implements a bounded 5/10/20/40/60-second read-only poll retry; `dashboard.mjs` acknowledges recovery only after successful needed task data read. The logic NEVER replays status/Done/email POST operations automatically. Existing SQLite CAS and snapshot monotonic revisions remain authoritative.
+
+This is actual Linux Chromium DOM coverage, **not** Windows, NVDA, real Outlook/Jira source truth, full 400%-zoom or 8h endurance. See `docs/BROWSER_E2E_RUNBOOK.md` and `docs/UX_REDUNDANCY_SIMPLIFICATION_AUDIT.md` for remaining UAT and feature-consolidation candidates.

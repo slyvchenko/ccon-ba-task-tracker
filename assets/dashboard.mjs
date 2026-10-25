@@ -8,6 +8,7 @@ import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
 import {createQueueModel,createSearchDebouncer,selectedAfterFilter} from './queue-performance.mjs';
+import {createReconnectPolicy} from './reconnect-policy.mjs';
 import {EFFORT_LABELS, effortInfo, quickWinCandidate, quickWinExplanation} from './effort-planning.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
 import {loadTaskDecisions} from './decisions-ui.mjs';
@@ -25,6 +26,7 @@ const restoredFocusView = readViewContext();
 let tasks = [], selected = restoredFocusView.selected, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
 let signature = '', renderedTaskVersion = '', renderedTaskKey = null, pendingDetail = false;
 let currentRevision = null, currentRevisionError = '', pollingInFlight = false, pollCycle = 0;
+const transportRecovery=createReconnectPolicy();
 const queueModel=createQueueModel();
 const searchRefresh=createSearchDebouncer(()=>applyFilters());
 const forms = new Map();
@@ -917,10 +919,10 @@ async function load() {
   const request = ++loadRequest;
   try {
     const data = await api('/api/tasks');
-    if (busy || request !== loadRequest) return;
+    if (busy || request !== loadRequest) return false;
     const nextSignature = JSON.stringify(data);
     const changed = nextSignature !== signature;
-    if (!changed && !pendingDetail) return;
+    if (!changed && !pendingDetail) return true;
     latest = data.latest;
     currentRevision = Number.isSafeInteger(data.revision) ? data.revision : null;
     currentRevisionError = data.error || '';
@@ -961,7 +963,11 @@ async function load() {
     }
     if (data.error) message(data.error, true);
     else if (changed) message(hasUnsaved() ? 'Дані оновлено. Незбережені правки залишаються у твоїх формах.' : '');
-  } catch (error) { message('Сервер недоступний. Запусти Start CCON BA.bat. ' + error.message, true); }
+    return true;
+  } catch (error) {
+    message('Сервер недоступний. Запусти Start CCON BA.bat. ' + error.message, true);
+    return false;
+  }
 }
 async function loadDeltaStrip() {
   const target = $('deltaStrip');
@@ -1163,27 +1169,36 @@ load();
 loadDeltaStrip();
 // Idle polling checks one SQLite revision row, not the whole Jira task payload.
 // Background tabs do not spend CPU on hidden list/analysis rerenders.
-async function pollChanges() {
-  if (pollingInFlight || busy || document.visibilityState === 'hidden') return;
+async function pollChanges({force=false}={}) {
+  if (pollingInFlight || busy || document.visibilityState === 'hidden' ||
+      !transportRecovery.shouldPoll({force})) return;
   pollingInFlight = true;
   try {
     const revision = await api('/api/tasks/revision');
-    if (needsFullTaskRefresh(currentRevision, currentRevisionError, revision)) await load();
+    // An API that answers 'revision' but cannot load its full payload is
+    // still not recovered. Avoid acknowledging partial read-only success.
+    if (needsFullTaskRefresh(currentRevision,currentRevisionError,revision) &&
+        !await load()) throw Error('Не вдалось оновити задачі.');
+    const wasOffline=transportRecovery.recovered();
+    if (wasOffline)
+      message('З’єднання відновлено. Незбережені чернетки залишилися у вкладці.');
     pollCycle++;
     if (pollCycle % 3 === 0) await loadLogs();
     if (pollCycle % 6 === 0) {
       await loadDeltaStrip();
       await loadCloudCapabilities();
     }
-  } catch (error) {
-    message('Локальний сервер недоступний: ' + error.message, true);
-  } finally {
-    pollingInFlight = false;
-  }
+  } catch {
+    const failure=transportRecovery.failed();
+    if (failure.firstFailure)
+      message('З’єднання втрачено. Незбережені поля залишилися у вкладці; '+
+        'повторна перевірка лише для читання.',true);
+  } finally {pollingInFlight=false;}
 }
-setInterval(pollChanges, 5000);
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') pollChanges();
+setInterval(()=>pollChanges(),5000);
+window.addEventListener('online',()=>pollChanges({force:true}));
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible') pollChanges({force:true});
   else rememberViewContext();
 });
 
