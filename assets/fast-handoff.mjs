@@ -33,8 +33,9 @@ export function priorityExplanation(task) {
     lane === 2 ? 'Завершена вручну' : 'Задача поза поточним snapshot';
   const write = signal === 'WRITE' ||
     (hasAnalysis(task) && analysis.needsEmail === true);
-  const score = hasAnalysis(task) && Number.isFinite(Number(analysis.queueScore))
-    ? Number(analysis.queueScore) : null;
+  const score = hasAnalysis(task) && typeof analysis.queueScore === 'number' &&
+    Number.isFinite(analysis.queueScore) && analysis.queueScore >= 0 && analysis.queueScore <= 100
+    ? analysis.queueScore : null;
   const sourceOrder = [
     sprint,
     'Лист: ' + (write ? 'потрібен зараз (WRITE)' : 'без пріоритету листа'),
