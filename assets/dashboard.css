@@ -1401,3 +1401,19 @@ header {
     overflow-wrap: anywhere;
   }
 }
+
+/* v2.29: a quiet advisory, never a priority/reordering badge. */
+.effort-hint {
+  font-size: 0.78rem;
+  font-weight: 550;
+  color: var(--muted, #64748b);
+  white-space: normal;
+}
+.effort-summary {
+  margin: 3px 0 6px;
+  overflow-wrap: anywhere;
+}
+#manualEffort {
+  max-width: 100%;
+  min-height: 36px;
+}
