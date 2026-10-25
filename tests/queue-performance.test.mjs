@@ -71,8 +71,12 @@ test('task manual status edit invalidates rank only on explicit mutation',()=>{
   const tasks=syntheticItems(10);
   const cache=createQueueModel();
   const initial=cache.rankedTasks(tasks).map(x=>x.key);
-  tasks[0].manualStatus='DONE';
-  // caller must invalidate on persisted manual write before rebuilding.
+  // Change the CURRENT highest-priority active task, not an already archived
+  // row at the bottom: the mutation must have an observable rank effect.
+  const edited=tasks.find(item=>item.key===initial[0]);
+  assert.ok(edited.active);
+  edited.manualStatus='DONE';
+  // Caller must invalidate on persisted manual write before rebuilding.
   cache.invalidate();
   const expected=rankTasks(tasks).map(x=>x.key);
   assert.deepEqual(cache.rankedTasks(tasks).map(x=>x.key),expected);
