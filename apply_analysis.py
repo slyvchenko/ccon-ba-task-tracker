@@ -67,6 +67,11 @@ def _apply(path,root,focus_issue=None):
             # Verified untouched analysis: do not normalize, retimestamp,
             # run quality checks, or rewrite the existing optional email.
             continue
+        # Normalize only freshly generated descriptions. User-approved drafts,
+        # manually edited emails and untouched focus siblings are never modified.
+        compacted, compactness = compact_generated(analysis['standardDescription'])
+        analysis['standardDescription'] = compacted
+        analysis['descriptionCompactness'] = compactness
         verified_supplier_method = verified_method(root, task['key'], current['fingerprint'])
         attachment_ready = supplier_zip_ready(root, task['key'])
         analysis['emailDraft']=make_ready_draft(
