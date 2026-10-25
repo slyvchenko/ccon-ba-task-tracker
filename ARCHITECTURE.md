@@ -132,3 +132,11 @@ On same-task refresh, selection, sidebar/main scroll and open details are retain
 `assets/effort-planning.mjs` owns pure provenance-marked heuristics over **current structured analysis only**. `MANUAL/USER_SELECTED` indicates a selected band; `HEURISTIC/LOW` is a provisional guess. It offers display-only quick candidates where no source/QA gaps are present and does not alter `assets/task-rules.mjs` or the hard sprint/WRITE/signal/score/blocker priority order. Browser preview and editable band live inside the existing cards. Real task duration or efficiency gains remain unverified until human gold-case UAT.
 
 See `docs/EFFORT_PRIORITIZATION.md` for exact branch order and limitations.
+
+## v2.30: keyboard, focus and save status as safe, local presentation policies
+
+`assets/focus-navigation.mjs` exports browser-policy helpers, independent of Jira source text: ignore shortcut events from text editors or modal, navigate solely through the existing filtered/sorted key list, restore disclosure/scroll/caret context using hashed headings, and sanitize persisted session data to issue keys and bounded numeric UI coordinates. `assets/dashboard.mjs` wires shortcuts `/`, `Alt+Up/Down`, `Alt+C`, `Ctrl/Cmd+Enter`, with a native keyboard guide inside the existing sidebar.
+
+Each browser tab can remember its selected task and view; no raw notes, source excerpts, supplier IDs or PNR strings in view-state storage. The existing separate unsaved form storage/CAS is unaffected. Focused/detail editing prevents background DOM replacement; Save errors and CAS conflicts do not masquerade as success. The existing native batch-mail dialog restores opener focus when closed.
+
+**Not yet proven:** actual screen-reader compatibility, keyboard conflicts under Windows language switch and browsers, long-running memory, real resume-time improvement. Behavioral unit tests cover pure policy only. See `docs/FOCUS_KEYBOARD_UX.md`.
