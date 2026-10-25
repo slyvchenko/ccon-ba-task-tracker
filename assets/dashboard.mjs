@@ -3,6 +3,7 @@ import {createLogsController} from './logs.mjs';
 import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './manual-edit-policy.mjs';
 import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
+import {EFFORT_LABELS, effortInfo, quickWinCandidate, quickWinExplanation} from './effort-planning.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
 import {loadTaskDecisions} from './decisions-ui.mjs';
 import {loadTaskActions, loadTaskHistory} from './action-history.mjs';
@@ -30,13 +31,17 @@ function normalizedDraft(value) {
 function savedForm(task) {
   const emailDraft = normalizedDraft(task.savedEmailDraft ?? task.analysis?.emailDraft);
   if (task.savedEmailDraft == null || !emailDraft.to.trim()) emailDraft.to = defaultRecipients(task);
-  return {manualStatus:STATUS_LABELS[task.manualStatus] ? task.manualStatus : 'AUTO', note:task.note || '', emailDraft};
+  return {manualStatus:STATUS_LABELS[task.manualStatus] ? task.manualStatus : 'AUTO',
+    manualEffort:EFFORT_LABELS[task.manualEffort] ? task.manualEffort : 'UNKNOWN',
+    note:task.note || '', emailDraft};
 }
 function formFor(task) {
   if (!forms.has(task.key)) {
     const base = savedForm(task), recovered = recoveredForms[task.key];
     const value = recovered && STATUS_LABELS[recovered.manualStatus] && typeof recovered.note === 'string'
-      ? {manualStatus:recovered.manualStatus, note:recovered.note, emailDraft:normalizedDraft(recovered.emailDraft)} : base;
+      ? {manualStatus:recovered.manualStatus, note:recovered.note,
+        manualEffort:EFFORT_LABELS[recovered.manualEffort] ? recovered.manualEffort : base.manualEffort,
+        emailDraft:normalizedDraft(recovered.emailDraft)} : base;
     forms.set(task.key, {value, base:JSON.stringify(base),
       baseRevision:baseManualRevision(recovered, task),
       changedAt:recovered?.changedAt || null});
@@ -83,12 +88,13 @@ function renderList() {
   updateSnapshotInfo();
   const items = visibleTasks(), current = tasks.filter(task => task.active), analyzed = current.filter(hasAnalysis).length;
   const mailCount = tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length;
+  const potentialQuick = current.filter(quickWinCandidate).length;
   $('bulkEmail').textContent = `Відкрити всі листи (${mailCount})`;
   $('bulkEmail').disabled = !mailCount || busy;
   $('bulkEmail').hidden = cloudMode;
   const verified = current.filter(task => task.activeSprintStatus === 'VERIFIED').length;
   const sprintCount = current.filter(task => task.activeSprintStatus === 'VERIFIED' && task.activeSprint).length;
-  $('count').textContent = `${items.length} у списку · ${sprintCount} активний спринт · ${current.length} поточних · аналіз ${analyzed}/${current.length}` +
+  $('count').textContent = `${items.length} у списку · ${sprintCount} активний спринт · ${current.length} поточних · аналіз ${analyzed}/${current.length} · короткі кандидати ${potentialQuick} (без зміни черги)` +
     (verified < current.length ? ' · спринт ще не підтверджено' : '');
   let previousGroup = '';
   $('list').innerHTML = items.map((task, index) => {
@@ -96,7 +102,7 @@ function renderList() {
     const group = scope + ' · ' + ['Можна просувати зараз', 'Очікуємо', 'Завершені', 'Відсутні в останньому snapshot'][queueTier(task)];
     const heading = group !== previousGroup ? `<div class="queue-group">${escapeHtml(group)}</div>` : '';
     previousGroup = group;
-    return `${heading}<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`;
+    return `${heading}<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${quickWinCandidate(task) ? '<span class="effort-hint" title="Можлива коротка дія, оцінка орієнтовна. Порядок черги не змінено.">S?</span>' : ''}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`;
   }).join('') || '<div class="empty">Немає задач за цими фільтрами.</div>';
   $('list').querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => selectTask(button.dataset.key)));
   $('list').scrollTop = previousListScroll;
@@ -257,6 +263,8 @@ function renderDetail() {
   const missing = Array.isArray(analysis.missingInfo) ? analysis.missingInfo : [];
   const quick = quickHandoff(task);
   const ranking = priorityExplanation(task);
+  const effort = effortInfo({...task, manualEffort:form.manualEffort});
+  const potentialQuick = quickWinCandidate({...task, manualEffort:form.manualEffort});
   $('detail').innerHTML = `
     <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span><span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
     <h2>${escapeHtml(task.summary)}</h2>
@@ -272,6 +280,11 @@ function renderDetail() {
         ${quick.description ? `<button id="copyFastDescription" class="quiet" ${quick.readyForCopy ? '' : 'disabled'}>Скопіювати Jira-чернетку</button>` : ''}
       </div>
       <p class="muted quick-proof-note">${escapeHtml(quick.evidenceNote)}</p>
+      <p class="muted effort-summary">${escapeHtml('Обсяг: ' + effort.label +
+        (effort.source === 'MANUAL' ? ' · моя оцінка' : ' · автоматична гіпотеза, низька впевненість') +
+        '. ' + effort.reason)}
+        ${potentialQuick ? '<span class="effort-hint">Кандидат короткої дії, не новий пріоритет</span>' : ''}
+      </p>
       <details class="description"><summary>Чому задача в цій позиції черги</summary>
         <ol class="brief-list">${ranking.sourceOrder.map(item => '<li>' + escapeHtml(item) + '</li>').join('')}</ol>
         <p class="muted">Порядок: активний спринт, потреба в листі, тип дії, оцінка та блокування. Копіювання не змінює Jira.</p>
@@ -321,6 +334,10 @@ function renderDetail() {
         <section class="panel work-state" aria-label="Мій робочий стан">
           <div class="manual-status-label"><label for="manual">Мій статус</label><details class="status-help"><summary aria-label="Як працює мій статус">ⓘ</summary><p>«Автоматично» використовує оцінку щоденного аналізу. Ручний вибір фіксує твій власний статус і має пріоритет. Вибір статусу зберігається автоматично.</p></details></div>
           <select id="manual" class="status-select tone-${statusTone(form.manualStatus, task)}">${['AUTO','IN PROGRESS','NEEDS DECISION','WAITING INPUT','WAITING DEPENDENCY','DONE'].map(value => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(STATUS_LABELS[value])}</option>`).join('')}</select>
+          <label for="manualEffort">Моя оцінка тривалості</label>
+          <select id="manualEffort" aria-describedby="effortHelp">${Object.entries(EFFORT_LABELS).map(([key,label]) =>
+            `<option value="${key}" ${form.manualEffort === key ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
+          <p id="effortHelp" class="muted">Збережеться разом із нотатками. Оцінка не змінює порядок задач і не передається в Jira.</p>
           <label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Додай домовленість або наступний контакт…">${escapeHtml(form.note)}</textarea>
           <div class="actions state-actions"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Виконано → Далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
           <div id="saved" class="save-state" role="status"></div>
@@ -362,6 +379,7 @@ function renderDetail() {
     $('detail').scrollTop = previousDetailScroll;
   }
   ['note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener('input', captureForm));
+  $('manualEffort').addEventListener('change', captureForm);
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
   if ($('copyNext')) $('copyNext').addEventListener('click', () =>
     copyText(quick.nextAction, 'Дію скопійовано. Це не означає її виконання.'));
@@ -407,7 +425,8 @@ function captureForm() {
   const task = tasks.find(item => item.key === selected);
   if (!task) return;
   const form = formFor(task);
-  form.value = {manualStatus:$('manual').value, note:$('note').value, emailDraft:{to:$('draftTo').value, subject:$('draftSubject').value, body:$('draftBody').value}};
+  form.value = {manualStatus:$('manual').value, manualEffort:$('manualEffort').value,
+    note:$('note').value, emailDraft:{to:$('draftTo').value, subject:$('draftSubject').value, body:$('draftBody').value}};
   form.changedAt = new Date().toISOString();
   $('manual').className = 'status-select tone-' + statusTone(form.value.manualStatus, task);
   rememberEdits();
@@ -446,6 +465,7 @@ function showManualConflict() {
   // in the local browser only; no notes or email bodies enter GitHub/logs.
   $('conflictSavedText').textContent =
     'Статус: ' + (STATUS_LABELS[remote.manualStatus] || remote.manualStatus) +
+    '\nОцінка часу: ' + (EFFORT_LABELS[remote.manualEffort] || 'Не оцінено') +
     '\nНотатка:\n' + (remote.note || '(порожньо)') +
     '\n\nЛист кому: ' + draft.to +
     '\nТема: ' + draft.subject + '\nТекст:\n' + draft.body;
@@ -523,7 +543,7 @@ async function overwriteAfterReview() {
     const own = structuredClone(form.value);
     const response = await api('/api/tasks/' + encodeURIComponent(key),
       withExpectedRevision(own, remote.manualRevision));
-    Object.assign(task, {manualStatus:own.manualStatus, note:own.note,
+    Object.assign(task, {manualStatus:own.manualStatus, manualEffort:own.manualEffort, note:own.note,
       savedEmailDraft:own.emailDraft, manualRevision:response.manualRevision,
       modifiedAt:new Date().toISOString()});
     forms.delete(key);
@@ -552,7 +572,7 @@ function discardForm() {
 }
 function setBusy(value) {
   busy = value;
-  ['manual', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard',
+  ['manual', 'manualEffort', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard',
     'conflictOverwrite', 'conflictUseSaved'].forEach(id => { if ($(id)) $(id).disabled = value; });
   $('import').disabled = value;
   if (!value) updateFormStatus();
@@ -616,7 +636,7 @@ async function saveTask(done = false) {
     }
     const saved = await api('/api/tasks/' + encodeURIComponent(task.key),
       withExpectedRevision(value, form.baseRevision));
-    Object.assign(task, {manualStatus:value.manualStatus, note:value.note,
+    Object.assign(task, {manualStatus:value.manualStatus, manualEffort:value.manualEffort, note:value.note,
       savedEmailDraft:value.emailDraft, manualRevision:saved.manualRevision,
       modifiedAt:new Date().toISOString()});
     forms.delete(task.key);
