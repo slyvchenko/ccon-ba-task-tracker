@@ -92,6 +92,53 @@ class OfflineRecoveryTests(unittest.TestCase):
         self.assertEqual(self.desk.view()["tasks"][0]["note"],"later")
         self.assertEqual(self.desk.revision()["revision"],2)
 
+    def test_corrupted_existing_database_is_preserved_forensically_before_restore(self):
+        self.saved("Original before corruption",0)
+        good = create_backup(self.root, force=True)
+        broken = b"CORRUPT CURRENT DB - synthetic and unrecoverable" * 10
+        self.desk.db.write_bytes(broken)
+        result = restore_backup(self.root, good["filename"], CONFIRM)
+        self.assertTrue(result["restored"])
+        recovered = Desk(self.root).view()["tasks"][0]
+        self.assertEqual(recovered["note"], "Original before corruption")
+        forensic = list((self.root/"backups").glob("damaged-*.sqlite3"))
+        self.assertEqual(len(forensic),1)
+        self.assertEqual(forensic[0].read_bytes(),broken)
+        # Damaged bytes do not carry a valid .sqlite3.json manifest.
+        self.assertFalse((forensic[0].with_name(forensic[0].name+".json")).exists())
+
+    def test_orphan_wal_blocks_restore_when_main_db_does_not_exist(self):
+        good = create_backup(self.root, force=True)
+        self.desk.db.unlink()
+        sidecar = self.root/"ba_state.db-wal"
+        sidecar.write_bytes(b"synthetic orphan WAL")
+        with self.assertRaisesRegex(ValueError, "Orphaned SQLite WAL"):
+            restore_backup(self.root, good["filename"], CONFIRM)
+        self.assertFalse(self.desk.db.exists())
+        self.assertEqual(sidecar.read_bytes(),b"synthetic orphan WAL")
+
+    def test_corrupted_database_with_sidecar_requires_offline_operator_review(self):
+        good = create_backup(self.root, force=True)
+        broken = b"broken sqlite database"
+        self.desk.db.write_bytes(broken)
+        sidecar = self.root/"ba_state.db-wal"
+        sidecar.write_bytes(b"unverified WAL")
+        with self.assertRaisesRegex(ValueError, "WAL sidecars"):
+            restore_backup(self.root, good["filename"], CONFIRM)
+        self.assertEqual(self.desk.db.read_bytes(),broken)
+        self.assertTrue(sidecar.exists())
+
+    def test_same_second_backups_retained_by_creation_time_not_random_suffix(self):
+        from unittest.mock import patch
+        with patch("local_backup.secrets.token_hex",
+                   side_effect=["ffffffffffff","000000000000"]):
+            older = create_backup(self.root, force=True, keep=1)
+            newer = create_backup(self.root, force=True, keep=1)
+        self.assertTrue((self.root/"backups"/newer["filename"]).exists())
+        self.assertFalse((self.root/"backups"/older["filename"]).exists())
+        self.assertEqual(len(list((self.root/"backups").glob("backup-*.sqlite3.json"))),1)
+        self.assertTrue(verify_backup(self.root,newer["filename"])["verified"])
+
     def test_unsafe_path_and_symlink_rejection(self):
         with self.assertRaises(ValueError):
             verify_backup(self.root,"../ba_state.db")
