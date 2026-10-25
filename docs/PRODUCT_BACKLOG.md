@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #23 (v2.23). **Поточний кандидат:** PR #24 (v2.24), пакет локального cross-check документів; live UAT відкрито.  
+**Базовий код:** `main` після PR #24 (v2.24). **Поточний кандидат:** PR #25 (v2.25), пакет компактності та незалежних offline A/B метрик; human gold-case UAT окремо.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -71,13 +71,13 @@
 | OUT-03 | P1 | IMPLEMENTED (code); live UAT pending | Готовий supplier ZIP та evidence status без прихованої недоступності | Показувати ready/stale/blocked + причина і flow у поточній картці |
 | OUT-04 | P1 | PARTIAL (v2.24 Jira/verified local document quote gate; human semantic truth UAT open) | Контроль фактичності вставлених доказів і PDF/логів | Кожна вимога та тест мають джерело, або чітко OPEN |
 | UX-01 | P0 | IMPLEMENTED (code) | Зберігати стандартну сторінку, без окремих режимів | Меню/поля/status/email/лог ZIP збережені |
-| UX-02 | P1 | PARTIAL | Compact descriptions і progressive disclosure | Скорочення повторів, не ховати основний результат |
+| UX-02 | P1 | PARTIAL (v2.25 exact adjacent generated-line dedup and in-place density hints, semantic gold-set UAT open) | Compact descriptions і progressive disclosure | Скорочення повторів, не ховати основний результат |
 | UX-03 | P2 | PARTIAL | AERTiCKET-inspired branding | Дійсні токени/логотип потребують brand approval |
 | UX-04 | P2 | IMPLEMENTED (copy/edit mail, next/save); live UAT open | Copy task/email + quick next/open/save | Можливість проходити список без зайвих кліків, UAT |
 | QA-01 | P0 | IMPLEMENTED (code) | Python/Node/Release/Compose CI | Required checks + merge only when green |
 | QA-02 | P0 | GATE | Live Jira + Kibana + CCON auth UAT з 2–3 реальними задачами | Browser session, 1 normal flow, 1 multi-error flow, 1 ambiguous flow |
-| QA-03 | P0 | GATE (frozen 20–30 real-case workflow implemented, scores not yet collected) | Реальні 20–30 gold cases, blinded AI vs analyst | Measure false facts, missed conditions, task/edit quality |
-| QA-04 | P1 | PARTIAL (v2.23 deterministic output warnings, real-case factual metrics missing) | AI quality metrics, reject invalid dossier | Structured schema / briefing/factors checks implemented; factual support pending |
+| QA-03 | P0 | GATE (v2.25 frozen 20–30 case deterministic preflight wired; real human scores still required) | Реальні 20–30 gold cases, blinded AI vs analyst | Measure false facts, missed conditions, task/edit quality |
+| QA-04 | P1 | PARTIAL (v2.25 case-level warning counts, source/QA deficits and A/B deltas; business-truth metrics require real reviewers) | AI quality metrics, reject invalid dossier | Structured schema / briefing/factors checks implemented; factual support pending |
 | QA-05 | P1 | PARTIAL | Safe daily prompt calibration checklist | Whitelisted diagnostics implemented; prompt version change evaluated separately |
 | QA-06 | P1 | IMPLEMENTED (staged A/B + human approval + rollback); real reviews pending | Prompt A/B regression / automatic candidate proposal | Human gate, compare gold set, rollback, no unreviewed auto-prompts |
 | QA-07 | P2 | PARTIAL (synthetic AF/KL/Finnair multi-error, retry, malformed and nested ZIP matrix; live formats UAT open) | Offline fixtures for realistic REST/XML/multi-error formats | Coverage by supplier method, nested ZIP cases, pagination, retries |
@@ -99,7 +99,7 @@
 | **#14 — CODE COMPLETE; LOCAL UAT OPEN** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
 | **#15 — CODE COMPLETE; LIVE UAT OPEN** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
 | **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — MERGED; HUMAN UAT OPEN** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI green, без auto-ranking |\n| **#20 — MERGED; SECURITY UAT OPEN** | QA-08: безпечна мінімізація даних перед відправленням у схвалену модель | Synthetic prompt payload, URL/PII/secrets tests + CI |\n| **#21 — MERGED; BROWSER UAT OPEN** | EVD-13: локальний браузерний handoff JSON/XML/ZIP, прив'язка доказів до Jira fingerprint | ZIP safety, structure only, PDF explicitly unread |
-| **#22 — MERGED; LIVE UAT OPEN** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | CI on PR & main green, host ACL/encryption unverified |\n| **#23 — IN PROGRESS, GROUPED** | BA-01/BA-02/OUT-01/QA-04: exact conditions, email evidence checks, dossier readiness | CI + semantic gold-case UAT, no Jira/email writes |\n| **#24 — IN PROGRESS, GROUPED** | EVD-13 + BA-09 + OUT-04: local PDF/JSON/XML/ZIP text, Confluence browser handoff, verified quote cross-check | Zero raw document egress; source hash/fingerprint validation; CI + human UAT |\n| **Далі, GROUPED** | UX-02/QA-04 and 20–30 gold-case regression, Jira/Kibana live UAT | Спільні контракти, інваріанти, CI та людина як reviewer |
+| **#22 — MERGED; LIVE UAT OPEN** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | CI on PR & main green, host ACL/encryption unverified |\n| **#23 — MERGED; HUMAN UAT OPEN** | BA-01/BA-02/OUT-01/QA-04: exact conditions, email evidence checks, dossier readiness | CI + semantic gold-case UAT, no Jira/email writes |\n| **#24 — MERGED; BROWSER UAT OPEN** | EVD-13 + BA-09 + OUT-04: local PDF/JSON/XML/ZIP text, Confluence browser handoff, verified quote cross-check | Zero raw document egress; source hash/fingerprint validation; CI + human UAT |\n| **#25 — IN PROGRESS, GROUPED** | UX-02 + QA-04 + QA-03 preflight: safe description dedup, in-place density warnings, local frozen 20–30 A/B metrics | Green CI, no actual gold-case verdict without independent human review |\n| **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
 ## 4. Definition of Done для кожного наступного блоку

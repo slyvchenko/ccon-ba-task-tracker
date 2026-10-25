@@ -13,6 +13,7 @@ from prompt_calibration import update_daily
 from ba_questions import sync_questions, all_evidence
 from ba_decisions import sync_decision_proposals
 from ba_quality_gate import quality_gate
+from ba_compactness import compact_generated
 from local_source_audit import local_sources
 
 
@@ -66,6 +67,11 @@ def _apply(path,root,focus_issue=None):
             # Verified untouched analysis: do not normalize, retimestamp,
             # run quality checks, or rewrite the existing optional email.
             continue
+        # Normalize only freshly generated descriptions. User-approved drafts,
+        # manually edited emails and untouched focus siblings are never modified.
+        compacted, compactness = compact_generated(analysis['standardDescription'])
+        analysis['standardDescription'] = compacted
+        analysis['descriptionCompactness'] = compactness
         verified_supplier_method = verified_method(root, task['key'], current['fingerprint'])
         attachment_ready = supplier_zip_ready(root, task['key'])
         analysis['emailDraft']=make_ready_draft(

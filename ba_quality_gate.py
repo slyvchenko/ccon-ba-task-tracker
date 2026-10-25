@@ -7,6 +7,7 @@ No network access, no Jira mutations, no raw source text in output diagnostics.
 import re
 from urllib.parse import urlsplit, urlunsplit
 from ba_output_checks import dossier_checks, email_checks, technical_literals
+from ba_compactness import profile, advisory_findings
 
 MAX_FINDINGS = 100
 REQUIRED_KINDS = ("POSITIVE", "NEGATIVE")
@@ -218,11 +219,13 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
     claims, source_findings = claim_audit(briefing, sources)
     coverage, qa_findings = rule_coverage(briefing)
     writing_findings = description_review(analysis.get("standardDescription"), briefing)
+    compact_findings = advisory_findings(analysis.get("standardDescription"))
     output_findings = dossier_checks(analysis) + email_checks(
         analysis.get("emailDraft"), attachment_ready=attachment_ready,
         verified_supplier_method=supplier_method)
     # Reserve space for generated-output warnings, even when source review has many findings.
-    findings = (output_findings + source_findings + qa_findings + writing_findings)[:MAX_FINDINGS]
+    findings = (output_findings + source_findings + qa_findings +
+                writing_findings + compact_findings)[:MAX_FINDINGS]
     if not claims:
         findings.append({"code": "NO_CONFIRMED_SOURCE_CLAIMS", "ref": "briefing",
                          "messageUk": "Немає підтверджених фактів або правил із перевірюваним джерелом."})
@@ -248,6 +251,8 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
                                                  for x in claims),
                     "rulesTracked": len(coverage),
                     "rulesFullyCovered": sum(not x["missing"] for x in coverage),
-                    "outputFindings": len(output_findings)},
+                    "outputFindings": len(output_findings),
+                    "descriptionProfile": profile(analysis.get("standardDescription")),
+                    "compactnessSuggestions": len(compact_findings)},
         "limitation": "Excerpt presence and QA links verified mechanically; no semantic proof of correctness.",
     }
