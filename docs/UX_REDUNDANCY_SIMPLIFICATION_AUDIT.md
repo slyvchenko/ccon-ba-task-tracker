@@ -42,3 +42,7 @@
 - Мінімальний DoD: немає false-ready, semantic regression, зміни rank/sprint/WRITE, втрати доказів, розриву CAS, прихованого ручного листа або зростання часу deep case. Результат змін має бути **візуально спокійніший**, але не функціонально бідніший.
 
 **Статус:** це попередній аудит, backlog hypotheses. PR #34 додає браузерні E2E та цю документацію; **жоден з VIS-01..16 не реалізовано або не видалено**.
+
+## Implementation note for #35
+
+**VIS-01/03/04/09/16 partial implementation:** `assets/visual-clarity.mjs` keeps Jira/manual/sprint fields distinguishable with a quiet text line, retains active blocker/email/wait warnings, moves nonprimary queue statistics to a collapsed `Деталі черги`, keeps a single above-fold Next Action, and removes redundant empty briefing or empty assessment-reason text. Full history, source provenance and QA gates remain untouched. `tests/visual-clarity.test.mjs` is synthetic. **Code changes do not prove that a real BA reads the screen faster.** VIS-09 full statusbar redesign is intentionally deferred because CAS/stale/offline states have distinct safety meanings. #36–38 remain unimplemented proposals.
