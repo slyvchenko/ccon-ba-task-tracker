@@ -221,7 +221,9 @@ def restore_backup(root, filename, confirmation):
             # old transactions over the restored file on the next launch.
             connection = sqlite3.connect(database, timeout=10)
             try:
-                connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                checkpoint = connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+                if checkpoint and checkpoint[0] != 0:
+                    raise ValueError("SQLite WAL is busy. Close all readers before restore.")
             finally:
                 connection.close()
             if (root / "ba_state.db-wal").exists() or (root / "ba_state.db-shm").exists():
