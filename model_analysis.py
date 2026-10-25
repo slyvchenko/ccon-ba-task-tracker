@@ -17,6 +17,7 @@ from app_config import ROOT
 from ba_briefing import validate_briefing
 from desk_store import Desk
 from priority_score import validate_priority_factors
+from prompt_safety import sensitive_key, strip_sensitive_text
 from schema import validate_analysis
 from storage import write_json
 
@@ -37,7 +38,8 @@ SECRET_KEYS = frozenset((
 # embedded in Jira comments. This is defense in depth, not formal DLP.
 _CREDENTIAL_NAME = (
     r"(?:password|passphrase|api[_-]?key|access[_-]?token|refresh[_-]?token|"
-    r"token|client[_-]?secret|secret|authorization|totp|private[_-]?key)"
+    r"token|client[_-]?secret|secret|session[_-]?(?:id|token)|"
+    r"set[_-]?cookie|authorization|totp|private[_-]?key)"
 )
 _BEARER_TOKEN = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9_.~+/=-]{12,}")
 SECRET_TEXT = re.compile(
@@ -92,7 +94,7 @@ def sanitize_source(value):
         clean = {}
         for key, item in value.items():
             label = str(key)
-            if label.lower() in SECRET_KEYS or label in ("emailAddress", "content"):
+            if label.lower() in SECRET_KEYS or sensitive_key(label) or label in ("emailAddress", "content"):
                 continue
             if label in ("bodyAdf", "descriptionAdf"):
                 links = extract_adf_links(item)
@@ -104,8 +106,8 @@ def sanitize_source(value):
     if isinstance(value, list):
         return [sanitize_source(v) for v in value]
     if isinstance(value, str):
-        return SECRET_TEXT.sub("[REDACTED_CREDENTIAL]",
-                               _BEARER_TOKEN.sub("[REDACTED_CREDENTIAL]", value))
+        return strip_sensitive_text(SECRET_TEXT.sub("[REDACTED_CREDENTIAL]",
+                               _BEARER_TOKEN.sub("[REDACTED_CREDENTIAL]", value)))
     return value
 
 
