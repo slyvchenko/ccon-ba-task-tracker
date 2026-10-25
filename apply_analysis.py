@@ -65,15 +65,18 @@ def _apply(path,root,focus_issue=None):
             # Verified untouched analysis: do not normalize, retimestamp,
             # run quality checks, or rewrite the existing optional email.
             continue
+        verified_supplier_method = verified_method(root, task['key'], current['fingerprint'])
+        attachment_ready = supplier_zip_ready(root, task['key'])
         analysis['emailDraft']=make_ready_draft(
-            task['key'], analysis,
-            method=verified_method(root, task['key'], current['fingerprint']),
-            attachment_ready=supplier_zip_ready(root, task['key']))
+            task['key'], analysis, method=verified_supplier_method,
+            attachment_ready=attachment_ready)
         related = {ref['linkedKey']: context.get('issues', {}).get(ref['linkedKey'])
                    or context.get('linkedIssues', {}).get(ref['linkedKey'])
                    for ref in current.get('links', []) if isinstance(ref, dict)
                    and isinstance(ref.get('linkedKey'), str)}
-        gate = quality_gate(analysis, current, related)
+        gate = quality_gate(analysis, current, related,
+                            attachment_ready=attachment_ready,
+                            supplier_method=verified_supplier_method)
         analysis['qualityGate'] = gate
         # A machine-verified link/excerpt is not semantic correctness.
         # Do not allow a READY_FOR_REVIEW badge when the checks have gaps.
