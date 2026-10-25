@@ -6,7 +6,7 @@ import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus}
   from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
-import {createQueueModel,createSearchDebouncer} from './queue-performance.mjs';
+import {createQueueModel,createSearchDebouncer,selectedAfterFilter} from './queue-performance.mjs';
 import {EFFORT_LABELS, effortInfo, quickWinCandidate, quickWinExplanation} from './effort-planning.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
 import {loadTaskDecisions} from './decisions-ui.mjs';
@@ -895,10 +895,12 @@ async function load() {
       // Reconcile against the ACTUAL filtered queue, not just all snapshot
       // keys, or a nonmatching old detail remains indefinitely selected.
       const matching=visibleTasks();
-      if (!matching.some(task=>task.key===selected) &&
-          !isDirty(selected) && !detailInteractionFocused()) {
+      const nextSelected=selectedAfterFilter(matching,selected,{
+        protectEditor:isDirty(selected)||detailInteractionFocused()
+      });
+      if (nextSelected!==selected) {
         storeCurrentTaskView();
-        selected=matching[0]?.key || null;
+        selected=nextSelected;
       }
       renderList();
       updateSnapshotInfo();
@@ -952,7 +954,7 @@ function applyFilters() {
   const items=visibleTasks();
   if (!items.some(task=>task.key===selected)) {
     storeCurrentTaskView();
-    selected=items[0]?.key || null;
+    selected=selectedAfterFilter(items,selected);
     pendingDetail=false;
     renderList();
     renderDetail();
