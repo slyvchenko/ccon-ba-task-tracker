@@ -189,7 +189,7 @@ function qualityGateMarkup(gate) {
     'Цитат у прочитаних джерелах: ' + escapeHtml(summary.sourceExcerptsPresent || 0) + '/' +
     escapeHtml(summary.claimsChecked || 0) + '. Правил із QA: ' +
     escapeHtml(summary.rulesFullyCovered || 0) + '/' + escapeHtml(summary.rulesTracked || 0) +
-    '. Це структурна перевірка, не підтвердження бізнес-правильності.</p>' +
+    '. Зауважень до BA-результату: ' + escapeHtml(summary.outputFindings || 0) + '. Це структурна перевірка, не підтвердження бізнес-правильності.</p>' +
     (coverage ? '<div class="section-label">Покриття умов</div><ul>' + coverage + '</ul>' : '') +
     (findings ? '<div class="section-label">Що виправити</div><ul>' + findings + '</ul>' : '') + '</details>';
 }
