@@ -1038,7 +1038,23 @@ async function loadCloudCapabilities() {
   try {
     const health = await api('/api/health');
     cloudMode = health.cloud === true;
+    if (!cloudMode) {
+      const backup = health.localBackup || {};
+      $('backupState').textContent = backup.backupCheckFailed ?
+        'Резервування: остання автоматична спроба не вдалася. Перевір локальний запуск.' :
+        backup.available ?
+        'Резервна копія: ' + dateLabel(backup.createdAt) + ' · ревізія ' + backup.revision :
+        'Резервна копія: відсутня. Зупини застосунок і перевір локальні дані.';
+      const watcher = health.snapshotWatcher || {};
+      $('watcherState').textContent =
+        watcher.state === 'OK' ? 'Імпорт: перевірено · ' + (watcher.attempts ?? 0) + ' спроб' :
+        watcher.state === 'FAILED' ? 'Імпорт: остання спроба не вдалася. Попередні правки збережені.' :
+        watcher.state === 'NO_SNAPSHOT' ? 'Імпорт: snapshot ще не знайдено.' :
+        'Імпорт: перевірка стану…';
+    }
     if (cloudMode) {
+      $('backupState').hidden = true;
+      $('watcherState').hidden = true;
       $('bulkEmail').hidden = true;
       $('import').hidden = true;
       if ($('email')) $('email').textContent = 'Зберегти й скопіювати лист';
