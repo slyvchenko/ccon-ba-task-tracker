@@ -227,6 +227,26 @@ class BrowserRegression(unittest.TestCase):
         self.assertEqual(self.page.locator('details[aria-label="Історія та минулі версії"]').count(),1)
         self.assertEqual(self.page.locator("#taskHistory").count(),1)
 
+    def test_visual_layout_synthetic_screenshots_and_no_horizontal_overflow(self):
+        self.choose("CCON-1")
+        for width,height in ((320,850),(768,900),(1440,900)):
+            self.page.set_viewport_size({"width":width,"height":height})
+            self.page.locator("#nextText").wait_for()
+            geometry=self.page.evaluate("""() => ({
+              documentWidth:document.documentElement.scrollWidth,
+              viewportWidth:document.documentElement.clientWidth,
+              mainWidth:document.querySelector('#detail').getBoundingClientRect().width,
+              queueWidth:document.querySelector('#list').getBoundingClientRect().width
+            })""")
+            self.assertGreater(geometry["mainWidth"],0)
+            self.assertGreater(geometry["queueWidth"],0)
+            self.assertLessEqual(geometry["documentWidth"],
+                                 geometry["viewportWidth"]+2,
+                                 str(geometry))
+            self.page.screenshot(path=str(ARTIFACTS /
+                f"synthetic-layout-{width}.png"),full_page=True)
+        self.assertEqual(self.page.locator("#copyNext").count(),1)
+
     def test_three_viewports_and_short_soak_no_external_writes(self):
         self.choose("CCON-2")
         for width,height in [(320,800),(768,900),(1440,900)]:

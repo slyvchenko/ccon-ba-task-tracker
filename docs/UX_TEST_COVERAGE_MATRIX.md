@@ -160,3 +160,7 @@ The existing Data menu now exposes draft-recovery actions. Queue selection uses 
 ## v2.37: progressive disclosure preserved semantics
 
 New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, evidence count and canonical rank/filter invariants. The existing Playwright Chromium runner now tests the actual collapsed filter opened via summary, WRITE/outside sprint result counts, all Data menu actions after grouping, visible source and historical detail elements. Missing: human Windows 400% zoom, NVDA disclosures and deep-case fact/ZIP comparison.
+
+## v2.38: CSS scope and responsive screenshot evidence
+
+`tests/css-cleanup.test.mjs` detects removed obsolete strip/style helpers while preserving current provenance/focus/advanced filters. Playwright synthetic Chromium E2E now records full-page screenshots at 320/768/1440, asserts usable task queue and detail and no document overflow beyond 2px rounding. This is a **synthetic browser smoke**, not Windows Edge/native 400% zoom or pixel-approved baseline. See `docs/CSS_VISUAL_REGRESSION.md` and post-38 `docs/BACKLOG_CLOSEOUT_PLAN.md` for real acceptance.

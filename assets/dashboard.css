@@ -1,3 +1,6 @@
+/* v2.38 CSS audit: removed orphaned pre-v2.35 signal-strip/text helpers.
+   Keep canonical task-meta-compact with independent Jira/manual provenance.
+   Do not alter core grid, AERTiCKET branding, evidence, email or focus styles. */
 :root {
   font-family:Aptos,"Segoe UI",Arial,sans-serif;
   font-size:15px;
@@ -284,24 +287,7 @@ h3 {
   font-size:13px;
   color:#647b96
 }
-.task-badges {
-  margin-bottom:18px
-}
-.text-green {
-  color:var(--green)
-}
-.text-blue {
-  color:#245aab
-}
-.text-red {
-  color:var(--red)
-}
-.text-amber {
-  color:var(--amber)
-}
-.text-gray {
-  color:#65768b
-}
+
 .detail-grid {
   display:grid;
   grid-template-columns:minmax(0,1.12fr) minmax(290px,.88fr);
@@ -783,22 +769,7 @@ body,button,input,select,textarea,option {
 .bulk-row .muted {
   font-size:12px
 }
-.signal-strip {
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  gap:8px 16px;
-  margin:14px 0 18px;
-  font-size:13px;
-  line-height:1.5
-}
-.signal-strip .badge {
-  margin:0
-}
-.signal-text+.signal-text {
-  border-left:1px solid #c5d0df;
-  padding-left:16px
-}
+
 .statusbar {
   min-height:36px;
   padding-top:7px;
@@ -952,12 +923,7 @@ body,button,input,select,textarea,option {
   background:#f4f7fb
 }
 @media(max-width:750px) {
-  .signal-strip {
-    gap:8px 12px
-  }
-  .signal-text+.signal-text {
-    padding-left:12px
-  }
+
   .statusbar #snapshotInfo {
     margin:0
   }
@@ -1024,12 +990,6 @@ body,button,input,select,textarea,option {
 }
 .task-meta .badge {
   font-size:11px
-}
-.task-meta .signal-text {
-  font-size:12px
-}
-.task-meta .signal-text+.signal-text {
-  padding-left:14px
 }
 .work-state {
   padding:16px 18px
