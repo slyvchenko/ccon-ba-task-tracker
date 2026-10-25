@@ -102,8 +102,9 @@ class EvidenceRetentionTests(unittest.TestCase):
     def test_untrusted_symlink_or_external_root_fails_closed(self):
         old = self.version(A)
         self.pins(old)
-        external = self.root / "elsewhere"
-        external.mkdir()
+        external_context = tempfile.TemporaryDirectory(prefix="external-evidence-")
+        self.addCleanup(external_context.cleanup)
+        external = Path(external_context.name)
         inside = old / "hidden"
         try:
             inside.symlink_to(external, target_is_directory=True)
