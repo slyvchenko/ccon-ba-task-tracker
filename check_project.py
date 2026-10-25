@@ -14,6 +14,12 @@ def main():
     commands = [[sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-v']]
     commands += [[node, '--check', str(path)] for path in sorted((ROOT / 'assets').glob('*.mjs'))]
     commands.append([node, '--test', '--test-isolation=none', *[str(path) for path in sorted((ROOT / 'tests').glob('*.test.mjs'))]])
+    # Synthetic smoke measurements print p50/p95 on this runner but have no
+    # hard wallclock threshold (CI hardware is not the Windows BA laptop).
+    commands.append([sys.executable, 'performance_smoke.py',
+                     '--sizes', '100', '500', '1000', '--iterations', '5'])
+    commands.append([node, 'queue_benchmark.mjs',
+                     '--sizes', '100', '500', '1000', '--iterations', '5'])
     for command in commands:
         result = subprocess.run(command, cwd=ROOT)
         if result.returncode:
