@@ -9,7 +9,7 @@
 <body>
   <header>
     <div class="brand-lockup"><div class="brand-wordmark" aria-label="AERTiCKET"><span class="brand-aer">AER</span><span class="brand-ticket">TiCKET</span></div><div class="brand-desk"><h1>CCON BA Desk</h1><p class="muted">BA analysis · Sprint priorities · Evidence-based decisions</p></div></div>
-    <div class="tools"><button id="bulkEmail">Відкрити всі листи (0)</button><details id="dataMenu" class="data-menu"><summary>Дані <span aria-hidden="true">▾</span></summary><div class="data-menu-items"><button id="import">Імпортувати snapshot</button><button id="export">Експорт мого стану</button><a href="/api/daily-report.md" target="_blank" rel="noopener noreferrer">Щоденний звіт змін і якості</a></div></details></div>
+    <div class="tools"><button id="bulkEmail">Відкрити всі листи (0)</button><details id="dataMenu" class="data-menu"><summary>Дані <span aria-hidden="true">▾</span></summary><div class="data-menu-items"><button id="import">Імпортувати snapshot</button><button id="export">Експорт мого стану</button><p id="backupState" class="muted" role="status" aria-live="off">Резервування: перевірка…</p><p id="watcherState" class="muted" role="status" aria-live="off">Імпорт: перевірка…</p><a href="/api/daily-report.md" target="_blank" rel="noopener noreferrer">Щоденний звіт змін і якості</a></div></details></div>
   </header>
   <div id="statusbar" class="statusbar" role="status" aria-live="polite"><span id="message"></span><span id="snapshotInfo"></span></div>
   <div id="deltaStrip" class="delta-strip" role="status" aria-live="polite" hidden></div>

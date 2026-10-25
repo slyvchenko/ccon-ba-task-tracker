@@ -128,3 +128,9 @@ Added `tests/focus-navigation.test.mjs` (shortcut map, editable target, IME and 
 - `performance_smoke.py`: SQLite `view` vs single-row `revision` vs cached `serializedHttp` p50/p95 and payload bytes (synthetic only).
 - `queue_benchmark.mjs`: uncached vs indexed cold/warm Node search p50/p95, explicit baseline parity, 100/500/1000 synthetic cases.
 - **CI smoke** runs short benchmarks after deterministic Python/Node/release tests, printing metrics only. No milliseconds hard limit on shared runner. Real browser/Windows, accessibility, scroll and 8-hour heap/memory runs are **NOT** covered and remain QA-09/PERF-05/07 UAT gates.
+
+## v2.32: local private backup and crash-state regressions
+
+`tests/test_local_backup.py` exercises complete backup/restore of synthetic notes, email draft, manual effort and revisions; rescue before overwrite; SHA mismatch and invalid confirmation; live process-lock restore refusal; symlink/path checks; seven-backup rotation; invalid Jira snapshot; supported legacy SQLite backup before migration; changed/unchanged watcher retry and recovery without repeated attempts. Existing CAS tests still prove no last-write-wins while the server operates normally.
+
+UI now shows authenticated local backup timestamp/revision and snapshot-watcher state in existing **Data** dropdown, not an external browser download. No file body route, no unconfirmed Jira/email action. CI tests are synthetic only; they do not prove Windows ACL, virus scanner concurrency, hard power-loss, browser localStorage recovery, 400% zoom, assistive reading or 8h stability. Human UAT instructions in `docs/PRIVATE_BACKUP_RESTORE.md` are explicit gates before marking REL-03/04/05 fully DONE.

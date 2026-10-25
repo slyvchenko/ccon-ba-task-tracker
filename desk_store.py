@@ -43,6 +43,11 @@ class Desk:
                 count INTEGER NOT NULL);
             ''')
             init_history(c)
+            # Preserve earlier supported local SQLite schemas on upgrade.
+            if 'active' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
+                c.execute('ALTER TABLE tasks ADD COLUMN active INTEGER NOT NULL DEFAULT 1')
+            if 'modified_at' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
+                c.execute('ALTER TABLE tasks ADD COLUMN modified_at TEXT')
             if 'position' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
                 c.execute('ALTER TABLE tasks ADD COLUMN position INTEGER NOT NULL DEFAULT 0')
             if 'email_draft' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:

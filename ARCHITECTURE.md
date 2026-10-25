@@ -150,3 +150,13 @@ Each browser tab can remember its selected task and view; no raw notes, source e
 `desk_store.py` provides `view_json_bytes()`, an immutable in-memory HTTP response cached by `(SQLite state_revision, import error)`. Each read checks the live database revision and, on miss, assembles payload and revision within one SQLite read transaction, guarding concurrency across separate Desk processes. `server.py` sends the cached bytes from original `/api/tasks`, using unchanged authenticated localhost/cloud/headers contract. Object consumers continue to receive independent `Desk.view()` dictionaries.
 
 Timing evidence comes from `performance_smoke.py` and `queue_benchmark.mjs` with only synthetic 100/500/1000 issues. Neither evaluates real Chrome DOM layout, Windows laptop speed, human time or supplier correctness. See `docs/LARGE_QUEUE_PERFORMANCE.md`.
+
+## v2.32: confidential local SQLite recovery and bounded snapshot watcher
+
+`local_backup.py` uses SQLite's online backup API to create a standalone, consistent private DB under gitignored `backups/`; verifies PRAGMA integrity_check, minimum supported BA schema, SHA-256 + file size and a metadata-only manifest. The snapshot file is published before the manifest, so an interrupted backup is ignored; retention removes a manifest before its DB. No secrets or Jira rows in manifests or GitHub/public CI.
+
+The local server holds `pipeline_lock(root/'.local-server')` for its full lifetime. Before Desk migrations on startup, an existing user DB is backed up if no valid backup newer than 24 h; a first-time DB is backed up after import. The watch thread checks the backup policy every 5 minutes and publishes only status metadata through existing authenticated /api/health. OFFLINE `restore_backup` must acquire the same server lock, verify filename/hash/schema, take a rescue backup, ensure no pending WAL traffic, stage verified SQLite content and atomically replace DB. This is not a browser or HTTP destructive action.
+
+`snapshot_monitor.py` avoids processing unchanged successful source snapshots every 3 seconds, retries unchanged failed imports only after 30 seconds, and publishes generic diagnostic state without supplier logs/PII. The previous `Desk.import_snapshot` transaction, CAS state revision and Jira/Email read-only guarantees are unchanged. After server shutdown the watcher stop event is set, the port closes and the thread is joined.
+
+Backups contain **DB saved state only**, not `data/`, uncommitted browser localStorage, external supplier downloads or Jira source evidence files. Windows ACL/BitLocker and real forced-crash/restore E2E remain untested until manual UAT. See `docs/PRIVATE_BACKUP_RESTORE.md`.

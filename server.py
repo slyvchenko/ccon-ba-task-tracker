@@ -4,6 +4,8 @@ import json
 import os
 import re
 import socket
+import sqlite3
+import time
 import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -17,6 +19,9 @@ from mail_service import open_email_batch
 from schema import text_field, validate_draft, validate_analysis
 from review_report import render_markdown, validate_report, REPORT_LIMIT
 from cloud_security import cloud_configuration, authorized
+from pipeline_lock import pipeline_lock
+from snapshot_monitor import SnapshotMonitor
+from local_backup import create_backup, backup_status
 
 STATIC_FILES = {
     '/': ('dashboard.html', 'text/html; charset=utf-8'),
@@ -162,7 +167,12 @@ def handler(desk, cloud=None):
                     attempt = None
                 return self.send(200, {'app': 'CCON BA Desk', 'version': VERSION,
                                        'cloud': bool(cloud), 'lastSuccessfulDailyRun': run,
-                                       'lastDailyAttempt': attempt})
+                                       'lastDailyAttempt': attempt,
+                                       'localBackup': None if cloud else {
+                                           **backup_status(desk.root),
+                                           'backupCheckFailed': bool(getattr(desk, 'backup_failure', False))},
+                                       'snapshotWatcher': getattr(desk, 'watcher_status',
+                                                                 {'state': 'STARTING'})})
             if path in ('/api/daily-report', '/api/daily-report.md'):
                 source = desk.root / 'data' / 'daily_review_report.json'
                 if not source.exists():
@@ -304,30 +314,61 @@ def main():
             return
     except (OSError, ValueError):
         pass
+    try:
+        # The same process lock is held throughout serve_forever and acquired
+        # by offline recovery. An operator cannot replace the live database.
+        with pipeline_lock(Path(args.data_dir) / ".local-server"):
+            return serve_locked(args, cloud, url)
+    except (OSError, ValueError, sqlite3.Error) as error:
+        print("BA Desk startup/recovery check failed: " + str(error), flush=True)
+        return 1
+
+
+def serve_locked(args, cloud, url):
+    # Before schema migration/import: safeguard the EXISTING user database.
+    # Older SQLite schema versions are valid backups, and remain recoverable.
+    if not cloud:
+        create_backup(args.data_dir)
     desk = Desk(args.data_dir)
     try:
         desk.import_snapshot()
-    except ValueError as e:
-        print(e)
+    except ValueError as error:
+        print("Import warning: " + str(error), flush=True)
+    if not cloud:
+        # New installation: first post-import backup (no previous DB existed).
+        create_backup(args.data_dir)
+    monitor = SnapshotMonitor(desk)
+    desk.watcher_status = monitor.status
     try:
-        # 0.0.0.0 is permitted only behind a private Docker network plus
-        # a configured OIDC gateway and independent shared-secret check.
         server = LocalServer(('0.0.0.0' if cloud else '127.0.0.1', args.port),
                              handler(desk, cloud))
     except OSError:
         print(f'Port {args.port} is occupied. Stop the previous server or use --port 8766.', flush=True)
-        return
+        return 1
+    stop = threading.Event()
+
     def watch():
+        last_backup_check = 0.0
         while not stop.wait(3):
             try:
-                desk.import_snapshot()
-            except ValueError:
-                pass
-    stop = threading.Event()
-    threading.Thread(target=watch, daemon=True).start()
+                monitor.check()
+            except Exception:
+                # The watcher must survive a broken source directory or
+                # permission change, but expose a generic diagnostic.
+                monitor.status["state"] = "FAILED"
+                monitor.status["failures"] += 1
+            if not cloud and time.monotonic() - last_backup_check >= 300:
+                last_backup_check = time.monotonic()
+                try:
+                    create_backup(args.data_dir)
+                    desk.backup_failure = False
+                except (ValueError, OSError, sqlite3.Error):
+                    desk.backup_failure = True
+    watcher = threading.Thread(target=watch, daemon=True)
+    watcher.start()
     print(f'CCON BA Desk: {cloud["origin"] if cloud else url}\nData: {desk.db}\nCtrl+C to stop.', flush=True)
     if args.open and not cloud:
-        webbrowser.open(f'http://localhost:{args.port}')
+        webbrowser.open(url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -335,6 +376,8 @@ def main():
     finally:
         stop.set()
         server.server_close()
+        watcher.join(timeout=5)
+    return 0
 
 if __name__ == '__main__':
     main()

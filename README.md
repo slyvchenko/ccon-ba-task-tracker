@@ -372,3 +372,23 @@ For generated descriptions only, the desk drops exact immediately duplicated imp
 Локальний сервер кешує повну JSON-відповідь `/api/tasks` до наступної транзакційної ревізії SQLite, перевіряючи також зміни з іншого процесу. Безпека, приватні статуси/чернетки, правила активного спринту й листування не змінювалися. Звичний інтерфейс та робота без cloud залишаються.
 
 Синтетичні перевірки: `python performance_smoke.py --sizes 100 500 1000 --iterations 25`, `node queue_benchmark.mjs --sizes 100 500 1000 --iterations 25`. Вони показують p50/p95 SQLite/Node, **не реальну швидкість інтерфейсу в Chrome або Windows**. Повні браузерні заміри і 8-годинний тест залишаються відкритими. Методика й критерії: `docs/LARGE_QUEUE_PERFORMANCE.md`.
+
+## v2.32: приватний backup і відновлення після збою
+
+Локальна база `ba_state.db` тепер резервується через SQLite online backup API **перед міграцією при старті** (за потреби, якщо немає свіжої 24-годинної копії), а також приблизно щодня. Вміст копії перевіряється, хешується SHA-256 і зберігається у приватній `backups/` (до 7 останніх копій, `gitignore`). У звичному меню «Дані» відображається дата останньої копії й стан автоматичного імпорту; жодного нового таба чи автозавантаження назовні.
+
+**Ручні команди з каталогу програми:**
+
+```powershell
+py -3 local_backup.py status
+py -3 local_backup.py backup
+py -3 local_backup.py verify --name backup-YYYYMMDDTHHMMSSZ-XXXXXXXXXXXX.sqlite3
+```
+
+**Відновлення лише після зупинки сервера й закриття вкладок** через явну CLI-команду, яка спершу створює додаткову rescue-копію:
+
+```powershell
+py -3 local_backup.py restore --name backup-YYYYMMDDTHHMMSSZ-XXXXXXXXXXXX.sqlite3 --confirm "RESTORE LOCAL BA DATA"
+```
+
+Уважно прочитай `docs/PRIVATE_BACKUP_RESTORE.md`: копія містить приватні тексти в SQLite, **не зашифрована** й має зберігатися тільки на захищеному Windows диску (BitLocker/ACL). Вона **не** охоплює незбережені браузерні форми, локальні файли `data/` та supplier ZIP. При аварійному restore можливі втрати змін після часу backup. Перевірки Windows crash/restart і 2 browser tabs залишаються відкритими; проходження CI їх не замінює.

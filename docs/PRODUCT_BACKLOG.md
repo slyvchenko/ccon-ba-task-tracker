@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #30 (v2.30). **Поточний кандидат:** PR #31 (v2.31), великі черги, кеш нормалізованого пошуку і JSON відповіді, тестові 100/500/1000 задач; Windows/browser UX UAT окремо.  
+**Базовий код:** `main` після PR #31 (v2.31). **Поточний кандидат:** PR #32 (v2.32), приватні SQLite backups + validated offline rescue restore (damaged DB forensic copy, strict WAL), quiet watcher retry and startup health; Windows crash/browser UAT окремо.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -136,9 +136,9 @@
 | PERF-10 | P2 | PLANNED | Evaluate SQLite WAL, busy timeouts and JSON index with empirical trace | Do not enable blindly; Windows/backup compatibility |
 | REL-01 | P0 | IMPLEMENTED (v2.27 per-task SQLite CAS, 409 and human resolution; live browser UAT open) | Per-task optimistic concurrency token and stale edit conflict UX | Two tabs cannot silently overwrite each other's note/draft |
 | REL-02 | P0 | PARTIAL (v2.27 recovered drafts pin original revision, explicit conflict; power-loss multi-tab recovery UAT open) | Atomic user-draft recovery and edit revision validation | Forced close/reopen/reload leaves acknowledged edits intact |
-| REL-03 | P0 | NEXT | Safe backup/restore of private SQLite + manifest without export secrets | Crash drill, documented recovery and permissions |
-| REL-04 | P1 | PLANNED | Watcher failure/retry diagnostics without toast spam | No error swallowed; error state shown, P-12 |
-| REL-05 | P1 | PLANNED | Graceful server shutdown and restart during import | No database damage/partial save, Windows UAT |
+| REL-03 | P0 | PARTIAL (v2.32 verified local SQLite backup, checksum, online API, offline restore and rescue; Windows crash UAT open) | Safe backup/restore of private SQLite + manifest without export secrets | Crash drill, documented recovery and permissions |
+| REL-04 | P1 | PARTIAL (v2.32 signature-based watcher, 30s retry, generic health counters and quiet menu state; live file-lock UAT pending) | Watcher failure/retry diagnostics without toast spam | No error swallowed; error state shown, P-12 |
+| REL-05 | P1 | PARTIAL (v2.32 server lifetime cross-process lock, shutdown watcher join, SQLite backup pre-migration; forced kill UAT open) | Graceful server shutdown and restart during import | No database damage/partial save, Windows UAT |
 | REL-06 | P1 | PLANNED | Data validation and schema migration matrix across releases | v2.23→current, old DB revision initialized once |
 | REL-07 | P1 | PLANNED | Retry strategy for recoverable local API failures with idempotency | No duplicate mailto or Done, bounded retry |
 | REL-08 | P1 | PLANNED | OS folder permissions/encryption checks for private local ZIP | Fail closed/notice for insecure ACL configuration |
@@ -159,13 +159,13 @@
 | QA-15 | P2 | PLANNED | Scheduled offline regression drill on diverse machine profiles | OS, Python version, locale, browser, power mode |
 | OPS-01 | P1 | NEXT | Standard synthetic performance smoke + fixed cohort sizes | Repeatable local script and measurement doc |
 | OPS-02 | P1 | PLANNED | Private local diagnostic bundle with PII redaction and consent | No production logs by default; explicit export |
-| OPS-03 | P1 | PLANNED | Version/upgrade and roll-back steps for local task scheduler | Main merge does not update installed local copy |
+| OPS-03 | P1 | PARTIAL (v2.32 offline backup/verify/restore runbook; Windows Scheduler/upgrade rehearsal still open) | Version/upgrade and roll-back steps for local task scheduler | Main merge does not update installed local copy |
 | OPS-04 | P2 | PLANNED | Error budget dashboard for local app only, opt-in | No remote telemetry or background transfer |
-| OPS-05 | P2 | PLANNED | Daily clean startup health checklist with offline fallback | Speed and accurate stale flags |
+| OPS-05 | P2 | PARTIAL (v2.32 local backup+watcher readiness shown within existing Data menu; user acceptance pending) | Daily clean startup health checklist with offline fallback | Speed and accurate stale flags |
 | SEC-01 | P0 | PARTIAL (v2.27 CAS in new UI, legacy no-token API remains compatible; stronger enforcement after migration) | Cross-tab and concurrent browser save authorization plus revision CAS | No CSRF/security relaxation |
 | SEC-02 | P1 | PLANNED | Full localhost/cloud auth tests for new small endpoints | Host restrictions and current OIDC origin untouched |
 | SEC-03 | P1 | PLANNED | No personal/Jira/source content in perf report or public CI | Synthetic samples only; cross-check on PR |
-| SEC-04 | P2 | PLANNED | Browser storage retention and private recovery data review | No stale PII in unsafe storage without retention policy |
+| SEC-04 | P2 | PARTIAL (v2.32 private backup folder POSIX perms, Windows ACL/BitLocker guidance; localStorage retention unaddressed) | Browser storage retention and private recovery data review | No stale PII in unsafe storage without retention policy |
 
 **Визначення effort (не змінює Jira/score):** XS ≤2 хв, S 2–5 хв, M 5–20 хв, L 20–60 хв, XL >60 хв, UNKNOWN. Estimate — окремий факт із confidence/джерелом, а не прибуток у priority formula. Реальний WRITE залишається попереду інших сигналів у тому самому sprint/backlog lane. High-risk blockers залишаються вищими за номінальний quick win при однакових нормативних пріоритетах.
 
@@ -179,7 +179,7 @@
 4. **#29 current: PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork:** effort-aware review hints в незмінній sprint/WRITE lane, transparent ordering and timed BA UAT.
 5. **#30 current: FOCUS-02/03/06 + A11Y-01/04 + UI-06:** keyboard/navigation/focus+dirty warning regression.
 6. **#31 current: PERF-04/05/06/07 + QA-09 groundwork:** browser traces and measured large-list optimizations, WCAG/browser proof.
-7. **#32+:** A11Y-02/03/05, REL-03/04/05, UX polish, all other backlog rows; prioritize from actual field measurements and human BA gold set.
+7. **#32 current: REL-03/04/05 + OPS-03/05 + SEC-04:** local recovery safety, quiet importer retries and readiness UI; Windows forced-crash/ACL UAT open. **#33+:** A11Y-02/03/05, secure browser storage retention, source-data backup scope, remaining backlog after measured UAT.
 
 **Dependency rule:** conduct QA-10 human observation before changing task ordering, manual Done behavior or showing effort as absolute truth. Browser E2E instrumentation requires approved runner, no corporate data in public CI. Do not claim full business correctness from passing synthetic tests.
 
@@ -199,7 +199,8 @@
 | **#28 — MERGED; QUICK-UX UAT OPEN** | QUICK-01/02/03 + FOCUS-01 + PRIOR-02: top-of-card next action, gated copy, manual done confirmation, queue explanation and scroll retention | CI + source-honest synthetic archetypes; real time-to-handoff UAT required |
 | **#29 — MERGED; REAL EFFORT UAT OPEN** | PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork: manual band, provenance-aware heuristic, quick hint, no reordering | Python/Node CI + 20–30 real-case effort/time calibration still required |
 | **#30 — MERGED; LIVE KEYBOARD UAT OPEN** | FOCUS-02/03/06 + A11Y-01/04 + UI-06: shortcuts, per-tab context/caret, focus-safe refresh, honest save status | CI + synthetic keyboard policies, Windows/Chrome two-tab assistive-technology UAT open |
-| **#31 — IN PROGRESS; BROWSER PERFORMANCE UAT OPEN** | PERF-04/05/06/07 + QA-09: cached rank/search/index/HTTP JSON + synthetic 100/500/1000 benchmarks; native DOM virtual list deferred | Exact Node parity, cross-process SQLite revisions and CI; real Windows DevTools p95/heap 8h pending |
+| **#31 — MERGED; BROWSER PERFORMANCE UAT OPEN** | PERF-04/05/06/07 + QA-09: cached rank/search/index/HTTP JSON + synthetic 100/500/1000 benchmarks; native DOM virtual list deferred | Exact Node parity, cross-process SQLite revisions and CI; real Windows DevTools p95/heap 8h pending |
+| **#32 — IN PROGRESS; WINDOWS CRASH/RESTORE UAT OPEN** | REL-03/04/05 + OPS-03/05 + SEC-04: private SQLite backup/verified restore, server lock, quiet watcher retry and Data menu status | Python synthetic restore/locking/legacy tests + CI; live Windows forced crash, ACL and data folder recovery remain open |
 | **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
@@ -246,6 +247,14 @@
 - **Verified synthetically:** 100/500/1000 representative fake Jira items, exact filter/order results, cache invalidation on manual save/import/error/restart/second Desk process, concurrent reads. Python and Node benchmarks p50/p95 run as smoke in CI. **No fake Windows/real browser timings.**
 - **Open QA-09/PERF-05/07 gates:** measure Chrome/Edge DOM scripting/layout/paint, focus/accessibility and 8-hour memory; consider true windowing only when traces show a real bottleneck.
 - **Source:** `docs/LARGE_QUEUE_PERFORMANCE.md` records commands, acceptance and limitations.
+
+### #32: безпечне приватне резервування і відновлення
+
+- **Backup:** `local_backup.py` використовує тільки SQLite Backup API, не raw live file copy; копія у gitignored `backups/` з SHA-256, метаданими без приватних текстів, integrity/schema checks, private POSIX perms, до 7 останніх копій. Автоматично перед local startup migration, для нової інсталяції після імпорту, надалі приблизно щодня з 5-хвилинною перевіркою.
+- **Restore:** лише CLI `restore --name <backup> --confirm "RESTORE LOCAL BA DATA"`, перевірка filename/manifest/хешу/schema, локальний server process lock, rescue-копія існуючої DB, WAL safety check, staged SQLite backup + atomic replace. Browser-кнопки Restore немає.
+- **Watcher:** `SnapshotMonitor` пропускає незмінений успішно імпортований snapshot, повторно пробує незмінений з помилкою не частіше 30 с, публікує анонімні health counts, не створює повторювані toast. У старому меню «Дані» з'явився локальний статус backup та importer; немає нового UX-режиму.
+- **Limits:** тільки DB, не `data/`, незбережені browser drafts, supplier ZIP/XML і Jira context. Windows ACL, crash/hard power-off, lock contention, 400%-zoom, screen reader, 8h stability і source truth необхідно перевірити вручну.
+- **Evidence:** `tests/test_local_backup.py`, `docs/PRIVATE_BACKUP_RESTORE.md`; лише synthetic, без бізнес-даних у CI.
 
 ## 4. Definition of Done для кожного наступного блоку
 
