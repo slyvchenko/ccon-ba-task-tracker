@@ -891,7 +891,15 @@ async function load() {
         if (remote && manualVersionChanged(form.baseRevision, remote.manualRevision))
           manualConflicts.set(key, {remote});
       });
-      if (!selected || !tasks.some(task => task.key === selected)) selected = visibleTasks()[0]?.key || null;
+      // A pending debounced query may be canceled by this snapshot update.
+      // Reconcile against the ACTUAL filtered queue, not just all snapshot
+      // keys, or a nonmatching old detail remains indefinitely selected.
+      const matching=visibleTasks();
+      if (!matching.some(task=>task.key===selected) &&
+          !isDirty(selected) && !detailInteractionFocused()) {
+        storeCurrentTaskView();
+        selected=matching[0]?.key || null;
+      }
       renderList();
       updateSnapshotInfo();
     }
