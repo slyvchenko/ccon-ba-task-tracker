@@ -64,6 +64,16 @@ export function quickWinCandidate(task) {
   if (Array.isArray(analysisOf(task).missingInfo) && analysisOf(task).missingInfo.length) return false;
   if (Array.isArray(analysisOf(task).briefing?.unknownsUk) &&
       analysisOf(task).briefing.unknownsUk.length) return false;
+  // Estimated time alone is insufficient: a handoff must have its artifact.
+  const analysis = analysisOf(task);
+  if (effectiveSignal(task) === 'READY' &&
+      (typeof analysis.standardDescription !== 'string' ||
+       !analysis.standardDescription.trim())) return false;
+  if (effectiveSignal(task) === 'WRITE') {
+    const draft = task.savedEmailDraft || analysis.emailDraft || {};
+    if (![draft.to,draft.subject,draft.body].every(value =>
+      typeof value === 'string' && value.trim())) return false;
+  }
   // A quick-win hint is NEVER a new priority group.
   return true;
 }
