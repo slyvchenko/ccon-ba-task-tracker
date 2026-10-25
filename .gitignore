@@ -20,3 +20,4 @@ log_config.json
 *.pending
 tests/tmp*/
 downloads/
+.local-server/
