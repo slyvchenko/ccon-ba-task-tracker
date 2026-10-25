@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createQueueModel, createSearchDebouncer} from '../assets/queue-performance.mjs';
+import {createQueueModel, createSearchDebouncer, selectedAfterFilter} from '../assets/queue-performance.mjs';
 import {rankTasks,filterTasks} from '../assets/task-rules.mjs';
 
 function syntheticItems(count) {
@@ -93,6 +93,15 @@ test('new snapshot object identities invalidate all previous search tokens',()=>
   assert.equal(model.stats.rankingBuilds,2);
 });
 
+test('pending text search plus new snapshot selects a visible row unless dirty editor is protected',()=>{
+  const source=[{key:'CCON-1'},{key:'CCON-2'}];
+  const matched=[source[1]];
+  assert.equal(selectedAfterFilter(matched,'CCON-1'),'CCON-2');
+  assert.equal(selectedAfterFilter(matched,'CCON-1',{protectEditor:true}),'CCON-1');
+  assert.equal(selectedAfterFilter([], 'CCON-1'),null);
+  assert.equal(selectedAfterFilter(source,'CCON-1'),'CCON-1');
+  assert.equal(selectedAfterFilter(source,null),'CCON-1');
+});
 test('debouncer combines rapid search edits, flushes on navigation, and can cancel',()=>{
   let next=0,callbacks=new Map(),processed=0;
   const schedule=fn=>{const id=++next;callbacks.set(id,fn);return id};
