@@ -28,6 +28,7 @@ STATIC_FILES = {
     '/assets/fast-handoff.mjs': ('assets/fast-handoff.mjs', 'text/javascript; charset=utf-8'),
     '/assets/focus-navigation.mjs': ('assets/focus-navigation.mjs', 'text/javascript; charset=utf-8'),
     '/assets/effort-planning.mjs': ('assets/effort-planning.mjs', 'text/javascript; charset=utf-8'),
+    '/assets/queue-performance.mjs': ('assets/queue-performance.mjs', 'text/javascript; charset=utf-8'),
     '/assets/logs.mjs': ('assets/logs.mjs', 'text/javascript; charset=utf-8'),
     '/assets/evidence-ui.mjs': ('assets/evidence-ui.mjs', 'text/javascript; charset=utf-8'),
     '/assets/action-history.mjs': ('assets/action-history.mjs', 'text/javascript; charset=utf-8'),
@@ -76,7 +77,7 @@ def handler(desk, cloud=None):
             if path == '/api/tasks/revision':
                 return self.send(200, desk.revision())
             if path == '/api/tasks':
-                return self.send(200, desk.view())
+                return self.send(200, desk.view_json_bytes())
             if path == '/api/action-plan':
                 from ba_actions import all_actions
                 return self.send(200, all_actions(desk.root, desk.view()['tasks']))
