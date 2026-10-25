@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #36 (v2.36). **Поточний кандидат:** PR #37 (v2.37), optional filters, grouped Data/evidence/history progressive disclosure; real BA UAT open.  
+**Базовий код:** `main` після PR #37 (v2.37). **Поточний кандидат:** PR #38 (v2.38), dead CSS cleanup with real synthetic Chromium 320/768/1440 screenshot/geometry checks and closeout planning; Windows BA UAT open.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -203,7 +203,7 @@
 | **#32 — MERGED; WINDOWS CRASH/RESTORE UAT OPEN** | REL-03/04/05 + OPS-03/05 + SEC-04: private SQLite backup/verified restore, server lock, quiet watcher retry and Data menu status | Python synthetic restore/locking/legacy tests + CI; live Windows forced crash, ACL and data folder recovery remain open |
 | **#33 — MERGED; BROWSER UAT OPEN** | SEC-04 + A11Y-02/03/05: tab-scoped unsaved drafts, explicit cross-tab recovery, consent 30d cleanup, 320px/ARIA/contrast | Pure JS + backend CAS CI; Windows Chrome/Edge duplicate-tab, NVDA/400% and 8-hour browser still open |
 | **#34 — IN PROGRESS; WINDOWS/8H UAT OPEN** | QA-12/15 + REL-07: synthetic Chromium DOM E2E, keyboard/CAS/reconnect, short soak, no auto POST; 16-item visual simplification audit | CI browser job + existing Python/Node/Compose; no claim of Windows NVDA or 8h |
-| **#35–36 — MERGED; #37 IN PROGRESS; #38 PROPOSED** | VIS-01..16: source-backed duplicate/redundancy hypotheses → consolidate primary CTA/status, collapse deep evidence/history, simplify Data and filters, CSS parity | Five BA archetypes + screenshot/AT gold-set; do NOT delete distinct evidence or safety gates |
+| **#35–37 — MERGED; #38 IN PROGRESS** | VIS-01..16: source-backed duplicate/redundancy hypotheses → consolidate primary CTA/status, collapse deep evidence/history, simplify Data and filters, CSS parity | Five BA archetypes + screenshot/AT gold-set; do NOT delete distinct evidence or safety gates |
 | **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
@@ -276,7 +276,7 @@
 | **#35, P0** | VIS-01/03/04/09/16: одна primary next action, provenance Jira/manual, компактна черга та empty briefing; без приховування conflict/stale warnings | **IMPLEMENTED IN PR #35 / real BA UAT OPEN**. 5с comprehension, 0 false-ready, 0 hidden blockers |
 | **#36, P1** | VIS-02/05/08/11: one QA-gated Copy + manual review fallback, clarified mail actions, effort and queue reasons collapsed | **IMPLEMENTED IN PR #36 / human UAT OPEN**. Human QA + no auto-send/Jira write; 20–30 reviewed cases |
 | **#37, P1** | VIS-06/07/10/12/13/14: advanced filters with active marker, source evidence/history collapsed, existing Data grouped, all source and QA controls retained | **IMPLEMENTED IN PR #37 / human UAT OPEN**. Full source trace, keyboard/ARIA, deep task accessible ≤2 expands |
-| **#38, P2** | VIS-15: consolidation `dashboard.css` після baseline screenshots/contrast/zoom на 320/768/1440 | **HYPOTHESIS / NOT IMPLEMENTED**. Visual diff/regressions, no unreviewed brand/layout change |
+| **#38, P2** | VIS-15: remove provably unused CSS, Chromium synthetic viewport screenshot/overflow assertions; defer large cascade rewrite until approved baseline | **IMPLEMENTED SMALL SAFE CLEANUP / WINDOWS UAT OPEN**. Visual diff/regressions, no unreviewed brand/layout change |
 
 **Не плутати схожі назви з дублюванням функцій:** скопіювати лист ≠ відкрити Outlook ≠ надіслати; source audit ≠ ZIP attachment; ручний DONE ≠ Jira DONE; QA-gated copy ≠ human-approved description. Спочатку 5 archetype screen recordings + виміри time-to-action, scrolls, CTA competing, critical facts retained, а потім згруповані PR.
 
@@ -302,6 +302,14 @@
 - **Data:** the existing top-right menu groups snapshot/export/report, private drafts/recovery, and backup/snapshot health. IDs/actions unchanged, no new page, no new destructive behavior.
 - **Deep task:** QA gate stays visible. Detailed source evidence is now collapsed with an explicit count; history, previous analyses and legacy artifacts are nested under `Історія й аудит` (maximum two expansions for task history). Source URLs, REST/source trace, decisions, ZIP/email attachments remain available and readable.
 - **Tests:** Node policy + real synthetic Chromium DOM test verifies active filter visibility, task count, data menu actions and history/evidence DOM. Human Windows deep-NDC task QA and source completeness still open.
+
+### #38: CSS зменшення ризику та повний план закриття backlog
+
+- Вилучені лише доведено неактивні класи старого status strip `task-badges / signal-strip / signal-text / text-tone`. Не чіпати 1500 рядків складних mobile/media overrides без screenshot baseline; збережено знайомий стиль.
+- `tests/css-cleanup.test.mjs` перевіряє, що немає застарілих runtime класів і не втрачені focus/metadata, advanced filters та responsive/forced colors CSS.
+- `browser_e2e.py` зберігає синтетичні скриншоти 320/768/1440 CSS px, тестує геометрію та page overflow; Linux Chromium **не є** Windows Edge/400% zoom або NVDA approval.
+- **Підсумок всього backlog:** тепер у main реєстрі **129 основних рядків** (з урахуванням A11Y), окремо 16 VIS hypotheses. `docs/BACKLOG_CLOSEOUT_PLAN.md` пропонує **10 об'єднаних PR #39–48** для фінальної локальної стабільної версії за умови human BA/Windows UAT; 4 P3 cloud відкладені та не повинні блокувати локальний реліз.
+- Продуктова якість: робити лише те, що реально прибирає помилки, час BA, PNR/REST source false claims або втрату даних; не заводити дублікати backlog.
 
 ## 4. Definition of Done для кожного наступного блоку
 
