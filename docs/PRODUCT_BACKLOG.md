@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #21 (v2.21). **Поточний кандидат:** PR #22 (v2.22), пакет надійності доказів; live UAT окремо.  
+**Базовий код:** `main` після PR #22 (v2.22). **Поточний кандидат:** PR #23 (v2.23), пакет контролю BA-результату; human UAT окремо.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -40,8 +40,8 @@
 | CORE-08 | P1 | IMPLEMENTED (human action plans); real UAT pending | Personal action plan / черга на сьогодні | Що перевірити, кому написати, хто блокує, next follow-up, робочий стан |
 | CORE-09 | P2 | IMPLEMENTED (supplier, method, technical fields, links in existing search); UAT pending | Швидкий пошук і фільтрація за методами, supplier, issue, залежностями | Search/filter без переробки основної картки |
 | CORE-10 | P2 | PARTIAL (v2.19 daily score/factor delta + human review warnings; long-term bias UAT open) | Узгодженість оцінок між задачами та ретроспектива пріоритетів | Виявляти великі зміни без нового Jira fingerprint; AI bias не доведено автоматично |
-| BA-01 | P0 | PARTIAL (description quality checks); expert UAT open | Готовий короткий англомовний task description | Кожна умова IF/THEN, field, expected output, QA зчитані коректно; human gold set |
-| BA-02 | P0 | PARTIAL | Готовий фактологічний emailDraft для **кожної** задачі | Незалежно від WRITE; не вигадувати адресата/метод/прикріплений ZIP; коректний follow-up |
+| BA-01 | P0 | PARTIAL (exact confirmed field, enum literal, AND/OR and QA structural checks; expert UAT open) | Готовий короткий англомовний task description | Кожна умова IF/THEN, field, expected output, QA зчитані коректно; human gold set |
+| BA-02 | P0 | PARTIAL (no false attachment claims + method coherence checks; human semantic UAT open) | Готовий фактологічний emailDraft для **кожної** задачі | Незалежно від WRITE; не вигадувати адресата/метод/прикріплений ZIP; коректний follow-up |
 | BA-03 | P0 | IMPLEMENTED (code) | 30-second context: confirmed/current/target/action/why | Зрозумілий стислий briefing із proof/uncertainty |
 | BA-04 | P0 | IMPLEMENTED (mechanical excerpt gate); semantic UAT open | Source-grounded facts vs interpretations vs assumptions | Для кожного важливого твердження source offset/URL і support test |
 | BA-05 | P0 | PARTIAL | BA questions ID, status, owner, answer, evidence | OPEN → ANSWERED / SUPERSEDED / NOT_APPLICABLE; пропажа з AI ≠ answered |
@@ -66,7 +66,7 @@
 | EVD-13 | P1 | PARTIAL (v2.21 local JSON/XML/ZIP structure; PDF text & Confluence unread, live UAT open) | Вкладення Jira (PDF/JSON/XML/ZIP), Confluence/wiki | Read-only extraction, не просто метадані; bounded/safe parser, source audit |
 | EVD-14 | P2 | PARTIAL (distinct-flow recurrence + explicit flow-event windows; no production prevalence) | Cross-case anomaly detection: recurring errors across time | Порівняння case signatures з попереднім аналізом без PII |
 | EVD-15 | P2 | PARTIAL (opt-in dry-run retention/quota, pinned-index protection, local decision audit; encryption & ACL validation open) | Кероване зберігання raw ZIP: retention, cleanup, quota | Encrypt-at-rest/ACL, TTL, аудит, no commit/no egress |
-| OUT-01 | P0 | PARTIAL | Самодостатній BA dossier із короткою дією, правилами, QA, gaps | Реальні приклади без зайвих формулювань; scenario-based grading |
+| OUT-01 | P0 | PARTIAL (unresolved questions/rules block premature READY_FOR_REVIEW) | Самодостатній BA dossier із короткою дією, правилами, QA, gaps | Реальні приклади без зайвих формулювань; scenario-based grading |
 | OUT-02 | P0 | PARTIAL | Чернетка листа, subject/method, контекст попередніх відповідей | Ситуативне формулювання, ручне редагування, без auto-send |
 | OUT-03 | P1 | IMPLEMENTED (code); live UAT pending | Готовий supplier ZIP та evidence status без прихованої недоступності | Показувати ready/stale/blocked + причина і flow у поточній картці |
 | OUT-04 | P1 | IMPLEMENTED (claim/source gate); semantic UAT open | Контроль фактичності вставлених доказів і PDF/логів | Кожна вимога та тест мають джерело, або чітко OPEN |
@@ -77,7 +77,7 @@
 | QA-01 | P0 | IMPLEMENTED (code) | Python/Node/Release/Compose CI | Required checks + merge only when green |
 | QA-02 | P0 | GATE | Live Jira + Kibana + CCON auth UAT з 2–3 реальними задачами | Browser session, 1 normal flow, 1 multi-error flow, 1 ambiguous flow |
 | QA-03 | P0 | GATE (frozen 20–30 real-case workflow implemented, scores not yet collected) | Реальні 20–30 gold cases, blinded AI vs analyst | Measure false facts, missed conditions, task/edit quality |
-| QA-04 | P1 | PARTIAL | AI quality metrics, reject invalid dossier | Structured schema / briefing/factors checks implemented; factual support pending |
+| QA-04 | P1 | PARTIAL (v2.23 deterministic output warnings, real-case factual metrics missing) | AI quality metrics, reject invalid dossier | Structured schema / briefing/factors checks implemented; factual support pending |
 | QA-05 | P1 | PARTIAL | Safe daily prompt calibration checklist | Whitelisted diagnostics implemented; prompt version change evaluated separately |
 | QA-06 | P1 | IMPLEMENTED (staged A/B + human approval + rollback); real reviews pending | Prompt A/B regression / automatic candidate proposal | Human gate, compare gold set, rollback, no unreviewed auto-prompts |
 | QA-07 | P2 | PARTIAL (synthetic AF/KL/Finnair multi-error, retry, malformed and nested ZIP matrix; live formats UAT open) | Offline fixtures for realistic REST/XML/multi-error formats | Coverage by supplier method, nested ZIP cases, pagination, retries |
@@ -99,7 +99,7 @@
 | **#14 — CODE COMPLETE; LOCAL UAT OPEN** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
 | **#15 — CODE COMPLETE; LIVE UAT OPEN** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
 | **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — MERGED; HUMAN UAT OPEN** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI green, без auto-ranking |\n| **#20 — MERGED; SECURITY UAT OPEN** | QA-08: безпечна мінімізація даних перед відправленням у схвалену модель | Synthetic prompt payload, URL/PII/secrets tests + CI |\n| **#21 — MERGED; BROWSER UAT OPEN** | EVD-13: локальний браузерний handoff JSON/XML/ZIP, прив'язка доказів до Jira fingerprint | ZIP safety, structure only, PDF explicitly unread |
-| **#22 — IN PROGRESS, GROUPED** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | Dry-run default, pinned versions, no false error onset, CI + real UAT separate |\n| **Далі, GROUPED** | BA-01/BA-02/OUT-01/UX-02 (output quality); EVD-13b/PDF/wiki after parser approval | Спільні контракти, інваріанти, CI та людина як reviewer |
+| **#22 — MERGED; LIVE UAT OPEN** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | CI on PR & main green, host ACL/encryption unverified |\n| **#23 — IN PROGRESS, GROUPED** | BA-01/BA-02/OUT-01/QA-04: exact conditions, email evidence checks, dossier readiness | CI + semantic gold-case UAT, no Jira/email writes |\n| **Далі, GROUPED** | EVD-13b/PDF/wiki after approved parser; UX-02 and QA-04 manual gold-case regression | Спільні контракти, інваріанти, CI та людина як reviewer |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
 ## 4. Definition of Done для кожного наступного блоку
