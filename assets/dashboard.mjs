@@ -184,12 +184,19 @@ function qualityGateMarkup(gate) {
     '<li>' + escapeHtml(r.ruleId) + ': ' + escapeHtml((r.covered || []).join(', ') || 'Тестів немає') +
     ((r.missing || []).length ? ' · бракує ' + escapeHtml(r.missing.join(', ')) : ' · покрито') + '</li>').join('');
   const summary = gate.summary || {};
+  const density = summary.descriptionProfile || {};
+  const compactHint = Number.isFinite(density.words) && density.words > 0
+    ? ' Опис: ' + escapeHtml(density.words) + ' слів, ' +
+      escapeHtml(density.qaChecks || 0) + ' QA-перевірок. ' +
+      (summary.compactnessSuggestions ? 'Є підказки щодо стислості. ' : '')
+    : '';
   return '<details class="description"><summary>Перевірка доказів і QA · ' +
     escapeHtml(names[gate.state] || 'Недостатньо даних') + '</summary><p class="muted">' +
     'Цитат у прочитаних джерелах: ' + escapeHtml(summary.sourceExcerptsPresent || 0) + '/' +
     escapeHtml(summary.claimsChecked || 0) + '. Правил із QA: ' +
     escapeHtml(summary.rulesFullyCovered || 0) + '/' + escapeHtml(summary.rulesTracked || 0) +
-    '. Зауважень до BA-результату: ' + escapeHtml(summary.outputFindings || 0) + '. Це структурна перевірка, не підтвердження бізнес-правильності.</p>' +
+    '. Зауважень до BA-результату: ' + escapeHtml(summary.outputFindings || 0) + '.' +
+    compactHint + ' Це структурна перевірка, не підтвердження бізнес-правильності.</p>' +
     (coverage ? '<div class="section-label">Покриття умов</div><ul>' + coverage + '</ul>' : '') +
     (findings ? '<div class="section-label">Що виправити</div><ul>' + findings + '</ul>' : '') + '</details>';
 }
