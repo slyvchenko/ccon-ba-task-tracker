@@ -447,6 +447,15 @@ async function takeSavedVersion() {
     signature = JSON.stringify(payload);
     currentRevision = payload.revision;
     currentRevisionError = payload.error || '';
+    // The refresh is global, but only this task's local buffer was discarded.
+    // Keep other dirty tasks and mark conflicts if their row changed too.
+    forms.forEach((form, otherKey) => {
+      if (otherKey === key) return;
+      if (!isDirty(otherKey)) { forms.delete(otherKey); return; }
+      const remote = tasks.find(item => item.key === otherKey);
+      if (remote && manualVersionChanged(form.baseRevision, remote.manualRevision))
+        manualConflicts.set(otherKey, {remote});
+    });
     forms.delete(key);
     delete recoveredForms[key];
     manualConflicts.delete(key);
