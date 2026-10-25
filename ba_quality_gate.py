@@ -251,6 +251,8 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
                                                  for x in claims),
                     "rulesTracked": len(coverage),
                     "rulesFullyCovered": sum(not x["missing"] for x in coverage),
-                    "outputFindings": len(output_findings)},
+                    "outputFindings": len(output_findings),
+                    "descriptionProfile": profile(analysis.get("standardDescription")),
+                    "compactnessSuggestions": len(compact_findings)},
         "limitation": "Excerpt presence and QA links verified mechanically; no semantic proof of correctness.",
     }
