@@ -81,7 +81,7 @@
 | QA-05 | P1 | PARTIAL | Safe daily prompt calibration checklist | Whitelisted diagnostics implemented; prompt version change evaluated separately |
 | QA-06 | P1 | IMPLEMENTED (staged A/B + human approval + rollback); real reviews pending | Prompt A/B regression / automatic candidate proposal | Human gate, compare gold set, rollback, no unreviewed auto-prompts |
 | QA-07 | P2 | PLANNED | Offline fixtures for realistic REST/XML/multi-error formats | Coverage by supplier method, nested ZIP cases, pagination, retries |
-| QA-08 | P1 | PLANNED | Data minimization/security for prompt, manifests, debug logs | PII/credentials, safe link stripping, prompt injection regression |
+| QA-08 | P1 | PARTIAL (v2.20 model egress sanitizer and synthetic regressions; full DLP/log audit pending) | Data minimization/security for prompt, manifests, debug logs | PII/credentials, safe link stripping, prompt injection regression |
 | INF-01 | P3 | DEFERRED | Cloud deployment: SSO/OIDC/HTTPS/hosting | Cloud pilot code exists, real infra and security approval not started |
 | INF-02 | P3 | DEFERRED | Backups, PostgreSQL, multi-worker safety, operations alerts | After local feature quality/infra approval |
 | INF-03 | P3 | DEFERRED | Real unattended scheduling and live model setup | Does not block local Codex project |
@@ -98,8 +98,8 @@
 | **#13 — CODE COMPLETE; LIVE UAT OPEN** | EVD-09/EVD-11: mapping contracts + flow timeline | Два request paths, retry/timeout, ordering |
 | **#14 — CODE COMPLETE; LOCAL UAT OPEN** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
 | **#15 — CODE COMPLETE; LIVE UAT OPEN** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
-| **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — IN PROGRESS** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI + human judgement, без auto-ranking |
-| **Далі** | EVD-13 (safe read-only attachments), QA-08 (security), EVD-15 (ZIP retention); потім UX-02/QA-07 | Окремі невеликі PR після перевірки попереднього |
+| **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — MERGED; HUMAN UAT OPEN** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI green, без auto-ranking |\n| **#20 — IN PROGRESS** | QA-08: безпечна мінімізація даних перед відправленням у схвалену модель | Synthetic prompt payload, URL/PII/secrets tests + CI |
+| **Далі** | EVD-13 (safe read-only attachments), EVD-15 (ZIP retention); потім UX-02/QA-07 | Окремі невеликі PR після перевірки попереднього |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
 ## 4. Definition of Done для кожного наступного блоку
