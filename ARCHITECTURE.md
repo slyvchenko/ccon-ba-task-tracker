@@ -140,3 +140,13 @@ See `docs/EFFORT_PRIORITIZATION.md` for exact branch order and limitations.
 Each browser tab can remember its selected task and view; no raw notes, source excerpts, supplier IDs or PNR strings in view-state storage. The existing separate unsaved form storage/CAS is unaffected. Focused/detail editing prevents background DOM replacement; Save errors and CAS conflicts do not masquerade as success. The existing native batch-mail dialog restores opener focus when closed.
 
 **Not yet proven:** actual screen-reader compatibility, keyboard conflicts under Windows language switch and browsers, long-running memory, real resume-time improvement. Behavioral unit tests cover pure policy only. See `docs/FOCUS_KEYBOARD_UX.md`.
+
+## v2.31: snapshot-scoped high-throughput queue model
+
+`assets/queue-performance.mjs` memoizes sorted queue by array object, filter output by normalized filter tuple, and each task's technical-rich search text with `WeakMap`. Explicit invalidation follows local manual-status save/overwrite; new snapshot arrays invalidate implicitly. Native debouncer coalesces 130ms query input, while keyboard Next/Previous flushes pending results. `filterTasks` retains its previous noncached behavior and an optional normalized-text provider with tested result parity.
+
+`assets/dashboard.mjs` uses one delegated list click listener. Selected CSS/ARIA changes and dirty marker changes affect at most two DOM rows without list `innerHTML` rebuild; real filter/source changes still repaint the list to avoid unreviewed windowing/accessibility regressions.
+
+`desk_store.py` provides `view_json_bytes()`, an immutable in-memory HTTP response cached by `(SQLite state_revision, import error)`. Each read checks the live database revision and, on miss, assembles payload and revision within one SQLite read transaction, guarding concurrency across separate Desk processes. `server.py` sends the cached bytes from original `/api/tasks`, using unchanged authenticated localhost/cloud/headers contract. Object consumers continue to receive independent `Desk.view()` dictionaries.
+
+Timing evidence comes from `performance_smoke.py` and `queue_benchmark.mjs` with only synthetic 100/500/1000 issues. Neither evaluates real Chrome DOM layout, Windows laptop speed, human time or supplier correctness. See `docs/LARGE_QUEUE_PERFORMANCE.md`.
