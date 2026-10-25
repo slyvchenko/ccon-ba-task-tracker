@@ -139,6 +139,31 @@ class OfflineRecoveryTests(unittest.TestCase):
         self.assertEqual(len(list((self.root/"backups").glob("backup-*.sqlite3.json"))),1)
         self.assertTrue(verify_backup(self.root,newer["filename"])["verified"])
 
+    def test_nonobject_manifest_never_blocks_fresh_backup_or_startup_status(self):
+        first=create_backup(self.root,force=True)
+        manifest=self.root/"backups"/(first["filename"]+".json")
+        for invalid in ("[]","null",'"not an object"'):
+            manifest.write_text(invalid,encoding="utf-8")
+            self.assertFalse(backup_status(self.root)["available"])
+            with self.assertRaises(ValueError):
+                verify_backup(self.root,first["filename"])
+        newer=create_backup(self.root,force=False)
+        self.assertTrue(newer["created"])
+        self.assertTrue(verify_backup(self.root,newer["filename"])["verified"])
+
+    def test_aged_pending_files_are_removed_but_fresh_in_progress_not_touched(self):
+        folder=self.root/"backups"
+        folder.mkdir(exist_ok=True)
+        old=folder/"backup-20261025T000000Z-aaaaaaaaaaaa.sqlite3.pending"
+        recent=folder/"backup-20261025T000001Z-bbbbbbbbbbbb.sqlite3.pending"
+        old.write_bytes(b"old synthetic private bytes")
+        recent.write_bytes(b"recent synthetic private bytes")
+        stale=time.time()-7200
+        os.utime(old,(stale,stale))
+        create_backup(self.root,force=True)
+        self.assertFalse(old.exists())
+        self.assertEqual(recent.read_bytes(),b"recent synthetic private bytes")
+
     def test_unsafe_path_and_symlink_rejection(self):
         with self.assertRaises(ValueError):
             verify_backup(self.root,"../ba_state.db")
