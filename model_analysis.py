@@ -19,6 +19,7 @@ from desk_store import Desk
 from priority_score import validate_priority_factors
 from prompt_safety import sensitive_key, strip_sensitive_text
 from jira_attachments import evidence_for_model
+from local_source_audit import local_sources
 from schema import validate_analysis
 from storage import write_json
 
@@ -370,6 +371,9 @@ def task_source(context, task, notes, evidence_reports=None, investigation=None,
                                    if v.get("key") in related],
         "evidenceReports": evidence_reports or [],
         "attachmentEvidence": evidence_for_model(root, key, issue) if root is not None else [],
+        # Send only trusted metadata and coverage, NEVER document text.
+        "linkedDocumentAudit": local_sources(root, key, issue)[1] if root is not None else {
+            "unreadSourceStatus": "NO_LOCAL_VERIFICATION"},
         "errorSeriesInvestigation": investigation or {},
         "sprint": {"active": task.get("activeSprint"),
                    "verification": task.get("activeSprintStatus"),
