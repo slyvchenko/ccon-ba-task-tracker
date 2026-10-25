@@ -38,7 +38,7 @@ SECRET_KEYS = frozenset((
 # embedded in Jira comments. This is defense in depth, not formal DLP.
 _CREDENTIAL_NAME = (
     r"(?:password|passphrase|api[_-]?key|access[_-]?token|refresh[_-]?token|"
-    r"token|client[_-]?secret|secret|authorization|totp|private[_-]?key)"
+    r"token|client[_-]?secret|secret|session[_-]?(?:id|token)|"\n    r"set[_-]?cookie|authorization|totp|private[_-]?key)"
 )
 _BEARER_TOKEN = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9_.~+/=-]{12,}")
 SECRET_TEXT = re.compile(
