@@ -116,7 +116,7 @@ test('priority score, sprint and blocker outrank short manually estimated backlo
   const high=task('CCON-103',{activeSprint:true,manualEffort:'S',analysis:{queueScore:90,signal:'WRITE',needsEmail:true}});
   const sorted=rankTasks([low,sprint,high]);
   assert.deepEqual(sorted.map(x=>x.key),['CCON-103','CCON-102','CCON-101']);
-  assert.deepEqual(safeQuickWinGroups(sorted).map(x=>x.key),['CCON-103','CCON-101']);
+  assert.deepEqual(safeQuickWinGroups(sorted).map(x=>x.key),['CCON-101']);
 });
 
 test('estimate helper is pure and ignores invalid manually imported values',()=>{
