@@ -557,7 +557,6 @@ async function takeSavedVersion() {
     delete recoveredForms[key];
     manualConflicts.delete(key);
     saveFailures.delete(key);
-    saveFailures.delete(key);
     rememberEdits();
     renderList();
     renderDetail();
@@ -595,6 +594,7 @@ async function overwriteAfterReview() {
     forms.delete(key);
     delete recoveredForms[key];
     manualConflicts.delete(key);
+    saveFailures.delete(key);
     rememberEdits();
     signature = '';
     renderList();
