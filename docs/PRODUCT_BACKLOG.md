@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #31 (v2.31). **Поточний кандидат:** PR #32 (v2.32), приватні SQLite backups + offline rescue restore, quiet watcher retry and startup health; Windows crash/browser UAT окремо.  
+**Базовий код:** `main` після PR #31 (v2.31). **Поточний кандидат:** PR #32 (v2.32), приватні SQLite backups + validated offline rescue restore (damaged DB forensic copy, strict WAL), quiet watcher retry and startup health; Windows crash/browser UAT окремо.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
