@@ -459,6 +459,7 @@ function captureForm() {
   form.value = {manualStatus:$('manual').value, manualEffort:$('manualEffort').value,
     note:$('note').value, emailDraft:{to:$('draftTo').value, subject:$('draftSubject').value, body:$('draftBody').value}};
   form.changedAt = new Date().toISOString();
+  saveFailures.delete(task.key);
   $('manual').className = 'status-select tone-' + statusTone(form.value.manualStatus, task);
   rememberEdits();
   updateFormStatus();
@@ -469,9 +470,14 @@ function updateFormStatus() {
   if (!task || !$('saved')) return;
   const dirty = isDirty(task.key);
   const conflict = manualConflicts.has(task.key);
-  $('saved').textContent = '';
-  $('saved').hidden = true;
-  $('savedIndicator').hidden = dirty || conflict;
+  const failure = saveFailures.get(task.key);
+  const state = conflict ? 'Конфлікт версій. Правки не перезаписано.' :
+    busy ? 'Зберігаю зміни…' :
+    failure ? 'Не збережено: ' + failure :
+    dirty ? 'Є незбережені правки.' : '';
+  $('saved').textContent = state;
+  $('saved').hidden = !state;
+  $('savedIndicator').hidden = dirty || conflict || busy || !!failure;
   $('save').hidden = !dirty;
   $('save').disabled = !dirty || busy || conflict;
   $('done').disabled = busy || conflict;
@@ -543,6 +549,8 @@ async function takeSavedVersion() {
     forms.delete(key);
     delete recoveredForms[key];
     manualConflicts.delete(key);
+    saveFailures.delete(key);
+    saveFailures.delete(key);
     rememberEdits();
     renderList();
     renderDetail();
@@ -596,6 +604,7 @@ function discardForm() {
   if (!confirm('Скинути незбережені зміни статусу, нотаток і чернетки цієї задачі?')) return;
   forms.delete(selected);
   manualConflicts.delete(selected);
+  saveFailures.delete(selected);
   delete recoveredForms[selected];
   rememberEdits();
   renderList();
@@ -606,7 +615,7 @@ function setBusy(value) {
   ['manual', 'manualEffort', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard',
     'conflictOverwrite', 'conflictUseSaved'].forEach(id => { if ($(id)) $(id).disabled = value; });
   $('import').disabled = value;
-  if (!value) updateFormStatus();
+  updateFormStatus();
 }
 async function saveStatus(status) {
   if (busy || !STATUS_LABELS[status]) return;
@@ -638,6 +647,7 @@ async function saveStatus(status) {
     form.value.manualStatus = status;
     form.base = JSON.stringify(savedForm(task));
     form.baseRevision = saved.manualRevision;
+    saveFailures.delete(task.key);
     rememberEdits();
     signature = '';
     renderList();
@@ -647,7 +657,10 @@ async function saveStatus(status) {
     message('Мій статус збережено автоматично.');
   } catch (error) {
     if (error.code === 'TASK_REVISION_CONFLICT') await loadManualConflict(task.key);
-    else message(error.message, true);
+    else {
+      saveFailures.set(task.key, error.message);
+      message(error.message, true);
+    }
   } finally { setBusy(false); }
 }
 async function saveTask(done = false) {
@@ -672,6 +685,7 @@ async function saveTask(done = false) {
       modifiedAt:new Date().toISOString()});
     forms.delete(task.key);
     manualConflicts.delete(task.key);
+    saveFailures.delete(task.key);
     delete recoveredForms[task.key];
     rememberEdits();
     signature = '';
@@ -682,7 +696,10 @@ async function saveTask(done = false) {
     return true;
   } catch (error) {
     if (error.code === 'TASK_REVISION_CONFLICT') await loadManualConflict(task.key);
-    else message(error.message, true);
+    else {
+      saveFailures.set(task.key, error.message);
+      message(error.message, true);
+    }
     return false;
   } finally { setBusy(false); }
 }
