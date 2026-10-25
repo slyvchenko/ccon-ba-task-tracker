@@ -1,6 +1,7 @@
 import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueTier, priorityLane, rankTasks, filterTasks} from './task-rules.mjs';
 import {createLogsController} from './logs.mjs';
 import {needsFullTaskRefresh} from './revision-policy.mjs';
+import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './manual-edit-policy.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
 import {loadTaskDecisions} from './decisions-ui.mjs';
 import {loadTaskActions, loadTaskHistory} from './action-history.mjs';
@@ -36,8 +37,8 @@ function formFor(task) {
     const value = recovered && STATUS_LABELS[recovered.manualStatus] && typeof recovered.note === 'string'
       ? {manualStatus:recovered.manualStatus, note:recovered.note, emailDraft:normalizedDraft(recovered.emailDraft)} : base;
     forms.set(task.key, {value, base:JSON.stringify(base),
-      baseRevision:recovered ? (Number.isSafeInteger(recovered.baseRevision) ? recovered.baseRevision : null)
-        : task.manualRevision, changedAt:recovered?.changedAt || null});
+      baseRevision:baseManualRevision(recovered, task),
+      changedAt:recovered?.changedAt || null});
     delete recoveredForms[task.key];
   }
   return forms.get(task.key);
@@ -468,7 +469,7 @@ async function overwriteAfterReview() {
     const payload = await api('/api/tasks');
     const remote = payload.tasks.find(task => task.key === key);
     if (!remote) throw Error('Актуальну задачу не знайдено.');
-    if (remote.manualRevision !== viewed.remote.manualRevision) {
+    if (manualVersionChanged(viewed.remote.manualRevision, remote.manualRevision)) {
       manualConflicts.set(key, {remote});
       showManualConflict();
       message('Збережена версія ще раз змінилася. Перевір новий текст і повтори дію.', true);
@@ -479,7 +480,7 @@ async function overwriteAfterReview() {
     const form = formFor(task);
     const own = structuredClone(form.value);
     const response = await api('/api/tasks/' + encodeURIComponent(key),
-      {...own, expectedManualRevision:remote.manualRevision});
+      withExpectedRevision(own, remote.manualRevision));
     Object.assign(task, {manualStatus:own.manualStatus, note:own.note,
       savedEmailDraft:own.emailDraft, manualRevision:response.manualRevision,
       modifiedAt:new Date().toISOString()});
@@ -519,6 +520,10 @@ async function saveStatus(status) {
   const task = tasks.find(item => item.key === selected);
   if (!task || task.manualStatus === status) return;
   captureForm();
+  if (manualConflicts.has(task.key)) {
+    message('Спочатку порівняй незбережені правки з актуальною версією.', true);
+    return;
+  }
   const scroll = $('detail').scrollTop;
   setBusy(true);
   try {
@@ -529,7 +534,7 @@ async function saveStatus(status) {
       return;
     }
     const saved = await api('/api/tasks/' + encodeURIComponent(task.key),
-      {manualStatus:status, note:task.note || '', expectedManualRevision:form.baseRevision});
+      withExpectedRevision({manualStatus:status, note:task.note || ''}, form.baseRevision));
     task.manualStatus = status;
     task.manualRevision = saved.manualRevision;
     task.modifiedAt = new Date().toISOString();
@@ -563,7 +568,7 @@ async function saveTask(done = false) {
       return false;
     }
     const saved = await api('/api/tasks/' + encodeURIComponent(task.key),
-      {...value, expectedManualRevision:form.baseRevision});
+      withExpectedRevision(value, form.baseRevision));
     Object.assign(task, {manualStatus:value.manualStatus, note:value.note,
       savedEmailDraft:value.emailDraft, manualRevision:saved.manualRevision,
       modifiedAt:new Date().toISOString()});
@@ -715,7 +720,7 @@ async function load() {
       forms.forEach((form, key) => {
         if (!isDirty(key)) { forms.delete(key); return; }
         const remote = tasks.find(task => task.key === key);
-        if (remote && remote.manualRevision !== form.baseRevision)
+        if (remote && manualVersionChanged(form.baseRevision, remote.manualRevision))
           manualConflicts.set(key, {remote});
       });
       if (!selected || !tasks.some(task => task.key === selected)) selected = visibleTasks()[0]?.key || null;
