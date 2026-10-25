@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #27 (v2.27). **Поточний кандидат:** PR #28 (v2.28), швидкий BA handoff, пояснювана черга та збереження фокуса без нових UI-режимів; людський UX UAT окремо.  
+**Базовий код:** `main` після PR #28 (v2.28). **Поточний кандидат:** PR #29 (v2.29), ручні XS–XL оцінки, low-confidence автоматичні підказки та display-only quick wins; реальні часи/UX UAT відкриті.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -97,7 +97,7 @@
 | QUICK-02 | P0 | PARTIAL (v2.28 structurally checked one-click Jira draft copy; 5-click handoff measurement open) | Copy verified Jira description + Save/Next у спільному маршруті | ≤5 intentional actions; zero Jira write; J-03/J-08 |
 | QUICK-03 | P0 | PARTIAL (v2.28 explicit manual completion confirm; actual sent/delivered event evidence still manual) | Відділити Copy/Open Mail від фактичної Sent/Delivered події | Human confirmation and timestamp; no fabricated delivery proof |
 | QUICK-04 | P1 | PLANNED | Зберегти короткі recipient/method/ZIP readiness checks перед mailto | No false ready for missing ZIP/method/recipient; J-04 |
-| QUICK-05 | P1 | PLANNED | Batch quick handoffs тільки у межах коректного lane | Sprint/WRITE contract unchanged; reordering by time opt-in only |
+| QUICK-05 | P1 | PARTIAL (v2.29 identifies quick candidates without reordering any lane/score/group; batch workflow pending) | Batch quick handoffs тільки у межах коректного lane | Sprint/WRITE contract unchanged; reordering by time opt-in only |
 | QUICK-06 | P1 | PLANNED | Reversible manual Done / Undo без зовнішніх API записів | Cancel/reverse with preserved notes; J-08 |
 | QUICK-07 | P1 | PLANNED | Compact card action/proof line без шуму з чіпів | User 5-second scan, no loss of proof status |
 | QUICK-08 | P2 | PLANNED | Кандидатні шаблони для повторюваних дрібних BA задач | Template never invents source/method; gold QA |
@@ -109,10 +109,10 @@
 | FOCUS-06 | P1 | PLANNED | Захист від фонових тостів/DOM rerender під час набору тексту | No focus loss, cursor jump, stale overwrite |
 | FOCUS-07 | P2 | PLANNED | Pin personal deep-work task без зміни official Jira priority | Manual pin only within lane; clear override and reset |
 | FOCUS-08 | P2 | PLANNED | Відновити фокус після bulk dialog/mailto/error | A-01/A-11; action accessible |
-| PRIOR-01 | P0 | NEXT | EffortEstimate XS/S/M/L/XL/UNKNOWN, provenance and confidence | Human-reviewed or source-derived; never business truth guess |
+| PRIOR-01 | P0 | PARTIAL (v2.29 manual XS–XL persisted + LOW confidence heuristic; real effort calibration pending) | EffortEstimate XS/S/M/L/XL/UNKNOWN, provenance and confidence | Human-reviewed or source-derived; never business truth guess |
 | PRIOR-02 | P0 | PARTIAL (v2.28 visible existing lane/WRITE/signal/score/blocker breakdown, human validation open) | Explain order: sprint → real WRITE → signal → score → blocker | Ranking reason for 100% selected tasks; J-02 |
-| PRIOR-03 | P0 | PLANNED | Hard invariant tests for all sprint/WRITE/Done/stale permutations | Property-based synthetic test set, no cross-lane promotion |
-| PRIOR-04 | P1 | PLANNED | Visible quick win candidates only in same hard-priority bucket | Time benefit cannot overtake urgent sprint/blocker |
+| PRIOR-03 | P0 | PARTIAL (v2.29 combinatorial status/sprint/signal/score invariants; broad randomized tests next) | Hard invariant tests for all sprint/WRITE/Done/stale permutations | Property-based synthetic test set, no cross-lane promotion |
+| PRIOR-04 | P1 | PARTIAL (v2.29 display-only quick-win hints; UX evidence/time-to-handoff pending) | Visible quick win candidates only in same hard-priority bucket | Time benefit cannot overtake urgent sprint/blocker |
 | PRIOR-05 | P1 | PLANNED | Separate impact, urgency, effort and unblocking from arbitrary speed score | Explainable, human acceptance > 90% ordering confidence |
 | PRIOR-06 | P1 | PLANNED | Waiting sweep follow-up due date and owner with no repeat letter | Due status visible, source-backed, J-05 |
 | PRIOR-07 | P2 | PLANNED | Time-to-handoff metrics by real work archetype | Local opt-in, no PII, no cloud telemetry |
@@ -151,7 +151,7 @@
 | A11Y-05 | P2 | PLANNED | Forced color/high contrast and reduced-motion support | A-05/A-10 |
 | A11Y-06 | P2 | PLANNED | Readable labels/tooltips without mouse hover | A-09 and touch accuracy |
 | QA-09 | P0 | NEXT | Synthetic 100/500/1000 browser E2E performance baseline | Windows DevTools p95 + startup/long session |
-| QA-10 | P0 | NEXT | Human observation of 5 BA task archetypes, repeated runs | TTNA/TTSH/MRI with 0 critical false-ready decisions |
+| QA-10 | P0 | GATE (v2.29 synthetic archetype cases; observed BA handoff times and semantic review not performed) | Human observation of 5 BA task archetypes, repeated runs | TTNA/TTSH/MRI with 0 critical false-ready decisions |
 | QA-11 | P0 | PARTIAL (v2.27 synthetic concurrent instances/restarts/conflicts; real browser crash drill open) | Cross-tab edits, stale conflict and crash recovery integration | P-15/P-17/P-18, 0 silent overwrite |
 | QA-12 | P1 | NEXT | DOM behavior tests with approved Playwright/browser runner | Focus, click, screenreader, history, network reconnect |
 | QA-13 | P1 | PLANNED | Local-only 20–30 real-case semantic BA handoff study | Actual independent gold scores, not CI counts |
@@ -176,7 +176,7 @@
 1. **#26 current: PERF-01/02/03 + OPS-01 + QA coverage:** протокол зміни ревізії, пошук без зайвої роботи, синтетичний benchmark, інтеграційні тести і цей повний audit; без UI-перебудови.
 2. **#27 current: REL-01/02 + SEC-01 + QA-11:** per-task revision compare-and-swap, recovery, two-tab conflict notice and undo, щоб виключити last-writer-wins.
 3. **#28 current: QUICK-01/02/03 + FOCUS-01 + PRIOR-02:** максимально швидкий read → verified artifact → handoff → record → next в існуючій картці; тест 5 archetypes.
-4. **#29 recommended: PRIOR-01/03/04 + QUICK-05 + QA-10:** effort-aware review hints в незмінній sprint/WRITE lane, transparent ordering and timed BA UAT.
+4. **#29 current: PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork:** effort-aware review hints в незмінній sprint/WRITE lane, transparent ordering and timed BA UAT.
 5. **#30 recommended: FOCUS-02/03/06 + A11Y-01/04 + UI-06:** keyboard/navigation/focus+dirty warning regression.
 6. **#31 recommended: PERF-04/05/06/07 + QA-09:** browser traces and measured large-list optimizations, WCAG/browser proof.
 7. **#32+:** A11Y-02/03/05, REL-03/04/05, UX polish, all other backlog rows; prioritize from actual field measurements and human BA gold set.
@@ -196,7 +196,8 @@
 | **#15 — CODE COMPLETE; LIVE UAT OPEN** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
 | **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — MERGED; HUMAN UAT OPEN** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI green, без auto-ranking |\n| **#20 — MERGED; SECURITY UAT OPEN** | QA-08: безпечна мінімізація даних перед відправленням у схвалену модель | Synthetic prompt payload, URL/PII/secrets tests + CI |\n| **#21 — MERGED; BROWSER UAT OPEN** | EVD-13: локальний браузерний handoff JSON/XML/ZIP, прив'язка доказів до Jira fingerprint | ZIP safety, structure only, PDF explicitly unread |
 | **#22 — MERGED; LIVE UAT OPEN** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | CI on PR & main green, host ACL/encryption unverified |\n| **#23 — MERGED; HUMAN UAT OPEN** | BA-01/BA-02/OUT-01/QA-04: exact conditions, email evidence checks, dossier readiness | CI + semantic gold-case UAT, no Jira/email writes |\n| **#24 — MERGED; BROWSER UAT OPEN** | EVD-13 + BA-09 + OUT-04: local PDF/JSON/XML/ZIP text, Confluence browser handoff, verified quote cross-check | Zero raw document egress; source hash/fingerprint validation; CI + human UAT |\n| **#25 — MERGED; REAL GOLD-SET UAT OPEN** | UX-02 + QA-04 + QA-03 preflight: safe description dedup, in-place density warnings, local frozen 20–30 A/B metrics | Green CI, no actual gold-case verdict without independent human review |\n| **#26 — MERGED; WINDOWS PERFORMANCE UAT OPEN** | UX audit + PERF-01/02/03 + OPS-01 + local regression coverage; no redesign | Synthetic 100/500/1000 benchmark, CI green; Windows human UAT remains open |\n| **#27 — MERGED; REAL BROWSER UAT OPEN** | REL-01/02 + SEC-01 + QA-11: per-task CAS and conflict review | Python/Node CI; two real Chrome tabs still require UAT |
-| **#28 — IN PROGRESS; QUICK-UX UAT OPEN** | QUICK-01/02/03 + FOCUS-01 + PRIOR-02: top-of-card next action, gated copy, manual done confirmation, queue explanation and scroll retention | CI + source-honest synthetic archetypes; real time-to-handoff UAT required |
+| **#28 — MERGED; QUICK-UX UAT OPEN** | QUICK-01/02/03 + FOCUS-01 + PRIOR-02: top-of-card next action, gated copy, manual done confirmation, queue explanation and scroll retention | CI + source-honest synthetic archetypes; real time-to-handoff UAT required |
+| **#29 — IN PROGRESS; REAL EFFORT UAT OPEN** | PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork: manual band, provenance-aware heuristic, quick hint, no reordering | Python/Node CI + 20–30 real-case effort/time calibration still required |
 | **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
@@ -217,6 +218,14 @@
 - **Пріоритет:** згорнутий блок роз'яснює порядок із чинного `task-rules.mjs`: спринт, реальна потреба в листі, сигнал, 0–100, blocking. Алгоритм сортування **не змінено**.
 - **Фокус:** оновлення того самого завдання зберігає активну вибрану задачу, прокрутку та розкриті `details`; фонова синхронізація не змінює typed drafts.
 - **Гейт:** регресійні Node тести на готову, лист, REVIEW, BLOCKED, stale, WAIT, DONE й archived. Реальні метрики TTNA/TTSH, Chrome/Edge/Windows і доступність потребують окремого UAT.
+
+### #29: реалізоване оцінювання обсягу
+
+- **Власна оцінка:** поле XS/S/M/L/XL/UNKNOWN додається до звичного «Мій робочий стан». Зберігається як `manual_effort` в SQLite в CAS-транзакції разом з іншими правками. Старі DB автоматично отримають UNKNOWN; повторний імпорт Jira не скидає оцінку.
+- **Підказка:** `assets/effort-planning.mjs` детерміновано оцінює лише структуровані метадані. `HEURISTIC / LOW` ніколи не видається за виміряний час. Ручне значення має `MANUAL / USER_SELECTED`.
+- **Швидкі кандидати:** тільки READY/WRITE з актуальним аналізом, структурно перевіреним Gate і відсутніми питаннями. У списку це маленька підказка `S?` і лічильник, **жодного нового сортування**. XS з невідомими доказами не вважається quick win.
+- **Перевірки:** матриця з 180 комбінацій status/sprint/signal/score × 6 варіантів effort плюс edge випадки для багатокрокових BA-задач, автоматична міграція старої DB, приватність, багато вкладок, збережений email/status.
+- **Опис критеріїв і фактичні прогалини:** `docs/EFFORT_PRIORITIZATION.md`; без real UAT не заявляти, що оцінка тривалості точна або праця стала швидшою.
 
 ## 4. Definition of Done для кожного наступного блоку
 
