@@ -10,7 +10,8 @@ export function quickHandoff(task) {
   const state = analysis.qualityGate?.state || 'UNVERIFIED';
   const readyForCopy = Boolean(description) && state === 'STRUCTURALLY_VERIFIED' &&
     effectiveSignal(task) !== 'DONE' && task.active !== false;
-  const nextAction = current && typeof analysis.nextActionUk === 'string'
+  const nextAction = current && effectiveSignal(task) !== 'DONE' &&
+    task.active !== false && typeof analysis.nextActionUk === 'string'
     ? analysis.nextActionUk.trim() : '';
   let evidenceNote;
   if (!current) evidenceNote = 'Аналіз відсутній або застарів. Перевір джерела перед передачею.';
@@ -31,8 +32,8 @@ export function priorityExplanation(task) {
     lane === 1 ? task.activeSprintStatus === 'VERIFIED'
       ? 'Поза активним спринтом' : 'Спринт не підтверджено' :
     lane === 2 ? 'Завершена вручну' : 'Задача поза поточним snapshot';
-  const write = signal === 'WRITE' ||
-    (hasAnalysis(task) && analysis.needsEmail === true);
+  const write = lane <= 1 && (signal === 'WRITE' ||
+    (hasAnalysis(task) && analysis.needsEmail === true));
   const score = hasAnalysis(task) && typeof analysis.queueScore === 'number' &&
     Number.isFinite(analysis.queueScore) && analysis.queueScore >= 0 && analysis.queueScore <= 100
     ? analysis.queueScore : null;
