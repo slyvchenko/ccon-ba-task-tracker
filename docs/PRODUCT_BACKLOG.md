@@ -63,7 +63,7 @@
 | EVD-10 | P1 | PARTIAL (heuristic taxonomy, source origin unverified) | Error taxonomy та регресія по кількох supplier версіях | Bad request, provider reject, mapping, timeout, CCON internal із підтвердженим stage |
 | EVD-11 | P1 | IMPLEMENTED (explicit payload timestamps); Kibana live timeline UAT pending | Часова послідовність по flow з Kibana timestamps | Причинно-часові залежності, pagination, timezone, retries |
 | EVD-12 | P1 | IMPLEMENTED (local flow coverage with explicit missing sources); live UAT open | Confidence+coverage dashboard для доказів | Відсоток flows із REST+supplier+errors, причини прогалин |
-| EVD-13 | P1 | PLANNED | Вкладення Jira (PDF/JSON/XML/ZIP), Confluence/wiki | Read-only extraction, не просто метадані; bounded/safe parser, source audit |
+| EVD-13 | P1 | PARTIAL (v2.21 local JSON/XML/ZIP structure; PDF text & Confluence unread, live UAT open) | Вкладення Jira (PDF/JSON/XML/ZIP), Confluence/wiki | Read-only extraction, не просто метадані; bounded/safe parser, source audit |
 | EVD-14 | P2 | PARTIAL (distinct-flow recurrence, no historical prevalence) | Cross-case anomaly detection: recurring errors across time | Порівняння case signatures з попереднім аналізом без PII |
 | EVD-15 | P2 | PLANNED | Кероване зберігання raw ZIP: retention, cleanup, quota | Encrypt-at-rest/ACL, TTL, аудит, no commit/no egress |
 | OUT-01 | P0 | PARTIAL | Самодостатній BA dossier із короткою дією, правилами, QA, gaps | Реальні приклади без зайвих формулювань; scenario-based grading |
@@ -98,8 +98,8 @@
 | **#13 — CODE COMPLETE; LIVE UAT OPEN** | EVD-09/EVD-11: mapping contracts + flow timeline | Два request paths, retry/timeout, ordering |
 | **#14 — CODE COMPLETE; LOCAL UAT OPEN** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
 | **#15 — CODE COMPLETE; LIVE UAT OPEN** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
-| **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — MERGED; HUMAN UAT OPEN** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI green, без auto-ranking |\n| **#20 — IN PROGRESS** | QA-08: безпечна мінімізація даних перед відправленням у схвалену модель | Synthetic prompt payload, URL/PII/secrets tests + CI |
-| **Далі** | EVD-13 (safe read-only attachments), EVD-15 (ZIP retention); потім UX-02/QA-07 | Окремі невеликі PR після перевірки попереднього |
+| **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — MERGED; HUMAN UAT OPEN** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI green, без auto-ranking |\n| **#20 — MERGED; SECURITY UAT OPEN** | QA-08: безпечна мінімізація даних перед відправленням у схвалену модель | Synthetic prompt payload, URL/PII/secrets tests + CI |\n| **#21 — IN PROGRESS** | EVD-13: локальний браузерний handoff JSON/XML/ZIP, прив'язка доказів до Jira fingerprint | ZIP safety, structure only, PDF explicitly unread |
+| **Далі** | EVD-13b (PDF/wiki extraction after approved parser), EVD-15 (ZIP retention), UX-02/QA-07 | Окремі невеликі PR після перевірки попереднього |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
 ## 4. Definition of Done для кожного наступного блоку
