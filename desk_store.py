@@ -11,6 +11,13 @@ from app_config import CONTEXT_LIMIT, LIMIT, STATUSES, utc_now as now
 from schema import text_field, validate_analysis, validate_draft
 from task_history import init as init_history, append as history_append, view_state, history_page
 
+class SaveConflict(ValueError):
+    """Task was changed by another editor; no private content in error."""
+    def __init__(self, revision):
+        super().__init__("Task edited elsewhere. Review the saved version before retry.")
+        self.current_revision = revision
+
+
 class Desk:
     validate_analysis = staticmethod(validate_analysis)
 
@@ -40,6 +47,8 @@ class Desk:
                 c.execute('ALTER TABLE tasks ADD COLUMN position INTEGER NOT NULL DEFAULT 0')
             if 'email_draft' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
                 c.execute('ALTER TABLE tasks ADD COLUMN email_draft TEXT DEFAULT NULL')
+            if 'manual_revision' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
+                c.execute('ALTER TABLE tasks ADD COLUMN manual_revision INTEGER NOT NULL DEFAULT 0')
 
     @contextmanager
     def connect(self):
@@ -130,7 +139,8 @@ class Desk:
                 task = json.loads(row['snapshot'])
                 task.update(manualStatus=row['manual_status'], note=row['note'], active=bool(row['active']),
                             importedAt=row['imported_at'], modifiedAt=row['modified_at'],
-                            savedEmailDraft=json.loads(row['email_draft']) if row['email_draft'] else None)
+                            savedEmailDraft=json.loads(row['email_draft']) if row['email_draft'] else None,
+                            manualRevision=row['manual_revision'])
                 tasks.append(task)
             revision = c.execute('SELECT revision FROM state_revision WHERE id=1').fetchone()[0]
             return {'tasks': tasks, 'latest': dict(latest) if latest else None,
@@ -144,26 +154,38 @@ class Desk:
 
     def save(self, key, data):
         status, note = data.get('manualStatus'), data.get('note')
+        expected = data.get('expectedManualRevision')
+        if 'expectedManualRevision' in data and (type(expected) is not int or expected < 0):
+            raise ValueError('expectedManualRevision must be a nonnegative integer.')
         if status not in STATUSES or not isinstance(note, str) or len(note) > 20000:
             raise ValueError('Invalid manual status or note (maximum 20,000 characters).')
         if 'emailDraft' in data and data['emailDraft'] is not None:
             validate_draft(data['emailDraft'])
         with self.lock, self.connect() as c:
             values = [status, note, now()]
-            query = 'UPDATE tasks SET manual_status=?, note=?, modified_at=?'
+            query = 'UPDATE tasks SET manual_status=?, note=?, modified_at=?, manual_revision=manual_revision+1'
             if 'emailDraft' in data:
                 query += ', email_draft=?'
                 draft = data['emailDraft']
                 values.append(json.dumps({field: draft[field] for field in ('to', 'subject', 'body')}, ensure_ascii=False) if draft is not None else None)
             query += ' WHERE key=?'
             values.append(key)
+            # Atomic compare-and-swap even across independent server processes.
+            # Legacy external scripts without a version remain compatible.
+            if 'expectedManualRevision' in data:
+                query += ' AND manual_revision=?'
+                values.append(expected)
             if not c.execute(query, values).rowcount:
-                raise ValueError('Unknown task.')
+                current = c.execute('SELECT manual_revision FROM tasks WHERE key=?', (key,)).fetchone()
+                if current is None:
+                    raise ValueError('Unknown task.')
+                raise SaveConflict(current['manual_revision'])
             row = c.execute('SELECT * FROM tasks WHERE key=?', (key,)).fetchone()
             saved_draft = json.loads(row['email_draft']) if row['email_draft'] else None
             history_append(c, key, view_state(json.loads(row['snapshot']),
                 row['manual_status'], row['note'], saved_draft, bool(row['active'])), 'MANUAL')
             c.execute('UPDATE state_revision SET revision=revision+1 WHERE id=1')
+            return {'manualRevision': row['manual_revision']}
 
     def history(self, key, limit=20, offset=0):
         with self.lock, self.connect() as c:
