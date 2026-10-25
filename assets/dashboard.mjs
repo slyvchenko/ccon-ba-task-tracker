@@ -6,6 +6,7 @@ import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus}
   from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
+import {createQueueModel,createSearchDebouncer,selectedAfterFilter} from './queue-performance.mjs';
 import {EFFORT_LABELS, effortInfo, quickWinCandidate, quickWinExplanation} from './effort-planning.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
 import {loadTaskDecisions} from './decisions-ui.mjs';
@@ -20,6 +21,8 @@ const restoredFocusView = readViewContext();
 let tasks = [], selected = restoredFocusView.selected, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
 let signature = '', renderedTaskVersion = '', renderedTaskKey = null, pendingDetail = false;
 let currentRevision = null, currentRevisionError = '', pollingInFlight = false, pollCycle = 0;
+const queueModel=createQueueModel();
+const searchRefresh=createSearchDebouncer(()=>applyFilters());
 const forms = new Map();
 const manualConflicts = new Map();
 const taskViews = new Map(Object.entries(restoredFocusView.views));
@@ -135,7 +138,6 @@ function renderList() {
     previousGroup = group;
     return `${heading}<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${quickWinCandidate(task) ? '<span class="effort-hint" title="Можлива коротка дія, оцінка орієнтовна. Порядок черги не змінено.">S?</span>' : ''}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`;
   }).join('') || '<div class="empty">Немає задач за цими фільтрами.</div>';
-  $('list').querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => selectTask(button.dataset.key)));
   $('list').scrollTop = previousListScroll;
   if ($('list').closest('aside')) $('list').closest('aside').scrollTop = previousSidebarScroll;
   // innerHTML replaces buttons: restore keyboard focus only if it WAS on
@@ -146,12 +148,28 @@ function renderList() {
     replacementRow?.focus({preventScroll:true});
   }
 }
+function updateQueueSelection(previous,key) {
+  const list=$('list');
+  if (previous) {
+    const oldRow=[...list.querySelectorAll('[data-key]')].find(row=>row.dataset.key===previous);
+    if (oldRow) {oldRow.classList.remove('selected');oldRow.setAttribute('aria-pressed','false');}
+  }
+  if (key) {
+    const newRow=[...list.querySelectorAll('[data-key]')].find(row=>row.dataset.key===key);
+    if (newRow) {newRow.classList.add('selected');newRow.setAttribute('aria-pressed','true');}
+  }
+}
+$('list').addEventListener('click',event=>{
+  const row=event.target.closest?.('[data-key]');
+  if (row && $('list').contains(row)) selectTask(row.dataset.key);
+});
 function selectTask(key) {
   if (busy || selected === key) return;
   storeCurrentTaskView();
+  const previous=selected;
   selected = key;
   pendingDetail = false;
-  renderList();
+  updateQueueSelection(previous,key);
   renderDetail();
   rememberViewContext();
 }
@@ -470,7 +488,19 @@ function captureForm() {
   $('manual').className = 'status-select tone-' + statusTone(form.value.manualStatus, task);
   rememberEdits();
   updateFormStatus();
-  renderList();
+  // A keystroke changes only this row's unsaved dot; do not rebuild 1,000
+  // rows, rerun priority rank or move focus out of the active editor.
+  const row=[...$('list').querySelectorAll('[data-key]')].find(element=>element.dataset.key===task.key);
+  if (row) {
+    let dot=row.querySelector('.edit-dot');
+    if (isDirty(task.key) && !dot) {
+      dot=document.createElement('span');
+      dot.className='edit-dot';
+      dot.title='Є незбережені зміни';
+      dot.textContent='● ';
+      row.querySelector('.row-head > span:last-child')?.append(dot);
+    } else if (!isDirty(task.key) && dot) dot.remove();
+  }
 }
 function updateFormStatus() {
   const task = tasks.find(item => item.key === selected);
@@ -591,6 +621,7 @@ async function overwriteAfterReview() {
     Object.assign(task, {manualStatus:own.manualStatus, manualEffort:own.manualEffort, note:own.note,
       savedEmailDraft:own.emailDraft, manualRevision:response.manualRevision,
       modifiedAt:new Date().toISOString()});
+    queueModel.invalidate();
     forms.delete(key);
     delete recoveredForms[key];
     manualConflicts.delete(key);
@@ -650,6 +681,7 @@ async function saveStatus(status) {
       withExpectedRevision({manualStatus:status, note:task.note || ''}, form.baseRevision));
     task.manualStatus = status;
     task.manualRevision = saved.manualRevision;
+    queueModel.invalidate();
     task.modifiedAt = new Date().toISOString();
     form.value.manualStatus = status;
     form.base = JSON.stringify(savedForm(task));
@@ -690,6 +722,7 @@ async function saveTask(done = false) {
     Object.assign(task, {manualStatus:value.manualStatus, manualEffort:value.manualEffort, note:value.note,
       savedEmailDraft:value.emailDraft, manualRevision:saved.manualRevision,
       modifiedAt:new Date().toISOString()});
+    queueModel.invalidate();
     forms.delete(task.key);
     manualConflicts.delete(task.key);
     saveFailures.delete(task.key);
@@ -848,6 +881,8 @@ async function load() {
     currentRevisionError = data.error || '';
     if (changed) {
       tasks = data.tasks;
+      queueModel.invalidate();
+      searchRefresh.cancel();
       signature = nextSignature;
       // A new snapshot must never overwrite a typed note or email draft.
       forms.forEach((form, key) => {
@@ -856,7 +891,17 @@ async function load() {
         if (remote && manualVersionChanged(form.baseRevision, remote.manualRevision))
           manualConflicts.set(key, {remote});
       });
-      if (!selected || !tasks.some(task => task.key === selected)) selected = visibleTasks()[0]?.key || null;
+      // A pending debounced query may be canceled by this snapshot update.
+      // Reconcile against the ACTUAL filtered queue, not just all snapshot
+      // keys, or a nonmatching old detail remains indefinitely selected.
+      const matching=visibleTasks();
+      const nextSelected=selectedAfterFilter(matching,selected,{
+        protectEditor:isDirty(selected)||detailInteractionFocused()
+      });
+      if (nextSelected!==selected) {
+        storeCurrentTaskView();
+        selected=nextSelected;
+      }
       renderList();
       updateSnapshotInfo();
     }
@@ -906,12 +951,15 @@ async function loadDeltaStrip() {
 
 function applyFilters() {
   if (busy) return;
-  renderList();
-  if (!visibleTasks().some(task => task.key === selected)) {
-    selected = visibleTasks()[0]?.key || null;
+  const items=visibleTasks();
+  if (!items.some(task=>task.key===selected)) {
+    storeCurrentTaskView();
+    selected=selectedAfterFilter(items,selected);
+    pendingDetail=false;
     renderList();
     renderDetail();
-  }
+    rememberViewContext();
+  } else renderList();
 }
 document.addEventListener('click', event => { if (!$('dataMenu').contains(event.target)) $('dataMenu').open = false; });
 document.addEventListener('keydown', event => { if (event.key === 'Escape') { $('dataMenu').open = false; document.querySelectorAll('.status-help[open]').forEach(help => help.open = false); } });
@@ -926,6 +974,7 @@ document.addEventListener('keydown', event => {
     $('search').focus({preventScroll:true});
     $('search').select();
   } else if (action === 'NEXT' || action === 'PREVIOUS') {
+    searchRefresh.flush();
     const keys = visibleTasks().map(task => task.key);
     const key = adjacentTaskKey(keys, selected, action === 'NEXT' ? 1 : -1);
     if (key && key !== selected) selectTask(key);
@@ -941,10 +990,13 @@ document.addEventListener('keydown', event => {
     else message('Незбережених змін у цій задачі немає.');
   }
 });
-$('search').addEventListener('input', applyFilters);
-$('filter').addEventListener('change', applyFilters);
-$('signalFilter').addEventListener('change', applyFilters);
-$('sprintFilter').addEventListener('change', applyFilters);
+$('search').addEventListener('input',()=>searchRefresh.schedule());
+for (const id of ['filter','signalFilter','sprintFilter']) {
+  $(id).addEventListener('change',()=>{
+    searchRefresh.cancel();
+    applyFilters();
+  });
+}
 $('import').addEventListener('click', async () => {
   $('dataMenu').open = false;
   $('import').disabled = true;
@@ -1034,7 +1086,10 @@ document.addEventListener('visibilitychange', () => {
   else rememberViewContext();
 });
 
-function rankedTasks() { return rankTasks(tasks); }
+function rankedTasks() { return queueModel.rankedTasks(tasks); }
 function visibleTasks() {
-  return filterTasks(rankedTasks(), {search: $('search').value.trim().toLocaleLowerCase('uk-UA'), filter: $('filter').value, signal: $('signalFilter').value, sprint: $('sprintFilter').value});
+  return queueModel.visibleTasks(tasks, {
+    search:$('search').value.trim().toLocaleLowerCase('uk-UA'),
+    filter:$('filter').value, signal:$('signalFilter').value, sprint:$('sprintFilter').value
+  });
 }

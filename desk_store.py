@@ -132,22 +132,48 @@ class Desk:
             self.error = 'Import failed: ' + str(e)
             raise ValueError(self.error)
 
-    def view(self):
-        with self.lock, self.connect() as c:
-            rows = c.execute('SELECT * FROM tasks ORDER BY active DESC, position, key').fetchall()
-            latest = c.execute('SELECT * FROM imports ORDER BY imported_at DESC LIMIT 1').fetchone()
-            tasks = []
-            for row in rows:
-                task = json.loads(row['snapshot'])
-                task.update(manualStatus=row['manual_status'], note=row['note'], active=bool(row['active']),
-                            importedAt=row['imported_at'], modifiedAt=row['modified_at'],
-                            savedEmailDraft=json.loads(row['email_draft']) if row['email_draft'] else None,
-                            manualRevision=row['manual_revision'],
-                            manualEffort=row['manual_effort'])
-                tasks.append(task)
+    def _view_on_connection(self, c, revision=None):
+        rows = c.execute('SELECT * FROM tasks ORDER BY active DESC, position, key').fetchall()
+        latest = c.execute('SELECT * FROM imports ORDER BY imported_at DESC LIMIT 1').fetchone()
+        tasks = []
+        for row in rows:
+            task = json.loads(row['snapshot'])
+            task.update(manualStatus=row['manual_status'], note=row['note'], active=bool(row['active']),
+                        importedAt=row['imported_at'], modifiedAt=row['modified_at'],
+                        savedEmailDraft=json.loads(row['email_draft']) if row['email_draft'] else None,
+                        manualRevision=row['manual_revision'],
+                        manualEffort=row['manual_effort'])
+            tasks.append(task)
+        if revision is None:
             revision = c.execute('SELECT revision FROM state_revision WHERE id=1').fetchone()[0]
-            return {'tasks': tasks, 'latest': dict(latest) if latest else None,
-                    'error': self.error, 'revision': revision}
+        return {'tasks': tasks, 'latest': dict(latest) if latest else None,
+                'error': self.error, 'revision': revision}
+
+    def view(self):
+        # Keep the object-based API independent of cache mutation by clients.
+        with self.lock, self.connect() as c:
+            return self._view_on_connection(c)
+
+    def view_json_bytes(self):
+        """Fast full HTTP snapshot: cached immutable bytes per committed revision.
+
+        Rechecks SQLite on every call so writes from a second Desk instance
+        invalidate the cache. Error changes invalidate without a DB write.
+        Never cache mutable dicts or leak a stale pre-transaction response.
+        """
+        with self.lock, self.connect() as c:
+            # Explicit read transaction makes revision + rows an atomic view,
+            # including while another app process commits a snapshot.
+            c.execute('BEGIN')
+            revision = c.execute('SELECT revision FROM state_revision WHERE id=1').fetchone()[0]
+            cache_key = (revision, self.error)
+            if getattr(self, '_http_cache_key', None) == cache_key:
+                return self._http_cache_body
+            payload = self._view_on_connection(c, revision)
+            encoded = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+            self._http_cache_key = cache_key
+            self._http_cache_body = encoded
+            return encoded
 
     def revision(self):
         """Small poll token. Read one row; never materialize source tasks."""

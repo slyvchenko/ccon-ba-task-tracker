@@ -120,3 +120,11 @@ Manual UAT to close #28: run 5 independent task archetypes in the locally instal
 Added `tests/focus-navigation.test.mjs` (shortcut map, editable target, IME and dialog guards; queue wrap without priority mutation; semantic disclosure matching even if sections reorder; cursor restoration without overwriting text; private view-state sanitization). Existing HTTP/SQLite CAS tests still cover concurrent writes and crash restart semantics. The UI now includes an in-place keyboard guide, alertable saving/unsaved/conflict states and native-dialog focus return.
 
 **Not a DOM test suite.** Windows Chrome/Edge keyboard-only navigation, focus order under rerenders, Ctrl+Enter inside all fields, Escape dialog return, 200/400% zoom, screen reader status announcements, private localStorage cross-tab collisions and actual time-to-resume remain unverified. `docs/FOCUS_KEYBOARD_UX.md` has a stepwise UAT checklist; capture observations and action counts before closing FOCUS-02/03/06, UI-06, A11Y-01/04.
+
+## v2.31: large-queue perf and concurrency regression
+
+- `tests/queue-performance.test.mjs`: exact **legacy** vs cached queue result parity on 100/500/1000 synthetic Jira tasks across free-text/Unicode, filter, sprint and signal variants; rerank after in-place manual change; snapshot identity invalidation, index-once behavior, debounce flush/cancel.
+- `tests/test_json_response_cache.py`: cached HTTP payload identical to `Desk.view()`, immutable cache identity on equal revision, CAS save/import/error and second Desk process invalidation, concurrent readers/writer with complete JSON.
+- `performance_smoke.py`: SQLite `view` vs single-row `revision` vs cached `serializedHttp` p50/p95 and payload bytes (synthetic only).
+- `queue_benchmark.mjs`: uncached vs indexed cold/warm Node search p50/p95, explicit baseline parity, 100/500/1000 synthetic cases.
+- **CI smoke** runs short benchmarks after deterministic Python/Node/release tests, printing metrics only. No milliseconds hard limit on shared runner. Real browser/Windows, accessibility, scroll and 8-hour heap/memory runs are **NOT** covered and remain QA-09/PERF-05/07 UAT gates.

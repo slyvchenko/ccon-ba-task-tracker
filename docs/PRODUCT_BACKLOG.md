@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #29 (v2.29). **Поточний кандидат:** PR #30 (v2.30), safe keyboard navigation, per-task view/caret recovery, conflict-aware save feedback and modal focus; реальний Windows/Chrome UAT окремо.  
+**Базовий код:** `main` після PR #30 (v2.30). **Поточний кандидат:** PR #31 (v2.31), великі черги, кеш нормалізованого пошуку і JSON відповіді, тестові 100/500/1000 задач; Windows/browser UX UAT окремо.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -127,10 +127,10 @@
 | PERF-01 | P0 | IMPLEMENTED (v2.26 code; live measurements pending) | Monotonic SQLite revision + light task token endpoint | P-01..P-08 + HTTP auth and payload reduction |
 | PERF-02 | P0 | IMPLEMENTED (v2.26 code; browser UAT pending) | Load full tasks only on revision change, hidden tab idle | P-02/P-11/P-12, no false staleness |
 | PERF-03 | P0 | IMPLEMENTED (v2.26 code; browser UAT pending) | Skip expensive no-query search path and early reject | P-09/P-10, Unicode and sprint regression |
-| PERF-04 | P1 | NEXT | Debounced full-text search with cached per-snapshot index | Search p95 target ≤100 ms at 1000 rich tasks |
-| PERF-05 | P1 | PLANNED | Event delegation and scrolling for large task list | No focus/aria regression; compare 500/1000 |
-| PERF-06 | P1 | PLANNED | Cache full server serialized task read by committed revision | Atomic invalidation on import/save; concurrent tests |
-| PERF-07 | P1 | PLANNED | Benchmark browser cold/warm, DOM scripting/paint, 8h session | Named Windows machine p50/p95, memory trend |
+| PERF-04 | P1 | IMPLEMENTED (v2.31 debounced search, per-snapshot Unicode index, exact parity tests; Windows p95 UAT open) | Debounced full-text search with cached per-snapshot index | Search p95 target ≤100 ms at 1000 rich tasks |
+| PERF-05 | P1 | PARTIAL (v2.31 delegated clicks and focused-row update without full list repaint; windowing requires browser profiling) | Event delegation and scrolling for large task list | No focus/aria regression; compare 500/1000 |
+| PERF-06 | P1 | IMPLEMENTED (v2.31 immutable full-JSON bytes cache by transactional SQLite revision + error; external writer tests) | Cache full server serialized task read by committed revision | Atomic invalidation on import/save; concurrent tests |
+| PERF-07 | P1 | PARTIAL (v2.31 reproducible Python/Node 100/500/1000 synthetic timings in CI; real browser/8h UAT open) | Benchmark browser cold/warm, DOM scripting/paint, 8h session | Named Windows machine p50/p95, memory trend |
 | PERF-08 | P1 | PLANNED | Avoid repeated heavyweight detail fetch on list refresh | Fetch selected only on selection/revision, compare versions |
 | PERF-09 | P2 | PLANNED | Simplify 1374-line CSS cascade after visual/a11y regression | No unexpected fonts/spacing/contrast changes |
 | PERF-10 | P2 | PLANNED | Evaluate SQLite WAL, busy timeouts and JSON index with empirical trace | Do not enable blindly; Windows/backup compatibility |
@@ -150,7 +150,7 @@
 | A11Y-04 | P1 | PARTIAL (v2.30 native modal Close initial focus and return focus on close/Escape; browser UAT open) | Bulk email dialog focus trap/return, escape | A-11; no unintended send |
 | A11Y-05 | P2 | PLANNED | Forced color/high contrast and reduced-motion support | A-05/A-10 |
 | A11Y-06 | P2 | PLANNED | Readable labels/tooltips without mouse hover | A-09 and touch accuracy |
-| QA-09 | P0 | NEXT | Synthetic 100/500/1000 browser E2E performance baseline | Windows DevTools p95 + startup/long session |
+| QA-09 | P0 | PARTIAL (v2.31 synthetic 100/500/1000 CI + exact ranking parity; Chrome/Edge E2E pending) | Synthetic 100/500/1000 browser E2E performance baseline | Windows DevTools p95 + startup/long session |
 | QA-10 | P0 | GATE (v2.29 synthetic archetype cases; observed BA handoff times and semantic review not performed) | Human observation of 5 BA task archetypes, repeated runs | TTNA/TTSH/MRI with 0 critical false-ready decisions |
 | QA-11 | P0 | PARTIAL (v2.27 synthetic concurrent instances/restarts/conflicts; real browser crash drill open) | Cross-tab edits, stale conflict and crash recovery integration | P-15/P-17/P-18, 0 silent overwrite |
 | QA-12 | P1 | NEXT | DOM behavior tests with approved Playwright/browser runner | Focus, click, screenreader, history, network reconnect |
@@ -178,7 +178,7 @@
 3. **#28 current: QUICK-01/02/03 + FOCUS-01 + PRIOR-02:** максимально швидкий read → verified artifact → handoff → record → next в існуючій картці; тест 5 archetypes.
 4. **#29 current: PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork:** effort-aware review hints в незмінній sprint/WRITE lane, transparent ordering and timed BA UAT.
 5. **#30 current: FOCUS-02/03/06 + A11Y-01/04 + UI-06:** keyboard/navigation/focus+dirty warning regression.
-6. **#31 recommended: PERF-04/05/06/07 + QA-09:** browser traces and measured large-list optimizations, WCAG/browser proof.
+6. **#31 current: PERF-04/05/06/07 + QA-09 groundwork:** browser traces and measured large-list optimizations, WCAG/browser proof.
 7. **#32+:** A11Y-02/03/05, REL-03/04/05, UX polish, all other backlog rows; prioritize from actual field measurements and human BA gold set.
 
 **Dependency rule:** conduct QA-10 human observation before changing task ordering, manual Done behavior or showing effort as absolute truth. Browser E2E instrumentation requires approved runner, no corporate data in public CI. Do not claim full business correctness from passing synthetic tests.
@@ -198,7 +198,8 @@
 | **#22 — MERGED; LIVE UAT OPEN** | EVD-15 (ZIP lifecycle/quota) + EVD-14 (strict temporal recurrence) + QA-07 (realistic synthetic fixtures) | CI on PR & main green, host ACL/encryption unverified |\n| **#23 — MERGED; HUMAN UAT OPEN** | BA-01/BA-02/OUT-01/QA-04: exact conditions, email evidence checks, dossier readiness | CI + semantic gold-case UAT, no Jira/email writes |\n| **#24 — MERGED; BROWSER UAT OPEN** | EVD-13 + BA-09 + OUT-04: local PDF/JSON/XML/ZIP text, Confluence browser handoff, verified quote cross-check | Zero raw document egress; source hash/fingerprint validation; CI + human UAT |\n| **#25 — MERGED; REAL GOLD-SET UAT OPEN** | UX-02 + QA-04 + QA-03 preflight: safe description dedup, in-place density warnings, local frozen 20–30 A/B metrics | Green CI, no actual gold-case verdict without independent human review |\n| **#26 — MERGED; WINDOWS PERFORMANCE UAT OPEN** | UX audit + PERF-01/02/03 + OPS-01 + local regression coverage; no redesign | Synthetic 100/500/1000 benchmark, CI green; Windows human UAT remains open |\n| **#27 — MERGED; REAL BROWSER UAT OPEN** | REL-01/02 + SEC-01 + QA-11: per-task CAS and conflict review | Python/Node CI; two real Chrome tabs still require UAT |
 | **#28 — MERGED; QUICK-UX UAT OPEN** | QUICK-01/02/03 + FOCUS-01 + PRIOR-02: top-of-card next action, gated copy, manual done confirmation, queue explanation and scroll retention | CI + source-honest synthetic archetypes; real time-to-handoff UAT required |
 | **#29 — MERGED; REAL EFFORT UAT OPEN** | PRIOR-01/03/04 + QUICK-05 + QA-10 groundwork: manual band, provenance-aware heuristic, quick hint, no reordering | Python/Node CI + 20–30 real-case effort/time calibration still required |
-| **#30 — IN PROGRESS; LIVE KEYBOARD UAT OPEN** | FOCUS-02/03/06 + A11Y-01/04 + UI-06: shortcuts, per-tab context/caret, focus-safe refresh, honest save status | CI + synthetic keyboard policies, Windows/Chrome two-tab assistive-technology UAT open |
+| **#30 — MERGED; LIVE KEYBOARD UAT OPEN** | FOCUS-02/03/06 + A11Y-01/04 + UI-06: shortcuts, per-tab context/caret, focus-safe refresh, honest save status | CI + synthetic keyboard policies, Windows/Chrome two-tab assistive-technology UAT open |
+| **#31 — IN PROGRESS; BROWSER PERFORMANCE UAT OPEN** | PERF-04/05/06/07 + QA-09: cached rank/search/index/HTTP JSON + synthetic 100/500/1000 benchmarks; native DOM virtual list deferred | Exact Node parity, cross-process SQLite revisions and CI; real Windows DevTools p95/heap 8h pending |
 | **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
@@ -236,6 +237,15 @@
 - **Save UX:** `збережено / незбережено / зберігаю / помилка / конфлікт версій` тепер різні стани; ніякого «збережено» перед HTTP acknowledgment. Діалог пакетних листів повертає фокус на opener після Escape/Close.
 - **Автоматичні тести:** `tests/focus-navigation.test.mjs` покриває чисту policy для клавіш, IME, модалки, фільтрів, disclosures, caret і privacy. Повні browser DOM E2E, вимірювання resume time і screen reader UAT залишаються OPEN.
 - **Детальний runbook:** `docs/FOCUS_KEYBOARD_UX.md`.
+
+### #31: великі черги без компромісу з пріоритетами
+
+- **Implemented:** `assets/queue-performance.mjs` caches ranked queue, Unicode search text and already computed filter results for a snapshot; 130ms debounce; immediate navigation flush. `task-rules.mjs` maintains original fallback with optional cache provider. Exact source text/folded matching semantics maintained.
+- **Implemented:** single delegated list click handler, selection `aria-pressed` and CSS toggled in place, keystrokes update only one unsaved marker instead of 1,000 DOM rows. Full list redraw still used after actual source/filter changes.
+- **Implemented:** `Desk.view_json_bytes()` sends an immutable cached JSON response for unchanged SQLite revision/error with read-transaction snapshot consistency. The original object `Desk.view()` contract, local/cloud security headers and Jira/manual notes remain unchanged.
+- **Verified synthetically:** 100/500/1000 representative fake Jira items, exact filter/order results, cache invalidation on manual save/import/error/restart/second Desk process, concurrent reads. Python and Node benchmarks p50/p95 run as smoke in CI. **No fake Windows/real browser timings.**
+- **Open QA-09/PERF-05/07 gates:** measure Chrome/Edge DOM scripting/layout/paint, focus/accessibility and 8-hour memory; consider true windowing only when traces show a real bottleneck.
+- **Source:** `docs/LARGE_QUEUE_PERFORMANCE.md` records commands, acceptance and limitations.
 
 ## 4. Definition of Done для кожного наступного блоку
 
