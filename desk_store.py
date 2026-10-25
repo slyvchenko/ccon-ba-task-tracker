@@ -28,6 +28,9 @@ class Desk:
                 manual_status TEXT NOT NULL DEFAULT 'AUTO', note TEXT NOT NULL DEFAULT '',
                 active INTEGER NOT NULL DEFAULT 1, position INTEGER NOT NULL DEFAULT 0, imported_at TEXT NOT NULL,
                 modified_at TEXT);
+              CREATE TABLE IF NOT EXISTS state_revision (
+                id INTEGER PRIMARY KEY CHECK (id = 1), revision INTEGER NOT NULL);
+              INSERT OR IGNORE INTO state_revision(id,revision) VALUES(1,0);
               CREATE TABLE IF NOT EXISTS imports (
                 hash TEXT PRIMARY KEY, imported_at TEXT NOT NULL, generated_at TEXT NOT NULL,
                 count INTEGER NOT NULL);
@@ -111,6 +114,7 @@ class Desk:
                         history_append(c, previous_key, view_state(
                             old, row['manual_status'], row['note'], draft, False), 'IMPORT')
                 c.execute('INSERT INTO imports VALUES(?,?,?,?)', (digest, stamp, generated, len(keys)))
+                c.execute('UPDATE state_revision SET revision=revision+1 WHERE id=1')
             self.error = ''
             return {'message': f'Imported {len(keys)} tasks. Manual status and notes preserved.'}
         except (ValueError, OSError) as e:
@@ -128,7 +132,15 @@ class Desk:
                             importedAt=row['imported_at'], modifiedAt=row['modified_at'],
                             savedEmailDraft=json.loads(row['email_draft']) if row['email_draft'] else None)
                 tasks.append(task)
-            return {'tasks': tasks, 'latest': dict(latest) if latest else None, 'error': self.error}
+            revision = c.execute('SELECT revision FROM state_revision WHERE id=1').fetchone()[0]
+            return {'tasks': tasks, 'latest': dict(latest) if latest else None,
+                    'error': self.error, 'revision': revision}
+
+    def revision(self):
+        """Small poll token. Read one row; never materialize source tasks."""
+        with self.lock, self.connect() as c:
+            version = c.execute('SELECT revision FROM state_revision WHERE id=1').fetchone()[0]
+            return {'revision': version, 'error': self.error}
 
     def save(self, key, data):
         status, note = data.get('manualStatus'), data.get('note')
@@ -151,6 +163,7 @@ class Desk:
             saved_draft = json.loads(row['email_draft']) if row['email_draft'] else None
             history_append(c, key, view_state(json.loads(row['snapshot']),
                 row['manual_status'], row['note'], saved_draft, bool(row['active'])), 'MANUAL')
+            c.execute('UPDATE state_revision SET revision=revision+1 WHERE id=1')
 
     def history(self, key, limit=20, offset=0):
         with self.lock, self.connect() as c:

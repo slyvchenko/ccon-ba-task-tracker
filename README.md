@@ -322,3 +322,11 @@ The desk can now cross-check an analyst-provided source quote against **exact lo
 ## v2.25: focused BA descriptions and measurable offline quality
 
 For generated descriptions only, the desk drops exact immediately duplicated implementation lines; it never auto-summarizes or drops a technical condition or QA scenario. The original dashboard shows structural density counts inside the existing closed Quality Gate details. `python evaluation.py score`, after freezing **both** baseline/candidate predictions for a local **20–30 real Jira task cohort**, adds deterministic, source-safe A/B warning metrics. All local cases and manual human scores remain private under `data/evaluation/`. Real-case gold-set acceptance is still a separate human step; synthetic CI does not validate business truth.
+
+## v2.26: UX/productivity аудит і швидкий локальний dashboard
+
+Для великих особистих беклогів додано легкий `GET /api/tasks/revision`: інтерфейс не перечитує кожні 5 секунд усі Jira-задачі, якщо стан не змінився; не навантажує приховану вкладку. Пошук не індексує технічний текст, доки немає реального запиту. SQLite збільшує revision в тій самій транзакції, де імпортується snapshot або зберігається ручна правка. Старі status/note/email drafts і вигляд картки не змінюються.
+
+Проведено **product-manager аудит усіх ключових BA-шляхів** і додано 73 окремі backlog items із acceptance criteria та планом пакетних PR. Це програмний та евристичний огляд, **не** тест із реальними користувачами: `docs/PRODUCTIVITY_UX_AUDIT.md`, `docs/UX_TEST_COVERAGE_MATRIX.md` і `docs/LOCAL_PERFORMANCE_RELIABILITY.md`.
+
+Для замірів без корпоративних даних: `python performance_smoke.py --sizes 100 500 1000 --iterations 25`. Він створює тимчасові **синтетичні** SQLite snapshots і показує p50/p95 server-side local `Desk.view()` проти `Desk.revision()`. Browser/UI швидкодію, роботу на Windows і BA time-to-handoff потрібно виміряти вручну за runbook. Відкат на попередній release можливий після приватної резервної копії `ba_state.db`; таблиця `state_revision` лише додається, існуючі ручні правки не видаляються.

@@ -1,5 +1,6 @@
 import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueTier, priorityLane, rankTasks, filterTasks} from './task-rules.mjs';
 import {createLogsController} from './logs.mjs';
+import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
 import {loadTaskDecisions} from './decisions-ui.mjs';
 import {loadTaskActions, loadTaskHistory} from './action-history.mjs';
@@ -10,6 +11,7 @@ const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&
 const LOCAL_EDITS_KEY = 'ccon-ba-desk.unsaved-forms.v2';
 let tasks = [], selected = null, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
 let signature = '', renderedTaskVersion = '', pendingDetail = false;
+let currentRevision = null, currentRevisionError = '', pollingInFlight = false, pollCycle = 0;
 const forms = new Map();
 const expandedEmails = new Set();
 const recoveredForms = readRecoveredForms();
@@ -559,6 +561,8 @@ async function load() {
     const changed = nextSignature !== signature;
     if (!changed && !pendingDetail) return;
     latest = data.latest;
+    currentRevision = Number.isSafeInteger(data.revision) ? data.revision : null;
+    currentRevisionError = data.error || '';
     if (changed) {
       tasks = data.tasks;
       signature = nextSignature;
@@ -669,7 +673,30 @@ async function loadCloudCapabilities() {
 loadCloudCapabilities();
 load();
 loadDeltaStrip();
-setInterval(() => { load(); loadLogs(); loadDeltaStrip(); loadCloudCapabilities(); }, 5000);
+// Idle polling checks one SQLite revision row, not the whole Jira task payload.
+// Background tabs do not spend CPU on hidden list/analysis rerenders.
+async function pollChanges() {
+  if (pollingInFlight || busy || document.visibilityState === 'hidden') return;
+  pollingInFlight = true;
+  try {
+    const revision = await api('/api/tasks/revision');
+    if (needsFullTaskRefresh(currentRevision, currentRevisionError, revision)) await load();
+    pollCycle++;
+    if (pollCycle % 3 === 0) await loadLogs();
+    if (pollCycle % 6 === 0) {
+      await loadDeltaStrip();
+      await loadCloudCapabilities();
+    }
+  } catch (error) {
+    message('Локальний сервер недоступний: ' + error.message, true);
+  } finally {
+    pollingInFlight = false;
+  }
+}
+setInterval(pollChanges, 5000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') pollChanges();
+});
 
 function rankedTasks() { return rankTasks(tasks); }
 function visibleTasks() {

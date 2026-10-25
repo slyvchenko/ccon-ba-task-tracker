@@ -205,3 +205,20 @@ Code exists in the PR branch; this topology is **not deployed**
 on a corporate cloud. SQLite is a single-user pilot only.
 Managed PostgreSQL, HA, approved object storage, backup/restore and
 company OIDC credentials remain external prerequisites.
+
+## v2.26: шлях оновлення швидкої локальної черги
+
+```mermaid
+flowchart LR
+  A[Visible browser queue] --> B[GET revision every 5 seconds]
+  B --> C{Revision or error changed?}
+  C -->|No| D[Keep current task list and dirty edits]
+  C -->|Yes| E[GET complete tasks]
+  E --> F[Render changed list and preserve editor state]
+  G[SQLite import or save transaction] --> H[Commit monotonic revision]
+  H --> B
+  I[Hidden browser tab] --> J[Skip periodic polling]
+  J -->|Visible again| B
+```
+
+Дві паралельні вкладки поки що **не мають optimistic concurrency token на окрему задачу**. Це P0 наступного пакета, а не прихована гарантія цього. Ранжування active sprint / genuine WRITE / queueScore зберігається. Опис повного UX-аудиту у `docs/PRODUCTIVITY_UX_AUDIT.md`.
