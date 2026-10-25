@@ -4,7 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from zipfile import ZipFile
+from zipfile import ZipFile, ZIP_DEFLATED
 
 from jira_attachments import (
     attachment_path, evidence_for_model, inspect_bytes, prepare, process,
@@ -15,7 +15,7 @@ from storage import read_json, write_json
 
 def zip_bytes(files):
     buffer = io.BytesIO()
-    with ZipFile(buffer, "w") as archive:
+    with ZipFile(buffer, "w", compression=ZIP_DEFLATED) as archive:
         for name, data in files.items():
             archive.writestr(name, data)
     return buffer.getvalue()
@@ -118,6 +118,8 @@ class JiraAttachmentIntakeTests(unittest.TestCase):
         prepare(self.root)
         self.save("1001", ".json", b'{"TypeCode":"TO"}')
         self.assertEqual(process(self.root)["results"][0]["state"], "STRUCTURE_ONLY")
+        self.save("1001", ".json", b'{"TypeCode":"CHANGED"}')
+        self.assertEqual(evidence_for_model(self.root, "CCON-5", self.issue), [])
         self.issue["fingerprint"] = "updated"
         self.save_context()
         self.assertEqual(process(self.root)["results"][0]["state"], "STALE")
