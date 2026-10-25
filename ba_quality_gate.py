@@ -205,10 +205,16 @@ def description_review(description, briefing):
     return findings
 
 
-def quality_gate(analysis, issue, related=None, *, attachment_ready=None, supplier_method=None):
+def quality_gate(analysis, issue, related=None, *, attachment_ready=None, supplier_method=None, local_sources=None):
     """Inspect model output locally. Never claim semantic validation."""
     briefing = analysis.get("briefing") or {}
     sources = source_registry(issue, related)
+    # Only already-retrieved, hash-verified local sources may extend the
+    # exact-quote registry. A link by itself never confirms reading.
+    for url, content in (local_sources or {}).items():
+        normalized = normalized_url(url)
+        if normalized and isinstance(content, str):
+            sources[normalized] = content[:160000]
     claims, source_findings = claim_audit(briefing, sources)
     coverage, qa_findings = rule_coverage(briefing)
     writing_findings = description_review(analysis.get("standardDescription"), briefing)
