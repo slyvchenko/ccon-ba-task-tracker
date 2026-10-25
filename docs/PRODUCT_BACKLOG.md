@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
-**Версія реєстру:** 2026-10-24 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #8 (v2.8). **Поточний релізний кандидат:** PR #9 (v2.9): реалізовано в коді, але live Kibana UAT ще не проводився.  
+**Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
+**Базовий код:** `main` після злиття PR #18 (v2.18). **Поточний кандидат:** PR #19 (v2.19), human-UAT після зеленого CI.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -39,7 +39,7 @@
 | CORE-07 | P1 | IMPLEMENTED (local revision history); real UAT pending | Повний task-history 360° з ревізіями рішень/листування | Зберігати й порівнювати snapshots, аналіз, відповідь, дату, джерело |
 | CORE-08 | P1 | IMPLEMENTED (human action plans); real UAT pending | Personal action plan / черга на сьогодні | Що перевірити, кому написати, хто блокує, next follow-up, робочий стан |
 | CORE-09 | P2 | IMPLEMENTED (supplier, method, technical fields, links in existing search); UAT pending | Швидкий пошук і фільтрація за методами, supplier, issue, залежностями | Search/filter без переробки основної картки |
-| CORE-10 | P2 | PARTIAL | Узгодженість оцінок між задачами та ретроспектива пріоритетів | Виявляти протиріччя в 0–100 і bias, review проти результату |
+| CORE-10 | P2 | PARTIAL (v2.19 daily score/factor delta + human review warnings; long-term bias UAT open) | Узгодженість оцінок між задачами та ретроспектива пріоритетів | Виявляти великі зміни без нового Jira fingerprint; AI bias не доведено автоматично |
 | BA-01 | P0 | PARTIAL (description quality checks); expert UAT open | Готовий короткий англомовний task description | Кожна умова IF/THEN, field, expected output, QA зчитані коректно; human gold set |
 | BA-02 | P0 | PARTIAL | Готовий фактологічний emailDraft для **кожної** задачі | Незалежно від WRITE; не вигадувати адресата/метод/прикріплений ZIP; коректний follow-up |
 | BA-03 | P0 | IMPLEMENTED (code) | 30-second context: confirmed/current/target/action/why | Зрозумілий стислий briefing із proof/uncertainty |
@@ -98,8 +98,8 @@
 | **#13 — CODE COMPLETE; LIVE UAT OPEN** | EVD-09/EVD-11: mapping contracts + flow timeline | Два request paths, retry/timeout, ordering |
 | **#14 — CODE COMPLETE; LOCAL UAT OPEN** | CORE-07/CORE-08: history + personal action plan | Один екран, current vs previous, overdue |
 | **#15 — CODE COMPLETE; LIVE UAT OPEN** | BA-08/UX-04: one-task reanalyze + copy workflow | User edits untouched |
-| **#16 — NEXT** | QA-03/QA-06: real gold-set test + prompt A/B | No critical false claims |
-| **Далі** | EVD-10,12,13,14,15; CORE-09,10; BA-11; UX-02,03; QA-07,08 | Окремо після реальних потреб |
+| **#16 — CODE COMPLETE; REAL GOLD-SET UAT OPEN** | QA-03/QA-06: frozen gold-set + human-approved prompt A/B | No critical false claims |\n| **#17–18 — CODE COMPLETE; LIVE UAT OPEN** | EVD-10/12/14 (частково), CORE-09, BA-11 | Перевірка реальних Jira/Kibana даних |\n| **#19 — IN PROGRESS** | CORE-10: щоденний score delta, зміни факторів, пояснювальні попередження | CI + human judgement, без auto-ranking |
+| **Далі** | EVD-13 (safe read-only attachments), QA-08 (security), EVD-15 (ZIP retention); потім UX-02/QA-07 | Окремі невеликі PR після перевірки попереднього |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
 ## 4. Definition of Done для кожного наступного блоку
