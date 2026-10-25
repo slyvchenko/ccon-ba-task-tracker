@@ -33,6 +33,7 @@ STATIC_FILES = {
     '/assets/draft-recovery.mjs': ('assets/draft-recovery.mjs', 'text/javascript; charset=utf-8'),
     '/assets/fast-handoff.mjs': ('assets/fast-handoff.mjs', 'text/javascript; charset=utf-8'),
     '/assets/handoff-ui-policy.mjs': ('assets/handoff-ui-policy.mjs', 'text/javascript; charset=utf-8'),
+    '/assets/progressive-layout.mjs': ('assets/progressive-layout.mjs', 'text/javascript; charset=utf-8'),
     '/assets/visual-clarity.mjs': ('assets/visual-clarity.mjs', 'text/javascript; charset=utf-8'),
     '/assets/focus-navigation.mjs': ('assets/focus-navigation.mjs', 'text/javascript; charset=utf-8'),
     '/assets/effort-planning.mjs': ('assets/effort-planning.mjs', 'text/javascript; charset=utf-8'),
