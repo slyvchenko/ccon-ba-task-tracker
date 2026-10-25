@@ -36,11 +36,16 @@ export function adjacentTaskKey(keys, selected, direction) {
 }
 
 function viewSectionKey(node) {
+  // Keep only an opaque deterministic key, NOT a source-summary/PNR/email
+  // string in sessionStorage. FNV-1a is a compact UI identity, not encryption.
   const explicit = node.getAttribute?.('data-view-key') || node.id;
-  if (explicit) return String(explicit);
   const title = node.querySelector?.('summary')?.textContent?.trim().replace(/\s+/g,' ') || '';
   const region = node.closest?.('[aria-label]')?.getAttribute?.('aria-label') || '';
-  return region + '::' + title;
+  const source = String(explicit || (region + '::' + title));
+  let hash = 2166136261;
+  for (let index=0; index<source.length; index++)
+    hash = Math.imul(hash ^ source.charCodeAt(index), 16777619);
+  return 'v_' + (hash>>>0).toString(16).padStart(8,'0');
 }
 
 export function captureTaskView(detail) {
@@ -71,11 +76,11 @@ export function captureEditorFocus(active, detail) {
   return selection;
 }
 
-export function restoreEditorFocus(detail, focus) {
+export function restoreEditorFocus(detail, focus, {focusElement=true} = {}) {
   if (!detail || !focus || !CURSOR_IDS.has(focus.id)) return false;
   const target = detail.querySelector('#' + focus.id);
   if (!target || target.disabled) return false;
-  target.focus({preventScroll:true});
+  if (focusElement) target.focus({preventScroll:true});
   if (Number.isFinite(focus.start) && Number.isFinite(focus.end) &&
       typeof target.setSelectionRange === 'function') {
     try { target.setSelectionRange(focus.start, focus.end, focus.direction || 'none'); }
@@ -97,9 +102,17 @@ export function sanitizeSessionFocus(candidate) {
         Math.min(2000000,Math.trunc(value.scroll)) : 0;
       const sections = Array.isArray(value.sections) ?
         value.sections.slice(0,50).filter(pair =>
-          Array.isArray(pair) && pair.length === 2 && typeof pair[0] === 'string' &&
-          pair[0].length <= 180 && typeof pair[1] === 'boolean') : [];
-      views[key] = {scroll,sections};
+          Array.isArray(pair) && pair.length === 2 && /^v_[a-f0-9]{8}$/.test(pair[0]) &&
+          typeof pair[1] === 'boolean') : [];
+      const rawFocus=value.focus;
+      const focus=rawFocus && CURSOR_IDS.has(rawFocus.id) &&
+        Number.isSafeInteger(rawFocus.start) && rawFocus.start >= 0 && rawFocus.start <= 50000 &&
+        Number.isSafeInteger(rawFocus.end) && rawFocus.end >= 0 && rawFocus.end <= 50000 ?
+        {id:rawFocus.id,start:rawFocus.start,end:rawFocus.end,
+         direction:['forward','backward','none'].includes(rawFocus.direction) ?
+           rawFocus.direction : 'none',
+         scroll:Number.isFinite(rawFocus.scroll) ? Math.max(0,Math.min(2000000,rawFocus.scroll)) : 0} : undefined;
+      views[key] = {scroll,sections,...(focus ? {focus} : {})};
     }
   }
   return {selected,views};
