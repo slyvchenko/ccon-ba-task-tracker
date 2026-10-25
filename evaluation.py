@@ -12,6 +12,7 @@ from pathlib import Path
 
 from app_config import ROOT, utc_now
 from storage import write_json
+from quality_evaluation import compare
 
 RUBRIC = (
     "context_accuracy", "evidence_support", "decision_history",
@@ -308,6 +309,17 @@ def render_score(result):
         f"Median time saved: {result['medianTimeSavedPercent']}%.",
         "Targets met: " + ("YES" if result["candidateMeetsTargets"] else "NO / incomplete"),
     ]
+    preflight = result.get("automatedPreflight")
+    if preflight:
+        lines += ["", "## Automated preflight: structural warnings, NOT factual accuracy",
+                  "", "| Check | Baseline | Candidate |", "|---|---:|---:|"]
+        for code in sorted(set(preflight["baseline"]["warningCaseCounts"]) |
+                           set(preflight["candidate"]["warningCaseCounts"])):
+            base = preflight["baseline"]["warningCaseCounts"].get(code, 0)
+            now = preflight["candidate"]["warningCaseCounts"].get(code, 0)
+            lines.append(f"| {code} (cases) | {base} | {now} |")
+        lines += ["", "Automatic warnings cannot determine acceptance. "
+                   "Human evaluation and live UAT are mandatory."]
     return "\n".join(lines) + "\n"
 
 
@@ -322,6 +334,14 @@ def evaluate(root=ROOT):
         report["status"] = "INCOMPLETE"
         report["missingPredictionSets"] = frozen
         report["candidateMeetsTargets"] = False
+    else:
+        versions = {}
+        for label in ("baseline", "candidate"):
+            data = json.loads((directory / (label + "_predictions.json")).read_text(encoding="utf-8"))
+            if data.get("variant") != label:
+                raise ValueError("Frozen prediction variant does not match filename.")
+            versions[label] = data
+        report["automatedPreflight"] = compare(cases, versions["baseline"], versions["candidate"])
     write_json(directory / "results.json", report)
     (directory / "results.md").write_text(render_score(report), encoding="utf-8")
     return report
