@@ -5,6 +5,7 @@ from pathlib import Path
 
 from storage import write_json
 from ba_briefing import audit_briefing
+from priority_consistency import inspect_priority
 from app_config import LIMIT
 
 # A delta may contain both a prior and current 5 MiB question set.
@@ -108,6 +109,10 @@ def build_report(previous_tasks, current_tasks, generated_at, left_scope=None, i
         source_changed = bool(old_fingerprint and old_fingerprint != task.get("contextFingerprint"))
         sprint_changed = bool(old and
                               old.get("activeSprint") != task.get("activeSprint"))
+        priority_audit = inspect_priority(
+            key, before, analysis,
+            source_changed=source_changed, sprint_changed=sprint_changed)
+        fields = sorted(set(fields) | set(priority_audit["changedFields"]))
         if not before or not old_signal:
             category = "NEW"
         elif old_signal != "DONE" and new_signal == "DONE":
@@ -126,12 +131,14 @@ def build_report(previous_tasks, current_tasks, generated_at, left_scope=None, i
             "category": category, "previousSignal": old_signal, "signal": new_signal,
             "sourceChanged": source_changed, "sprintChanged": sprint_changed,
             "activeSprint": task.get("activeSprint"), "changedFields": fields,
+            "priorityChange": priority_audit["change"],
             "questionsAdded": [after_questions[value] for value in added_keys],
             "questionsRemoved": [before_questions[value] for value in removed_keys],
             "nextActionUk": analysis.get("nextActionUk", ""),
             "manualStatus": old.get("manualStatus", "AUTO"),
         })
         warnings.extend(diagnostics(key, analysis))
+        warnings.extend(priority_audit["warnings"])
         warnings.extend({"key": key, **warning} for warning in audit_briefing(
             analysis, (issue_contexts or {}).get(key)))
     # Jira results exclude Done by design; an issue leaving JQL is not automatically Done.
@@ -246,6 +253,11 @@ def render_markdown(report):
             lines.append("Джерела Jira змінилися від останнього аналізу.")
         if item.get("sprintChanged"):
             lines.append("Належність до активного спринту змінилася.")
+        priority = item.get("priorityChange")
+        if priority is not None:
+            lines.append(
+                f"Пріоритет: {priority['before']} → {priority['after']} "
+                f"(зміна {priority['delta']:+g} пунктів).")
         for question in item["questionsAdded"]:
             lines.append("+ Нове питання: " + question)
         for question in item["questionsRemoved"]:
