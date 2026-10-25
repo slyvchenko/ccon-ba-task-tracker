@@ -107,3 +107,10 @@ The new `tests/fast-handoff.test.mjs` covers deterministic one-analyst archetype
 Existing `check_project.py` automatically includes this Node test. `assets/fast-handoff.mjs` is served from the static allowlist and bundled in the offline release manifest. UI controls retain existing keyboard semantics (native buttons and `details`), but real Chrome/Edge keyboard and screen-reader UAT remain open.
 
 Manual UAT to close #28: run 5 independent task archetypes in the locally installed Windows app; record task selection → understood next action → copied verified artifact → *actual manual* Jira/email handoff → Done→Next (p50/p95), then compare with v2.27. Confirm that canceling Done leaves the current task intact and that saved notes/drafts persist through focus changes, conflicts and refreshed snapshots. Do not report speed improvements or factual accuracy until measured and independently reviewed.
+
+## v2.29: effort/quick-win test expansion
+
+- `tests/effort-planning.test.mjs` checks all manual bands, provenance, no-fabrication for stale/WAIT/DONE/archive, complex rules, missing proof, draft completeness, 180 synthetic status/signal/sprint/score combinations × six band variations against unchanged `rankTasks`, and immutability.
+- `tests/test_effort_persistence.py` checks `manual_effort` SQLite migration, save/restart/duplicate import, revision CAS and stale tab conflict, status-only + email draft preservation, invalid values atomic rejection and return to UNKNOWN.
+- CI is intentionally free of real Jira descriptions/logs/PNR/personal data. Confirm in the actual installed Chrome/Edge app that select+Save are keyboard accessible, manual estimate survives browser restart and dual-tab conflicts, and quick indicators are not interpreted as priority overrides.
+- BA gold-set acceptance remains **open**. Independently time 20–30 cases and compare predicted effort bands with actual time, incorrect >1-band outliers, interruptions, blocking work displacement and false-ready. Do not report speed gains or estimation accuracy solely from synthetic tests.
