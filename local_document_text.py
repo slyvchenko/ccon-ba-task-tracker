@@ -9,6 +9,8 @@ import io
 import json
 import re
 import xml.etree.ElementTree as ET
+from pathlib import PurePosixPath
+from zipfile import ZipFile, BadZipFile
 
 MAX_TEXT = 100000
 MAX_PAGES = 12
@@ -71,6 +73,42 @@ def extract_text(raw, suffix, *, pdf_reader=None):
                     value, {"format": "XML"})
         except ET.ParseError:
             return "TEXT_UNAVAILABLE", "", {"reason": "INVALID_XML"}
+    if suffix == ".zip":
+        try:
+            if not raw.startswith(b"PK\\x03\\x04"):
+                return "TEXT_UNAVAILABLE", "", {"reason": "NOT_ZIP"}
+            with ZipFile(io.BytesIO(raw)) as archive:
+                items = archive.infolist()
+                if len(items) > 60:
+                    return "TEXT_UNAVAILABLE", "", {"reason": "ZIP_ENTRY_LIMIT"}
+                texts = []
+                total = 0
+                for entry in items:
+                    if entry.is_dir():
+                        continue
+                    name = entry.filename.replace("\\\\", "/")
+                    entry_path = PurePosixPath(name)
+                    mode = (entry.external_attr >> 16) & 0o170000
+                    total += entry.file_size
+                    if (name.startswith("/") or ".." in entry_path.parts or ":" in name
+                            or entry.flag_bits & 1 or mode == 0o120000 or
+                            entry.file_size > 8 * 1024 * 1024 or total > 16 * 1024 * 1024
+                            or (entry.compress_size and entry.file_size / entry.compress_size > 100)):
+                        return "TEXT_UNAVAILABLE", "", {"reason": "ZIP_UNSAFE"}
+                    ext = entry_path.suffix.lower()
+                    if ext not in (".json", ".xml"):
+                        continue
+                    payload = archive.read(entry)
+                    substatus, text, _ = extract_text(payload, ext)
+                    if substatus == "LOCAL_TEXT_EXTRACTED":
+                        texts.append(text)
+                    if len(texts) >= 30 or sum(len(t) for t in texts) > MAX_TEXT:
+                        return "TEXT_UNAVAILABLE", "", {"reason": "ZIP_TEXT_LIMIT"}
+                joined = " ".join(texts)[:MAX_TEXT]
+                return ("LOCAL_TEXT_EXTRACTED" if joined.strip() else "TEXT_UNAVAILABLE",
+                        joined, {"format": "ZIP", "parsedTextEntries": len(texts)})
+        except (BadZipFile, RuntimeError, EOFError, OSError, ValueError):
+            return "TEXT_UNAVAILABLE", "", {"reason": "INVALID_ZIP"}
     if suffix == ".pdf":
         if not raw.startswith(b"%PDF-"):
             return "TEXT_UNAVAILABLE", "", {"reason": "INVALID_PDF"}
