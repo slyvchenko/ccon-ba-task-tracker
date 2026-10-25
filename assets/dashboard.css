@@ -991,12 +991,6 @@ body,button,input,select,textarea,option {
 .task-meta .badge {
   font-size:11px
 }
-.task-meta .signal-text {
-  font-size:12px
-}
-.task-meta .signal-text+.signal-text {
-  padding-left:14px
-}
 .work-state {
   padding:16px 18px
 }
