@@ -68,6 +68,8 @@ def handler(desk, cloud=None):
             if path in STATIC_FILES:
                 filename, content_type = STATIC_FILES[path]
                 return self.send(200, (ROOT / filename).read_bytes(), content_type)
+            if path == '/api/tasks/revision':
+                return self.send(200, desk.revision())
             if path == '/api/tasks':
                 return self.send(200, desk.view())
             if path == '/api/action-plan':
