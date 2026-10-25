@@ -71,6 +71,7 @@ class Extractor(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.blocked = 0
         self.tokens = []
+        self.chars = 0
     def handle_starttag(self, tag, attrs):
         if tag in ("script", "style", "head", "svg"):
             self.blocked += 1
@@ -82,8 +83,10 @@ class Extractor(HTMLParser):
         if tag in ("p", "div", "li", "td", "tr"):
             self.tokens.append(" ")
     def handle_data(self, data):
-        if not self.blocked and sum(map(len, self.tokens)) < MAX_TEXT:
-            self.tokens.append(data[:MAX_TEXT])
+        if not self.blocked and self.chars < MAX_TEXT:
+            portion = data[:MAX_TEXT - self.chars]
+            self.tokens.append(portion)
+            self.chars += len(portion)
 
 
 def extract_html(raw):
@@ -122,7 +125,12 @@ def process(root=ROOT, key=None):
     plan = read_json(root / "data/wiki_handoff" / (key + ".json"), {})
     rows = []
     references = linked_pages(issue)
-    for job in (plan.get("jobs") or [])[:MAX_LINKS]:
+    jobs = plan.get("jobs") if isinstance(plan, dict) else None
+    if not isinstance(jobs, list):
+        raise ValueError("Run confluence_local.py prepare first.")
+    for job in jobs[:MAX_LINKS]:
+        if not isinstance(job, dict):
+            continue
         ident = job.get("pageId")
         if (job.get("issueKey") != key or ident not in references
                 or references[ident] != job.get("url")
@@ -156,7 +164,10 @@ def current_sources(root, key, issue):
     """Return local-only source text map; recheck fingerprints and bytes."""
     sources, metadata = {}, []
     for ident, url in list(linked_pages(issue).items())[:MAX_LINKS]:
-        record = read_json(Path(root) / "data/wiki_evidence" / key / (ident + ".json"), {})
+        try:
+            record = read_json(Path(root) / "data/wiki_evidence" / key / (ident + ".json"), {})
+        except (ValueError, OSError):
+            continue
         if (not isinstance(record, dict) or record.get("issueKey") != key
                 or record.get("pageId") != ident or record.get("url") != url
                 or record.get("contextFingerprint") != issue.get("fingerprint")
