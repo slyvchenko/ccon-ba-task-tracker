@@ -49,6 +49,8 @@ class Desk:
                 c.execute('ALTER TABLE tasks ADD COLUMN email_draft TEXT DEFAULT NULL')
             if 'manual_revision' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
                 c.execute('ALTER TABLE tasks ADD COLUMN manual_revision INTEGER NOT NULL DEFAULT 0')
+            if 'manual_effort' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
+                c.execute("ALTER TABLE tasks ADD COLUMN manual_effort TEXT NOT NULL DEFAULT 'UNKNOWN'")
 
     @contextmanager
     def connect(self):
@@ -140,7 +142,8 @@ class Desk:
                 task.update(manualStatus=row['manual_status'], note=row['note'], active=bool(row['active']),
                             importedAt=row['imported_at'], modifiedAt=row['modified_at'],
                             savedEmailDraft=json.loads(row['email_draft']) if row['email_draft'] else None,
-                            manualRevision=row['manual_revision'])
+                            manualRevision=row['manual_revision'],
+                            manualEffort=row['manual_effort'])
                 tasks.append(task)
             revision = c.execute('SELECT revision FROM state_revision WHERE id=1').fetchone()[0]
             return {'tasks': tasks, 'latest': dict(latest) if latest else None,
@@ -161,6 +164,9 @@ class Desk:
             raise ValueError('Invalid manual status or note (maximum 20,000 characters).')
         if 'emailDraft' in data and data['emailDraft'] is not None:
             validate_draft(data['emailDraft'])
+        if 'manualEffort' in data and data['manualEffort'] not in (
+                'UNKNOWN', 'XS', 'S', 'M', 'L', 'XL'):
+            raise ValueError('manualEffort must be UNKNOWN, XS, S, M, L or XL.')
         with self.lock, self.connect() as c:
             values = [status, note, now()]
             query = 'UPDATE tasks SET manual_status=?, note=?, modified_at=?, manual_revision=manual_revision+1'
@@ -168,6 +174,9 @@ class Desk:
                 query += ', email_draft=?'
                 draft = data['emailDraft']
                 values.append(json.dumps({field: draft[field] for field in ('to', 'subject', 'body')}, ensure_ascii=False) if draft is not None else None)
+            if 'manualEffort' in data:
+                query += ', manual_effort=?'
+                values.append(data['manualEffort'])
             query += ' WHERE key=?'
             values.append(key)
             # Atomic compare-and-swap even across independent server processes.
