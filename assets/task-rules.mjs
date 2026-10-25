@@ -78,13 +78,24 @@ function rankTasks(tasks) {
 }
 
 function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprint = 'all'} = {}) {
+  // Avoid rebuilding potentially long Jira descriptions for every task on
+  // each no-search render; check cheap predicates before reading full text.
+  const queryTerms = String(search).toLocaleLowerCase('uk-UA').trim().split(/\s+/).filter(Boolean);
+  const cleanTerms = queryTerms.map(term => term.replace(/[^\p{L}\p{N}]/gu, ''));
   return items.filter(task => {
     const done = effectiveSignal(task) === 'DONE';
-    const inList = filter === 'archive' ? !task.active : task.active && (filter === 'all' || (filter === 'done' ? done : !done));
+    const inList = filter === 'archive' ? !task.active : task.active &&
+      (filter === 'all' || (filter === 'done' ? done : !done));
+    if (!inList) return false;
+    const sprintMatch = sprint === 'all' ||
+      (sprint === 'active' && task.activeSprintStatus === 'VERIFIED' && task.activeSprint === true) ||
+      (sprint === 'outside' && task.activeSprintStatus === 'VERIFIED' && task.activeSprint === false) ||
+      (sprint === 'unverified' && task.activeSprintStatus !== 'VERIFIED');
+    if (!sprintMatch || (signal !== 'all' && effectiveSignal(task) !== signal)) return false;
+    if (!queryTerms.length) return true;
     const analysis = analysisOf(task), brief = analysis.briefing || {};
     const references = (task.links || task.linkedIssues || [])
-      .map(item => typeof item === 'string' ? item :
-        (item.linkedKey || item.key || ''));
+      .map(item => typeof item === 'string' ? item : (item.linkedKey || item.key || ''));
     const text = [
       task.key, task.summary, task.jiraStatus, task.priority,
       analysis.nextActionUk, analysis.standardDescription,
@@ -93,14 +104,8 @@ function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprin
       ...references, ...(task.blockedBy || [])
     ].filter(x => typeof x === 'string').join(' ').toLocaleLowerCase('uk-UA');
     const folded = text.replace(/[^\p{L}\p{N}]/gu, '');
-    const queryTerms = search.toLocaleLowerCase('uk-UA').trim().split(/\s+/).filter(Boolean);
-    const matchSearch = queryTerms.every(term => text.includes(term) ||
-      folded.includes(term.replace(/[^\p{L}\p{N}]/gu, '')));
-    const sprintMatch = sprint === 'all' ||
-      (sprint === 'active' && task.activeSprintStatus === 'VERIFIED' && task.activeSprint === true) ||
-      (sprint === 'outside' && task.activeSprintStatus === 'VERIFIED' && task.activeSprint === false) ||
-      (sprint === 'unverified' && task.activeSprintStatus !== 'VERIFIED');
-    return inList && sprintMatch && (signal === 'all' || effectiveSignal(task) === signal) && matchSearch;
+    return queryTerms.every((term, index) => text.includes(term) ||
+      folded.includes(cleanTerms[index]));
   });
 }
 
