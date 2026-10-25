@@ -152,3 +152,7 @@ The existing Data menu now exposes draft-recovery actions. Queue selection uses 
 ## v2.35: visually quiet first-screen coverage
 
 `tests/visual-clarity.test.mjs` verifies scan-only queue summary, all retained secondary counts, nonduplicated snapshot timestamp, Jira/manual/sprint provenance separation, blocking/WAIT/WRITE warnings, omission of neutral false signals and no repeated empty briefing. Existing Chromium browser E2E covers keyboard/CAS/modal/responsive and unchanged API. Real human time-to-action and screen-reader comprehension before/after remain OPEN: capture five BA archetypes and ensure warnings remain visible without scrolling.
+
+## v2.36: clarity of copy vs approve and email actions
+
+`tests/handoff-ui-policy.test.mjs` verifies exactly one enabled copy for structurally verified Jira drafts, explicit unverified/blocked manual rework fallback in detail, independent local approval and mail copy/open/batch labels without false sent status. Existing Chromium DOM E2E still covers the original controls. Human BA checks: false-ready=0 for unverified cases, approvals remain explicit, original description/supplier evidence remains available.

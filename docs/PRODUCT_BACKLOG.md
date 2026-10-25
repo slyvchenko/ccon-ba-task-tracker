@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #34 (v2.34). **Поточний кандидат:** PR #35 (v2.35), компактні статуси/метрики, один primary next action, no duplicate empty briefing; людський BA UAT ще відкритий.  
+**Базовий код:** `main` після PR #35 (v2.35). **Поточний кандидат:** PR #36 (v2.36), one QA-gated copy, explicit unverified review and manual email semantics, effort collapsed; real BA UAT OPEN.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -203,7 +203,7 @@
 | **#32 — MERGED; WINDOWS CRASH/RESTORE UAT OPEN** | REL-03/04/05 + OPS-03/05 + SEC-04: private SQLite backup/verified restore, server lock, quiet watcher retry and Data menu status | Python synthetic restore/locking/legacy tests + CI; live Windows forced crash, ACL and data folder recovery remain open |
 | **#33 — MERGED; BROWSER UAT OPEN** | SEC-04 + A11Y-02/03/05: tab-scoped unsaved drafts, explicit cross-tab recovery, consent 30d cleanup, 320px/ARIA/contrast | Pure JS + backend CAS CI; Windows Chrome/Edge duplicate-tab, NVDA/400% and 8-hour browser still open |
 | **#34 — IN PROGRESS; WINDOWS/8H UAT OPEN** | QA-12/15 + REL-07: synthetic Chromium DOM E2E, keyboard/CAS/reconnect, short soak, no auto POST; 16-item visual simplification audit | CI browser job + existing Python/Node/Compose; no claim of Windows NVDA or 8h |
-| **#35 — IN PROGRESS; #36–38 PROPOSED** | VIS-01..16: source-backed duplicate/redundancy hypotheses → consolidate primary CTA/status, collapse deep evidence/history, simplify Data and filters, CSS parity | Five BA archetypes + screenshot/AT gold-set; do NOT delete distinct evidence or safety gates |
+| **#35 — MERGED; #36 IN PROGRESS; #37–38 PROPOSED** | VIS-01..16: source-backed duplicate/redundancy hypotheses → consolidate primary CTA/status, collapse deep evidence/history, simplify Data and filters, CSS parity | Five BA archetypes + screenshot/AT gold-set; do NOT delete distinct evidence or safety gates |
 | **Далі, GROUPED** | Real Jira/Kibana/Confluence UAT + model gold-set semantic review and feedback-driven iteration | Збереження приватних даних і ручних рішень, без автоматичної публікації |
 | **Пізніше** | INF-01..04 (cloud/production) | Свідомо поза поточним scope |
 
@@ -274,7 +274,7 @@
 | Пакет / пріоритет | Кандидати та короткий результат | Стан / гейт |
 |---|---|---|
 | **#35, P0** | VIS-01/03/04/09/16: одна primary next action, provenance Jira/manual, компактна черга та empty briefing; без приховування conflict/stale warnings | **IMPLEMENTED IN PR #35 / real BA UAT OPEN**. 5с comprehension, 0 false-ready, 0 hidden blockers |
-| **#36, P1** | VIS-02/05/08/11: перевірити дві Copy Jira кнопки та approval gate, узгодити коротке «чому», чітко назвати Copy/Open/Batch email, перестати дублювати low-confidence XS/S? | **HYPOTHESIS / NOT IMPLEMENTED**. Human QA + no auto-send/Jira write; 20–30 reviewed cases |
+| **#36, P1** | VIS-02/05/08/11: one QA-gated Copy + manual review fallback, clarified mail actions, effort and queue reasons collapsed | **IMPLEMENTED IN PR #36 / human UAT OPEN**. Human QA + no auto-send/Jira write; 20–30 reviewed cases |
 | **#37, P1** | VIS-06/07/10/12/13/14: докази/джерела/ZIP, питання/рішення, стара історія, фільтри й адміністрування як progressive disclosures у старому екрані | **HYPOTHESIS / NOT IMPLEMENTED**. Full source trace, keyboard/ARIA, deep task accessible ≤2 expands |
 | **#38, P2** | VIS-15: consolidation `dashboard.css` після baseline screenshots/contrast/zoom на 320/768/1440 | **HYPOTHESIS / NOT IMPLEMENTED**. Visual diff/regressions, no unreviewed brand/layout change |
 
@@ -287,6 +287,14 @@
 - **Next action:** existing `quick-handoff` remains the only primary next-action CTA; full Action Plan and source chronology preserved in details. Empty structured briefing panel removed when `analysis.briefing` absent, while the explicit missing/stale analysis warning remains; duplicated empty assessment reason no longer shown.
 - **Status truth:** existing 409 CAS conflict, saving/unsaved/error messages and stale banner unchanged.
 - **Evidence:** `tests/visual-clarity.test.mjs` verifies status domains, blocking alerts and diagnostics; real 5-second comprehension, Windows 320px/NVDA and source QA UAT still OPEN.
+
+### #36: семантично різні дії, менше дублювання Copy
+
+- **Verified Jira draft:** тільки одна enabled «Скопіювати структурно перевірену чернетку» above fold. Дублікат Copy у details не показується, але локальне ручне «Схвалити BA-опис» залишається незалежною дією.
+- **Unverified description:** top-level Copy disabled, деталі показують raw text і чітко названий fallback «Скопіювати для доопрацювання (неперевірено)» без зміни Jira. BLOCKED лишається попередженням, не green QA.
+- **Mail:** copy text, open local mail (без надсилання), cloud copy і пакет листів названі по їх реальній дії. Жодного auto-send і auto-DONE.
+- **Effort / priority:** раніше повторно показаний low-confidence XS/S? у primary area тепер тільки у розгорнутій секції «Пріоритет і орієнтовний обсяг». Ручне поле XS–XL та queue signal без змін.
+- **Tests / UAT:** `tests/handoff-ui-policy.test.mjs` + Chromium CI; реальне джерельне BA approval залишається обов’язковим.
 
 ## 4. Definition of Done для кожного наступного блоку
 

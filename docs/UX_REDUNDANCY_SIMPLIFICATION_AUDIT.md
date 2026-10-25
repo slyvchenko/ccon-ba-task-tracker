@@ -46,3 +46,7 @@
 ## Implementation note for #35
 
 **VIS-01/03/04/09/16 partial implementation:** `assets/visual-clarity.mjs` keeps Jira/manual/sprint fields distinguishable with a quiet text line, retains active blocker/email/wait warnings, moves nonprimary queue statistics to a collapsed `Деталі черги`, keeps a single above-fold Next Action, and removes redundant empty briefing or empty assessment-reason text. Full history, source provenance and QA gates remain untouched. `tests/visual-clarity.test.mjs` is synthetic. **Code changes do not prove that a real BA reads the screen faster.** VIS-09 full statusbar redesign is intentionally deferred because CAS/stale/offline states have distinct safety meanings. #36–38 remain unimplemented proposals.
+
+## Implementation note for #36
+
+VIS-02/05/08/11: single QA-checked Jira Copy visible above fold; unverified description remains available **only in detail** as clearly labeled manual rework copy, separate from local BA approval. Mail verbs explicitly separate copy/open/batch without claiming sent; XS–XL low-confidence heuristic and queue reasoning moved to collapsed explanation. No supplier evidence or raw description removed, and no Jira write/automatic email performed. Human UAT on READY/WRITE/BLOCKED remains pending.
