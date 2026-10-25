@@ -48,7 +48,8 @@ def measure(count, iterations=25):
         source.write_text(json.dumps(synthetic_document(count)), encoding="utf-8")
         store.import_snapshot()
         summary = {}
-        for name, reader in (("full", store.view), ("revision", store.revision)):
+        for name, reader in (("full", store.view), ("revision", store.revision),
+                             ("serializedHttp", store.view_json_bytes)):
             # Warm up disk caches/SQLite before measuring p50/p95.
             reader()
             times = []
@@ -60,11 +61,13 @@ def measure(count, iterations=25):
             summary[name] = {
                 "p50Ms": round(statistics.median(times), 3),
                 "p95Ms": round(percentile(times, .95), 3),
-                "responseBytes": len(json.dumps(output, ensure_ascii=False).encode("utf-8")),
+                "responseBytes": len(output) if isinstance(output, bytes) else
+                    len(json.dumps(output, ensure_ascii=False).encode("utf-8")),
             }
         return {"syntheticTasks": count, "iterations": iterations,
                 "full": summary["full"], "revision": summary["revision"],
-                "note": "SQLite methods only; no browser/render/real Jira benchmark."}
+                "serializedHttp": summary["serializedHttp"],
+                "note": "Local SQLite/object/serialized HTTP bytes only; no browser/render/real Jira benchmark."}
 
 
 def main():
