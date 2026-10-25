@@ -86,17 +86,25 @@ def backup_status(root):
         folder = _folder(root)
         manifests = sorted(folder.glob("backup-*.sqlite3.json"), reverse=True)
         for manifest in manifests:
-            if manifest.is_symlink() or manifest.stat().st_size > 4096:
-                continue
-            entry = json.loads(manifest.read_text(encoding="utf-8"))
-            name = entry.get("filename", "")
-            if NAME.fullmatch(name) and manifest.name == name + ".json" and (
-                folder / name).is_file():
+            try:
+                if manifest.is_symlink() or manifest.stat().st_size > 4096:
+                    continue
+                entry = json.loads(manifest.read_text(encoding="utf-8"))
+                name = entry.get("filename", "")
+                if not isinstance(name, str) or not NAME.fullmatch(name) or (
+                    manifest.name != name + ".json"):
+                    continue
+                # Freshness is only valid if *both* the checksum and SQLite
+                # integrity pass. Corrupt manifests must not suppress a new
+                # startup backup for up to 24 hours.
+                verified = verify_backup(root, name)
                 return {"available": True, "status": "AVAILABLE",
-                        "createdAt": entry.get("createdAt"),
-                        "revision": entry.get("revision")}
+                        "createdAt": verified["createdAt"],
+                        "revision": verified["revision"]}
+            except (OSError, ValueError, sqlite3.Error, KeyError, TypeError):
+                continue
         return {"available": False, "status": "NO_BACKUP"}
-    except (OSError, ValueError, TypeError, KeyError):
+    except (OSError, ValueError, sqlite3.Error, TypeError, KeyError):
         return {"available": False, "status": "CHECK_FAILED"}
 
 
