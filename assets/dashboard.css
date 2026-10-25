@@ -1371,3 +1371,33 @@ header {
 .evidence-scroll {max-height:240px;overflow:auto;}
 .evidence-scroll table {border-collapse:collapse;width:100%;font-size:12px;}
 .evidence-scroll td,.evidence-scroll th {border:1px solid var(--line);padding:6px;text-align:left;}
+
+/* v2.28: a compact next-action strip inside the existing task detail. */
+.quick-handoff {
+  border-left: 3px solid var(--blue);
+  padding: 12px 16px;
+}
+.quick-handoff .next-action {
+  margin: 6px 0 8px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.quick-handoff-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0;
+}
+.quick-handoff .quick-proof-note {
+  margin: 7px 0 3px;
+}
+.quick-handoff .description {
+  margin-top: 6px;
+}
+@media (max-width: 640px) {
+  .quick-handoff-actions > button {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}

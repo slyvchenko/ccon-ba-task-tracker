@@ -99,3 +99,11 @@ This table names regression contracts, not a line/branch coverage percentage. A 
 - [ ] 20–30 real Jira gold-case human scores complete, factuality gate passed
 - [ ] Browser and corporate source UAT approved, secrets remain private
 - [ ] Release can be rolled back without destroying SQLite/manual state
+
+## v2.28: quick-turnaround workflow tests
+
+The new `tests/fast-handoff.test.mjs` covers deterministic one-analyst archetypes: ready/checked draft, WRITE needing a genuinely sent manual email, deep REVIEW, BLOCKED/NEEDS_REVIEW gate, stale Jira context, WAIT, manual DONE/archived, active sprint versus backlog, unknown scores, and task immutability. These tests check **policy**, not time-to-handoff or the final HTML layout.
+
+Existing `check_project.py` automatically includes this Node test. `assets/fast-handoff.mjs` is served from the static allowlist and bundled in the offline release manifest. UI controls retain existing keyboard semantics (native buttons and `details`), but real Chrome/Edge keyboard and screen-reader UAT remain open.
+
+Manual UAT to close #28: run 5 independent task archetypes in the locally installed Windows app; record task selection → understood next action → copied verified artifact → *actual manual* Jira/email handoff → Done→Next (p50/p95), then compare with v2.27. Confirm that canceling Done leaves the current task intact and that saved notes/drafts persist through focus changes, conflicts and refreshed snapshots. Do not report speed improvements or factual accuracy until measured and independently reviewed.

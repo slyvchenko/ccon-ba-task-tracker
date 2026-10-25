@@ -25,6 +25,7 @@ STATIC_FILES = {
     '/assets/task-rules.mjs': ('assets/task-rules.mjs', 'text/javascript; charset=utf-8'),
     '/assets/revision-policy.mjs': ('assets/revision-policy.mjs', 'text/javascript; charset=utf-8'),
     '/assets/manual-edit-policy.mjs': ('assets/manual-edit-policy.mjs', 'text/javascript; charset=utf-8'),
+    '/assets/fast-handoff.mjs': ('assets/fast-handoff.mjs', 'text/javascript; charset=utf-8'),
     '/assets/logs.mjs': ('assets/logs.mjs', 'text/javascript; charset=utf-8'),
     '/assets/evidence-ui.mjs': ('assets/evidence-ui.mjs', 'text/javascript; charset=utf-8'),
     '/assets/action-history.mjs': ('assets/action-history.mjs', 'text/javascript; charset=utf-8'),
