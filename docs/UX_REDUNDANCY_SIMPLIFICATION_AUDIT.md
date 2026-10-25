@@ -54,3 +54,7 @@ VIS-02/05/08/11: single QA-checked Jira Copy visible above fold; unverified desc
 ## Implementation note for #37
 
 VIS-06/07/10/12/13/14: signal/sprint filters now live in a native collapsed section with **always-visible active-count label**. Source provenance collapsed behind `Джерела оцінки (N)` without hiding Quality Gate, previous analyses/history/legacy material grouped under `Історія й аудит` (two expansions to individual history). Data menu groups snapshot operations, private draft tools and system status within the same menu. Questions/decisions keep separate semantics; keyboard guide remains collapsed. Tests are synthetic; no real BA evidence removed. 320px and Windows NVDA still need UAT.
+
+## Implementation note for #38
+
+VIS-15: removed runtime-unused legacy status-strip and text-tone CSS with source grep evidence; maintained original design/layout and responsive rules. Added Chromium synthetic screenshot artifacts at 320/768/1440 plus overflow assertions and a CSS orphan test. Deliberately **not** rewriting media queries or moving to a new design language before real Windows/BA screenshots. Full review and post-#38 project roadmap: `docs/CSS_VISUAL_REGRESSION.md`, `docs/BACKLOG_CLOSEOUT_PLAN.md`.
