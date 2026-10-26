@@ -57,6 +57,7 @@ POINTERS = {
     "PERF-09": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
     "REL-02": ("desk_store.py", "tests/test_manual_edit_cas.py"),
     "REL-03": ("local_backup.py", "tests/test_local_backup.py"),
+    "REL-05": ("server.py", "tests/test_crash_consistency.py"),
     "REL-07": ("assets/reconnect-policy.mjs", "tests/reconnect-policy.test.mjs"),
     "REL-08": ("local_diagnostics.py", "tests/test_local_diagnostics.py"),
     "OPS-02": ("local_diagnostics.py", "tests/test_local_diagnostics.py"),
