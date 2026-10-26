@@ -90,6 +90,7 @@
   "docs/SQLITE_RETENTION_EVALUATION.md",
   "docs/UX_REDUNDANCY_SIMPLIFICATION_AUDIT.md",
   "docs/UX_TEST_COVERAGE_MATRIX.md",
+  "docs/WEEKLY_WIP_REVIEW.md",
   "draft_output.py",
   "email_rules.py",
   "error_series.py",
@@ -218,6 +219,8 @@
   "tests/test_storage.py",
   "tests/test_supplier_logs.py",
   "tests/test_value_mapping.py",
+  "tests/test_weekly_workload.py",
   "tests/visual-clarity.test.mjs",
-  "value_mapping.py"
+  "value_mapping.py",
+  "weekly_workload.py"
 ]
