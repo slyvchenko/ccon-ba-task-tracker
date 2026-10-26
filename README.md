@@ -476,3 +476,9 @@ ZIP review більше не прирівнює єдині RQ/RS із **різн
 ## v2.47: доступність наявного екрана, без нових режимів
 
 Групові заголовки Sprint/Backlog/Done у черзі мають семантику заголовків для допоміжних технологій; індикатор `S?` більше не залежить лише від mouse hover і вказує на непідтверджену оцінку. Додано синтетичні Chromium-перевірки видимості основних ручних дій, фокусу, 320px, forced-colors і reduced-motion. **Windows/NVDA та нативний 200/400% zoom не перевірені цим CI.** Деталі: `docs/A11Y_FINAL_SCOPE_REVIEW.md`.
+
+## v2.48: Engineering closeout, release gate ще не пройдений
+
+Пакети реалізації #39–48 охоплюють рекомендований локальний цикл інженерних покращень. **Це не означає завершення всіх 129 вимог і не є дозволом на production deployment.** Реальний Jira/Kibana/CCON source-review, 20–30 приватних BA gold cases, Windows crash/restore, Edge/NVDA/400% zoom і 8h soak залишаються неперевіреними зовнішніми критеріями.
+
+`python release_readiness.py --check` перевіряє узгодженість обліку й не стверджує release readiness; `python release_readiness.py --require-ready` має завершитися помилкою до незалежної приватної UAT-атестації. Сам факт злиття GitHub PR не оновлює Windows Task Scheduler або локальну інсталяцію. Інструкція з контрольованого випуску: `docs/LOCAL_RELEASE_GATE_v2_48.md`.
