@@ -135,8 +135,15 @@ def weekly_report(root=ROOT, week=None, *, today=None):
     }
 
 
+class _SanitizedParser(argparse.ArgumentParser):
+    def error(self, message):
+        # Default argparse echoes the rejected argument, which may contain
+        # private filesystem paths, supplier references or PNRs.
+        raise ValueError("Invalid weekly metrics arguments.")
+
+
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = _SanitizedParser(description=__doc__)
     parser.add_argument("--week", default=None)
     parser.add_argument("--root", type=Path, default=ROOT)
     try:
