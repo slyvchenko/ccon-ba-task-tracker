@@ -196,3 +196,7 @@ New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, 
 ## v2.46: actual DOM large synthetic queue
 
 `browser_e2e.py` covers 100, 500 and 1000 in-memory synthetic Jira tasks via real Chromium cold reload, filter transition and p50/max observed search latency. It writes sanitized aggregate timing artifact. `tests/task_rules.test.mjs` guards punctuation-only and mixed clean-token false positives. No claims about Windows hardware, 8-hour uptime, long private real descriptions or screen-reader success.
+
+## v2.47: accessible queue semantics and forced-color emulator
+
+`browser_e2e.py` asserts heading roles/levels, manual email CTA visibility, keyboard focus outline and 320px no-global-horizontal-overflow with forced-colors/reduced-motion emulation. Actual native 200–400% zoom, Windows/Edge/NVDA and human-comprehension UAT are separate, not claimed complete. See `docs/A11Y_FINAL_SCOPE_REVIEW.md`.
