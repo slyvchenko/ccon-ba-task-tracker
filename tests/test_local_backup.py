@@ -1,5 +1,5 @@
-from contextlib import closing
 """Synthetic verified backup/restore, migration, and watcher resilience checks."""
+from contextlib import closing
 import hashlib
 import json
 import os
