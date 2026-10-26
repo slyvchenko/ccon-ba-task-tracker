@@ -395,3 +395,11 @@
 - Chromium synthetic: 320px, forced-colors emulation, reduced motion, keyboard-focus outline, видимість ручних email CTA, відсутність global overflow. **Не** еквівалент real Windows Edge/NVDA/native 200/400% zoom.
 - Додаткові quick templates, pinning, другі dashboards, глобальна error telemetry та aggressive CSS-rewrite лишаються **OPTIONAL / AWAIT HUMAN USAGE EVIDENCE**, не silently dropped. Full `docs/A11Y_FINAL_SCOPE_REVIEW.md`.
 
+
+### v2.48 #48: formal engineering closeout only; independent human release blocked
+
+- `release_readiness.py` validates the entire 129-row original inventory, P0/other priority counts, status counts and QA-02/03/10/13 presence. It reports `BLOCKED_INDEPENDENT_UAT` and will **never infer product release from CI or a manually changed PASS string**.
+- `check_project.py` runs its **structural** validation alongside `backlog_audit.py --check`; both can be green without human gold-case success. The explicit `--require-ready` is deliberately nonzero until a later independently reviewed private attestation mechanism exists.
+- Real supplier mapping, verified recipients/ZIP, user time-to-handoff, 26 gold cases, Windows crash/BitLocker/Edge/NVDA/200–400% zoom/8h remain gated. The 129 canonical statuses are historical source reports, not 129 business signoffs.
+- `docs/LOCAL_RELEASE_GATE_v2_48.md` gives private acceptance and deliberate local Windows update/rollback checklist. No automatic Jira/email/cloud deployment.
+
