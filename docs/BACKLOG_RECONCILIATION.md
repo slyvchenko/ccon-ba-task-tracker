@@ -61,7 +61,7 @@
 
 ## 26.10.2026: перевірка статусів проти об'єднаного коду v2.48.1
 
-Ця перевірка оновлює **облік реалізації**, не продуктове приймання. Всі 129 рядків інвентаризовано за ID/priority/status; 13 явно застарілих статусів переглянуто за реалізацією, тестами та CI. Для 116 інших **немає нової позитивної атестації**; вихідні статуси збережено. Механізм із синтетичним тестом не означає готовність бізнес-логіки на реальних даних.
+Ця перевірка оновлює **облік реалізації**, не продуктове приймання. Всі 129 рядків інвентаризовано за ID/priority/status; 15 явно застарілих статусів переглянуто за реалізацією, тестами та CI (13 у PR #53, 2 у PR #54). Для 114 інших **немає нової позитивної атестації**; вихідні статуси збережено. Механізм із синтетичним тестом не означає готовність бізнес-логіки на реальних даних.
 
 | ID | Було → стало | Кодова підстава | Що залишається |
 |---|---|---|---|
@@ -78,8 +78,10 @@
 | OPS-01 | NEXT → IMPLEMENTED | `performance_smoke.py`, `queue_benchmark.mjs`, CI #46 | Порівняння на реальному ПК |
 | SEC-02 | PLANNED → PARTIAL | `server.py`, `tests/test_cloud_security.py` | Перевірити всі endpoint/identity/origin комбінації |
 | SEC-03 | PLANNED → PARTIAL | `.github/workflows/quality.yml`, source-only ZIP tests | Незалежний PII/секрети audit публічних артефактів |
+| UI-07 | PLANNED → PARTIAL | `assets/visual-clarity.mjs`, `tests/visual-clarity.test.mjs` #54 | Повний permissions recovery UX на локальному Windows |
+| QA-14 | PLANNED → PARTIAL | `.github/workflows/quality.yml`, developer-only branch coverage #54 | Критичні тестові прогалини та погодження порогу покриття |
 
-**Оновлені категорії (129):** 40 IMPLEMENTED, 61 PARTIAL, 21 PLANNED, 0 NEXT, 3 GATE, 4 DEFERRED. Зафіксовано **50 source locators**, із них **45 code + test**; 79 без direct locator (не рівнозначно відсутності коду). Жоден із 129 не має записаного human UAT signoff.
+**Оновлені категорії (129):** 40 IMPLEMENTED, 63 PARTIAL, 19 PLANNED, 0 NEXT, 3 GATE, 4 DEFERRED. Зафіксовано **52 source locators**, із них **46 code + test**; 77 без direct locator (не рівнозначно відсутності коду). Жоден із 129 не має записаного human UAT signoff.
 
 **Узгодження:** `docs/PRODUCT_BACKLOG.md` - єдиний авторський реєстр; `backlog_audit.py` детерміновано генерує `docs/BACKLOG_ACCEPTANCE_LEDGER.json`. Додано відповідні перевірки регресії. Історичні примітки #39–48 вище залишені як timeline, а не як чинні відкриті PR.
 
