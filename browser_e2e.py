@@ -362,6 +362,45 @@ class BrowserRegression(unittest.TestCase):
         self.assertLessEqual(geometry["doc"],geometry["viewport"]+2)
         self.assertFalse(self.page.locator("#bulkDialog").evaluate("(el)=>el.open"))
 
+    def test_other_task_import_does_not_refetch_selected_heavy_detail(self):
+        # PERF-08: a changed global snapshot must not destroy a stable detail.
+        self.choose("CCON-1")
+        self.page.wait_for_function(
+            "() => (document.querySelector('#taskHistory')?.textContent || '').includes('Історія:')",
+            timeout=15000)
+        self.page.evaluate("window.__stableNoteNode=document.querySelector('#note')")
+        resource_paths=("/api/evidence/", "/api/questions/", "/api/decisions/",
+                        "/api/actions/", "/api/history/", "/api/approved/")
+        requests=[]
+        self.page.on("request", lambda request: requests.append(request.url)
+                     if any(resource in request.url for resource in resource_paths) else None)
+        next_doc=fixture_document("2026-10-26T09:01:00Z")
+        next_doc["tasks"][1]["summary"]="UPDATED SYNTHETIC OTHER TASK"
+        self.snapshot.write_text(json.dumps(next_doc),encoding="utf-8")
+        self.desk.import_snapshot()
+        self.page.evaluate("window.dispatchEvent(new Event('online'))")
+        self.page.wait_for_function(
+            "() => [...document.querySelectorAll('#list .row-title')].some(el=>el.textContent.includes('UPDATED SYNTHETIC OTHER TASK'))",
+            timeout=15000)
+        self.assertTrue(self.page.evaluate(
+            "() => window.__stableNoteNode===document.querySelector('#note')"))
+        self.assertEqual(requests,[], "Unrelated import must not refetch selected evidence/history")
+        # Actual selected task content change must still rerender and reload evidence.
+        next_doc["generatedAt"]="2026-10-26T09:02:00Z"
+        next_doc["tasks"][0]["summary"]="UPDATED SYNTHETIC SELECTED TASK"
+        self.snapshot.write_text(json.dumps(next_doc),encoding="utf-8")
+        self.desk.import_snapshot()
+        self.page.evaluate("window.dispatchEvent(new Event('online'))")
+        self.page.wait_for_function(
+            "() => document.querySelector('#detail .task-top')?.textContent.includes('CCON-1') && document.querySelector('#detail').textContent.includes('UPDATED SYNTHETIC SELECTED TASK')",
+            timeout=15000)
+        self.assertFalse(self.page.evaluate(
+            "() => window.__stableNoteNode===document.querySelector('#note')"))
+        self.page.wait_for_function(
+            "() => (document.querySelector('#taskHistory')?.textContent || '').includes('Історія:')",
+            timeout=15000)
+        self.assertTrue(any("/api/evidence/CCON-1" in url for url in requests))
+
     def test_three_viewports_and_short_soak_no_external_writes(self):
         self.choose("CCON-2")
         for width,height in [(320,800),(768,900),(1440,900)]:
