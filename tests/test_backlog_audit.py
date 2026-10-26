@@ -14,7 +14,7 @@ class AuditTest(unittest.TestCase):
         self.assertEqual(report["counts"]["total"], 129)
         self.assertEqual(report["counts"]["reported_statuses"], {
             "DEFERRED": 4, "GATE": 3, "IMPLEMENTED": 40,
-            "PARTIAL": 63, "PLANNED": 19})
+            "PARTIAL": 64, "PLANNED": 18})
         items = report["items"]
         self.assertEqual(len(items), len({x["id"] for x in items}))
         self.assertTrue(all(x["suggested_batch"] and x["acceptance_criteria"] for x in items))
@@ -32,10 +32,17 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
                             for key in rows))
         self.assertEqual(len(rows), 129)
-        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 46)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 77)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 47)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 76)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
+
+    def test_perf_08_is_source_backed_but_device_acceptance_is_open(self):
+        row = next(r for r in audit.produce()["items"] if r["id"] == "PERF-08")
+        self.assertEqual(row["category"], "PARTIAL")
+        self.assertEqual(row["code_locator"], "assets/detail-refresh-policy.mjs")
+        self.assertEqual(row["test_locator"], "tests/detail-refresh-policy.test.mjs")
+        self.assertEqual(row["human_acceptance"], "NOT_RECORDED")
 
     def test_p0_business_gates_cannot_become_done_by_code_only(self):
         rows = {x["id"]: x for x in audit.produce()["items"]}
