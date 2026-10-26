@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 72,
-      "PLANNED": 10
+      "PARTIAL": 75,
+      "PLANNED": 7
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 57,
-    "no_direct_locator": 66
+    "code_plus_test_locators": 60,
+    "no_direct_locator": 63
   },
   "items": [
     {
