@@ -460,10 +460,9 @@ class BrowserRegression(unittest.TestCase):
     def test_lean_ui_skips_only_empty_briefing_but_keeps_proof_and_warning(self):
         # Source-free synthetic visual dedup, never business readiness signoff.
         doc=fixture_document("2026-10-26T11:00:00Z")
-        doc["tasks"][0]["analysis"]["briefing"]={
-            "confirmedFacts":[], "rules":[], "sourceAudit":[], "timeline":[],
-            "unknownsUk":[], "overviewUk":"  "
-        }
+        # No briefing in this valid snapshot: an empty shell must not appear.
+        # Invalid empty dicts are covered only by pure presentation unit tests;
+        # real ingestion must continue to reject malformed briefing payloads.
         self.snapshot.write_text(json.dumps(doc),encoding="utf-8")
         self.desk.import_snapshot()
         self.page.reload(wait_until="domcontentloaded")
@@ -476,12 +475,23 @@ class BrowserRegression(unittest.TestCase):
 
         doc["generatedAt"]="2026-10-26T11:01:00Z"
         doc["tasks"][0]["analysis"]["briefing"]={
-            "readiness":"NEEDS_CONFIRMATION",
             "overviewUk":"Synthetic source review needed",
+            "currentUk":"Synthetic REST includes an unwanted segment",
+            "targetUk":"Synthetic REST must exclude the segment under test",
+            "businessImpactUk":"Synthetic BA acceptance is pending",
+            "technicalScopeUk":"Synthetic endpoint only",
+            "readiness":"NEEDS_CONFIRMATION",
+            "readinessReasonUk":"Source review and manual signoff needed",
+            "sourceAudit":[{"descriptionUk":"Synthetic source trace",
+                            "status":"READ","sourceUrl":"https://example.invalid/source"}],
             "confirmedFacts":[{"textUk":"Synthetic fact","sourceUrl":"https://example.invalid/source"}],
+            "timeline":[],
             "rules":[{"whenUk":"Synthetic A","thenUk":"Synthetic B",
-                      "certainty":"HYPOTHESIS","sourceUrl":"https://example.invalid/rule"}],
-            "unknownsUk":["Supplier reply still needed"]
+                      "certainty":"OPEN","sourceUrl":"https://example.invalid/rule"}],
+            "verification":[{"scenarioUk":"Synthetic A","expectedUk":"Synthetic B",
+                             "sourceUrl":"https://example.invalid/rule"}],
+            "unknownsUk":["Supplier reply still needed"],
+            "risksUk":["Synthetic risk requires BA verification"]
         }
         self.snapshot.write_text(json.dumps(doc),encoding="utf-8")
         self.desk.import_snapshot()
