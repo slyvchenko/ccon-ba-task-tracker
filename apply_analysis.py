@@ -160,7 +160,7 @@ def _apply(path,root,focus_issue=None):
                       'promptCalibrationDate':calibration['date'] if calibration else None,
                       'calibrationError':calibration_error,
                       'questionErrors':question_errors, 'decisionErrors':decision_errors},
-                     ensure_ascii=False))
+                     ensure_ascii=True))
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
