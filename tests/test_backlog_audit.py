@@ -32,8 +32,8 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
                             for key in rows))
         self.assertEqual(len(rows), 129)
-        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 53)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 70)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 54)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 69)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
@@ -66,6 +66,13 @@ class AuditTest(unittest.TestCase):
             self.assertEqual(rows[key]["code_locator"], "local_diagnostics.py")
             self.assertEqual(rows[key]["test_locator"], "tests/test_local_diagnostics.py")
             self.assertEqual(rows[key]["human_acceptance"], "NOT_RECORDED")
+
+    def test_crash_consistency_is_test_located_but_windows_uat_remains_open(self):
+        rows={x["id"]:x for x in audit.produce()["items"]}
+        for item_id in ("REL-02","REL-03","REL-05"):
+            self.assertEqual(rows[item_id]["category"],"PARTIAL")
+            self.assertEqual(rows[item_id]["human_acceptance"],"NOT_RECORDED")
+        self.assertEqual(rows["REL-05"]["test_locator"],"tests/test_crash_consistency.py")
 
     def test_p0_business_gates_cannot_become_done_by_code_only(self):
         rows = {x["id"]: x for x in audit.produce()["items"]}
