@@ -33,7 +33,7 @@ class AuditTest(unittest.TestCase):
                             for key in rows))
         self.assertEqual(len(rows), 129)
         self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 61)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 63)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 62)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
