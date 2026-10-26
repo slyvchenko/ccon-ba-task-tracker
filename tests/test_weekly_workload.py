@@ -120,6 +120,26 @@ class WeeklyWorkloadTests(unittest.TestCase):
         task["analysis"]["stale"]=True
         self.assertFalse(view_state(task)["analysisVerified"])
 
+    def test_legacy_history_metadata_upgrade_is_not_a_fake_completion(self):
+        self.append("CCON-94", "2026-10-18T13:00:00+00:00",
+                    "AUTO", signal="DONE", fresh=True)
+        # Simulate pre-v2.50.7 history that stored the signal, but did not
+        # contain the analysisVerified freshness marker.
+        with closing(sqlite3.connect(self.db)) as conn:
+            ident, raw = conn.execute(
+                "SELECT id,snapshot_json FROM task_history ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+            value=json.loads(raw)
+            del value["analysisVerified"]
+            conn.execute("UPDATE task_history SET snapshot_json=? WHERE id=?",
+                         (json.dumps(value),ident))
+            conn.commit()
+        self.append("CCON-94", "2026-10-23T13:00:00+00:00",
+                    "AUTO", signal="DONE", fresh=True)
+        state=weekly_report(self.root,"2026-W43",today=date(2026,10,26))
+        self.assertEqual(state["weeklyTransitions"]["completed"],1)
+        self.assertEqual(state["asOfWeekEnd"]["completedState"],3)
+
     def test_no_state_created_and_bad_week_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(ValueError):
