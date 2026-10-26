@@ -1,3 +1,4 @@
+from contextlib import closing
 """Synthetic cross-tab CAS regressions for manual status, notes, and email drafts."""
 import json
 import sqlite3
@@ -160,7 +161,7 @@ class ManualEditCASTests(unittest.TestCase):
     def test_additive_migration_retains_legacy_table_rows(self):
         with tempfile.TemporaryDirectory(prefix="ccon-legacy-db-") as folder:
             database = Path(folder) / "ba_state.db"
-            with sqlite3.connect(database) as con:
+            with closing(sqlite3.connect(database)) as con, con:
                 con.executescript("""
                     CREATE TABLE tasks (
                     key TEXT PRIMARY KEY, snapshot TEXT NOT NULL,
