@@ -55,3 +55,23 @@ jobs:
           path: browser-artifacts/
           if-no-files-found: ignore
           retention-days: 3
+
+  windows-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Native Windows Python and CMD regression checks (synthetic only)
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python release_readiness.py --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
