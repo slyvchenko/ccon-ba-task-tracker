@@ -60,6 +60,7 @@ POINTERS = {
     "PERF-09": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
     "PERF-10": ("sqlite_mode_study.py", "tests/test_sqlite_retention_study.py"),
     "REL-09": ("history_retention_preview.py", "tests/test_sqlite_retention_study.py"),
+    "REL-10": ("release_integrity.py", "tests/test_release_integrity.py"),
     "REL-02": ("desk_store.py", "tests/test_manual_edit_cas.py"),
     "REL-03": ("local_backup.py", "tests/test_local_backup.py"),
     "REL-05": ("server.py", "tests/test_crash_consistency.py"),
