@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
-**Версія реєстру:** 2026-10-25 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #37 (v2.37). **Поточний кандидат:** PR #38 (v2.38), dead CSS cleanup with real synthetic Chromium 320/768/1440 screenshot/geometry checks and closeout planning; Windows BA UAT open.  
+**Версія реєстру:** 2026-10-26 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
+**Базовий код:** `main` після PR #38 (v2.38). **Поточний кандидат:** PR #39 (v2.39), checked 129-row acceptance ledger, proposed overlap triage and privacy-safe BA gold-case UAT gates. **Жодний human UAT не позначено пройденим.**  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -25,6 +25,13 @@
 - **PLANNED:** ще не реалізовано.
 - **DEFERRED:** вирішено поки не робити, але важливо зберегти в реєстрі.
 - **GATE:** перевірка/зовнішня умова, а не готова функція.
+
+### v2.39: автоматизований evidence ledger і захист критеріїв приймання
+
+- **129 ID** (37 IMPLEMENTED/code-reported, 52 PARTIAL, 32 PLANNED, 1 NEXT, 3 GATE, 4 DEFERRED), окремо 16 VIS candidates. Джерело правди для тексту вимог — лише таблиці нижче.
+- `backlog_audit.py --check` та `docs/BACKLOG_ACCEPTANCE_LEDGER.json` забезпечують унікальні ID, фіксовані статуси, контроль прямого code/test locator, маршрут до PR і явне `human_acceptance=NOT_RECORDED`. Це **не** автоматичне переведення у DONE.
+- `docs/BACKLOG_RECONCILIATION.md`: дев'ять можливих перетинів критеріїв без видалення функцій. `docs/BA_GOLD_CASE_ACCEPTANCE.md`: приватні 20–30 кейсів, source accuracy, TTNA/TTSH і обов'язкові QA-02/03/10/13.
+- Після #39 план #40–48 лишається орієнтовно **9 PR** для локальної версії + окремі реальні Jira/Kibana/CCON/Windows перевірки. INF-01..04 deferred cloud не входять у локальний реліз.
 
 ## 2. Повний функціональний backlog
 

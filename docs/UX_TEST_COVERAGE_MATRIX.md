@@ -164,3 +164,7 @@ New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, 
 ## v2.38: CSS scope and responsive screenshot evidence
 
 `tests/css-cleanup.test.mjs` detects removed obsolete strip/style helpers while preserving current provenance/focus/advanced filters. Playwright synthetic Chromium E2E now records full-page screenshots at 320/768/1440, asserts usable task queue and detail and no document overflow beyond 2px rounding. This is a **synthetic browser smoke**, not Windows Edge/native 400% zoom or pixel-approved baseline. See `docs/CSS_VISUAL_REGRESSION.md` and post-38 `docs/BACKLOG_CLOSEOUT_PLAN.md` for real acceptance.
+
+## v2.39: backlog evidence integrity and explicit human UAT
+
+`tests/test_backlog_audit.py` freezes the 129-row canonical inventory, verifies unique/prioritized rows, required acceptance criteria, missing evidence pointers, deferred cloud scope, route ownership, potential duplicate acceptance and cannot-auto-DONE gates. The CI `backlog_audit.py --check` regenerates the JSON and rejects manual/stale ledger changes. No actual Windows, Jira, Kibana, CCON or 20–30 gold-case acceptance was performed. See `docs/BACKLOG_RECONCILIATION.md` and `docs/BA_GOLD_CASE_ACCEPTANCE.md`.
