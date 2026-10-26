@@ -176,3 +176,9 @@ The existing CI Python/Node/release/Compose job remains dependency-free for the 
 `assets/reconnect-policy.mjs` implements a bounded 5/10/20/40/60-second read-only poll retry; `dashboard.mjs` acknowledges recovery only after successful needed task data read. The logic NEVER replays status/Done/email POST operations automatically. Existing SQLite CAS and snapshot monotonic revisions remain authoritative.
 
 This is actual Linux Chromium DOM coverage, **not** Windows, NVDA, real Outlook/Jira source truth, full 400%-zoom or 8h endurance. See `docs/BROWSER_E2E_RUNBOOK.md` and `docs/UX_REDUNDANCY_SIMPLIFICATION_AUDIT.md` for remaining UAT and feature-consolidation candidates.
+
+## v2.39: auditable backlog source and human-proof boundary
+
+`docs/PRODUCT_BACKLOG.md` remains the **sole authored requirements registry**. `backlog_audit.py` is a stdlib-only deterministic parser that validates unique 2-digit IDs, priorities, statuses, non-empty acceptance criteria and specific code/test paths; it emits `docs/BACKLOG_ACCEPTANCE_LEDGER.json`. `check_project.py` runs `backlog_audit.py --check` to detect stale generated evidence after every change. A source/test locator is **only a navigation pointer**, never semantic, security or code coverage proof.
+
+This ledger tracks all 129 rows, proposed #40–48 theme, nine candidate overlaps, explicit optional cloud deferrals and `human_acceptance=NOT_RECORDED` for all rows. No UAT result or Jira data is fetched or stored in GitHub. `docs/BA_GOLD_CASE_ACCEPTANCE.md` is the privacy-safe blinded BA source-truth rubric; real Jira/Kibana/CCON source and Windows/Edge/NVDA acceptance remain human gates. Marking actual DONE requires separately verified evidence, not a green synthetic CI badge.
