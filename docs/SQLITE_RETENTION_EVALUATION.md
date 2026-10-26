@@ -2,7 +2,7 @@
 
 ## PERF-10: synthetic experiment, not production PRAGMA switch
 
-Run `python sqlite_mode_study.py --tasks 100 --iterations 5`. The script creates **four independent temporary SQLite databases** with 100 synthetic tasks: DELETE/WAL journal mode × with/without an expression index on `json_extract(snapshot,'$.priority')`. It reports query p95, SQLite query-plan index use, busy timeout and a successful `sqlite3.Connection.backup()` integrity check. The real BA database, installed journal mode, task data and production indexes are never read or modified. Only aggregate synthetic metrics are printed.
+Run `python sqlite_mode_study.py --tasks 100 --iterations 5`. The script creates **four independent temporary SQLite databases** with 100 synthetic tasks (25% synthetic `priority=High`): DELETE/WAL journal mode × with/without an expression index on `json_extract(snapshot,'$.priority')`. It reports query p95, SQLite query-plan index use, busy timeout and a successful `sqlite3.Connection.backup()` integrity check. The real BA database, installed journal mode, task data and production indexes are never read or modified. Only aggregate synthetic metrics are printed.
 
 **Important:** the JSON filter is a candidate experiment, not proof that the existing production queue needs that index. A synthetic p95 is not a performance SLA; the effect of write contention, antivirus, Windows filesystem, snapshot size and real backup/restore must be assessed separately. No automatic WAL/index enablement was made. `PRAGMA synchronous=FULL` from v2.50.1 is retained.
 
