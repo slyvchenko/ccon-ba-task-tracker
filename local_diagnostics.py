@@ -102,7 +102,10 @@ def collect(root=ROOT):
               "UNVERIFIED_READ_ERROR", "UNVERIFIED_OWNER"}
     statuses = list(checks.values()) + list(zips["statusCounts"])
     attention = bool(unsafe.intersection(statuses) or
-                     zips["folder"] in unsafe or not zips["complete"])
+                     "UNVERIFIED_WINDOWS_ACL" in statuses or
+                     zips["folder"] in unsafe or
+                     zips["folder"] == "UNVERIFIED_WINDOWS_ACL" or
+                     not zips["complete"])
     # Even perfect UNIX file modes do NOT prove disk encryption. Windows DACL
     # is intentionally UNVERIFIED, not falsely reported as private.
     return {
