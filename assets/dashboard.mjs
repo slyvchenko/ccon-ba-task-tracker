@@ -1054,7 +1054,7 @@ async function load() {
     // Global import time is still visible, without rebuilding the expensive
     // selected detail DOM or refetching source panels for unrelated changes.
     if (selectedTask && !detailChanged && renderedTaskKey === selected) {
-      const date = $('detail .task-date');
+      const date = document.querySelector('#detail .task-date');
       if (date) date.textContent = selectedTask.importedAt ?
         'Дані: ' + dateLabel(selectedTask.importedAt) : '';
     }
