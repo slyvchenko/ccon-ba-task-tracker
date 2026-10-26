@@ -1,3 +1,4 @@
+from contextlib import closing
 """Synthetic verified backup/restore, migration, and watcher resilience checks."""
 import hashlib
 import json
@@ -244,7 +245,7 @@ class OfflineRecoveryTests(unittest.TestCase):
     def test_can_backup_earlier_schema_before_startup_migration(self):
         with tempfile.TemporaryDirectory(prefix="ccon-pre-migrate-") as folder:
             root=Path(folder)
-            with sqlite3.connect(root/"ba_state.db") as connection:
+            with closing(sqlite3.connect(root/"ba_state.db")) as connection, connection:
                 connection.executescript("""
                   CREATE TABLE tasks(key TEXT PRIMARY KEY, snapshot TEXT NOT NULL,
                    manual_status TEXT NOT NULL, note TEXT NOT NULL,
