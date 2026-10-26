@@ -85,3 +85,7 @@ Hard sprint/WRITE/DONE ordering is protected by additional score-extreme tests. 
 ### Post-#44 update
 
 Error-code-specific RCA now offers at most ten separate same-issue/supplier contrast candidate flows where that code was not observed. Contrast is neither a successful operation nor statistical causality; full authenticated source and independent expert UAT remain required. Next #45: bounded recovery/security hardening.
+
+### Post-#45 update
+
+A safe UTC creation-identity check now ensures forged or clock-skewed SQLite manifests cannot masquerade as valid recent backups, without auto-restoring or deleting old valid data. Windows hard-crash, antivirus locks, BitLocker/ACL and real rescue remain explicit UAT gates. #46 is performance/long-session reliability.
