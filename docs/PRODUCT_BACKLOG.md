@@ -1,7 +1,7 @@
 # CCON BA Desk — єдиний реєстр можливостей і backlog
 
 **Версія реєстру:** 2026-10-26 · **джерело правди:** `docs/PRODUCT_BACKLOG.md` · **власник:** один BA, лише його Jira-задачі.  
-**Базовий код:** `main` після PR #38 (v2.38). **Поточний кандидат:** PR #39 (v2.39), checked 129-row acceptance ledger, proposed overlap triage and privacy-safe BA gold-case UAT gates. **Жодний human UAT не позначено пройденим.**  
+**Базовий код перевірки:** `main` v2.48.1 після PR #39–52. **Звірено машинний реєстр із вибраними source/test доказами; це не independent BA UAT.** Всі 129 `human_acceptance=NOT_RECORDED`.  
 **Межа:** GitHub CI доводить коректність синтетичних тестів, **не** доступність живої Jira/Kibana, повноту реальних логів або правильність бізнес-аналізу.
 
 ## 0. Продуктовий контракт, що не підлягає зміні без окремого рішення
@@ -25,6 +25,14 @@
 - **PLANNED:** ще не реалізовано.
 - **DEFERRED:** вирішено поки не робити, але важливо зберегти в реєстрі.
 - **GATE:** перевірка/зовнішня умова, а не готова функція.
+
+### Звірка коду після v2.48.1 (26.10.2026)
+
+- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **61 PARTIAL**, **21 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
+- Зіставлено й перекласифіковано **13 окремих ID** за конкретним source/test evidence. Решта **116** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
+- `IMPLEMENTED` означає лише підтверджений механізм (synthetic/code), `PARTIAL` - лише частину критеріїв, `PLANNED` - критерії не закрито. Оригінальні 37/52/32/1 у розділі v2.39 нижче - **історичний baseline**, а не поточні числа.
+- Незмінні external gates: реальні Jira/Kibana/CCON, 26 gold cases, людський UX, native Edge/NVDA/8h, Windows backup/restore та локальне оновлення. CI не доводить business signoff.
+- Підстави коригувань, межі доказів і невирішені P1/P2 scope питання: `docs/BACKLOG_RECONCILIATION.md`. Issue #50 залишається відкритим.
 
 ### v2.39: автоматизований evidence ledger і захист критеріїв приймання
 
@@ -103,15 +111,15 @@
 | QUICK-01 | P0 | IMPLEMENTED (v2.28 top-of-card current next action; 5-sec human comprehension UAT open) | Показати одну однозначну Next Action above the fold, не розгортати 4 секції | ≤5 с comprehension; J-03, J-06; KEEP existing page |
 | QUICK-02 | P0 | PARTIAL (v2.28 structurally checked one-click Jira draft copy; 5-click handoff measurement open) | Copy verified Jira description + Save/Next у спільному маршруті | ≤5 intentional actions; zero Jira write; J-03/J-08 |
 | QUICK-03 | P0 | PARTIAL (v2.28 explicit manual completion confirm; actual sent/delivered event evidence still manual) | Відділити Copy/Open Mail від фактичної Sent/Delivered події | Human confirmation and timestamp; no fabricated delivery proof |
-| QUICK-04 | P1 | PLANNED | Зберегти короткі recipient/method/ZIP readiness checks перед mailto | No false ready for missing ZIP/method/recipient; J-04 |
+| QUICK-04 | P1 | PARTIAL (v2.41 attachment-claim gate and opt-in recipient; live method/ZIP UAT open) | Зберегти короткі recipient/method/ZIP readiness checks перед mailto | No false ready for missing ZIP/method/recipient; J-04 |
 | QUICK-05 | P1 | PARTIAL (v2.29 identifies quick candidates without reordering any lane/score/group; batch workflow pending) | Batch quick handoffs тільки у межах коректного lane | Sprint/WRITE contract unchanged; reordering by time opt-in only |
-| QUICK-06 | P1 | PLANNED | Reversible manual Done / Undo без зовнішніх API записів | Cancel/reverse with preserved notes; J-08 |
-| QUICK-07 | P1 | PLANNED | Compact card action/proof line без шуму з чіпів | User 5-second scan, no loss of proof status |
+| QUICK-06 | P1 | IMPLEMENTED (v2.42 revision-safe one-step local Undo; Windows human UAT open) | Reversible manual Done / Undo без зовнішніх API записів | Cancel/reverse with preserved notes; J-08 |
+| QUICK-07 | P1 | PARTIAL (v2.35 concise action and proof text; human 5-second scan pending) | Compact card action/proof line без шуму з чіпів | User 5-second scan, no loss of proof status |
 | QUICK-08 | P2 | PLANNED | Кандидатні шаблони для повторюваних дрібних BA задач | Template never invents source/method; gold QA |
 | FOCUS-01 | P0 | PARTIAL (v2.28 retain selected key, list scroll and open details on same-task refresh; browser UAT open) | Зберігати selected task і позицію списку при оновленні | No jump on background import, user edits preserved; J-07 |
 | FOCUS-02 | P0 | PARTIAL (v2.30 tab-local selected issue, scroll/disclosures and caret coordinates; browser UAT pending) | Відновлення scroll, open details, cursor при поверненні | Resume p95 goal ≤45 s; browser UAT |
 | FOCUS-03 | P1 | PARTIAL (v2.30 Alt+arrow, / search, Alt+C, Ctrl/Cmd+Enter; keyboard UAT pending) | Keyboard shortcuts Next / Search / Copy / Save із захистом input focus | Keyboard-only critical path A-01; no destructive collision |
-| FOCUS-04 | P1 | PLANNED | Розділити high-signal інфо та deep evidence в existing details | No extra tabs/modes; J-03/J-06 |
+| FOCUS-04 | P1 | PARTIAL (native details and progressive labels; user deep-evidence UAT pending) | Розділити high-signal інфо та deep evidence в existing details | No extra tabs/modes; J-03/J-06 |
 | FOCUS-05 | P1 | PLANNED | Sticky next-action/progress microheader в існуючій detail pane | No page redesign; responsive A-03/A-04 |
 | FOCUS-06 | P1 | PARTIAL (v2.30 never rerender focused detail, restore keyboard row and typed cursor; browser traces pending) | Захист від фонових тостів/DOM rerender під час набору тексту | No focus loss, cursor jump, stale overwrite |
 | FOCUS-07 | P2 | PLANNED | Pin personal deep-work task без зміни official Jira priority | Manual pin only within lane; clear override and reset |
@@ -121,15 +129,15 @@
 | PRIOR-03 | P0 | PARTIAL (v2.29 combinatorial status/sprint/signal/score invariants; broad randomized tests next) | Hard invariant tests for all sprint/WRITE/Done/stale permutations | Property-based synthetic test set, no cross-lane promotion |
 | PRIOR-04 | P1 | PARTIAL (v2.29 display-only quick-win hints; UX evidence/time-to-handoff pending) | Visible quick win candidates only in same hard-priority bucket | Time benefit cannot overtake urgent sprint/blocker |
 | PRIOR-05 | P1 | PLANNED | Separate impact, urgency, effort and unblocking from arbitrary speed score | Explainable, human acceptance > 90% ordering confidence |
-| PRIOR-06 | P1 | PLANNED | Waiting sweep follow-up due date and owner with no repeat letter | Due status visible, source-backed, J-05 |
+| PRIOR-06 | P1 | PARTIAL (manual owner, waitingOn, due/review dates and overdue; no-duplicate-letter UAT open) | Waiting sweep follow-up due date and owner with no repeat letter | Due status visible, source-backed, J-05 |
 | PRIOR-07 | P2 | PLANNED | Time-to-handoff metrics by real work archetype | Local opt-in, no PII, no cloud telemetry |
 | PRIOR-08 | P2 | PLANNED | Feedback on wrong priority captured as manual correction | Never silently retrain queue ranking; human UAT |
 | PRIOR-09 | P2 | PLANNED | Show weekly WIP / blockers / completion versus rework | Not a gamified Done count, J-01 |
-| UI-05 | P1 | PLANNED | Density and hierarchy audit at 320/768/1440 viewport | A-03; no horizontal overflow/hidden primary action |
+| UI-05 | P1 | PARTIAL (synthetic 320px responsive checks; 768/1440 native viewport UAT open) | Density and hierarchy audit at 320/768/1440 viewport | A-03; no horizontal overflow/hidden primary action |
 | UI-06 | P1 | PARTIAL (v2.30 unsaved/saving/error/CAS conflict states; real error and screen reader UAT open) | Clear statuses saved, unsaved, saving, failed, stale | A-07/A-12 and race tests |
 | UI-07 | P1 | PLANNED | Distinct empty / unavailable / permissions / stale / no matches states | Correct recovery action in each state |
 | UI-08 | P2 | PLANNED | Readable PNR/field/code formatting and safe wrapping | No truncation in clipboard/export, A-06 |
-| UI-09 | P2 | PLANNED | Default collapsed evidence sections after human 5-sec test | Keep main results visible, never bury next action |
+| UI-09 | P2 | PARTIAL (native evidence disclosures and labels; human 5-second scan pending) | Default collapsed evidence sections after human 5-sec test | Keep main results visible, never bury next action |
 | UI-10 | P2 | PLANNED | Visual diff regression for existing layout and copy buttons | Snapshot on 3 viewport sizes; no brand approval bypass |
 | PERF-01 | P0 | IMPLEMENTED (v2.26 code; live measurements pending) | Monotonic SQLite revision + light task token endpoint | P-01..P-08 + HTTP auth and payload reduction |
 | PERF-02 | P0 | IMPLEMENTED (v2.26 code; browser UAT pending) | Load full tasks only on revision change, hidden tab idle | P-02/P-11/P-12, no false staleness |
@@ -146,7 +154,7 @@
 | REL-03 | P0 | PARTIAL (v2.32 verified local SQLite backup, checksum, online API, offline restore and rescue; Windows crash UAT open) | Safe backup/restore of private SQLite + manifest without export secrets | Crash drill, documented recovery and permissions |
 | REL-04 | P1 | PARTIAL (v2.32 signature-based watcher, 30s retry, generic health counters and quiet menu state; live file-lock UAT pending) | Watcher failure/retry diagnostics without toast spam | No error swallowed; error state shown, P-12 |
 | REL-05 | P1 | PARTIAL (v2.32 server lifetime cross-process lock, shutdown watcher join, SQLite backup pre-migration; forced kill UAT open) | Graceful server shutdown and restart during import | No database damage/partial save, Windows UAT |
-| REL-06 | P1 | PLANNED | Data validation and schema migration matrix across releases | v2.23→current, old DB revision initialized once |
+| REL-06 | P1 | PARTIAL (legacy SQLite migration fixtures and Windows CI; full v2.23-to-current matrix open) | Data validation and schema migration matrix across releases | v2.23→current, old DB revision initialized once |
 | REL-07 | P1 | PARTIAL (v2.34 bounded GET reconnection, no repeat manual POST; Windows client error UAT open) | Retry strategy for recoverable local API failures with idempotency | No duplicate mailto or Done, bounded retry |
 | REL-08 | P1 | PLANNED | OS folder permissions/encryption checks for private local ZIP | Fail closed/notice for insecure ACL configuration |
 | REL-09 | P2 | PLANNED | Bound old history/reports while preserving important user audit | No unexpected data deletion, archive user-approved |
@@ -156,22 +164,22 @@
 | A11Y-03 | P1 | PARTIAL (v2.33 labeled task queue, low-noise aria-live selection; NVDA/VoiceOver UAT open) | Screen reader semantics for task list, selected and status | A-02, announcements not noisy |
 | A11Y-04 | P1 | PARTIAL (v2.30 native modal Close initial focus and return focus on close/Escape; browser UAT open) | Bulk email dialog focus trap/return, escape | A-11; no unintended send |
 | A11Y-05 | P2 | PARTIAL (v2.33 forced-colors focus/borders and reduced-motion CSS; Windows high contrast UAT open) | Forced color/high contrast and reduced-motion support | A-05/A-10 |
-| A11Y-06 | P2 | PLANNED | Readable labels/tooltips without mouse hover | A-09 and touch accuracy |
-| QA-09 | P0 | PARTIAL (v2.31 synthetic 100/500/1000 CI + exact ranking parity; Chrome/Edge E2E pending) | Synthetic 100/500/1000 browser E2E performance baseline | Windows DevTools p95 + startup/long session |
+| A11Y-06 | P2 | PARTIAL (v2.47 non-hover S? warning; broader tooltip/NVDA UAT pending) | Readable labels/tooltips without mouse hover | A-09 and touch accuracy |
+| QA-09 | P0 | IMPLEMENTED (v2.46 synthetic 100/500/1000 Chromium tests; native Windows SLA pending) | Synthetic 100/500/1000 browser E2E performance baseline | Windows DevTools p95 + startup/long session |
 | QA-10 | P0 | GATE (v2.29 synthetic archetype cases; observed BA handoff times and semantic review not performed) | Human observation of 5 BA task archetypes, repeated runs | TTNA/TTSH/MRI with 0 critical false-ready decisions |
 | QA-11 | P0 | PARTIAL (v2.27 synthetic concurrent instances/restarts/conflicts; real browser crash drill open) | Cross-tab edits, stale conflict and crash recovery integration | P-15/P-17/P-18, 0 silent overwrite |
 | QA-12 | P1 | PARTIAL (v2.34 dedicated Chromium Playwright synthetic DOM E2E CI; Windows/Edge/NVDA still open) | DOM behavior tests with approved Playwright/browser runner | Focus, click, screenreader, history, network reconnect |
 | QA-13 | P1 | PLANNED | Local-only 20–30 real-case semantic BA handoff study | Actual independent gold scores, not CI counts |
 | QA-14 | P1 | PLANNED | Quantified code/branch coverage baseline, gaps by critical path | No invented 100%; dev-only tooling approval |
 | QA-15 | P2 | PARTIAL (v2.34 90-transition synthetic Chromium short-soak; real 8h/diverse OS scheduled drill open) | Scheduled offline regression drill on diverse machine profiles | OS, Python version, locale, browser, power mode |
-| OPS-01 | P1 | NEXT | Standard synthetic performance smoke + fixed cohort sizes | Repeatable local script and measurement doc |
+| OPS-01 | P1 | IMPLEMENTED (repeatable 100/500/1000 synthetic Python/Node smoke; actual-device UAT pending) | Standard synthetic performance smoke + fixed cohort sizes | Repeatable local script and measurement doc |
 | OPS-02 | P1 | PLANNED | Private local diagnostic bundle with PII redaction and consent | No production logs by default; explicit export |
 | OPS-03 | P1 | PARTIAL (v2.32 offline backup/verify/restore runbook; Windows Scheduler/upgrade rehearsal still open) | Version/upgrade and roll-back steps for local task scheduler | Main merge does not update installed local copy |
 | OPS-04 | P2 | PLANNED | Error budget dashboard for local app only, opt-in | No remote telemetry or background transfer |
 | OPS-05 | P2 | PARTIAL (v2.32 local backup+watcher readiness shown within existing Data menu; user acceptance pending) | Daily clean startup health checklist with offline fallback | Speed and accurate stale flags |
 | SEC-01 | P0 | PARTIAL (v2.27 CAS in new UI, legacy no-token API remains compatible; stronger enforcement after migration) | Cross-tab and concurrent browser save authorization plus revision CAS | No CSRF/security relaxation |
-| SEC-02 | P1 | PLANNED | Full localhost/cloud auth tests for new small endpoints | Host restrictions and current OIDC origin untouched |
-| SEC-03 | P1 | PLANNED | No personal/Jira/source content in perf report or public CI | Synthetic samples only; cross-check on PR |
+| SEC-02 | P1 | PARTIAL (localhost/cloud boundary tests; exhaustive per-endpoint auth matrix open) | Full localhost/cloud auth tests for new small endpoints | Host restrictions and current OIDC origin untouched |
+| SEC-03 | P1 | PARTIAL (synthetic CI and source-only ZIP; independent public-data-leak audit open) | No personal/Jira/source content in perf report or public CI | Synthetic samples only; cross-check on PR |
 | SEC-04 | P2 | PARTIAL (v2.33 per-tab private localStorage recovery, explicit 30d cleanup, v2 legacy migration; browser profile encryption/UAT pending) | Browser storage retention and private recovery data review | No stale PII in unsafe storage without retention policy |
 
 **Визначення effort (не змінює Jira/score):** XS ≤2 хв, S 2–5 хв, M 5–20 хв, L 20–60 хв, XL >60 хв, UNKNOWN. Estimate — окремий факт із confidence/джерелом, а не прибуток у priority formula. Реальний WRITE залишається попереду інших сигналів у тому самому sprint/backlog lane. High-risk blockers залишаються вищими за номінальний quick win при однакових нормативних пріоритетах.

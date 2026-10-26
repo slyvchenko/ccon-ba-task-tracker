@@ -55,6 +55,18 @@ POINTERS = {
     "REL-07": ("assets/reconnect-policy.mjs", "tests/reconnect-policy.test.mjs"),
     "SEC-01": ("desk_store.py", "tests/test_manual_edit_cas.py"),
     "A11Y-02": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
+    "QUICK-04": ("email_rules.py", "tests/test_email_rules.py"),
+    "QUICK-06": ("assets/manual-done-undo.mjs", "tests/manual-done-undo.test.mjs"),
+    "QUICK-07": ("assets/fast-handoff.mjs", "tests/fast-handoff.test.mjs"),
+    "FOCUS-04": ("assets/progressive-layout.mjs", "tests/progressive-layout.test.mjs"),
+    "PRIOR-06": ("ba_actions.py", "tests/test_action_history.py"),
+    "UI-05": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
+    "A11Y-06": ("assets/dashboard.mjs", None),
+    "QA-09": ("browser_e2e.py", None),
+    "OPS-01": ("performance_smoke.py", None),
+    "REL-06": ("desk_store.py", "tests/test_local_backup.py"),
+    "SEC-02": ("server.py", "tests/test_cloud_security.py"),
+    "SEC-03": (".github/workflows/quality.yml", "tests/test_static_release.py"),
 }
 # These are *possible overlapping acceptance criteria*, not verified duplicates.
 OVERLAPS = {

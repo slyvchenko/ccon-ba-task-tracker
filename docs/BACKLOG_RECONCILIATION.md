@@ -1,5 +1,7 @@
 # PR #39: аудит, дедублікація критеріїв і evidence-first план
 
+> **Історичний baseline (PR #39).** Наведені нижче початкові 37/52/32/1 та прогноз 9 PR фіксують стан ДО #40–52. Поточна звірка v2.48.1 і її нові числа - у розділі наприкінці цього документа.
+
 **Виконано:** 26.10.2026, після злиття v2.38. **Обсяг:** локальна версія CCON BA Desk для одного BA. Це **аудит стану й доказів**, не нова автоматична BA-функція і не пройдене бізнес-приймання.
 
 ## Точні результати інвентаризації
@@ -56,3 +58,29 @@
 Залишаються **9 запланованих тематичних PR #40–48** після цього #39. Загальна первинна оцінка **10 PR #39–48** не збільшилась тільки через наявність 129 рядків. Реальний обсяг може зменшитися після human UAT або збільшитися при виявленні source truth/blocking багів. Для хмарного продукту окремо **3–5 PR**, лише за рішенням про розширення scope.
 
 **Перші два після #39:** #40 exact evidence provenance та #41 BA handoff accuracy. Це важливіше за нові чіпи, екрани чи косметичні функції.
+
+## 26.10.2026: перевірка статусів проти об'єднаного коду v2.48.1
+
+Ця перевірка оновлює **облік реалізації**, не продуктове приймання. Всі 129 рядків інвентаризовано за ID/priority/status; 13 явно застарілих статусів переглянуто за реалізацією, тестами та CI. Для 116 інших **немає нової позитивної атестації**; вихідні статуси збережено. Механізм із синтетичним тестом не означає готовність бізнес-логіки на реальних даних.
+
+| ID | Було → стало | Кодова підстава | Що залишається |
+|---|---|---|---|
+| QUICK-04 | PLANNED → PARTIAL | `email_rules.py`, `tests/test_email_rules.py` | Real recipient/method/ZIP, фактичний mailto |
+| QUICK-06 | PLANNED → IMPLEMENTED | `assets/manual-done-undo.mjs`, unit + Chromium, #42 | Windows UX/CAS конфлікти на живих задачах |
+| QUICK-07 | PLANNED → PARTIAL | `assets/fast-handoff.mjs`, JS unit, #35/#42 | Реальний 5-секундний BA scan, без втрати proof |
+| FOCUS-04 | PLANNED → PARTIAL | `assets/progressive-layout.mjs`, JS unit | Людський deep-evidence workflow без зайвого скролу |
+| PRIOR-06 | PLANNED → PARTIAL | `ba_actions.py`, `tests/test_action_history.py` | Реальна waiting-сесія, відсутність повторного листа |
+| UI-05 | PLANNED → PARTIAL | responsive CSS, CSS unit, synthetic Chromium #47 | Native 768/1440/Windows Edge/NVDA UX |
+| UI-09 | PLANNED → PARTIAL | `assets/progressive-layout.mjs`, `tests/progressive-layout.test.mjs` | Human 5-second acceptance/default disclosure |
+| REL-06 | PLANNED → PARTIAL | `desk_store.py`, legacy SQLite fixtures, Windows CI #51 | Повний сценарій міграції v2.23→v2.48.1 |
+| A11Y-06 | PLANNED → PARTIAL | `assets/dashboard.mjs`, synthetic Chromium #47 | Повний список non-hover підписів і NVDA |
+| QA-09 | PARTIAL → IMPLEMENTED | `browser_e2e.py` 100/500/1000 synthetic tests #46 | Окремий Windows/device SLA й 8h soak |
+| OPS-01 | NEXT → IMPLEMENTED | `performance_smoke.py`, `queue_benchmark.mjs`, CI #46 | Порівняння на реальному ПК |
+| SEC-02 | PLANNED → PARTIAL | `server.py`, `tests/test_cloud_security.py` | Перевірити всі endpoint/identity/origin комбінації |
+| SEC-03 | PLANNED → PARTIAL | `.github/workflows/quality.yml`, source-only ZIP tests | Незалежний PII/секрети audit публічних артефактів |
+
+**Оновлені категорії (129):** 40 IMPLEMENTED, 61 PARTIAL, 21 PLANNED, 0 NEXT, 3 GATE, 4 DEFERRED. Зафіксовано **50 source locators**, із них **45 code + test**; 79 без direct locator (не рівнозначно відсутності коду). Жоден із 129 не має записаного human UAT signoff.
+
+**Узгодження:** `docs/PRODUCT_BACKLOG.md` - єдиний авторський реєстр; `backlog_audit.py` детерміновано генерує `docs/BACKLOG_ACCEPTANCE_LEDGER.json`. Додано відповідні перевірки регресії. Історичні примітки #39–48 вище залишені як timeline, а не як чинні відкриті PR.
+
+**Ще треба зробити:** виконати приватний QA-02/03/10/13 і Windows-гейти з Issue #50, виміряти BA time-to-handoff, потім окремо вирішити, чи входять необов'язкові P2/16 VIS/INF P3 у локальний scope. Не будувати дубльований dashboard заради закриття лічильника.
