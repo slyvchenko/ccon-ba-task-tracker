@@ -110,7 +110,7 @@
 | PERF-09 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-15. | No unexpected fonts/spacing/contrast changes |
 | PERF-10 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Do not enable blindly; Windows/backup compatibility |
 | REL-09 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | No unexpected data deletion, archive user-approved |
-| REL-10 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | Verify hashes; old app loads additive migration |
+| REL-10 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Verify hashes; old app loads additive migration |
 | A11Y-05 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | A-05/A-10 |
 | A11Y-06 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-14. | A-09 and touch accuracy |
 | QA-15 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | OS, Python version, locale, browser, power mode |
