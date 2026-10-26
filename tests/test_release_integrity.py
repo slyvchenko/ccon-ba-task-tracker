@@ -54,6 +54,14 @@ class ReleaseIntegrityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "differ"):
             verify_release(self.archive, inv)
 
+    def test_unexpected_directory_entry_is_rejected_even_when_files_match(self):
+        build_release(self.archive, self.root)
+        expected = inventory(self.root)
+        with zipfile.ZipFile(self.archive, "a") as archive:
+            archive.writestr("ccon-ba-desk/app_config.py/", "")
+        with self.assertRaisesRegex(ValueError, "unexpected directory"):
+            verify_release(self.archive, expected)
+
     def test_path_traversal_duplicate_and_invalid_digest_rejected(self):
         build_release(self.archive, self.root)
         for entry in [
