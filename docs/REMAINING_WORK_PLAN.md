@@ -98,7 +98,7 @@
 | EVD-15 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Encrypt-at-rest/ACL, TTL, аудит, no commit/no egress |
 | UX-03 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Дійсні токени/логотип потребують brand approval |
 | QA-07 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Coverage by supplier method, nested ZIP cases, pagination, retries |
-| QUICK-08 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | Template never invents source/method; gold QA |
+| QUICK-08 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Template never invents source/method; gold QA |
 | FOCUS-07 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Manual pin only within lane; clear override and reset |
 | FOCUS-08 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | A-01/A-11; action accessible |
 | PRIOR-07 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | Local opt-in, no PII, no cloud telemetry |

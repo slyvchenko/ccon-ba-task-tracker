@@ -34,6 +34,7 @@ STATIC_FILES = {
     '/assets/manual-done-undo.mjs': ('assets/manual-done-undo.mjs', 'text/javascript; charset=utf-8'),
     '/assets/draft-recovery.mjs': ('assets/draft-recovery.mjs', 'text/javascript; charset=utf-8'),
     '/assets/fast-handoff.mjs': ('assets/fast-handoff.mjs', 'text/javascript; charset=utf-8'),
+    '/assets/candidate-templates.mjs': ('assets/candidate-templates.mjs', 'text/javascript; charset=utf-8'),
     '/assets/handoff-ui-policy.mjs': ('assets/handoff-ui-policy.mjs', 'text/javascript; charset=utf-8'),
     '/assets/progressive-layout.mjs': ('assets/progressive-layout.mjs', 'text/javascript; charset=utf-8'),
     '/assets/visual-clarity.mjs': ('assets/visual-clarity.mjs', 'text/javascript; charset=utf-8'),

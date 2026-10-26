@@ -73,6 +73,7 @@ POINTERS = {
     "QUICK-04": ("email_rules.py", "tests/test_email_rules.py"),
     "QUICK-06": ("assets/manual-done-undo.mjs", "tests/manual-done-undo.test.mjs"),
     "QUICK-07": ("assets/fast-handoff.mjs", "tests/fast-handoff.test.mjs"),
+    "QUICK-08": ("assets/candidate-templates.mjs", "tests/candidate-templates.test.mjs"),
     "FOCUS-04": ("assets/progressive-layout.mjs", "tests/progressive-layout.test.mjs"),
     "PRIOR-06": ("ba_actions.py", "tests/test_action_history.py"),
     "UI-05": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),

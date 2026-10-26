@@ -115,7 +115,7 @@
 | QUICK-05 | P1 | PARTIAL (v2.29 identifies quick candidates without reordering any lane/score/group; batch workflow pending) | Batch quick handoffs тільки у межах коректного lane | Sprint/WRITE contract unchanged; reordering by time opt-in only |
 | QUICK-06 | P1 | IMPLEMENTED (v2.42 revision-safe one-step local Undo; Windows human UAT open) | Reversible manual Done / Undo без зовнішніх API записів | Cancel/reverse with preserved notes; J-08 |
 | QUICK-07 | P1 | PARTIAL (v2.35 concise action and proof text; human 5-second scan pending) | Compact card action/proof line без шуму з чіпів | User 5-second scan, no loss of proof status |
-| QUICK-08 | P2 | PLANNED | Кандидатні шаблони для повторюваних дрібних BA задач | Template never invents source/method; gold QA |
+| QUICK-08 | P2 | PARTIAL (v2.50.4 optional placeholder-only BA templates; gold UAT pending) | Кандидатні шаблони для повторюваних дрібних BA задач | Template never invents source/method; gold QA |
 | FOCUS-01 | P0 | PARTIAL (v2.28 retain selected key, list scroll and open details on same-task refresh; browser UAT open) | Зберігати selected task і позицію списку при оновленні | No jump on background import, user edits preserved; J-07 |
 | FOCUS-02 | P0 | PARTIAL (v2.30 tab-local selected issue, scroll/disclosures and caret coordinates; browser UAT pending) | Відновлення scroll, open details, cursor при поверненні | Resume p95 goal ≤45 s; browser UAT |
 | FOCUS-03 | P1 | PARTIAL (v2.30 Alt+arrow, / search, Alt+C, Ctrl/Cmd+Enter; keyboard UAT pending) | Keyboard shortcuts Next / Search / Copy / Save із захистом input focus | Keyboard-only critical path A-01; no destructive collision |

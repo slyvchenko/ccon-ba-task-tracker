@@ -14,7 +14,7 @@ class AuditTest(unittest.TestCase):
         self.assertEqual(report["counts"]["total"], 129)
         self.assertEqual(report["counts"]["reported_statuses"], {
             "DEFERRED": 4, "GATE": 3, "IMPLEMENTED": 40,
-            "PARTIAL": 74, "PLANNED": 8})
+            "PARTIAL": 75, "PLANNED": 7})
         items = report["items"]
         self.assertEqual(len(items), len({x["id"] for x in items}))
         self.assertTrue(all(x["suggested_batch"] and x["acceptance_criteria"] for x in items))
@@ -32,8 +32,8 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
                             for key in rows))
         self.assertEqual(len(rows), 129)
-        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 59)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 64)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 60)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 63)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
