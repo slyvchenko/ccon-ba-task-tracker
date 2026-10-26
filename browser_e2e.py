@@ -368,7 +368,10 @@ class BrowserRegression(unittest.TestCase):
         self.page.wait_for_function(
             "() => (document.querySelector('#taskHistory')?.textContent || '').includes('Історія:')",
             timeout=15000)
-        self.page.evaluate("window.__stableNoteNode=document.querySelector('#note')")
+        self.page.evaluate("""() => {
+            window.__stableNoteNode=document.querySelector('#note');
+            document.querySelector('#detail .task-date').textContent='SYNTHETIC OLD IMPORT DATE';
+        }""")
         resource_paths=("/api/evidence/", "/api/questions/", "/api/decisions/",
                         "/api/actions/", "/api/history/", "/api/approved/")
         requests=[]
@@ -384,6 +387,8 @@ class BrowserRegression(unittest.TestCase):
             timeout=15000)
         self.assertTrue(self.page.evaluate(
             "() => window.__stableNoteNode===document.querySelector('#note')"))
+        self.assertNotEqual(self.page.locator('#detail .task-date').inner_text(),
+                            'SYNTHETIC OLD IMPORT DATE')
         self.assertEqual(requests,[], "Unrelated import must not refetch selected evidence/history")
         # Actual selected task content change must still rerender and reload evidence.
         next_doc["generatedAt"]="2026-10-26T09:02:00Z"
