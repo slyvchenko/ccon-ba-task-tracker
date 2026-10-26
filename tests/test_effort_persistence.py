@@ -1,3 +1,4 @@
+from contextlib import closing
 """Synthetic, local-only effort estimate persistence and conflict regression tests."""
 import json
 import sqlite3
@@ -79,7 +80,7 @@ class EffortPersistenceTests(unittest.TestCase):
     def test_legacy_db_migration_is_additive_and_preserves_existing_edits(self):
         with tempfile.TemporaryDirectory(prefix="ccon-effort-old-") as folder:
             location=Path(folder)/"ba_state.db"
-            with sqlite3.connect(location) as con:
+            with closing(sqlite3.connect(location)) as con, con:
                 con.executescript("""
                 CREATE TABLE tasks (
                     key TEXT PRIMARY KEY, snapshot TEXT NOT NULL,
