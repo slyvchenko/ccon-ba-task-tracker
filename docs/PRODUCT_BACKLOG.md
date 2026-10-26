@@ -358,3 +358,11 @@
 - Кнопка зникає після одного Undo, інвалідного стану, перезавантаження вкладки або подальшої локальної операції. No external Jira/mail request or automatic batch completion.
 - Pure unit + real synthetic Chromium test з фізичним кліком Done/Undo. QUICK-05/07/08 і FOCUS-04/05/07/08 лишаються для human workflow UAT або scope review; не додаємо другу систему пріоритетів.
 
+
+### v2.43 #43: supplier email recipient consent + hard lane invariants
+
+- Existing known supplier address strings are retained **only as opt-in template hints**; task summary can no longer auto-populate `draftTo`, including after manually clearing the recipient. The visible action warns that a template is not current corporate approval.
+- Exactly one explicit user click populates `To` and marks the form dirty for local Save. This never verifies supplier identity, sends an email or changes Jira.
+- Deterministic tests cover active sprint vs outside task, WRITE before READY regardless of score 0–100, DONE below open, unverified membership outside sprint, no quick/effort-induced rank mutation.
+- Source verification and actual effort/UX gain remain **P0/P1 human UAT**, not a synthetic PASS.
+
