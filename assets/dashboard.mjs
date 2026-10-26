@@ -2,6 +2,7 @@ import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalys
 import {createLogsController} from './logs.mjs';
 import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './manual-edit-policy.mjs';
+import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload} from './manual-done-undo.mjs';
 import {createDraftRecoveryStore,RETENTION_DAYS} from './draft-recovery.mjs';
 import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus}
@@ -36,6 +37,7 @@ const forms = new Map();
 const manualConflicts = new Map();
 const taskViews = new Map(Object.entries(restoredFocusView.views));
 const saveFailures = new Map();
+let lastDoneToken = null;
 const expandedEmails = new Set();
 const recoveredForms = recoveryStore.load();
 const {loadLogs} = createLogsController({api, escapeHtml, message, getSelected: () => selected});
@@ -162,7 +164,16 @@ function signalBadge(task) {
   const label = manual ? STATUS_LABELS[task.manualStatus] : hasAnalysis(task) ? info.label : analysisIsStale(task) ? 'Аналіз потребує оновлення' : 'Ще без нового аналізу';
   return `<span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(label)}</span>`;
 }
+function updateUndoControl() {
+  const token=lastDoneToken;
+  const task=token ? tasks.find(x=>x.key===token.key) : null;
+  if(token && !canUndoLocalDone(token,task)) lastDoneToken=null;
+  $('undoLastDone').hidden=!lastDoneToken;
+  $('undoLastDone').disabled=busy || !lastDoneToken;
+  if(lastDoneToken) $('undoLastDone').textContent='Скасувати «Виконано» · '+lastDoneToken.key;
+}
 function renderList() {
+  updateUndoControl();
   const focusedRow = document.activeElement?.closest?.('#list [data-key]')?.dataset.key || null;
   const previousListScroll = $('list').scrollTop;
   const previousSidebarScroll = $('list').closest('aside')?.scrollTop || 0;
@@ -720,7 +731,7 @@ function discardForm() {
 function setBusy(value) {
   busy = value;
   ['manual', 'manualEffort', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard',
-    'conflictOverwrite', 'conflictUseSaved'].forEach(id => { if ($(id)) $(id).disabled = value; });
+    'conflictOverwrite', 'conflictUseSaved', 'undoLastDone'].forEach(id => { if ($(id)) $(id).disabled = value; });
   $('import').disabled = value;
   updateFormStatus();
 }
@@ -746,9 +757,12 @@ async function saveStatus(status) {
       await loadManualConflict(task.key);
       return;
     }
+    const previousStatus=task.manualStatus;
     const saved = await api('/api/tasks/' + encodeURIComponent(task.key),
       withExpectedRevision({manualStatus:status, note:task.note || ''}, form.baseRevision));
     task.manualStatus = status;
+    if(status==='DONE') lastDoneToken=makeUndoToken(task,previousStatus,saved.manualRevision);
+    else if(lastDoneToken?.key===task.key) lastDoneToken=null;
     task.manualRevision = saved.manualRevision;
     queueModel.invalidate();
     task.modifiedAt = new Date().toISOString();
@@ -779,6 +793,7 @@ async function saveTask(done = false) {
   captureForm();
   const form = formFor(task);
   const value = structuredClone(form.value);
+  const previousStatus=task.manualStatus;
   if (done) value.manualStatus = 'DONE';
   setBusy(true);
   try {
@@ -791,6 +806,8 @@ async function saveTask(done = false) {
     Object.assign(task, {manualStatus:value.manualStatus, manualEffort:value.manualEffort, note:value.note,
       savedEmailDraft:value.emailDraft, manualRevision:saved.manualRevision,
       modifiedAt:new Date().toISOString()});
+    if (done) lastDoneToken=makeUndoToken(task,previousStatus,saved.manualRevision);
+    else if(lastDoneToken?.key===task.key) lastDoneToken=null;
     queueModel.invalidate();
     forms.delete(task.key);
     manualConflicts.delete(task.key);
@@ -812,6 +829,44 @@ async function saveTask(done = false) {
     return false;
   } finally { setBusy(false); }
 }
+async function undoLastDone() {
+  if(busy || !lastDoneToken) return;
+  const token=lastDoneToken;
+  const task=tasks.find(item=>item.key===token.key);
+  if(!canUndoLocalDone(token,task) || isDirty(token.key)) {
+    lastDoneToken=null;
+    updateUndoControl();
+    message('Не вдалося скасувати: стан задачі вже змінився. Перевір актуальну версію.',true);
+    return;
+  }
+  setBusy(true);
+  try {
+    // CAS guarantees no newer manual edits get silently overwritten.
+    const response=await api('/api/tasks/'+encodeURIComponent(token.key),
+      undoLocalDonePayload(token,task));
+    task.manualStatus=token.priorStatus;
+    task.manualRevision=response.manualRevision;
+    task.modifiedAt=new Date().toISOString();
+    lastDoneToken=null;
+    selected=task.key;
+    queueModel.invalidate();
+    signature='';
+    renderList();
+    renderDetail();
+    message('Локальний стан «Виконано» скасовано. Jira і пошта не змінювалися.');
+    $('detail')?.focus({preventScroll:true});
+  } catch(error) {
+    lastDoneToken=null;
+    if(error.code==='TASK_REVISION_CONFLICT')
+      message('Undo зупинено: інша вкладка вже змінила цей запис. Перевір актуальні правки.',true);
+    else message('Undo не виконано: '+error.message,true);
+  } finally {
+    setBusy(false);
+    updateUndoControl();
+  }
+}
+$('undoLastDone').addEventListener('click',undoLastDone);
+
 async function copyText(text, notice) {
   try { await navigator.clipboard.writeText(text); message(notice); }
   catch { message('Копіювання недоступне. Виділи видимий текст і скопіюй вручну.', true); }
