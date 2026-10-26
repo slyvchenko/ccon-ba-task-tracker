@@ -55,7 +55,7 @@ class BriefingTests(unittest.TestCase):
     def test_empty_briefing_cannot_bypass_source_validation(self):
         # PR #57 only suppresses empty UI shells; ingest must still reject
         # malformed payloads before reaching the browser.
-        with self.assertRaisesRegex(ValueError, "briefing.currentUk"):
+        with self.assertRaisesRegex(ValueError, "briefing.overviewUk"):
             validate_briefing({"confirmedFacts": [], "rules": [], "timeline": []})
         with self.assertRaisesRegex(ValueError, "briefing.rules"):
             invalid = briefing()
