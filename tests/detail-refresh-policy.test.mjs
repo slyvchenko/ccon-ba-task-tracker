@@ -25,6 +25,7 @@ test('stale same-key responses are rejected after a new render or selecting anot
   const first=gate.begin('CCON-1');
   assert.equal(first(),'CCON-1');
   const next=gate.begin('CCON-1');
+  assert.strictEqual(gate.current(),next);
   assert.equal(first(),null,'old response cannot overwrite a newer same-key DOM');
   assert.equal(next(),'CCON-1');
   selected='CCON-2';
@@ -43,4 +44,22 @@ test('a delayed response is checked when it resolves, not when it starts', async
   gate.begin('CCON-1');
   release();
   assert.equal(await pending,null);
+});
+
+test('a pending manual write can refresh the newest same-key scope without stale read access',async()=>{
+  let selected='CCON-1',resolvePost,refreshed=null;
+  const gate=createDetailRequestScope(()=>selected);
+  const stale=gate.begin('CCON-1');
+  const post=new Promise(resolve=>{resolvePost=resolve;});
+  const completion=post.then(()=>{
+    const live=gate.current();
+    if(live()==='CCON-1')refreshed=live;
+  });
+  const fresh=gate.begin('CCON-1');
+  assert.equal(stale(),null);
+  resolvePost();
+  await completion;
+  assert.strictEqual(refreshed,fresh,'POST success reload targets the active render');
+  selected='CCON-2';
+  assert.equal(refreshed(),null,'a second selection invalidates the scoped reload');
 });
