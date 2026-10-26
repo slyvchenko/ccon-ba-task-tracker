@@ -200,3 +200,7 @@ New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, 
 ## v2.47: accessible queue semantics and forced-color emulator
 
 `browser_e2e.py` asserts heading roles/levels, manual email CTA visibility, keyboard focus outline and 320px no-global-horizontal-overflow with forced-colors/reduced-motion emulation. Actual native 200–400% zoom, Windows/Edge/NVDA and human-comprehension UAT are separate, not claimed complete. See `docs/A11Y_FINAL_SCOPE_REVIEW.md`.
+
+## v2.48: closing gate does not certify business truth
+
+`tests/test_release_readiness.py` checks 129 item integrity, P0 counts, private QA gate presence, failed/forged acceptance, and no private content in reports. `release_readiness.py --check` checks inventory shape; `--require-ready` remains fail-closed. This is **not** a real UAT pass, Windows deployment or supplier confirmation. See `docs/LOCAL_RELEASE_GATE_v2_48.md`.
