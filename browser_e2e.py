@@ -289,6 +289,48 @@ class BrowserRegression(unittest.TestCase):
                 f"synthetic-layout-{width}.png"),full_page=True)
         self.assertEqual(self.page.locator("#copyNext").count(),1)
 
+    def test_large_queue_100_500_1000_browser_search_and_reload(self):
+        # Browser-backed synthetic cohort, not a Windows benchmark or SLA.
+        for index, amount in enumerate((100,500,1000)):
+            data={"generatedAt":f"2026-10-25T{15+index:02d}:00:00Z",
+                  "tasks":[{"key":f"CCON-{i+1000}",
+                            "summary":f"Synthetic API issue {i}",
+                            "activeSprint":i%2==0,
+                            "activeSprintStatus":"VERIFIED",
+                            "analysis":{"signal":"READY",
+                                        "reasonUk":"Synthetic explanation",
+                                        "nextActionUk":"Review one synthetic scenario",
+                                        "queueScore":i%101}}
+                           for i in range(amount)]}
+            self.snapshot.write_text(json.dumps(data),encoding="utf-8")
+            self.desk.import_snapshot()
+            start=time.perf_counter()
+            self.page.reload(wait_until="domcontentloaded")
+            self.page.wait_for_function(
+                f"() => document.querySelectorAll('#list button[data-key]').length === {amount}",
+                timeout=20000)
+            cold_ms=(time.perf_counter()-start)*1000
+            timings=[]
+            for k in range(5):
+                started=time.perf_counter()
+                self.page.locator("#search").fill(f"NO_MATCH_FAKE_{index}_{k}")
+                self.page.wait_for_function(
+                    "() => document.querySelectorAll('#list button[data-key]').length === 0",
+                    timeout=15000)
+                timings.append((time.perf_counter()-started)*1000)
+                self.page.locator("#search").fill("")
+                self.page.wait_for_function(
+                    f"() => document.querySelectorAll('#list button[data-key]').length === {amount}",
+                    timeout=15000)
+            self.timings.append({
+                "scenario":"Browser DOM large synthetic queue and debounced search",
+                "cohortSize":amount,"coldReloadMs":round(cold_ms,2),
+                "searchFilterP50Ms":round(statistics.median(timings),2),
+                "searchFilterP95Ms":round(sorted(timings)[-1],2),
+                "syntheticOnly":True,"notAnSLO":True})
+            self.assertTrue(self.page.locator("#detail").is_visible())
+            self.assertTrue(self.page.locator("#search").is_visible())
+
     def test_three_viewports_and_short_soak_no_external_writes(self):
         self.choose("CCON-2")
         for width,height in [(320,800),(768,900),(1440,900)]:
