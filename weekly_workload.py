@@ -33,18 +33,27 @@ def _window(week, today=None):
 
 def _status(state):
     manual = state.get("manualStatus", "AUTO")
-    if manual == "DONE" or (manual == "AUTO" and
-                            str(state.get("jiraStatus") or "").upper() in DONE):
+    # Explicit manual action always overrides the automatic BA signal.
+    if manual != "AUTO":
+        if manual == "DONE":
+            return "DONE"
+        return "BLOCKED" if manual in BLOCKED else "WIP"
+    signal = state.get("signal")
+    if signal == "DONE":
         return "DONE"
-    if manual in BLOCKED:
+    if signal == "WAIT":
         return "BLOCKED"
-    return "WIP"
+    if signal in ("READY", "WRITE", "DECIDE", "REVIEW"):
+        return "WIP"
+    return "DONE" if str(state.get("jiraStatus") or "").upper() in DONE else "WIP"
 
 
 def weekly_report(root=ROOT, week=None, *, today=None):
     root = Path(root)
     if root.is_symlink() or not root.is_dir():
         raise ValueError("Local workspace must exist")
+    # sqlite3 URI paths require an absolute canonical workspace path.
+    root = root.resolve(strict=True)
     today = today or datetime.now(timezone.utc).date()
     if week is None:
         last_monday = today - timedelta(days=today.weekday() + 7)
@@ -101,8 +110,9 @@ def weekly_report(root=ROOT, week=None, *, today=None):
                               "taskChanges": len(touched), "historyEvents": total_events},
         "blockerShareOfOpenPct": (round(100*blockers/(wip+blockers),1)
                                   if wip+blockers else None),
+        # Even Sunday at 23:59 has not completed the current ISO week.
         "weekMayBeIncomplete": end > datetime.combine(
-            today+timedelta(days=1), datetime.min.time(),tzinfo=timezone.utc),
+            today, datetime.min.time(),tzinfo=timezone.utc),
         "limitations": ("As-of snapshot comes from recorded BA task history; "
                         "no agent ranking, no time spent measurement, no inference "
                         "about work before the first imported snapshot."),
