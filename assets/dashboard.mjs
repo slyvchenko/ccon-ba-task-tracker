@@ -545,7 +545,8 @@ function renderDetail() {
     try {
       await api('/api/approved/' + encodeURIComponent(task.key), {});
       message('BA-опис схвалено локально. Jira не змінено.');
-      if (currentDetail() === task.key) loadApprovedDescription(task.key,currentDetail);
+      const live = detailRequests.current();
+      if (live() === task.key) loadApprovedDescription(task.key,live);
     } catch (error) { message('Опис не схвалено: ' + error.message, true); }
   });
   $('save').addEventListener('click', () => saveTask(false));
@@ -563,14 +564,16 @@ function renderDetail() {
   $('email').addEventListener('click', openEmail);
   if (cloudMode) $('email').textContent = mailActionLabels(true).open;
   $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
-  $('loadContext').addEventListener('click', () => loadContext(task.key));
+  $('loadContext').addEventListener('click', () => loadContext(task.key,currentDetail));
   updateFormStatus();
   showManualConflict();
   loadTaskEvidence(task.key, api, escapeHtml, currentDetail);
-  loadTaskQuestions(task.key, api, escapeHtml, message, currentDetail);
-  loadTaskDecisions(task.key, api, escapeHtml, message, currentDetail);
+  loadTaskQuestions(task.key, api, escapeHtml, message, currentDetail,
+                    ()=>detailRequests.current());
+  loadTaskDecisions(task.key, api, escapeHtml, message, currentDetail,
+                    ()=>detailRequests.current());
   loadTaskActions(task.key, api, escapeHtml, message, currentDetail,
-                  analysis.nextActionUk || '');
+                  analysis.nextActionUk || '', ()=>detailRequests.current());
   loadTaskHistory(task.key, api, escapeHtml, currentDetail);
   loadApprovedDescription(task.key,currentDetail);
   loadLogs(task.key);
@@ -957,16 +960,16 @@ async function openEmail() {
   window.location.href = mailto;
   message('Чернетку збережено. Відкриваю її в поштовій програмі.');
 }
-async function loadContext(key) {
+async function loadContext(key, current=()=>selected) {
   const button = $('loadContext');
   button.disabled = true;
   try {
     const context = await api('/api/context/' + encodeURIComponent(key));
-    if (selected !== key || !$('contextPreview')) return;
+    if (current() !== key || !$('contextPreview')) return;
     if (!context.contextAvailable) { $('contextPreview').textContent = 'Повний контекст ще не завантажений. Відкрий задачу у Jira або дочекайся щоденного оновлення.'; return; }
     renderContext(context);
     button.textContent = 'Контекст завантажено';
-  } catch (error) { if (selected === key && $('contextPreview')) $('contextPreview').textContent = 'Не вдалося завантажити контекст: ' + error.message; }
+  } catch (error) { if (current() === key && $('contextPreview')) $('contextPreview').textContent = 'Не вдалося завантажити контекст: ' + error.message; }
   finally { if (button.isConnected) button.disabled = false; }
 }
 function plainText(value) {
