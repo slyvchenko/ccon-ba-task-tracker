@@ -874,6 +874,7 @@ async function saveTask(done = false) {
   const task = tasks.find(item => item.key === selected);
   if (!task) return false;
   if (done && !confirm(completionPrompt(task))) return false;
+  const editingBeforeSave = isTextEditingTarget(document.activeElement);
   captureForm();
   const form = formFor(task);
   const value = structuredClone(form.value);
@@ -902,6 +903,9 @@ async function saveTask(done = false) {
     if (done) selected = visibleTasks().find(item => item.key !== task.key)?.key || null;
     renderList();
     renderDetail();
+    // The click target was replaced; keep a keyboard path back to Save,
+    // unless the user invoked Ctrl+Enter while still editing text.
+    if (!done && !editingBeforeSave) focusAfterAction(document,['save']);
     message(cloudMode ? 'Статус, нотатки та чернетку збережено у приватній базі.' : 'Статус, нотатки та чернетку збережено в локальній базі.');
     return true;
   } catch (error) {
@@ -996,7 +1000,12 @@ async function openBulkEmails() {
     $('bulkResult').textContent = `Передано поштовій програмі: ${result.opened.length}. Не вдалося відкрити: ${result.failed.length}. Перевір вікна Outlook.`;
     $('bulkOpen').textContent = `Повторити невдалі (${bulkItems.length})`;
   } catch (error) { $('bulkResult').textContent = error.message; }
-  finally { $('bulkClose').disabled = false; $('bulkOpen').disabled = !bulkItems.length; }
+  finally {
+    $('bulkClose').disabled = false;
+    $('bulkOpen').disabled = !bulkItems.length;
+    if ($('bulkDialog').open) focusAfterAction(document,
+      bulkItems.length ? ['bulkOpen','bulkClose'] : ['bulkClose']);
+  }
 }
 $('bulkEmail').addEventListener('click', previewBulkEmails);
 $('bulkOpen').addEventListener('click', openBulkEmails);
@@ -1009,8 +1018,18 @@ $('bulkDialog').addEventListener('close', () => {
 async function openEmail() {
   captureForm();
   const draft = structuredClone(forms.get(selected)?.value.emailDraft);
-  if (!draft?.subject.trim() || !draft?.body.trim()) { message('Додай тему й текст листа перед відкриттям чернетки.', true); return; }
-  if (!await saveTask(false)) return;
+  if (!draft?.subject.trim() || !draft?.body.trim()) {
+    message('Додай тему й текст листа перед відкриттям чернетки.', true);
+    focusAfterAction(document,[!draft?.subject.trim()?'draftSubject':'draftBody']);
+    return;
+  }
+  if (!await saveTask(false)) {
+    focusAfterAction(document,['email']);
+    return;
+  }
+  // Saving replaces the detail DOM. Restore the explicit mail action before
+  // opening an external app; on return the keyboard target remains visible.
+  focusAfterAction(document,['email']);
   if (cloudMode) {
     await copyText('To: ' + draft.to + '\nSubject: ' + draft.subject + '\n\n' + draft.body,
                    'Чернетку збережено та скопійовано. Надсилання залишається ручним.');
