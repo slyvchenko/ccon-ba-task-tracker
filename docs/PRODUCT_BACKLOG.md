@@ -28,7 +28,7 @@
 
 ### Звірка коду після v2.48.1 (26.10.2026)
 
-- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **71 PARTIAL**, **11 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
+- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **72 PARTIAL**, **10 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
 - Зіставлено й перекласифіковано **15 окремих ID** за конкретним source/test evidence (13 у #53, ще UI-07 і QA-14 у #54). Решта **114** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
 - `IMPLEMENTED` означає лише підтверджений механізм (synthetic/code), `PARTIAL` - лише частину критеріїв, `PLANNED` - критерії не закрито. Оригінальні 37/52/32/1 у розділі v2.39 нижче - **історичний baseline**, а не поточні числа.
 - Незмінні external gates: реальні Jira/Kibana/CCON, 26 gold cases, людський UX, native Edge/NVDA/8h, Windows backup/restore та локальне оновлення. CI не доводить business signoff.
@@ -158,7 +158,7 @@
 | REL-07 | P1 | PARTIAL (v2.34 bounded GET reconnection, no repeat manual POST; Windows client error UAT open) | Retry strategy for recoverable local API failures with idempotency | No duplicate mailto or Done, bounded retry |
 | REL-08 | P1 | PARTIAL (v2.50 opt-in metadata-only POSIX mode/symlink checks, Windows ACL remains UNVERIFIED; native ACL/encryption audit open) | OS folder permissions/encryption checks for private local ZIP | Fail closed/notice for insecure ACL configuration |
 | REL-09 | P2 | PARTIAL (v2.50.2 read-only age/origin eligibility counts, latest revision preserved; archive/delete require explicit approval) | Bound old history/reports while preserving important user audit | No unexpected data deletion, archive user-approved |
-| REL-10 | P2 | PLANNED | Safe signed release/backup metadata and rollback rehearsal | Verify hashes; old app loads additive migration |
+| REL-10 | P2 | PARTIAL (v2.50.4 source-only SHA256 release integrity verification and non-deploying rollback preflight; independent signing and old-version migration UAT open) | Safe signed release/backup metadata and rollback rehearsal | Verify hashes; old app loads additive migration |
 | A11Y-01 | P1 | PARTIAL (v2.30 native keyboard shortcuts and guide; screen reader & real keyboard UAT open) | Keyboard full quick-task flow + shortcuts usability | A-01/J-03/J-08 with focus protection |
 | A11Y-02 | P1 | PARTIAL (v2.33 320px reflow CSS; real 200–400% zoom browser UAT open) | 200%-400% zoom and 320px mobile acceptance | A-03/A-04; primary actions reachable |
 | A11Y-03 | P1 | PARTIAL (v2.33 labeled task queue, low-noise aria-live selection; NVDA/VoiceOver UAT open) | Screen reader semantics for task list, selected and status | A-02, announcements not noisy |
