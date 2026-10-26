@@ -81,6 +81,17 @@ class WeeklyWorkloadTests(unittest.TestCase):
         self.assertFalse(monday["weekMayBeIncomplete"])
         self.assertEqual(report["asOfWeekEnd"],monday["asOfWeekEnd"])
 
+    def test_archived_task_return_can_complete_known_prior_work(self):
+        self.append("CCON-92", "2026-10-18T14:00:00+00:00",
+                    "AUTO", signal="READY")
+        self.append("CCON-92", "2026-10-18T15:00:00+00:00",
+                    "AUTO", active=False, signal="READY")
+        self.append("CCON-92", "2026-10-23T16:00:00+00:00",
+                    "AUTO", active=True, signal="DONE")
+        metrics=weekly_report(self.root,"2026-W43",today=date(2026,10,26))
+        self.assertEqual(metrics["weeklyTransitions"]["completed"],2)
+        self.assertEqual(metrics["asOfWeekEnd"]["completedState"],3)
+
     def test_no_state_created_and_bad_week_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(ValueError):
