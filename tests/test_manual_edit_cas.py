@@ -1,5 +1,5 @@
-from contextlib import closing
 """Synthetic cross-tab CAS regressions for manual status, notes, and email drafts."""
+from contextlib import closing
 import json
 import sqlite3
 import tempfile
