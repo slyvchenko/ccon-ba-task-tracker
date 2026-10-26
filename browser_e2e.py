@@ -576,7 +576,16 @@ class BrowserRegression(unittest.TestCase):
                 self.assertEqual(token["whiteSpace"],"pre-wrap")
             # Pointer/focus and the transient sticky action are not part of
             # the static source panel being compared.
-            self.page.evaluate("document.activeElement?.blur()")
+            # The app correctly restores per-task disclosure state from
+            # sessionStorage. A screenshot must use a fixed panel state so
+            # that the difference test measures rendering, not user choices.
+            self.page.evaluate("""() => {
+                for(const node of document.querySelectorAll('.ba-brief details')) {
+                    const label=node.querySelector('summary')?.textContent || '';
+                    node.open=label.includes('Правила IF / THEN');
+                }
+                document.activeElement?.blur();
+            }""")
             self.page.mouse.move(0,0)
             screenshot_style="#stickyAction{visibility:hidden!important}"
             first=self.page.locator(".ba-brief").screenshot(
@@ -588,7 +597,16 @@ class BrowserRegression(unittest.TestCase):
                 has_text="Правила IF / THEN").first
             if not rule.evaluate("(node)=>node.open"):
                 rule.locator("summary").click()
-            self.page.evaluate("document.activeElement?.blur()")
+            # The app correctly restores per-task disclosure state from
+            # sessionStorage. A screenshot must use a fixed panel state so
+            # that the difference test measures rendering, not user choices.
+            self.page.evaluate("""() => {
+                for(const node of document.querySelectorAll('.ba-brief details')) {
+                    const label=node.querySelector('summary')?.textContent || '';
+                    node.open=label.includes('Правила IF / THEN');
+                }
+                document.activeElement?.blur();
+            }""")
             self.page.mouse.move(0,0)
             second=self.page.locator(".ba-brief").screenshot(
                 animations="disabled",style=screenshot_style)
