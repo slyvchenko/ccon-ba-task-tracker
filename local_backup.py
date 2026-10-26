@@ -38,6 +38,28 @@ def _private_new(path):
     return path
 
 
+def _sync_file(path):
+    """Sync validated SQLite or manifest bytes before they become eligible."""
+    with Path(path).open("rb") as stream:
+        os.fsync(stream.fileno())
+
+
+def _sync_parent(path):
+    """Sync directory renames on POSIX; Windows directory fsync unavailable."""
+    if os.name == "nt":
+        return
+    fd = os.open(Path(path).parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _publish(source, target):
+    replace_file(source, target)
+    _sync_parent(target)
+
+
 def _sha(path):
     hasher = hashlib.sha256()
     with path.open("rb") as stream:
