@@ -40,7 +40,9 @@ def _private_new(path):
 
 def _sync_file(path):
     """Sync validated SQLite or manifest bytes before they become eligible."""
-    with Path(path).open("rb") as stream:
+    # Windows CRT requires a writable handle for _commit / os.fsync.
+    # This is our newly created private staging file, never a source DB.
+    with Path(path).open("r+b") as stream:
         os.fsync(stream.fileno())
 
 
