@@ -208,10 +208,15 @@ def compare_zip_bytes(raw, aliases):
                 elif len(rests) == len(suppliers) == 1 and not rest["ids"] and not suppliers[0]["ids"]:
                     j, basis = 0, "UNIQUE_SINGLE_EXCHANGE"
                 else:
-                    # Distinguish explicit contradiction from missing IDs.
-                    issues.append("CORRELATION_MISMATCH" if len(rests) == len(suppliers) == 1
-                                  and rest["ids"] and suppliers[0]["ids"] else
-                                  "UNCORRELATED_EXCHANGE")
+                    # Multiple uncorrelated exchanges without any identifiers
+                    # are ambiguous rather than an ordered, inferred mapping.
+                    if not rest["ids"] and not any(s["ids"] for s in suppliers):
+                        issues.append("AMBIGUOUS_PAIRING")
+                    elif (len(rests) == len(suppliers) == 1 and
+                          rest["ids"] and suppliers[0]["ids"]):
+                        issues.append("CORRELATION_MISMATCH")
+                    else:
+                        issues.append("UNCORRELATED_EXCHANGE")
                     continue
                 supplier = suppliers[j]
                 matched_rest.add(i)
