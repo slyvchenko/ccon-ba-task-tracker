@@ -550,8 +550,10 @@ class BrowserRegression(unittest.TestCase):
             self.page.set_viewport_size({"width":width,"height":height})
             self.page.reload(wait_until="domcontentloaded")
             self.choose("CCON-1")
-            self.page.locator(".ba-brief details").filter(
-                has_text="Правила IF / THEN").locator("summary").click()
+            rule=self.page.locator(".ba-brief details").filter(
+                has_text="Правила IF / THEN").first
+            if not rule.evaluate("(node)=>node.open"):
+                rule.locator("summary").click()
             self.page.locator(".ba-brief .technical-token").first.wait_for()
             values=self.page.locator(".ba-brief .technical-token").all_text_contents()
             self.assertEqual(values,[condition,outcome])
@@ -576,8 +578,10 @@ class BrowserRegression(unittest.TestCase):
             signature=hashlib.sha256(first).hexdigest()
             self.page.reload(wait_until="domcontentloaded")
             self.choose("CCON-1")
-            self.page.locator(".ba-brief details").filter(
-                has_text="Правила IF / THEN").locator("summary").click()
+            rule=self.page.locator(".ba-brief details").filter(
+                has_text="Правила IF / THEN").first
+            if not rule.evaluate("(node)=>node.open"):
+                rule.locator("summary").click()
             second=self.page.locator(".ba-brief").screenshot()
             self.assertEqual(first,second,
                              f"unchanged synthetic technical panel changed at {width}px")
