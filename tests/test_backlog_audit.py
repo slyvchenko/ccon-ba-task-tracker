@@ -14,7 +14,7 @@ class AuditTest(unittest.TestCase):
         self.assertEqual(report["counts"]["total"], 129)
         self.assertEqual(report["counts"]["reported_statuses"], {
             "DEFERRED": 4, "GATE": 3, "IMPLEMENTED": 40,
-            "PARTIAL": 65, "PLANNED": 17})
+            "PARTIAL": 67, "PLANNED": 15})
         items = report["items"]
         self.assertEqual(len(items), len({x["id"] for x in items}))
         self.assertTrue(all(x["suggested_batch"] and x["acceptance_criteria"] for x in items))
@@ -32,8 +32,8 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
                             for key in rows))
         self.assertEqual(len(rows), 129)
-        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 49)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 74)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 51)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 72)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
@@ -50,6 +50,13 @@ class AuditTest(unittest.TestCase):
             self.assertEqual(rows[key]["category"], "PARTIAL")
             self.assertIsNotNone(rows[key]["code_locator"])
             self.assertIsNotNone(rows[key]["test_locator"])
+            self.assertEqual(rows[key]["human_acceptance"], "NOT_RECORDED")
+
+    def test_visual_and_technical_formatting_remain_partial_until_native_uat(self):
+        rows = {item["id"]: item for item in audit.produce()["items"]}
+        for key in ("UI-08", "UI-10"):
+            self.assertEqual(rows[key]["category"], "PARTIAL")
+            self.assertEqual(rows[key]["test_locator"], "browser_e2e.py")
             self.assertEqual(rows[key]["human_acceptance"], "NOT_RECORDED")
 
     def test_p0_business_gates_cannot_become_done_by_code_only(self):
