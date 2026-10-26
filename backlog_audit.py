@@ -216,7 +216,16 @@ def main(argv=None):
         text = serialized(produce())
         if args.check:
             if not OUTPUT.exists() or OUTPUT.read_text(encoding="utf-8") != text:
-                print("Backlog ledger stale. Run python backlog_audit.py and review diff.", file=sys.stderr)
+                # Give actionable location without dumping backlog or private BA data.
+                existing = OUTPUT.read_text(encoding="utf-8") if OUTPUT.exists() else ""
+                expected_lines = text.splitlines()
+                actual_lines = existing.splitlines()
+                mismatch = next((i for i in range(min(len(expected_lines), len(actual_lines)))
+                                 if expected_lines[i] != actual_lines[i]), None)
+                line_number = mismatch + 1 if mismatch is not None else min(
+                    len(expected_lines), len(actual_lines)) + 1
+                print(f"Backlog ledger stale near line {line_number}; "
+                      "run python backlog_audit.py and review diff.", file=sys.stderr)
                 return 1
             print("Backlog audit ledger is synchronized (no semantic UAT claimed).")
         else:
