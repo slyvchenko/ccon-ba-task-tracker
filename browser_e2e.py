@@ -181,6 +181,11 @@ class BrowserRegression(unittest.TestCase):
         self.assertIn("не підтверджена",self.page.locator("#recipientHintWarning").inner_text())
         self.page.locator("#useRecipientHint").click()
         self.assertIn("@airfrance.fr",self.page.locator("#draftTo").input_value())
+        self.page.locator("#save").click()
+        self.page.wait_for_function(
+            "() => document.querySelector('#savedIndicator')?.hidden === false")
+        self.assertIn("@airfrance.fr",
+            next(t for t in self.desk.view()["tasks"] if t["key"]=="CCON-2")["savedEmailDraft"]["to"])
         self.page.locator("#draftTo").fill("")
         self.page.locator("#save").click()
         self.page.wait_for_function(
