@@ -172,3 +172,7 @@ New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, 
 ## v2.40: cross-layer identity and local source freshness
 
 `tests/test_value_mapping.py`: conflicting explicit IDs, one supplier used twice, multiple supplier retry IDs, incomplete exchanges, partial unique matching; no sensitive values/trace ID in outputs. `tests/test_evidence_provenance_40.py`: deterministic local source verification version and non-HTTP Kibana action-planning boundaries. Live Jira/Confluence source meaning and supplier API transformation remain outside synthetic CI.
+
+## v2.41: manual supplier handoff readiness
+
+`tests/test_email_rules.py` verifies that legacy attachment wording is stripped without explicit archive proof and that verified normalization stays idempotent. `tests/test_ba_output_checks.py` blocks affirmative attachment language when archive readiness is unknown. `tests/test_log_attachments.py` verifies single valid ZIP plus missing second flow returns PARTIAL, preventing falsely ready email copy. Real recipient and Outlook composer human UAT remains open.

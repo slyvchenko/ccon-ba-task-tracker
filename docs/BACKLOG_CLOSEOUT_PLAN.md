@@ -69,3 +69,7 @@
 ### Post-#40 update
 
 PR #40 implements verified source-cache invalidation and strictly one-to-one REST↔supplier candidate pairing. **Live Kibana authorization, verified supplier contract mapping and gold-set BA acceptance remain open**: engineering success is not human signoff. Next package is #41, focused on source-backed Jira task drafts, recipients, supplier XML attachment and manual email handoff.
+
+### Post-#41 update
+
+The generated email no longer asserts a verified supplier archive when only a subset of required Jira flow ZIPs is current. Standalone normalization is conservative; unknown readiness is a QA blocker. Real recipient routing, supplier method approval, Jira output accuracy and manual sending remain independent BA gates. Next thematic package: #42 (rapid action/focus cycle).
