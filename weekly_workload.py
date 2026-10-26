@@ -100,7 +100,9 @@ def weekly_report(root=ROOT, week=None, *, today=None):
                         state.get("analysisVerified") is True and
                         previous.get("manualStatus", "AUTO") == "AUTO" and
                         state.get("manualStatus", "AUTO") == "AUTO" and
-                        previous.get("signal") == state.get("signal"))
+                        previous.get("signal") == state.get("signal") and
+                        previous.get("jiraStatus") == state.get("jiraStatus") and
+                        previous.get("active") == state.get("active"))
                     if not metadata_upgrade:
                         prior = _status(previous)
                         current = _status(state)
