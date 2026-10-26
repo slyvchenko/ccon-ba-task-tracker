@@ -72,7 +72,7 @@
 | UI-07 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Correct recovery action in each state |
 | PERF-05 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No focus/aria regression; compare 500/1000 |
 | PERF-07 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Named Windows machine p50/p95, memory trend |
-| PERF-08 | P1 | PLANNED | Розробити код + синтетичні тести; потім реальна перевірка. | Fetch selected only on selection/revision, compare versions |
+| PERF-08 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Fetch selected only on selection/revision, compare versions |
 | REL-04 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No error swallowed; error state shown, P-12 |
 | REL-05 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No database damage/partial save, Windows UAT |
 | REL-06 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | v2.23→current, old DB revision initialized once |
