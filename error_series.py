@@ -121,6 +121,13 @@ def investigate_cases(cases, key, supplier, *, code=None, max_cases=MAX_CASES,
     else:
         filtered = all_cases
     selected = filtered[:max_cases]
+    # A flow without the requested error may be useful for human comparison,
+    # but absence of a parsed code cannot prove successful execution.
+    # Keep contrast separate from selected affected flows and don't inflate
+    # error prevalence or mutate sampling denominators.
+    contrast = ([x for x in all_cases if code not in x["observations"]["codes"]]
+                if code else [])
+    contrast_ids = [x["flowId"] for x in contrast[:10]]
     groups = {}
     for case in selected:
         observations = case["observations"]
@@ -208,11 +215,18 @@ def investigate_cases(cases, key, supplier, *, code=None, max_cases=MAX_CASES,
         gaps.append("Окрема errors папка недоступна в частині flows; це не означає відсутність помилок.")
     if any(c["observations"]["hasAmbiguousMapping"] for c in selected):
         gaps.append("Є неоднозначне спарювання REST ↔ supplier; вимагати correlation/time context.")
+    if code and not contrast_ids:
+        gaps.append("У локальній вибірці немає окремого flow без цільового коду: потрібен авторизований контрольний приклад.")
+    if contrast_ids:
+        gaps.append("Контрастний flow лише без спостереженого цільового коду; це НЕ доказ успішної операції.")
     gaps.append("Без успішних контрприкладів і перевірених supplier/API contracts першопричина не підтверджена.")
     return {
         "schemaVersion": 1, "issueKey": key, "supplier": supplier,
         "requestedErrorCode": code, "maxCases": max_cases,
         "availableUniqueFlows": len(filtered), "analyzedCases": len(selected),
+        "contrastCandidateCount": len(contrast),
+        "contrastCandidateFlowIds": contrast_ids,
+        "contrastInterpretation": "NO_TARGET_ERROR_CODE_OBSERVED_NOT_SUCCESS_PROOF",
         "sampling": "FIRST_N_BY_FLOW_ID_DETERMINISTIC_NOT_STATISTICALLY_REPRESENTATIVE",
         "scope": "LOCAL_DOWNLOADED_MANIFESTS_ONLY",
         "source": "Kibana linked or CCON ZIPs manually downloaded by authorized local Codex",

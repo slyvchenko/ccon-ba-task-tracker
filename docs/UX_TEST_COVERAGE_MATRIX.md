@@ -184,3 +184,7 @@ New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, 
 ## v2.43: priority invariants and opt-in recipient
 
 `tests/priority-hard-lanes.test.mjs`: active sprint vs backlog across score range; WRITE > READY same lane; manual DONE under open backlog; unverified not promoted; quick effort hints do not mutate sorting. `browser_e2e.py`: synthetic AF/KL-like task shows empty recipient until explicitly using template; deleting it and Save/Reload retains blank. No supplier address validity is proven, and actual live BA UAT is still required.
+
+## v2.44: RCA contrast candidate safety
+
+`tests/test_error_series.py` verifies distinct same-issue/supplier contrast candidates are deduplicated and bounded, absent-code candidates cannot inflate affected-case prevalence, missing contrast is a visible gap, and no-root-cause-proof labels survive. Corporate supplier success remains outside synthetic CI.

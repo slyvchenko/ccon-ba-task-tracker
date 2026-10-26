@@ -366,3 +366,11 @@
 - Deterministic tests cover active sprint vs outside task, WRITE before READY regardless of score 0–100, DONE below open, unverified membership outside sprint, no quick/effort-induced rank mutation.
 - Source verification and actual effort/UX gain remain **P0/P1 human UAT**, not a synthetic PASS.
 
+
+### v2.44 #44: контрприклади для error-series не є успіхом
+
+- `error_series.investigate_cases` показує максимум 10 окремих candidate contrast flows того самого issue/supplier без цільового коду, з окремим загальним count.
+- Випадки без помилки **не входять** до знаменника/групи affected cases і ніколи не означають успішний REST/supplier обмін. `ROOT_CAUSE_UNCONFIRMED` не змінюється.
+- Присутність/відсутність contrasts та помилки в source ZIP лишаються лише даними для ручного BA review. Human successful-case classification і контракт supplier відкриті як UAT.
+- `docs/RCA_CONTRAST_VALIDATION.md` та розширені `tests/test_error_series.py` із синтетичними негативними випадками.
+

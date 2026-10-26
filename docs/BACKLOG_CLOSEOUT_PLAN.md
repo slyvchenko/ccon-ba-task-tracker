@@ -81,3 +81,7 @@ A single in-memory last-local-DONE undo provides a fast correction protected by 
 ### Post-#43 update
 
 Hard sprint/WRITE/DONE ordering is protected by additional score-extreme tests. Supplier addresses are now explicit opt-in suggestions rather than being silently inferred from the task title. Actual recipient correctness and BA time-to-action are not established by this code. Next package #44 targets error-series RCA/source-retention semantics and reproducible counterexamples.
+
+### Post-#44 update
+
+Error-code-specific RCA now offers at most ten separate same-issue/supplier contrast candidate flows where that code was not observed. Contrast is neither a successful operation nor statistical causality; full authenticated source and independent expert UAT remain required. Next #45: bounded recovery/security hardening.
