@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 78,
-      "PLANNED": 4
+      "PARTIAL": 79,
+      "PLANNED": 3
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 63,
-    "no_direct_locator": 60
+    "code_plus_test_locators": 64,
+    "no_direct_locator": 59
   },
   "items": [
     {
@@ -1239,15 +1239,15 @@
     {
       "id": "PRIOR-09",
       "priority": "P2",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.7 local read-only WIP/blocker/rework weekly aggregates; real multiweek BA UAT open)",
+      "category": "PARTIAL",
       "requirement": "Show weekly WIP / blockers / completion versus rework",
       "acceptance_criteria": "Not a gamified Done count, J-01",
       "suggested_batch": "#43",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
+      "code_locator": "weekly_workload.py",
+      "test_locator": "tests/test_weekly_workload.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
