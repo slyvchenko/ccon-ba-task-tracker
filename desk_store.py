@@ -60,6 +60,10 @@ class Desk:
     @contextmanager
     def connect(self):
         c = sqlite3.connect(self.db, timeout=10)
+        # Explicitly keep SQLite's strongest ordinary rollback-journal commit
+        # synchronization even when a caller changed connection defaults.
+        # Hardware power-loss durability still needs device-level validation.
+        c.execute('PRAGMA synchronous=FULL')
         c.row_factory = sqlite3.Row
         try:
             with c:
