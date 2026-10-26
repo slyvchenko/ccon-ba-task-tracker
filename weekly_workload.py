@@ -87,7 +87,9 @@ def weekly_report(root=ROOT, week=None, *, today=None):
             if start <= when < end:
                 total_events += 1
                 touched.add(key)
-                if previous and previous.get("active", False):
+                # Archived tasks keep known previous revisions. Their later
+                # return may legitimately complete or reopen an older task.
+                if previous:
                     prior = _status(previous)
                     current = _status(state)
                     if prior != "DONE" and current == "DONE":
