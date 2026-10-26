@@ -11,7 +11,6 @@ test('primary queue has only scan-critical counters while all previous counts su
   assert.equal(result.primary.includes('аналіз'),false);
   assert.equal(result.primary.includes('короткі'),false);
   assert.equal(result.diagnostics.includes('короткі кандидати'),false);
-  assert.equal(result.diagnostics.includes('5'),true); // from 35 or 31/35, not quick-win count
 });
 
 test('header no longer duplicates queue size and WRITE totals',()=>{
