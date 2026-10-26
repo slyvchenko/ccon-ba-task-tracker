@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 76,
-      "PLANNED": 6
+      "PARTIAL": 78,
+      "PLANNED": 4
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 61,
-    "no_direct_locator": 62
+    "code_plus_test_locators": 63,
+    "no_direct_locator": 60
   },
   "items": [
     {
@@ -1209,30 +1209,30 @@
     {
       "id": "PRIOR-07",
       "priority": "P2",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.6 local opt-in manual time-to-handoff aggregates by BA archetype; real measurement UAT open)",
+      "category": "PARTIAL",
       "requirement": "Time-to-handoff metrics by real work archetype",
       "acceptance_criteria": "Local opt-in, no PII, no cloud telemetry",
       "suggested_batch": "#43",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
+      "code_locator": "local_handoff_metrics.py",
+      "test_locator": "tests/test_local_handoff_metrics.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
     {
       "id": "PRIOR-08",
       "priority": "P2",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.6 user-entered anonymized priority band corrections; no auto ranking feedback, human UAT open)",
+      "category": "PARTIAL",
       "requirement": "Feedback on wrong priority captured as manual correction",
       "acceptance_criteria": "Never silently retrain queue ranking; human UAT",
       "suggested_batch": "#43",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
+      "code_locator": "local_handoff_metrics.py",
+      "test_locator": "tests/test_local_handoff_metrics.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
