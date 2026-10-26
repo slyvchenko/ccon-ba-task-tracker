@@ -50,6 +50,7 @@
   "confluence_local.py",
   "dashboard.html",
   "desk_store.py",
+  "docs/A11Y_FINAL_SCOPE_REVIEW.md",
   "docs/BACKLOG_ACCEPTANCE_LEDGER.json",
   "docs/BACKLOG_CLOSEOUT_PLAN.md",
   "docs/BACKLOG_RECONCILIATION.md",
