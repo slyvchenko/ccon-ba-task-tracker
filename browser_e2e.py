@@ -7,6 +7,7 @@ Run: python -m pip install playwright==1.56.0
 Never exercises real Jira, Outlook, mailto sending or external attachments.
 Not included in Python-only startup dependencies.
 """
+import hashlib
 import json
 import os
 import statistics
@@ -517,6 +518,76 @@ class BrowserRegression(unittest.TestCase):
         self.assertNotIn("Поки не визначено — потрібен аналіз контексту.",
                          self.page.locator("#detail").inner_text())
         self.assertEqual(self.page.locator("#questionTracker").count(),1)
+
+    def test_long_technical_pnr_rest_rules_and_repeatable_viewport_snapshots(self):
+        # UI-08/UI-10 synthetic geometry and same-content pixel repeatability.
+        # This does not replace a reviewed cross-commit visual baseline.
+        pnr="LONGPNR" + "ZX97YJ" * 35
+        condition="Order/SegmentRefID/" + pnr + "/DeliveryStatusCode=REMOVED"
+        outcome="DoNotReturn/" + pnr + "/REST.RS.segment"
+        doc=fixture_document("2026-10-26T11:30:00Z")
+        doc["tasks"][0]["analysis"]["briefing"]={
+            "overviewUk":"Synthetic IF/THEN source review",
+            "currentUk":"Synthetic API returns a segment",
+            "targetUk":"Synthetic API must exclude segment under condition",
+            "businessImpactUk":"Synthetic test only",
+            "technicalScopeUk":"REST Read PNR / Booking response",
+            "readiness":"NEEDS_CONFIRMATION",
+            "readinessReasonUk":"Requires independent QA and supplier proof",
+            "sourceAudit":[],
+            "confirmedFacts":[],
+            "timeline":[],
+            "rules":[{"whenUk":condition,"thenUk":outcome,"certainty":"OPEN",
+                      "sourceUrl":"https://example.invalid/technical"}],
+            "verification":[],
+            "unknownsUk":["Synthetic long token requires visual review"],
+            "risksUk":[]
+        }
+        self.snapshot.write_text(json.dumps(doc),encoding="utf-8")
+        self.desk.import_snapshot()
+        signatures={}
+        for width,height in ((320,850),(768,900),(1440,900)):
+            self.page.set_viewport_size({"width":width,"height":height})
+            self.page.reload(wait_until="domcontentloaded")
+            self.choose("CCON-1")
+            self.page.locator(".ba-brief details").filter(
+                has_text="Правила IF / THEN").locator("summary").click()
+            self.page.locator(".ba-brief .technical-token").first.wait_for()
+            values=self.page.locator(".ba-brief .technical-token").all_text_contents()
+            self.assertEqual(values,[condition,outcome])
+            geometry=self.page.evaluate("""() => {
+                const tokens=[...document.querySelectorAll('.ba-brief .technical-token')];
+                return {
+                    viewport:document.documentElement.clientWidth,
+                    document:document.documentElement.scrollWidth,
+                    tokens:tokens.map(el=>({
+                        overflowWrap:getComputedStyle(el).overflowWrap,
+                        whiteSpace:getComputedStyle(el).whiteSpace,
+                        scrollWidth:el.scrollWidth,
+                        clientWidth:el.clientWidth
+                    }))
+                };
+            }""")
+            self.assertLessEqual(geometry["document"],geometry["viewport"]+2,geometry)
+            for token in geometry["tokens"]:
+                self.assertEqual(token["overflowWrap"],"anywhere")
+                self.assertEqual(token["whiteSpace"],"pre-wrap")
+            first=self.page.locator(".ba-brief").screenshot()
+            signature=hashlib.sha256(first).hexdigest()
+            self.page.reload(wait_until="domcontentloaded")
+            self.choose("CCON-1")
+            self.page.locator(".ba-brief details").filter(
+                has_text="Правила IF / THEN").locator("summary").click()
+            second=self.page.locator(".ba-brief").screenshot()
+            self.assertEqual(first,second,
+                             f"unchanged synthetic technical panel changed at {width}px")
+            signatures[str(width)]=signature
+            self.page.screenshot(path=str(ARTIFACTS/
+                f"synthetic-technical-long-{width}.png"),full_page=True)
+        ARTIFACTS.joinpath("synthetic-technical-visual-hashes.json").write_text(
+            json.dumps({"syntheticOnly":True,"sameCommitRepeatability":True,
+                        "notCrossVersionApproval":True,"sha256ByViewport":signatures},
+                       indent=2),encoding="utf-8")
 
     def test_three_viewports_and_short_soak_no_external_writes(self):
         self.choose("CCON-2")
