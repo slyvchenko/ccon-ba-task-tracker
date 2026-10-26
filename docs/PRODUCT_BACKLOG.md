@@ -341,3 +341,12 @@
 - `tests/test_value_mapping.py` and `tests/test_evidence_provenance_40.py` contain synthetic collision, incompleteness, no-token-leak and source version cases. `docs/EVIDENCE_PROVENANCE_CONTRACT.md` details the live BA UAT matrix.
 - **EVD-03, EVD-06, EVD-13, BA-09, OUT-04, QA-08 retain their human source-accuracy UAT requirements.** They are not auto-promoted from PARTIAL to DONE.
 
+
+### v2.41 #41: truth-preserving handoff improvements
+
+- `supplier_zip_ready` now requires **overall READY** state across all expected flows. One clean ZIP out of two is PARTIAL, not permission to assert attachments.
+- `normalize_draft` no longer adds `Logs are attached` by default: only a caller supplying `attachment_ready=True` can generate it, idempotently. `make_ready_draft` forwards the real state; no automatic email send/Jira update.
+- `email_checks` treats **unknown** (`None`) ZIP readiness as unverified, blocking affirmative attachment claims without source validation.
+- Positive, partial, no-ZIP and manually authored/legacy body regressions are synthetic and do not establish real supplier, correct recipient, exact REST behavior or human BA approval.
+- Full boundary contract and practical UAT: `docs/HANDOFF_GATE_CONTRACT.md`. BA-01/02/05, OUT-01/02 and QUICK-02/03/04 remain source/business UAT gates, not automatically DONE.
+
