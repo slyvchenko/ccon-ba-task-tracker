@@ -4,12 +4,14 @@ import {queueSummary,queueEmptyState,conciseSnapshotInfo,statusPresentation,
   shouldRenderBriefing,assessmentReason} from '../assets/visual-clarity.mjs';
 
 test('primary queue has only scan-critical counters while all previous counts survive',()=>{
-  const result=queueSummary({visible:17,sprint:8,write:4,active:35,analyzed:31,quick:5,unverified:2});
+  const result=queueSummary({visible:17,sprint:8,write:4,active:35,analyzed:31,unverified:2});
   assert.equal(result.primary,'17 у списку · спринт 8 · листи 4');
-  for(const text of ['35','31/35','5','2'])
+  for(const text of ['35','31/35','2'])
     assert.ok(result.diagnostics.includes(text));
   assert.equal(result.primary.includes('аналіз'),false);
   assert.equal(result.primary.includes('короткі'),false);
+  assert.equal(result.diagnostics.includes('короткі кандидати'),false);
+  assert.equal(result.diagnostics.includes('5'),true); // from 35 or 31/35, not quick-win count
 });
 
 test('header no longer duplicates queue size and WRITE totals',()=>{
@@ -48,7 +50,14 @@ test('avoid duplicate empty briefing and reason only, no loss of real data',()=>
   assert.equal(shouldRenderBriefing(undefined),false);
   assert.equal(shouldRenderBriefing(null),false);
   assert.equal(shouldRenderBriefing([]),false);
-  assert.equal(shouldRenderBriefing({confirmedFacts:[]}),true);
+  assert.equal(shouldRenderBriefing({confirmedFacts:[]}),false);
+  assert.equal(shouldRenderBriefing({confirmedFacts:[],rules:[],timeline:[]}),false);
+  assert.equal(shouldRenderBriefing({currentUk:'   ',targetUk:'',unknownsUk:[]}),false);
+  assert.equal(shouldRenderBriefing({readiness:'INSUFFICIENT_CONTEXT'}),true);
+  assert.equal(shouldRenderBriefing({confirmedFacts:[{textUk:'Synthetic fact',sourceUrl:'https://example.invalid'}]}),true);
+  assert.equal(shouldRenderBriefing({rules:[{whenUk:'IF A',thenUk:'THEN B'}]}),true);
+  assert.equal(shouldRenderBriefing({unknownsUk:['Needs source review']}),true);
+  assert.equal(shouldRenderBriefing({currentUk:'Synthetic verified state'}),true);
   assert.equal(assessmentReason(null),'');
   assert.equal(assessmentReason('  '),'');
   assert.equal(assessmentReason(' Supplier requires new RT fields '),'Supplier requires new RT fields');
