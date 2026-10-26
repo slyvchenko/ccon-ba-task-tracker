@@ -14,7 +14,7 @@ class AuditTest(unittest.TestCase):
         self.assertEqual(report["counts"]["total"], 129)
         self.assertEqual(report["counts"]["reported_statuses"], {
             "DEFERRED": 4, "GATE": 3, "IMPLEMENTED": 40,
-            "PARTIAL": 69, "PLANNED": 13)
+            "PARTIAL": 69, "PLANNED": 13})
         items = report["items"]
         self.assertEqual(len(items), len({x["id"] for x in items}))
         self.assertTrue(all(x["suggested_batch"] and x["acceptance_criteria"] for x in items))
