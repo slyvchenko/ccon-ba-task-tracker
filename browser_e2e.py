@@ -513,7 +513,7 @@ class BrowserRegression(unittest.TestCase):
         self.page.reload(wait_until="domcontentloaded")
         self.choose("CCON-1")
         self.assertEqual(self.page.locator("#detail .ba-brief").count(),0)
-        self.assertEqual(self.page.locator("#detail .analysis-missing").count(),1)
+        self.assertEqual(self.page.locator("#detail .analysis-missing").filter(has_text="Для цієї задачі ще немає повного аналізу").count(),1)
         self.assertNotIn("Поки не визначено — потрібен аналіз контексту.",
                          self.page.locator("#detail").inner_text())
         self.assertEqual(self.page.locator("#questionTracker").count(),1)
