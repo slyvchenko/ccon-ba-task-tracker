@@ -5,7 +5,7 @@ import {detailContentFingerprint,createDetailRequestScope} from '../assets/detai
 test('a new global snapshot timestamp and unrelated task do not invalidate selected detail',()=>{
   const selected={key:'CCON-1',manualRevision:3,analysis:{signal:'WRITE',standardDescription:'Synthetic A'}};
   const snapshot1={at:'2026-10-26T12:00:00Z',tasks:[selected,{key:'CCON-2',summary:'Old'}]};
-  const snapshot2={at:'2026-10-26T12:30:00Z',tasks:[structuredClone(selected),{key:'CCON-2',summary:'New'}]};
+  const snapshot2={at:'2026-10-26T12:30:00Z',tasks:[{...structuredClone(selected),importedAt:'2026-10-26T12:30:00Z'},{key:'CCON-2',summary:'New'}]};
   assert.equal(detailContentFingerprint(snapshot1.tasks[0]),detailContentFingerprint(snapshot2.tasks[0]));
   assert.notEqual(detailContentFingerprint(snapshot1.tasks[1]),detailContentFingerprint(snapshot2.tasks[1]));
   assert.equal(detailContentFingerprint(null),'');
