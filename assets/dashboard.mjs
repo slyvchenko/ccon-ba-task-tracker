@@ -185,14 +185,13 @@ function renderList() {
   updateSnapshotInfo();
   const items = visibleTasks(), current = tasks.filter(task => task.active), analyzed = current.filter(hasAnalysis).length;
   const mailCount = tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length;
-  const potentialQuick = current.filter(quickWinCandidate).length;
   $('bulkEmail').textContent = `${mailActionLabels().batch} (${mailCount})`;
   $('bulkEmail').disabled = !mailCount || busy;
   $('bulkEmail').hidden = cloudMode;
   const verified = current.filter(task => task.activeSprintStatus === 'VERIFIED').length;
   const sprintCount = current.filter(task => task.activeSprintStatus === 'VERIFIED' && task.activeSprint).length;
   const summary=queueSummary({visible:items.length,sprint:sprintCount,
-    write:mailCount,active:current.length,analyzed,quick:potentialQuick,
+    write:mailCount,active:current.length,analyzed,
     unverified:current.length-verified});
   $('count').textContent=summary.primary;
   $('countDetails').textContent=summary.diagnostics;
@@ -474,7 +473,7 @@ function renderDetail() {
           <details class="description"><summary>Рішення та їхня історія</summary>
             <div id="decisionTracker" class="question-tracker muted">Завантажую рішення…</div>
           </details>
-          ${missing.length ? '<ol class="missing-info">' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : `<p class="muted">${analyzed ? 'Аналіз не виявив додаткових питань. Перевір пояснення та джерела нижче.' : 'Поки не визначено — потрібен аналіз контексту.'}</p>`}
+          ${missing.length ? '<ol class="missing-info">' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : analyzed ? '<p class="muted">Аналіз не виявив додаткових питань. Перевір пояснення та джерела нижче.</p>' : ''}
           <details class="description"><summary>Підтвердження з REST / Supplier / Errors</summary>
             <div id="evidenceSummary" class="muted">Завантажую…</div>
           </details>
