@@ -191,6 +191,43 @@ class OfflineRecoveryTests(unittest.TestCase):
         for item in (self.root/"backups").glob("backup-*.sqlite3.json"):
             verify_backup(self.root,item.name[:-5])
 
+    def test_backup_manifest_time_cannot_claim_wrong_filename_or_future_freshness(self):
+        from local_backup import _validated_creation_time, _recent_backup
+        made=create_backup(self.root,force=True,keep=0)
+        path=self.root/"backups"/(made["filename"]+".json")
+        original=json.loads(path.read_text())
+        name=made["filename"]
+        stamp=_validated_creation_time(name,original["createdAt"])
+        self.assertEqual(stamp.tzinfo.utcoffset(stamp).total_seconds(),0)
+        for unsafe in ("2099-01-01T00:00:00Z", "2026-10-26T05:00:00",
+                       "not-a-date"):
+            changed=dict(original,createdAt=unsafe)
+            path.write_text(json.dumps(changed),encoding="utf-8")
+            with self.subTest(created=unsafe),self.assertRaises(ValueError):
+                verify_backup(self.root,name)
+            self.assertFalse(backup_status(self.root)["available"])
+        path.write_text(json.dumps(original),encoding="utf-8")
+        self.assertTrue(verify_backup(self.root,name)["verified"])
+        self.assertTrue(_recent_backup(self.root,24))
+
+    def test_clock_skew_does_not_prevent_future_snapshot_backup(self):
+        from unittest.mock import patch
+        from local_backup import _recent_backup
+        made=create_backup(self.root,force=True,keep=0)
+        metadata=self.root/"backups"/(made["filename"]+".json")
+        # Simulate a machine clock moved backward by hours after a backup.
+        real=__import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+        class FakeDatetime:
+            @staticmethod
+            def now(tz=None):
+                return real-__import__("datetime").timedelta(hours=3)
+            @staticmethod
+            def fromisoformat(value):
+                return __import__("datetime").datetime.fromisoformat(value)
+        with patch("local_backup.datetime",FakeDatetime):
+            self.assertFalse(_recent_backup(self.root,24))
+        self.assertTrue(metadata.is_file()) # Never delete old valid points.
+
     def test_snapshot_does_not_corrupt_backup_or_live_notes(self):
         self.saved("manual",0)
         original=create_backup(self.root,force=True)
