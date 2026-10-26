@@ -224,6 +224,9 @@ class OfflineRecoveryTests(unittest.TestCase):
             @staticmethod
             def fromisoformat(value):
                 return __import__("datetime").datetime.fromisoformat(value)
+            @staticmethod
+            def strptime(value, fmt):
+                return __import__("datetime").datetime.strptime(value,fmt)
         with patch("local_backup.datetime",FakeDatetime):
             self.assertFalse(_recent_backup(self.root,24))
         self.assertTrue(metadata.is_file()) # Never delete old valid points.
