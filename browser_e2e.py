@@ -347,8 +347,11 @@ class BrowserRegression(unittest.TestCase):
             self.assertEqual(self.page.locator(selector).count(),1,selector)
         self.assertTrue(self.page.locator("#copyEmail").is_visible())
         self.assertTrue(self.page.locator("#email").is_visible())
+        # :focus-visible is defined for keyboard navigation, not necessarily
+        # programmatic .focus() in Chromium forced-colors emulation.
         self.page.locator("#copyEmail").focus()
-        focus=self.page.locator("#copyEmail").evaluate(
+        self.page.keyboard.press("Tab")
+        focus=self.page.locator("#email").evaluate(
             "(el)=>({focused:document.activeElement===el,outline:getComputedStyle(el).outlineStyle})")
         self.assertTrue(focus["focused"])
         self.assertNotEqual(focus["outline"],"none")
