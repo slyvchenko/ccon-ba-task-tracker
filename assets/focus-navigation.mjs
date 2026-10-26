@@ -90,6 +90,23 @@ export function restoreEditorFocus(detail, focus, {focusElement=true} = {}) {
   return true;
 }
 
+// Explicit user-triggered handoffs only. After an async save/dialog rerender,
+// focus a live enabled action instead of leaving keyboard users on <body>.
+// Never use this from polling, background refresh or unrelated events.
+export function focusAfterAction(root, candidateIds) {
+  if (!root || !Array.isArray(candidateIds)) return false;
+  for (const id of candidateIds) {
+    if (typeof id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9]*$/.test(id)) continue;
+    const target = root.getElementById?.(id) || root.querySelector?.('#'+id);
+    if (!target || target.isConnected === false || target.disabled ||
+        target.hidden || target.closest?.('[hidden]')) continue;
+    if (typeof target.focus !== 'function') continue;
+    target.focus({preventScroll:true});
+    return true;
+  }
+  return false;
+}
+
 export function sanitizeSessionFocus(candidate) {
   const selected = typeof candidate?.selected === 'string' &&
     TASK_KEY.test(candidate.selected) ? candidate.selected : null;

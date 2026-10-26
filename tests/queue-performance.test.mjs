@@ -123,3 +123,33 @@ test('debouncer combines rapid search edits, flushes on navigation, and can canc
   assert.equal(processed,2);
   assert.equal(debounce.pending(),false);
 });
+
+test('session-only pin outranks score only inside identical hard sprint and action groups',()=>{
+  const item=(key,{sprint=true,signal='READY',score=10}={})=>({
+    key,active:true,activeSprintStatus:'VERIFIED',activeSprint:sprint,
+    manualStatus:'AUTO',blocking:false,analysis:{
+      signal,reasonUk:'Synthetic',nextActionUk:'Check',queueScore:score,
+      needsEmail:signal==='WRITE'
+    }
+  });
+  const sprintWrite=item('CCON-1',{signal:'WRITE',score:5});
+  const sprintReadyHigh=item('CCON-2',{score:90});
+  const sprintReadyLow=item('CCON-3',{score:10});
+  const backlogWrite=item('CCON-4',{sprint:false,signal:'WRITE',score:100});
+  const tasks=[backlogWrite,sprintReadyLow,sprintReadyHigh,sprintWrite];
+  const baseline=rankTasks(tasks).map(t=>t.key);
+  assert.deepEqual(baseline,['CCON-1','CCON-2','CCON-3','CCON-4']);
+  assert.deepEqual(rankTasks(tasks,{pinnedKey:'CCON-3'}).map(t=>t.key),
+    ['CCON-1','CCON-3','CCON-2','CCON-4']);
+  assert.deepEqual(rankTasks(tasks,{pinnedKey:'CCON-4'}).map(t=>t.key),baseline);
+  assert.deepEqual(rankTasks(tasks,{pinnedKey:'malformed'}).map(t=>t.key),baseline);
+  const model=createQueueModel();
+  assert.deepEqual(model.rankedTasks(tasks).map(t=>t.key),baseline);
+  assert.equal(model.setPinnedKey('CCON-3'),'CCON-3');
+  assert.deepEqual(model.rankedTasks(tasks).map(t=>t.key),
+    ['CCON-1','CCON-3','CCON-2','CCON-4']);
+  assert.equal(model.setPinnedKey('bad'),null);
+  assert.deepEqual(model.rankedTasks(tasks).map(t=>t.key),baseline);
+  assert.deepEqual(tasks.map(t=>t.key),
+    ['CCON-4','CCON-3','CCON-2','CCON-1']);
+});

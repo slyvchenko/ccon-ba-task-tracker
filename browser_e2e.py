@@ -196,6 +196,81 @@ class BrowserRegression(unittest.TestCase):
         self.choose("CCON-2")
         self.assertEqual(self.page.locator("#draftTo").input_value(),"")
 
+    def test_personal_focus_pin_is_session_only_and_cannot_bypass_sprint_write(self):
+        document=fixture_document()
+        document["tasks"][0]["analysis"]["priorityFactors"]={
+            "businessImpact":25,"urgency":20,"dependencies":15,
+            "baDecision":20,"actionability":8}
+        extra=json.loads(json.dumps(document["tasks"][0]))
+        extra["key"]="CCON-4"
+        extra["summary"]="Synthetic higher score same action group"
+        extra["analysis"].pop("priorityFactors")
+        extra["analysis"]["queueScore"]=95
+        document["tasks"].append(extra)
+        self.snapshot.write_text(json.dumps(document),encoding="utf-8")
+        self.desk.import_snapshot()
+        self.page.reload()
+        self.page.locator('#list button[data-key="CCON-4"]').wait_for()
+        def order():
+            return self.page.locator('#list button[data-key]').evaluate_all(
+                "(nodes)=>nodes.map(node=>node.dataset.key)")
+        self.assertEqual(order(),["CCON-2","CCON-4","CCON-1","CCON-3"])
+        self.choose("CCON-1")
+        self.page.locator("summary").filter(
+            has_text="Пріоритет і орієнтовний обсяг").click()
+        self.assertIn("Вплив: 25/25",self.page.locator(".effort-summary").inner_text())
+        self.assertIn("Терміновість: 20/25",self.page.locator(".effort-summary").inner_text())
+        self.page.locator("#pinDeepWork").click()
+        self.assertEqual(order(),["CCON-2","CCON-1","CCON-4","CCON-3"])
+        self.assertTrue(self.page.locator("#pinDeepWork").evaluate(
+            "(node)=>document.activeElement===node"))
+        self.assertEqual(self.page.evaluate(
+            "()=>sessionStorage.getItem('ccon-ba-desk.personal-focus-pin.v1')"),
+            "CCON-1")
+        self.page.reload()
+        self.page.locator('#list button[data-key="CCON-4"]').wait_for()
+        self.assertEqual(order(),["CCON-2","CCON-1","CCON-4","CCON-3"])
+        self.choose("CCON-1")
+        # View-state restore can keep this existing <details> open after reload.
+        if not self.page.locator("#pinDeepWork").is_visible():
+            self.page.locator("summary").filter(
+                has_text="Пріоритет і орієнтовний обсяг").click()
+        self.page.locator("#pinDeepWork").click()
+        self.assertEqual(order(),["CCON-2","CCON-4","CCON-1","CCON-3"])
+        self.assertIsNone(self.page.evaluate(
+            "()=>sessionStorage.getItem('ccon-ba-desk.personal-focus-pin.v1')"))
+        self.assertEqual(next(t for t in self.desk.view()["tasks"] if t["key"]=="CCON-1")
+                         ["analysis"]["queueScore"],88)
+
+    def test_save_restores_focus_to_enabled_note_not_hidden_save(self):
+        self.choose("CCON-1")
+        self.page.locator("#note").fill("Synthetic save focus check")
+        self.page.locator("#save").click()
+        self.page.wait_for_function(
+            "()=>document.querySelector('#savedIndicator')?.hidden===false")
+        self.page.wait_for_function(
+            "()=>document.activeElement?.id==='note'")
+        self.assertTrue(self.page.locator("#note").is_enabled())
+        self.assertTrue(self.page.locator("#save").is_hidden())
+        self.assertEqual(self.page.locator("#note").input_value(),
+                         "Synthetic save focus check")
+
+    def test_bulk_failure_focuses_retry_and_escape_returns_to_launcher(self):
+        self.page.route("**/api/email/open-batch",lambda route:route.fulfill(
+            status=503,content_type="application/json",
+            body='{"error":"Synthetic retry only"}'))
+        self.page.locator("#bulkEmail").click()
+        self.page.locator("#bulkDialog").wait_for(state="visible")
+        self.assertTrue(self.page.locator("#bulkOpen").is_enabled())
+        self.page.locator("#bulkOpen").click()
+        self.page.wait_for_function(
+            "()=>document.activeElement?.id==='bulkOpen' && "
+            "!document.querySelector('#bulkOpen').disabled")
+        self.page.keyboard.press("Escape")
+        self.page.locator("#bulkDialog").wait_for(state="hidden")
+        self.assertTrue(self.page.locator("#bulkEmail").evaluate(
+            "(node)=>document.activeElement===node"))
+
     def test_bulk_modal_escape_restores_focus_and_never_opens_email(self):
         requests=[]
         self.page.on("request",lambda req: requests.append(req.url)

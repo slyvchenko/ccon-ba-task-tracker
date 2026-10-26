@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {shortcutAction, adjacentTaskKey, isTextEditingTarget, captureTaskView,
-  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus}
+  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
   from '../assets/focus-navigation.mjs';
 
 const event=(key,options={})=>({key,altKey:false,ctrlKey:false,metaKey:false,
@@ -96,4 +96,26 @@ test('per-tab persisted view excludes note contents, PNR and invalid arbitrary k
   assert.ok(!JSON.stringify(safe).includes(dirtyNote));
   assert.deepEqual(sanitizeSessionFocus({selected:'not-an-issue',views:null}),
     {selected:null,views:{}});
+});
+
+test('async handoff restores focus only to live, enabled and visible explicit action',()=>{
+  let focused='';
+  const nodes={
+    bulkOpen:{disabled:true,isConnected:true,focus:()=>{focused='bulkOpen';}},
+    bulkClose:{disabled:false,isConnected:true,focus:()=>{focused='bulkClose';}},
+    email:{disabled:false,isConnected:false,focus:()=>{focused='email';}},
+    draftBody:{disabled:false,isConnected:true,hidden:true,
+      focus:()=>{focused='draftBody';}}
+  };
+  const root={getElementById:id=>nodes[id] || null};
+  assert.equal(focusAfterAction(root,['bulkOpen','bulkClose']),true);
+  assert.equal(focused,'bulkClose');
+  nodes.bulkOpen.disabled=false;
+  assert.equal(focusAfterAction(root,['bulkOpen','bulkClose']),true);
+  assert.equal(focused,'bulkOpen');
+  focused='';
+  assert.equal(focusAfterAction(root,['email','draftBody']),false);
+  assert.equal(focused,'');
+  assert.equal(focusAfterAction(root,['../bad']),false);
+  assert.equal(focusAfterAction(null,['bulkOpen']),false);
 });

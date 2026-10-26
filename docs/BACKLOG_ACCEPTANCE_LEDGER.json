@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 71,
-      "PLANNED": 11
+      "PARTIAL": 74,
+      "PLANNED": 8
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 56,
-    "no_direct_locator": 67
+    "code_plus_test_locators": 59,
+    "no_direct_locator": 64
   },
   "items": [
     {
@@ -1089,30 +1089,30 @@
     {
       "id": "FOCUS-07",
       "priority": "P2",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.3 session-only pin within sprint/action group, reset and Chromium; human UAT open)",
+      "category": "PARTIAL",
       "requirement": "Pin personal deep-work task без зміни official Jira priority",
       "acceptance_criteria": "Manual pin only within lane; clear override and reset",
       "suggested_batch": "#42",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
+      "code_locator": "assets/task-rules.mjs",
+      "test_locator": "tests/queue-performance.test.mjs",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
     {
       "id": "FOCUS-08",
       "priority": "P2",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.3 focus after Save/bulk retry/mailto, Chromium synthetic; native mail client UAT open)",
+      "category": "PARTIAL",
       "requirement": "Відновити фокус після bulk dialog/mailto/error",
       "acceptance_criteria": "A-01/A-11; action accessible",
       "suggested_batch": "#42",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
+      "code_locator": "assets/focus-navigation.mjs",
+      "test_locator": "tests/focus-navigation.test.mjs",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
@@ -1179,15 +1179,15 @@
     {
       "id": "PRIOR-05",
       "priority": "P1",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.3 independent impact/urgency/effort/unblocking dimensions; >90% human ranking acceptance open)",
+      "category": "PARTIAL",
       "requirement": "Separate impact, urgency, effort and unblocking from arbitrary speed score",
       "acceptance_criteria": "Explainable, human acceptance > 90% ordering confidence",
       "suggested_batch": "#43",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "assets/fast-handoff.mjs",
+      "test_locator": "tests/fast-handoff.test.mjs",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },

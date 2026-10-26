@@ -4,7 +4,7 @@ import {rankTasks,filterTasks} from './task-rules.mjs';
 
 export function createQueueModel() {
   let source = null, ranked = [], filteredSource = null, filteredKey = '',
-      filtered = [], revision = 0, index = new WeakMap();
+      filtered = [], revision = 0, index = new WeakMap(), pinnedKey = null;
   const stats = {rankingBuilds:0,filterBuilds:0,indexBuilds:0};
 
   function searchText(task) {
@@ -29,7 +29,7 @@ export function createQueueModel() {
   function rankedTasks(items) {
     if (items !== source) {
       source=items;
-      ranked=rankTasks(items);
+      ranked=rankTasks(items,{pinnedKey});
       filteredSource=null;
       index=new WeakMap();
       stats.rankingBuilds++;
@@ -56,7 +56,16 @@ export function createQueueModel() {
     index=new WeakMap();
   }
 
-  return {rankedTasks,visibleTasks,invalidate,stats};
+  function setPinnedKey(key) {
+    const next = typeof key === 'string' && /^CCON-\d+$/.test(key) ? key : null;
+    if (next !== pinnedKey) {
+      pinnedKey=next;
+      invalidate();
+    }
+    return pinnedKey;
+  }
+
+  return {rankedTasks,visibleTasks,invalidate,setPinnedKey,stats};
 }
 
 export function selectedAfterFilter(visibleItems,selected,{protectEditor=false}={}) {

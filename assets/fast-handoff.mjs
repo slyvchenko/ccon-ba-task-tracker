@@ -48,6 +48,23 @@ export function priorityExplanation(task) {
     score, activeSprint, write, signal};
 }
 
+// Distinguish why work matters from how long it may take. A synthetic/AI
+// score is not a completion-speed forecast and never overrides sprint/WRITE.
+export function priorityDimensions(task, effort) {
+  const factors = hasAnalysis(task) ? analysisOf(task).priorityFactors : null;
+  const number = (name,max) => Number.isInteger(factors?.[name]) &&
+    factors[name] >= 0 && factors[name] <= max
+    ? factors[name] + '/' + max : 'не підтверджено';
+  return {
+    impact:number('businessImpact',25),
+    urgency:number('urgency',25),
+    dependencies:number('dependencies',20),
+    effort:effort?.label || 'Не оцінено',
+    effortSource:effort?.source === 'MANUAL' ? 'моя оцінка' : 'гіпотеза, низька впевненість',
+    unblocking:task?.blocking === true ? 'підтверджено' : 'не підтверджено',
+  };
+}
+
 export function completionPrompt(task) {
   const signal = effectiveSignal(task);
   const warning = signal === 'WRITE' ? 'Лист має бути відправлений вручну, не лише скопійований чи відкритий.\n'

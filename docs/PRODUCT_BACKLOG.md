@@ -122,13 +122,13 @@
 | FOCUS-04 | P1 | PARTIAL (native details and progressive labels; user deep-evidence UAT pending) | Розділити high-signal інфо та deep evidence в existing details | No extra tabs/modes; J-03/J-06 |
 | FOCUS-05 | P1 | PARTIAL (v2.49.1 scroll-only compact next-action bar in existing detail; mobile/NVDA/native BA acceptance open) | Sticky next-action/progress microheader в існуючій detail pane | No page redesign; responsive A-03/A-04 |
 | FOCUS-06 | P1 | PARTIAL (v2.30 never rerender focused detail, restore keyboard row and typed cursor; browser traces pending) | Захист від фонових тостів/DOM rerender під час набору тексту | No focus loss, cursor jump, stale overwrite |
-| FOCUS-07 | P2 | PLANNED | Pin personal deep-work task без зміни official Jira priority | Manual pin only within lane; clear override and reset |
-| FOCUS-08 | P2 | PLANNED | Відновити фокус після bulk dialog/mailto/error | A-01/A-11; action accessible |
+| FOCUS-07 | P2 | PARTIAL (v2.50.3 session-only pin within sprint/action group, reset and Chromium; human UAT open) | Pin personal deep-work task без зміни official Jira priority | Manual pin only within lane; clear override and reset |
+| FOCUS-08 | P2 | PARTIAL (v2.50.3 focus after Save/bulk retry/mailto, Chromium synthetic; native mail client UAT open) | Відновити фокус після bulk dialog/mailto/error | A-01/A-11; action accessible |
 | PRIOR-01 | P0 | PARTIAL (v2.29 manual XS–XL persisted + LOW confidence heuristic; real effort calibration pending) | EffortEstimate XS/S/M/L/XL/UNKNOWN, provenance and confidence | Human-reviewed or source-derived; never business truth guess |
 | PRIOR-02 | P0 | PARTIAL (v2.28 visible existing lane/WRITE/signal/score/blocker breakdown, human validation open) | Explain order: sprint → real WRITE → signal → score → blocker | Ranking reason for 100% selected tasks; J-02 |
 | PRIOR-03 | P0 | PARTIAL (v2.29 combinatorial status/sprint/signal/score invariants; broad randomized tests next) | Hard invariant tests for all sprint/WRITE/Done/stale permutations | Property-based synthetic test set, no cross-lane promotion |
 | PRIOR-04 | P1 | PARTIAL (v2.29 display-only quick-win hints; UX evidence/time-to-handoff pending) | Visible quick win candidates only in same hard-priority bucket | Time benefit cannot overtake urgent sprint/blocker |
-| PRIOR-05 | P1 | PLANNED | Separate impact, urgency, effort and unblocking from arbitrary speed score | Explainable, human acceptance > 90% ordering confidence |
+| PRIOR-05 | P1 | PARTIAL (v2.50.3 independent impact/urgency/effort/unblocking dimensions; >90% human ranking acceptance open) | Separate impact, urgency, effort and unblocking from arbitrary speed score | Explainable, human acceptance > 90% ordering confidence |
 | PRIOR-06 | P1 | PARTIAL (manual owner, waitingOn, due/review dates and overdue; no-duplicate-letter UAT open) | Waiting sweep follow-up due date and owner with no repeat letter | Due status visible, source-backed, J-05 |
 | PRIOR-07 | P2 | PLANNED | Time-to-handoff metrics by real work archetype | Local opt-in, no PII, no cloud telemetry |
 | PRIOR-08 | P2 | PLANNED | Feedback on wrong priority captured as manual correction | Never silently retrain queue ranking; human UAT |
