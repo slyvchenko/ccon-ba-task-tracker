@@ -38,7 +38,8 @@ def _status(state):
         if manual == "DONE":
             return "DONE"
         return "BLOCKED" if manual in BLOCKED else "WIP"
-    # Older history has no verified freshness marker; treat it conservatively.\n    signal = state.get("signal") if state.get("analysisVerified") is True else None
+    # Older history has no verified freshness marker; treat it conservatively.
+    signal = state.get("signal") if state.get("analysisVerified") is True else None
     if signal == "DONE":
         return "DONE"
     if signal == "WAIT":
