@@ -13,13 +13,29 @@ class AuditTest(unittest.TestCase):
         report = audit.produce()
         self.assertEqual(report["counts"]["total"], 129)
         self.assertEqual(report["counts"]["reported_statuses"], {
-            "DEFERRED": 4, "GATE": 3, "IMPLEMENTED": 37,
-            "NEXT": 1, "PARTIAL": 52, "PLANNED": 32})
+            "DEFERRED": 4, "GATE": 3, "IMPLEMENTED": 40,
+            "PARTIAL": 61, "PLANNED": 21})
         items = report["items"]
         self.assertEqual(len(items), len({x["id"] for x in items}))
         self.assertTrue(all(x["suggested_batch"] and x["acceptance_criteria"] for x in items))
         self.assertTrue(all(x["human_acceptance"] == "NOT_RECORDED" for x in items))
         self.assertTrue(all(x["disposition"] != "DONE" for x in items))
+
+    def test_post_v2481_reconciliation_is_code_only_not_human_signoff(self):
+        rows = {item["id"]: item for item in audit.produce()["items"]}
+        code_reported = {"QUICK-06", "QA-09", "OPS-01"}
+        newly_partial = {"QUICK-04", "QUICK-07", "FOCUS-04", "PRIOR-06",
+                         "UI-05", "UI-09", "A11Y-06", "REL-06", "SEC-02", "SEC-03"}
+        self.assertTrue(all(rows[key]["category"] == "IMPLEMENTED" for key in code_reported))
+        self.assertTrue(all(rows[key]["category"] == "PARTIAL" for key in newly_partial))
+        self.assertTrue(all(rows[key]["code_locator"] for key in code_reported | newly_partial))
+        self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
+                            for key in rows))
+        self.assertEqual(len(rows), 129)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 45)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 79)
+        for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
+            self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
     def test_p0_business_gates_cannot_become_done_by_code_only(self):
         rows = {x["id"]: x for x in audit.produce()["items"]}
