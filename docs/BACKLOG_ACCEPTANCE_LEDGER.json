@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 74,
-      "PLANNED": 8
+      "PARTIAL": 72,
+      "PLANNED": 10
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 59,
-    "no_direct_locator": 64
+    "code_plus_test_locators": 57,
+    "no_direct_locator": 66
   },
   "items": [
     {
@@ -1639,15 +1639,15 @@
     {
       "id": "REL-10",
       "priority": "P2",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.4 source-only SHA256 release integrity verification and non-deploying rollback preflight; independent signing and old-version migration UAT open)",
+      "category": "PARTIAL",
       "requirement": "Safe signed release/backup metadata and rollback rehearsal",
       "acceptance_criteria": "Verify hashes; old app loads additive migration",
       "suggested_batch": "#45",
       "disposition": "OPTIONAL_SCOPE_REVIEW",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "release_integrity.py",
+      "test_locator": "tests/test_release_integrity.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
