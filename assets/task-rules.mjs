@@ -73,7 +73,7 @@ function actionRank(task) {
 // sprint lane and action group. It never promotes backlog over sprint or
 // non-WRITE over WRITE and never changes Jira/SQLite task priority.
 function rankTasks(tasks, {pinnedKey=null}={}) {
-  const pin = /^CCON-\\d+$/.test(pinnedKey || '') ? pinnedKey : null;
+  const pin = /^CCON-\d+$/.test(pinnedKey || '') ? pinnedKey : null;
   return tasks.map((task, index) => ({task, index})).sort((left, right) => {
     const lane = priorityLane(left.task) - priorityLane(right.task);
     const group = actionRank(left.task) - actionRank(right.task);
