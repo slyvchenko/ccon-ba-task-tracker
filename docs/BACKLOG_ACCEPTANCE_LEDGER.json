@@ -1307,7 +1307,7 @@
       "requirement": "Readable PNR/field/code formatting and safe wrapping",
       "acceptance_criteria": "No truncation in clipboard/export, A-06",
       "suggested_batch": "#47",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
       "code_locator": "assets/dashboard.mjs",
       "test_locator": "browser_e2e.py",
       "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
