@@ -26,7 +26,9 @@ def preview(root=ROOT, days=365, *, now=None):
     if stamp.tzinfo is None:
         raise ValueError("Cutoff time must have timezone")
     cutoff = (stamp.astimezone(timezone.utc)-timedelta(days=days)).isoformat()
-    with sqlite3.connect(path.as_uri()+"?mode=ro", uri=True) as conn:
+    # sqlite3 connection context only commits/rolls back; Windows needs an
+    # explicit close before temporary folders or restored files are removed.
+    with closing(sqlite3.connect(path.as_uri()+"?mode=ro", uri=True)) as conn:
         total = conn.execute("SELECT COUNT(*) FROM task_history").fetchone()[0]
         # Always retain the latest history record per task, even if old.
         # A preview is not approval to delete anything.
