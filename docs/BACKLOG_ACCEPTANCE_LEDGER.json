@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 64,
-      "PLANNED": 18
+      "PARTIAL": 65,
+      "PLANNED": 17
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 47,
-    "no_direct_locator": 76
+    "code_plus_test_locators": 49,
+    "no_direct_locator": 74
   },
   "items": [
     {
@@ -1059,15 +1059,15 @@
     {
       "id": "FOCUS-05",
       "priority": "P1",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.49.1 scroll-only compact next-action bar in existing detail; mobile/NVDA/native BA acceptance open)",
+      "category": "PARTIAL",
       "requirement": "Sticky next-action/progress microheader в існуючій detail pane",
       "acceptance_criteria": "No page redesign; responsive A-03/A-04",
       "suggested_batch": "#42",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "assets/dashboard.mjs",
+      "test_locator": "browser_e2e.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
@@ -1412,15 +1412,15 @@
     {
       "id": "PERF-05",
       "priority": "P1",
-      "reported_status": "PARTIAL (v2.31 delegated clicks and focused-row update without full list repaint; windowing requires browser profiling)",
+      "reported_status": "PARTIAL (v2.49.1 keyed DOM patch for unchanged 100–1000-row queue plus delegated actions; live 500/1000 Windows p95 pending)",
       "category": "PARTIAL",
       "requirement": "Event delegation and scrolling for large task list",
       "acceptance_criteria": "No focus/aria regression; compare 500/1000",
       "suggested_batch": "#46",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "assets/queue-dom.mjs",
+      "test_locator": "tests/queue-dom.test.mjs",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },

@@ -62,7 +62,7 @@
 | QUICK-07 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. Перевірити перетин: VIS-01, VIS-04. | User 5-second scan, no loss of proof status |
 | FOCUS-03 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Keyboard-only critical path A-01; no destructive collision |
 | FOCUS-04 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No extra tabs/modes; J-03/J-06 |
-| FOCUS-05 | P1 | PLANNED | Розробити код + синтетичні тести; потім реальна перевірка. | No page redesign; responsive A-03/A-04 |
+| FOCUS-05 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No page redesign; responsive A-03/A-04 |
 | FOCUS-06 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No focus loss, cursor jump, stale overwrite |
 | PRIOR-04 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Time benefit cannot overtake urgent sprint/blocker |
 | PRIOR-05 | P1 | PLANNED | Розробити код + синтетичні тести; потім реальна перевірка. | Explainable, human acceptance > 90% ordering confidence |
