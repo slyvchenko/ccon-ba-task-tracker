@@ -28,7 +28,7 @@
 
 ### Звірка коду після v2.48.1 (26.10.2026)
 
-- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **65 PARTIAL**, **17 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
+- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **67 PARTIAL**, **15 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
 - Зіставлено й перекласифіковано **15 окремих ID** за конкретним source/test evidence (13 у #53, ще UI-07 і QA-14 у #54). Решта **114** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
 - `IMPLEMENTED` означає лише підтверджений механізм (synthetic/code), `PARTIAL` - лише частину критеріїв, `PLANNED` - критерії не закрито. Оригінальні 37/52/32/1 у розділі v2.39 нижче - **історичний baseline**, а не поточні числа.
 - Незмінні external gates: реальні Jira/Kibana/CCON, 26 gold cases, людський UX, native Edge/NVDA/8h, Windows backup/restore та локальне оновлення. CI не доводить business signoff.
@@ -136,9 +136,9 @@
 | UI-05 | P1 | PARTIAL (synthetic 320px responsive checks; 768/1440 native viewport UAT open) | Density and hierarchy audit at 320/768/1440 viewport | A-03; no horizontal overflow/hidden primary action |
 | UI-06 | P1 | PARTIAL (v2.30 unsaved/saving/error/CAS conflict states; real error and screen reader UAT open) | Clear statuses saved, unsaved, saving, failed, stale | A-07/A-12 and race tests |
 | UI-07 | P1 | PARTIAL (distinct no-snapshot/empty/filtered/stale states; 403/permissions UX and Windows UAT open) | Distinct empty / unavailable / permissions / stale / no matches states | Correct recovery action in each state |
-| UI-08 | P2 | PLANNED | Readable PNR/field/code formatting and safe wrapping | No truncation in clipboard/export, A-06 |
+| UI-08 | P2 | PARTIAL (v2.49.3 lossless technical IF/THEN wrapping and 320/768/1440 Chromium checks; native source/UAT open) | Readable PNR/field/code formatting and safe wrapping | No truncation in clipboard/export, A-06 |
 | UI-09 | P2 | PARTIAL (native evidence disclosures and labels; human 5-second scan pending) | Default collapsed evidence sections after human 5-sec test | Keep main results visible, never bury next action |
-| UI-10 | P2 | PLANNED | Visual diff regression for existing layout and copy buttons | Snapshot on 3 viewport sizes; no brand approval bypass |
+| UI-10 | P2 | PARTIAL (v2.49.3 3-viewport synthetic screenshot repeatability and layout guardrails; cross-version approved golden baseline open) | Visual diff regression for existing layout and copy buttons | Snapshot on 3 viewport sizes; no brand approval bypass |
 | PERF-01 | P0 | IMPLEMENTED (v2.26 code; live measurements pending) | Monotonic SQLite revision + light task token endpoint | P-01..P-08 + HTTP auth and payload reduction |
 | PERF-02 | P0 | IMPLEMENTED (v2.26 code; browser UAT pending) | Load full tasks only on revision change, hidden tab idle | P-02/P-11/P-12, no false staleness |
 | PERF-03 | P0 | IMPLEMENTED (v2.26 code; browser UAT pending) | Skip expensive no-query search path and early reject | P-09/P-10, Unicode and sprint regression |
