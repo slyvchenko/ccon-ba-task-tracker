@@ -406,6 +406,57 @@ class BrowserRegression(unittest.TestCase):
             timeout=15000)
         self.assertTrue(any("/api/evidence/CCON-1" in url for url in requests))
 
+    def test_keyed_queue_keeps_unmodified_dom_and_focused_row(self):
+        # PERF-05: one edited row in a 500-item synthetic snapshot must not
+        # destroy the 499 unchanged DOM buttons or their native focus.
+        doc={"generatedAt":"2026-10-26T10:00:00Z","tasks":[{
+            "key":f"CCON-{1000+i}","summary":f"Synthetic case {i}",
+            "activeSprint":True,"activeSprintStatus":"VERIFIED",
+            "analysis":{"signal":"READY","queueScore":50,"reasonUk":"Synthetic"}
+        } for i in range(500)]}
+        self.snapshot.write_text(json.dumps(doc),encoding="utf-8")
+        self.desk.import_snapshot()
+        self.page.reload(wait_until="domcontentloaded")
+        self.page.wait_for_function(
+            "() => document.querySelectorAll('#list button[data-key]').length===500",
+            timeout=20000)
+        target=self.page.locator('#list button[data-key="CCON-1100"]')
+        target.focus()
+        self.page.evaluate("""() => {
+            window.__originalRow=document.querySelector('#list button[data-key="CCON-1100"]');
+            window.__changingRow=document.querySelector('#list button[data-key="CCON-1300"]');
+        }""")
+        doc["generatedAt"]="2026-10-26T10:01:00Z"
+        doc["tasks"][300]["summary"]="Updated synthetic row 300"
+        self.snapshot.write_text(json.dumps(doc),encoding="utf-8")
+        self.desk.import_snapshot()
+        self.page.evaluate("window.dispatchEvent(new Event('online'))")
+        self.page.wait_for_function(
+            "() => document.querySelector('#list button[data-key=CCON-1300]')?.textContent.includes('Updated synthetic row 300')",
+            timeout=15000)
+        state=self.page.evaluate("""() => ({
+            rowUnchanged:window.__originalRow===document.querySelector('#list button[data-key="CCON-1100"]'),
+            changedReplaced:window.__changingRow!==document.querySelector('#list button[data-key="CCON-1300"]'),
+            focused:document.activeElement===window.__originalRow,
+            count:document.querySelectorAll('#list button[data-key]').length
+        })""")
+        self.assertEqual(state,{"rowUnchanged":True,"changedReplaced":True,
+                                "focused":True,"count":500})
+
+    def test_sticky_next_action_only_after_scrolling_existing_detail(self):
+        self.choose("CCON-2")
+        self.assertTrue(self.page.locator("#stickyAction").is_hidden())
+        self.page.locator("#detail").evaluate("(el)=>el.scrollTop=900")
+        self.page.wait_for_function(
+            "() => document.querySelector('#stickyAction')?.hidden===false",
+            timeout=10000)
+        self.assertEqual(self.page.locator("#stickyCopyNext").count(),1)
+        self.assertTrue(self.page.locator("#stickyCopyNext").is_visible())
+        self.page.locator("#detail").evaluate("(el)=>el.scrollTop=0")
+        self.page.wait_for_function(
+            "() => document.querySelector('#stickyAction')?.hidden===true",
+            timeout=10000)
+
     def test_three_viewports_and_short_soak_no_external_writes(self):
         self.choose("CCON-2")
         for width,height in [(320,800),(768,900),(1440,900)]:
