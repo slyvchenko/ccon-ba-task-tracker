@@ -108,8 +108,8 @@
 | UI-09 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-06, VIS-10. | Keep main results visible, never bury next action |
 | UI-10 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-15. | Snapshot on 3 viewport sizes; no brand approval bypass |
 | PERF-09 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-15. | No unexpected fonts/spacing/contrast changes |
-| PERF-10 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | Do not enable blindly; Windows/backup compatibility |
-| REL-09 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | No unexpected data deletion, archive user-approved |
+| PERF-10 | P2 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Do not enable blindly; Windows/backup compatibility |
+| REL-09 | P2 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No unexpected data deletion, archive user-approved |
 | REL-10 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | Verify hashes; old app loads additive migration |
 | A11Y-05 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | A-05/A-10 |
 | A11Y-06 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-14. | A-09 and touch accuracy |
