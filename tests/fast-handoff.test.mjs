@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {quickHandoff, priorityExplanation, completionPrompt}
+import {quickHandoff, priorityExplanation, priorityDimensions, completionPrompt}
   from '../assets/fast-handoff.mjs';
 import {rankTasks} from '../assets/task-rules.mjs';
 
@@ -103,4 +103,30 @@ test('quick action metadata never mutates task or human text', () => {
   priorityExplanation(item);
   completionPrompt(item);
   assert.deepEqual(item,original);
+});
+
+test('impact, urgency, dependencies, effort and unblocking are independent of speed and pin',()=>{
+  const item=task('CCON-220');
+  item.analysis.priorityFactors={
+    businessImpact:25,urgency:20,dependencies:15,baDecision:20,actionability:8
+  };
+  item.analysis.queueScore=88;
+  const dimensions=priorityDimensions(item,{
+    label:'M · 5–20 хв',source:'MANUAL'
+  });
+  assert.deepEqual(dimensions,{
+    impact:'25/25',urgency:'20/25',dependencies:'15/20',
+    effort:'M · 5–20 хв',effortSource:'моя оцінка',
+    unblocking:'не підтверджено'
+  });
+  item.blocking=true;
+  assert.equal(priorityDimensions(item,{label:'XL',source:'HEURISTIC'}).unblocking,
+    'підтверджено');
+  assert.equal(priorityDimensions(item,{label:'XL',source:'HEURISTIC'}).effortSource,
+    'гіпотеза, низька впевненість');
+  const stale=task('CCON-221');
+  stale.analysis.priorityFactors={businessImpact:100,urgency:100};
+  stale.analysis.contextFingerprint='stale';
+  assert.equal(priorityDimensions(stale,null).impact,'не підтверджено');
+  assert.equal(priorityDimensions(stale,null).urgency,'не підтверджено');
 });
