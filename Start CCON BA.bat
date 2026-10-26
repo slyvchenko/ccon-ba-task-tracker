@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set "PYTHONUTF8=1"
 cd /d "%~dp0"
 set "DESK_OPEN=--open"
 if /I "%~1"=="--scheduled" set "DESK_OPEN="
