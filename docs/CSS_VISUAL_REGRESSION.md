@@ -23,3 +23,11 @@ Rewriting all ~1500 lines of responsive CSS in one PR would increase regression 
 ## Next backlog
 
 See `docs/BACKLOG_CLOSEOUT_PLAN.md` for the whole 129-row inventory and recommended **10 additional scoped PR (#39–48)** for the local product, plus mandatory independent gold-case/Windows UAT. Deferred cloud P3 features are not implicitly accepted.
+
+## PR #58 (v2.49.3): технічні поля і repeatability-baseline
+
+- Без зміни бренду чи двоколонкової архітектури технічні поля **IF / THEN** отримали семантичний `code.technical-token` з `overflow-wrap:anywhere` і `white-space:pre-wrap`. Значення PNR, `SegmentRefID`, `DeliveryStatusCode` і REST-ідентифікаторів не обрізаються, не скорочуються й не змінюються у вихідному тексті. CSS також дозволяє переносити довгі значення в таблицях доказів, але зберігає локальну прокрутку `.evidence-scroll` для складних таблиць.
+- Безпечна CSS-консолідація: канонічний `.row-title` тепер має фінальне значення margin без другого дубльованого правила; перший `.row .badge` більше не містить трьох властивостей, які одразу перекривалися іншим правилом. Адаптивні media query (320/750/1150/1700) та стилі forced colors навмисно **не об'єднували**.
+- Synthetic Chromium для **320 / 768 / 1440 px** перевіряє точність `textContent` двох довгих технічних полів, відсутність горизонтального переповнення сторінки й однаковий PNG байт-в-байт після перезавантаження того самого fixture при тій самій ширині. Кожен CI-запуск зберігає synthetic screenshot та SHA-256 у browser-only артефактах. Це тест на внутрішню **repeatability**, не pixel baseline проти попереднього релізу.
+- Потрібне незалежне порівняння скріншотів `main` до/після на Windows Chrome/Edge, DPI і 100/200/400% zoom, перевірка реальних довгих supplier/REST trace, незалежне схвалення стилю/бренду. Не проголошувати UI-08 чи UI-10 `IMPLEMENTED` або human-approved без цього доказу; обидва залишаються `PARTIAL`.
+- Всі 129 вимог збережено. Немає змін у серверній схемі, алгоритмі пріоритетів, ручних Jira/email діях, локальних даних, копіюванні та експорті.
