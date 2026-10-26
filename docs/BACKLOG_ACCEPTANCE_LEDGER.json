@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 63,
-      "PLANNED": 19
+      "PARTIAL": 64,
+      "PLANNED": 18
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 46,
-    "no_direct_locator": 77
+    "code_plus_test_locators": 47,
+    "no_direct_locator": 76
   },
   "items": [
     {
@@ -1457,15 +1457,15 @@
     {
       "id": "PERF-08",
       "priority": "P1",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (PR #55 task-specific detail fingerprint plus stale same-key request guards; native Windows perf/UAT open)",
+      "category": "PARTIAL",
       "requirement": "Avoid repeated heavyweight detail fetch on list refresh",
       "acceptance_criteria": "Fetch selected only on selection/revision, compare versions",
       "suggested_batch": "#46",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "assets/detail-refresh-policy.mjs",
+      "test_locator": "tests/detail-refresh-policy.test.mjs",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
