@@ -180,3 +180,7 @@ New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, 
 ## v2.42: undo safety and real browser focus
 
 `tests/manual-done-undo.test.mjs`: token validation, wrong issue, stale revision, inactive task, once-only DONE undo; payload sends exact expectedManualRevision and status only, never Jira/email. `browser_e2e.py`: actual Chromium Done confirmation → successful SQLite save → click undo → original manual status restored. Real Windows keyboard/time-to-action and human semantic approval remain open.
+
+## v2.43: priority invariants and opt-in recipient
+
+`tests/priority-hard-lanes.test.mjs`: active sprint vs backlog across score range; WRITE > READY same lane; manual DONE under open backlog; unverified not promoted; quick effort hints do not mutate sorting. `browser_e2e.py`: synthetic AF/KL-like task shows empty recipient until explicitly using template; deleting it and Save/Reload retains blank. No supplier address validity is proven, and actual live BA UAT is still required.
