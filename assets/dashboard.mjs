@@ -9,6 +9,7 @@ import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
   from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, priorityDimensions, completionPrompt} from './fast-handoff.mjs';
+import {CANDIDATE_TEMPLATES,candidateTemplateFor} from './candidate-templates.mjs';
 import {handoffCopyPolicy,mailActionLabels} from './handoff-ui-policy.mjs';
 import {advancedFilterSummary,evidenceSectionLabel} from './progressive-layout.mjs';
 import {queueSummary,queueEmptyState,conciseSnapshotInfo,statusPresentation,shouldRenderBriefing,assessmentReason} from './visual-clarity.mjs';
@@ -466,6 +467,14 @@ function renderDetail() {
         ${handoff.showFastCopy ? `<button id="copyFastDescription" class="quiet" ${handoff.fastEnabled ? '' : 'disabled'}>${escapeHtml(handoff.fastLabel)}</button>` : ''}
       </div>
       <p class="muted quick-proof-note">${escapeHtml(quick.evidenceNote)}</p>
+      ${task.active && effectiveSignal(task)!=='DONE' ? `<details class="description" id="candidateTemplates"><summary>Шаблони для дрібних BA задач</summary>
+        <p class="muted">Лише порожні каркаси. Жодного підтвердження джерела чи виконаної дії.</p>
+        <label for="candidateTemplate">Оберіть каркас</label>
+        <select id="candidateTemplate" aria-label="Кандидатний BA шаблон"><option value="">Оберіть тип задачі</option>${CANDIDATE_TEMPLATES.map(item=>`<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`).join('')}</select>
+        <p id="candidateNotice" class="muted" role="status">Дані задачі не підставляються автоматично.</p>
+        <pre id="candidatePreview" class="pre" hidden></pre>
+        <button id="copyCandidate" class="quiet" type="button" disabled>Скопіювати порожній каркас</button>
+      </details>` : ''}
       <details class="description"><summary>Пріоритет і орієнтовний обсяг</summary>
         <p class="muted effort-summary">${escapeHtml(
           'Вплив: ' + dimensions.impact + ' · Терміновість: ' + dimensions.urgency +
@@ -592,6 +601,23 @@ function renderDetail() {
   });
   $('manualEffort').addEventListener('change', captureForm);
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
+  if ($('candidateTemplate')) {
+    const select=$('candidateTemplate');
+    const preview=$('candidatePreview');
+    const button=$('copyCandidate');
+    const notice=$('candidateNotice');
+    select.addEventListener('change',()=>{
+      const candidate=candidateTemplateFor(task,select.value);
+      preview.textContent=candidate?.text || '';
+      preview.hidden=!candidate;
+      button.disabled=!candidate;
+      notice.textContent=candidate?.notice || 'Дані задачі не підставляються автоматично.';
+    });
+    button.addEventListener('click',()=>{
+      const candidate=candidateTemplateFor(task,select.value);
+      if(candidate)copyText(candidate.text,'Порожній каркас скопійовано. Перевір джерела й заповни вручну.');
+    });
+  }
   if ($('copyNext')) $('copyNext').addEventListener('click', () =>
     copyText(quick.nextAction, 'Дію скопійовано. Це не означає її виконання.'));
   if ($('stickyCopyNext')) $('stickyCopyNext').addEventListener('click', () =>
