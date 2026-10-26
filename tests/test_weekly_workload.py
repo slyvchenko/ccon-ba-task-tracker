@@ -34,7 +34,7 @@ class WeeklyWorkloadTests(unittest.TestCase):
         self.append("CCON-16", "2026-10-24T10:00:00+00:00", "AUTO")
 
     def append(self, key, timestamp, status, active=True, signal=None):
-        with sqlite3.connect(self.db) as conn:
+        with closing(sqlite3.connect(self.db)) as conn:
             conn.execute("INSERT INTO task_history(task_key,recorded_at,snapshot_json) "
                          "VALUES(?,?,?)", (
                              key, timestamp, json.dumps({
