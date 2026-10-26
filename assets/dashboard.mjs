@@ -13,6 +13,7 @@ import {handoffCopyPolicy,mailActionLabels} from './handoff-ui-policy.mjs';
 import {advancedFilterSummary,evidenceSectionLabel} from './progressive-layout.mjs';
 import {queueSummary,queueEmptyState,conciseSnapshotInfo,statusPresentation,shouldRenderBriefing,assessmentReason} from './visual-clarity.mjs';
 import {createQueueModel,createSearchDebouncer,selectedAfterFilter} from './queue-performance.mjs';
+import {createQueueDomRenderer} from './queue-dom.mjs';
 import {createReconnectPolicy} from './reconnect-policy.mjs';
 import {EFFORT_LABELS, effortInfo, quickWinCandidate, quickWinExplanation} from './effort-planning.mjs';
 import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
@@ -33,6 +34,7 @@ let signature = '', renderedTaskVersion = '', renderedTaskKey = null, pendingDet
 let currentRevision = null, currentRevisionError = '', pollingInFlight = false, pollCycle = 0;
 const transportRecovery=createReconnectPolicy();
 const queueModel=createQueueModel();
+const queueDom=createQueueDomRenderer();
 const detailRequests=createDetailRequestScope(()=>selected);
 const searchRefresh=createSearchDebouncer(()=>applyFilters());
 const forms = new Map();
@@ -197,18 +199,22 @@ function renderList() {
   $('advancedFilterCount').textContent=advancedFilterSummary({
     signal:$('signalFilter').value,sprint:$('sprintFilter').value});
   let previousGroup = '';
-  $('list').innerHTML = items.map((task, index) => {
+  const entries=[];
+  items.forEach((task, index) => {
     const scope = ['Активний спринт · головна черга', 'Поза активним спринтом / не підтверджено', 'Завершені', 'Архів'][priorityLane(task)];
     const group = scope + ' · ' + ['Можна просувати зараз', 'Очікуємо', 'Завершені', 'Відсутні в останньому snapshot'][queueTier(task)];
-    const heading = group !== previousGroup ? `<div class="queue-group" role="heading" aria-level="3">${escapeHtml(group)}</div>` : '';
+    if (group !== previousGroup) entries.push({id:'group:'+index+':'+group,
+      html:`<div class="queue-group" role="heading" aria-level="3">${escapeHtml(group)}</div>`});
     previousGroup = group;
-    return `${heading}<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${quickWinCandidate(task) ? '<span class="effort-hint" role="note" aria-label="Можлива коротка дія: орієнтовний час, не підтверджено. Пріоритет черги незмінний." title="Можлива коротка дія, оцінка орієнтовна. Порядок черги не змінено.">S?</span>' : ''}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`;
-  }).join('') || (() => {
+    entries.push({id:'task:'+task.key,html:`<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${quickWinCandidate(task) ? '<span class="effort-hint" role="note" aria-label="Можлива коротка дія: орієнтовний час, не підтверджено. Пріоритет черги незмінний." title="Можлива коротка дія, оцінка орієнтовна. Порядок черги не змінено.">S?</span>' : ''}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`});
+  });
+  if (!entries.length) {
     const state=queueEmptyState({visible:items.length,total:tasks.length,
       hasSnapshot:!!latest,importError:!!currentRevisionError});
-    return '<div class="empty queue-empty" role="status" data-state="' +
-      escapeHtml(state.kind) + '">' + escapeHtml(state.text) + '</div>';
-  })();
+    entries.push({id:'empty:'+state.kind,html:'<div class="empty queue-empty" role="status" data-state="' +
+      escapeHtml(state.kind) + '">' + escapeHtml(state.text) + '</div>'});
+  }
+  queueDom.render($('list'),entries);
   $('list').scrollTop = previousListScroll;
   if ($('list').closest('aside')) $('list').closest('aside').scrollTop = previousSidebarScroll;
   // innerHTML replaces buttons: restore keyboard focus only if it WAS on
