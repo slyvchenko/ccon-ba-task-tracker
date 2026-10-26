@@ -91,12 +91,23 @@ def weekly_report(root=ROOT, week=None, *, today=None):
                 # Archived tasks keep known previous revisions. Their later
                 # return may legitimately complete or reopen an older task.
                 if previous:
-                    prior = _status(previous)
-                    current = _status(state)
-                    if prior != "DONE" and current == "DONE":
-                        completed.add(key)
-                    if prior == "DONE" and current != "DONE":
-                        reopened.add(key)
+                    # Upgrading the old history schema from an unverified
+                    # signal to a verified marker is not evidence of a newly
+                    # completed BA task. Preserve the as-of state, but do not
+                    # count metadata-only changes as work transitions.
+                    metadata_upgrade = (
+                        "analysisVerified" not in previous and
+                        state.get("analysisVerified") is True and
+                        previous.get("manualStatus", "AUTO") == "AUTO" and
+                        state.get("manualStatus", "AUTO") == "AUTO" and
+                        previous.get("signal") == state.get("signal"))
+                    if not metadata_upgrade:
+                        prior = _status(previous)
+                        current = _status(state)
+                        if prior != "DONE" and current == "DONE":
+                            completed.add(key)
+                        if prior == "DONE" and current != "DONE":
+                            reopened.add(key)
             latest[key] = state
     active_states = [x for x in latest.values() if x.get("active", False)]
     wip = sum(_status(x) == "WIP" for x in active_states)
