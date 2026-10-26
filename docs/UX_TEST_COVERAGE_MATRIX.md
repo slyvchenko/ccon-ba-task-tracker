@@ -188,3 +188,7 @@ New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, 
 ## v2.44: RCA contrast candidate safety
 
 `tests/test_error_series.py` verifies distinct same-issue/supplier contrast candidates are deduplicated and bounded, absent-code candidates cannot inflate affected-case prevalence, missing contrast is a visible gap, and no-root-cause-proof labels survive. Corporate supplier success remains outside synthetic CI.
+
+## v2.45: local backup clock validation
+
+`tests/test_local_backup.py`: filename/UTC metadata consistency, forged future or timezone-free manifest rejection, and clock-rollback eligibility; existing offline restore/repair/corrupt WAL/SQLite tests remain. Real Windows Task Scheduler, file locks, BitLocker and forced-power-loss testing are not covered by Linux CI.

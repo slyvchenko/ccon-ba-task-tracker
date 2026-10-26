@@ -78,6 +78,25 @@ def _check_database(path):
         connection.close()
 
 
+def _validated_creation_time(filename, created_at):
+    """Cross-check UTC filename and metadata time; reject forged freshness."""
+    if not NAME.fullmatch(filename) or not isinstance(created_at, str):
+        raise ValueError("Invalid backup creation identity.")
+    try:
+        timestamp = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        name_timestamp = datetime.strptime(
+            filename[len("backup-"):len("backup-") + 16],
+            "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        raise ValueError("Invalid backup creation timestamp.") from None
+    if timestamp.tzinfo is None:
+        raise ValueError("Backup creation time must include UTC timezone.")
+    timestamp = timestamp.astimezone(timezone.utc)
+    if abs((timestamp - name_timestamp).total_seconds()) >= 1:
+        raise ValueError("Backup filename and manifest creation time differ.")
+    return timestamp
+
+
 def _ordered_manifests(folder):
     """Sort by UTC creation timestamp, not same-second random filename suffix."""
     entries = []
@@ -134,7 +153,10 @@ def _recent_backup(root, interval_hours):
         return False
     try:
         stamp = datetime.fromisoformat(info["createdAt"].replace("Z", "+00:00"))
-        return datetime.now(timezone.utc) - stamp < timedelta(hours=interval_hours)
+        age = datetime.now(timezone.utc) - stamp
+        # A future-dated (clock-skewed) backup must not suppress fresh copies
+        # indefinitely. Preserve the old backup but create another one.
+        return timedelta(seconds=-300) <= age < timedelta(hours=interval_hours)
     except (TypeError, ValueError):
         return False
 
@@ -237,6 +259,7 @@ def verify_backup(root, filename):
         raise ValueError("Invalid backup manifest format.")
     if metadata.get("format") != 1 or metadata.get("filename") != filename:
         raise ValueError("Unknown or mismatched backup manifest.")
+    _validated_creation_time(filename, metadata.get("createdAt"))
     if metadata.get("bytes") != target.stat().st_size or metadata.get("sha256") != _sha(target):
         raise ValueError("Backup checksum mismatch; current data remains unchanged.")
     details = _check_database(target)

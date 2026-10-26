@@ -374,3 +374,10 @@
 - Присутність/відсутність contrasts та помилки в source ZIP лишаються лише даними для ручного BA review. Human successful-case classification і контракт supplier відкриті як UAT.
 - `docs/RCA_CONTRAST_VALIDATION.md` та розширені `tests/test_error_series.py` із синтетичними негативними випадками.
 
+
+### v2.45 #45: verified local backup UTC identity
+
+- SQLite backup verify validates UTC timestamp identity between filename and `createdAt` manifest. Mismatched/future-tampered metadata cannot suppress new local backup scheduling indefinitely.
+- Existing restore remains **offline-only**, with SHA256, schema, WAL refusal, rescue copy and explicit user confirmation. No actual Windows crash/ACL/BitLocker test is claimed.
+- Synthetic tests: forged timestamp, naive ISO timestamp, valid UTC and host-clock rollback. `docs/BACKUP_CLOCK_INTEGRITY.md` for Windows manual acceptance.
+
