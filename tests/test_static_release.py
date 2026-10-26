@@ -63,6 +63,39 @@ class StaticReleaseTests(unittest.TestCase):
             cwd=self.root / 'ccon-ba-desk', env=environment, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_script_propagates_startup_failure_to_scheduler(self):
+        # Mock only the already-running check and the exclusive local lock.
+        # The real __main__ path must return nonzero, not silently exit 0.
+        script = (
+            "import runpy\n"
+            "from pathlib import Path\n"
+            "from unittest.mock import patch\n"
+            "with patch('urllib.request.build_opener', side_effect=OSError('not running')), "
+            "patch('pipeline_lock.pipeline_lock', side_effect=ValueError('synthetic busy lock')):\n"
+            "    runpy.run_path(str(Path('server.py').resolve()), run_name='__main__')\n"
+        )
+        outcome = subprocess.run(
+            [sys.executable, '-c', script], cwd=ROOT, capture_output=True, text=True, timeout=15,
+        )
+        self.assertEqual(outcome.returncode, 1, outcome.stdout + outcome.stderr)
+        self.assertIn('startup/recovery check failed', outcome.stdout)
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows CMD launcher regression')
+    def test_scheduled_windows_launcher_reports_missing_python_without_pause(self):
+        launcher = self.root / 'Start CCON BA.bat'
+        shutil.copyfile(ROOT / 'Start CCON BA.bat', launcher)
+        # Explicit custom interpreter overrides PATH and the py launcher.
+        # This is deliberately invalid and must fail quickly in scheduled mode.
+        (self.root / '.python-path').write_text(
+            str(self.root / 'missing-python-executable.exe') + '\n', encoding='utf-8',
+        )
+        outcome = subprocess.run(
+            ['cmd.exe', '/d', '/c', str(launcher), '--scheduled'],
+            cwd=self.root, capture_output=True, text=True, timeout=15,
+        )
+        self.assertEqual(outcome.returncode, 1, outcome.stdout + outcome.stderr)
+        self.assertIn('Python 3.10+ is required', outcome.stdout)
+
     def test_invalid_manifest_preserves_existing_release(self):
         output = self.root / 'desk.zip'
         output.write_bytes(b'previous release')
