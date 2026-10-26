@@ -56,7 +56,12 @@ def verify_release(zip_path, expected):
             raise ValueError("Unsafe/duplicate inventory entry")
         wanted["ccon-ba-desk/" + name] = hash_value
     with zipfile.ZipFile(zip_path) as archive:
-        files = [x for x in archive.infolist() if not x.is_dir()]
+        # Our source-only builder emits files only. Reject hidden extra
+        # directory entries, especially paths conflicting with a real file.
+        # Filtering is_dir() would incorrectly accept a malformed ZIP.
+        files = archive.infolist()
+        if any(x.is_dir() for x in files):
+            raise ValueError("Release archive contains an unexpected directory")
         names = [x.filename for x in files]
         if len(names) != len(wanted) or set(names) != set(wanted):
             raise ValueError("Release archive contents differ from manifest")
