@@ -87,6 +87,16 @@ class BAOutputChecksTests(unittest.TestCase):
         self.assertNotIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
                          {x["code"] for x in with_valid_log["findings"]})
 
+    def test_unknown_zip_readiness_is_not_permission_to_claim_attached(self):
+        claim = {"body":"Dear Team,\\n\\nLogs are attached for your reference."}
+        for ready in (None, False):
+            with self.subTest(ready=ready):
+                found = email_checks(claim, attachment_ready=ready)
+                self.assertIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
+                              {x["code"] for x in found})
+        self.assertNotIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
+                         {x["code"] for x in email_checks(claim,attachment_ready=True)})
+
     def test_negative_or_future_attachment_claim_not_falsely_blocked(self):
         texts = ["Logs are not attached.", "ZIP will be attached after review.",
                  "Could you attach the XML logs?", "We can provide logs later."]
