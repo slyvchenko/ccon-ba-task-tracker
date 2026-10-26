@@ -57,6 +57,7 @@ POINTERS = {
     "PRIOR-05": ("assets/fast-handoff.mjs", "tests/fast-handoff.test.mjs"),
     "PRIOR-07": ("local_handoff_metrics.py", "tests/test_local_handoff_metrics.py"),
     "PRIOR-08": ("local_handoff_metrics.py", "tests/test_local_handoff_metrics.py"),
+    "PRIOR-09": ("weekly_workload.py", "tests/test_weekly_workload.py"),
     "PERF-05": ("assets/queue-dom.mjs", "tests/queue-dom.test.mjs"),
     "PERF-08": ("assets/detail-refresh-policy.mjs", "tests/detail-refresh-policy.test.mjs"),
     "PERF-09": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
