@@ -381,3 +381,10 @@
 - Existing restore remains **offline-only**, with SHA256, schema, WAL refusal, rescue copy and explicit user confirmation. No actual Windows crash/ACL/BitLocker test is claimed.
 - Synthetic tests: forged timestamp, naive ISO timestamp, valid UTC and host-clock rollback. `docs/BACKUP_CLOCK_INTEGRITY.md` for Windows manual acceptance.
 
+
+### v2.46 #46: browser-backed large queue and exact search
+
+- `browser_e2e.py` тепер запускає 100/500/1000 synthetic task cohorts, вимірює cold reload та debounced search у Chromium (p50, bounded worst-case observed per 5 samples), без SLA-порогу чи персональних даних.
+- Пошуковий токен, що після очищення від пунктуації стає порожнім, не збігається з кожною задачею; exact punctuation matches remain supported.
+- Детерміновані unit test та Chrome E2E виконуються у CI, але вони **не** закривають Windows Edge/NVDA, 8h soak, реальні великі Jira/Confluence тексти чи human usability UAT.
+

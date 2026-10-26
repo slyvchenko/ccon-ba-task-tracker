@@ -192,3 +192,7 @@ New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, 
 ## v2.45: local backup clock validation
 
 `tests/test_local_backup.py`: filename/UTC metadata consistency, forged future or timezone-free manifest rejection, and clock-rollback eligibility; existing offline restore/repair/corrupt WAL/SQLite tests remain. Real Windows Task Scheduler, file locks, BitLocker and forced-power-loss testing are not covered by Linux CI.
+
+## v2.46: actual DOM large synthetic queue
+
+`browser_e2e.py` covers 100, 500 and 1000 in-memory synthetic Jira tasks via real Chromium cold reload, filter transition and p50/max observed search latency. It writes sanitized aggregate timing artifact. `tests/task_rules.test.mjs` guards punctuation-only and mixed clean-token false positives. No claims about Windows hardware, 8-hour uptime, long private real descriptions or screen-reader success.

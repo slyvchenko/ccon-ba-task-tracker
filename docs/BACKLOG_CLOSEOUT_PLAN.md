@@ -89,3 +89,7 @@ Error-code-specific RCA now offers at most ten separate same-issue/supplier cont
 ### Post-#45 update
 
 A safe UTC creation-identity check now ensures forged or clock-skewed SQLite manifests cannot masquerade as valid recent backups, without auto-restoring or deleting old valid data. Windows hard-crash, antivirus locks, BitLocker/ACL and real rescue remain explicit UAT gates. #46 is performance/long-session reliability.
+
+### Post-#46 update
+
+Synthetic Chromium now records cold reload and debounced search across 100/500/1000 rows; punctuation-only tokens cannot spuriously match the entire list. These are CI diagnostics, not proven Windows device SLO or measured user time-to-action. Next #47: lean visible UI and optional feature rationalization. Final #48: backlog reconciliation against actual merged commits, unresolved human UAT/desktop deployment.
