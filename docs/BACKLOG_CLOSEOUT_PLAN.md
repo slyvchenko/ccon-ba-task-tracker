@@ -77,3 +77,7 @@ The generated email no longer asserts a verified supplier archive when only a su
 ### Post-#42 update
 
 A single in-memory last-local-DONE undo provides a fast correction protected by SQLite CAS; it does not change Jira, email or official sprint ordering. Remaining QUICK/FOCUS improvements are candidates for measured human UX acceptance, not automatically mandatory code. #43 focuses sprint/WRITE invariants, scored effort and truthful performance diagnostics.
+
+### Post-#43 update
+
+Hard sprint/WRITE/DONE ordering is protected by additional score-extreme tests. Supplier addresses are now explicit opt-in suggestions rather than being silently inferred from the task title. Actual recipient correctness and BA time-to-action are not established by this code. Next package #44 targets error-series RCA/source-retention semantics and reproducible counterexamples.

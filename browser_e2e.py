@@ -167,6 +167,34 @@ class BrowserRegression(unittest.TestCase):
         self.assertEqual(task["manualStatus"],"AUTO")
         self.assertEqual(self.page.locator("#detail .task-key").inner_text(),"CCON-1")
 
+    def test_supplier_recipient_hint_requires_explicit_click_and_empty_to_persists(self):
+        document=fixture_document()
+        document["tasks"][1]["summary"]="AF/KL. Synthetic supplier request"
+        document["tasks"][1]["analysis"]["emailDraft"]["to"]=""
+        self.snapshot.write_text(json.dumps(document),encoding="utf-8")
+        self.desk.import_snapshot()
+        self.page.reload()
+        self.page.locator('#list button[data-key="CCON-2"]').wait_for()
+        self.choose("CCON-2")
+        self.assertEqual(self.page.locator("#draftTo").input_value(),"")
+        self.assertTrue(self.page.locator("#useRecipientHint").is_visible())
+        self.assertIn("не підтверджена",self.page.locator("#recipientHintWarning").inner_text())
+        self.page.locator("#useRecipientHint").click()
+        self.assertIn("@airfrance.fr",self.page.locator("#draftTo").input_value())
+        self.page.locator("#save").click()
+        self.page.wait_for_function(
+            "() => document.querySelector('#savedIndicator')?.hidden === false")
+        self.assertIn("@airfrance.fr",
+            next(t for t in self.desk.view()["tasks"] if t["key"]=="CCON-2")["savedEmailDraft"]["to"])
+        self.page.locator("#draftTo").fill("")
+        self.page.locator("#save").click()
+        self.page.wait_for_function(
+            "() => document.querySelector('#savedIndicator')?.hidden === false")
+        self.page.reload()
+        self.page.locator('#list button[data-key="CCON-2"]').wait_for()
+        self.choose("CCON-2")
+        self.assertEqual(self.page.locator("#draftTo").input_value(),"")
+
     def test_bulk_modal_escape_restores_focus_and_never_opens_email(self):
         requests=[]
         self.page.on("request",lambda req: requests.append(req.url)

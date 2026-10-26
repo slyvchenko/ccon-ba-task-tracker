@@ -130,6 +130,7 @@
   "tests/logs.test.mjs",
   "tests/manual-done-undo.test.mjs",
   "tests/manual-edit-policy.test.mjs",
+  "tests/priority-hard-lanes.test.mjs",
   "tests/progressive-layout.test.mjs",
   "tests/queue-performance.test.mjs",
   "tests/reconnect-policy.test.mjs",

@@ -114,8 +114,9 @@ function normalizedDraft(value) {
   return {to:typeof value?.to === 'string' ? value.to : '', subject:typeof value?.subject === 'string' ? value.subject : '', body:typeof value?.body === 'string' ? value.body : ''};
 }
 function savedForm(task) {
+  // Never infer supplier recipient from a task title. In particular, a
+  // deliberately cleared "To" field must stay empty after Save/Reload.
   const emailDraft = normalizedDraft(task.savedEmailDraft ?? task.analysis?.emailDraft);
-  if (task.savedEmailDraft == null || !emailDraft.to.trim()) emailDraft.to = defaultRecipients(task);
   return {manualStatus:STATUS_LABELS[task.manualStatus] ? task.manualStatus : 'AUTO',
     manualEffort:EFFORT_LABELS[task.manualEffort] ? task.manualEffort : 'UNKNOWN',
     note:task.note || '', emailDraft};
@@ -375,6 +376,7 @@ function renderDetail() {
   const focusedEditor = retainPosition ? captureEditorFocus(document.activeElement, $('detail')) : null;
   const analyzed = hasAnalysis(task), stale = analysisIsStale(task), analysis = analyzed ? analysisOf(task) : {};
   const form = formFor(task).value, info = signalInfo(task), url = safeUrl(task.url);
+  const suggestedRecipient=defaultRecipients(task);
   const savedDraft = task.savedEmailDraft !== null && task.savedEmailDraft !== undefined;
   const staleGeneratedDraft = stale && !savedDraft && !!analysisOf(task).emailDraft?.body;
   const manualWaiting = ['WAITING INPUT','WAITING DEPENDENCY'].includes(task.manualStatus);
@@ -493,6 +495,7 @@ function renderDetail() {
           <div class="panel-title email-meta"><span class="badge ${staleGeneratedDraft ? 'tone-amber' : email === true ? 'tone-blue' : 'tone-gray'}">${staleGeneratedDraft ? 'Зі старого аналізу' : savedDraft && stale ? 'Моя збережена чернетка' : email === true ? 'Потрібна' : email === false ? 'За потреби' : 'Потребу ще не визначено'}</span></div>
           <p class="email-intro">${stale && form.emailDraft.body ? savedDraft ? 'Твоя збережена чернетка залишилася без змін. Аналіз застарів: перевір лист за новим контекстом перед використанням.' : 'Новий контекст ще не проаналізовано. Ця чернетка збережена зі старого аналізу або твоїх незбережених правок; перевір її актуальність перед використанням.' : form.emailDraft.body ? 'Перевір адресата й текст. Усі поля можна відредагувати.' : email === false && analyzed ? 'За поточним аналізом лист зараз не потрібен. За потреби можеш підготувати власну чернетку.' : email === true ? 'Потрібен лист, але готової чернетки ще немає. Підготуй текст за конкретними відкритими питаннями задачі.' : 'Потребу в листі ще не визначено. Спочатку перевір контекст і наступну дію.'}</p>
           <label for="draftTo">Кому</label><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата, якщо він відомий" value="${escapeHtml(form.emailDraft.to)}">
+          ${suggestedRecipient ? '<p class="muted" id="recipientHintWarning">Шаблонна адреса постачальника не підтверджена поточною Jira-вимогою. Перевір отримувача перед використанням.</p><button id="useRecipientHint" class="quiet" aria-describedby="recipientHintWarning">Вставити адресу зі шаблону</button>' : ''}
           <label for="draftSubject">Тема</label><input id="draftSubject" maxlength="2000" placeholder="Тема листа" value="${escapeHtml(form.emailDraft.subject)}">
           <label for="draftBody">Текст листа</label><textarea id="draftBody" maxlength="50000" placeholder="Чернетка за описом, коментарями та відкритими питаннями задачі…">${escapeHtml(form.emailDraft.body)}</textarea>
           <section id="emailLogs" class="email-logs" aria-label="Логи до листа"><div class="logs-heading"><h4>Логи до листа</h4></div><p class="muted" role="status">Перевіряю архіви задачі…</p></section>
@@ -511,6 +514,13 @@ function renderDetail() {
   restoreEditorFocus($('detail'), focusedEditor || state?.focus,
     {focusElement:Boolean(focusedEditor)});
   ['note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener('input', captureForm));
+  if ($('useRecipientHint')) $('useRecipientHint').addEventListener('click',()=>{
+    if($('draftTo').value.trim() && !confirm('Замінити поточного адресата шаблонною адресою? Перевір його вручну.'))return;
+    $('draftTo').value=suggestedRecipient;
+    captureForm();
+    $('draftTo').focus({preventScroll:true});
+    message('Адресу підставлено для перевірки, не підтверджено і не надіслано.');
+  });
   $('manualEffort').addEventListener('change', captureForm);
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
   if ($('copyNext')) $('copyNext').addEventListener('click', () =>
