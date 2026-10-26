@@ -71,7 +71,7 @@ def evaluate(count=100, iterations=5):
                 results.append({
                     "journal": journal, "syntheticJsonIndex": indexed,
                     "p95QueryMs": _p95(durations),
-                    "queryUsesIndex": "USING INDEX idx_synthetic_json_priority" in plan,
+                    "queryUsesIndex": "idx_synthetic_json_priority" in plan,
                     "busyTimeoutMs": timeout,
                     "backupIntegrity": integrity,
                     "matchingSyntheticRows": expected_matches,
