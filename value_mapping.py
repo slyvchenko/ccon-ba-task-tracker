@@ -169,34 +169,76 @@ def compare_zip_bytes(raw, aliases):
                 continue
             samples.append({"layer": layer, "kind": kind, "path": str(path)[:300],
                             "values": values, "ids": correlation_tokens(values)})
-    result = []
+    result, coverage = [], []
     for rest_kind, supplier_kind, direction in (
         ("request", "request", "REST_REQUEST_TO_SUPPLIER_REQUEST"),
         ("response", "response", "SUPPLIER_RESPONSE_TO_REST_RESPONSE"),
     ):
         rests = [x for x in samples if x["layer"] == "rest" and x["kind"] == rest_kind]
         suppliers = [x for x in samples if x["layer"] == "supplier" and x["kind"] == supplier_kind]
-        for r in rests:
-            if len(result) >= MAX_PAIRS:
-                issues.append("COMPARISON_PAIR_LIMIT_REACHED")
-                break
-            correlated = [s for s in suppliers if r["ids"] and r["ids"] & s["ids"]]
-            if len(correlated) == 1:
-                other, basis = correlated[0], "SHARED_CORRELATION_ID"
-            elif len(correlated) == 0 and len(rests) == len(suppliers) == 1:
-                other, basis = suppliers[0], "UNIQUE_SINGLE_EXCHANGE"
-            else:
-                issues.append("AMBIGUOUS_PAIRING")
-                continue
-            result.append({
-                "direction": direction, "restFile": r["path"], "supplierFile": other["path"],
-                "pairingBasis": basis,
-                **_compare_fields(r, other),
-            })
-    return {"comparisons": result, "issues": sorted(set(issues)),
-            "disclaimer": ("Value equality/difference was inspected on the private ZIP. "
-                           "The output contains no raw values. Candidate mapping "
-                           "requires BA confirmation using source and transformation rules.")}
+        matched_rest, matched_supplier = set(), set()
+        if not rests or not suppliers:
+            if rests or suppliers:
+                issues.append("INCOMPLETE_EXCHANGE")
+        else:
+            # Candidate edges are by explicit correlation identifiers only.
+            # An unrelated unique RQ/RS must never be paired when both sides
+            # explicitly disagree about its identity.
+            edges = {}
+            for i, r in enumerate(rests):
+                edges[i] = [j for j, supplier in enumerate(suppliers)
+                            if r["ids"] and supplier["ids"] and
+                            r["ids"] & supplier["ids"]]
+            for i, rest in enumerate(rests):
+                if len(result) >= MAX_PAIRS:
+                    issues.append("COMPARISON_PAIR_LIMIT_REACHED")
+                    break
+                candidates = edges[i]
+                if len(candidates) == 1:
+                    j = candidates[0]
+                    # Reverse uniqueness: two REST exchanges with one shared
+                    # supplier trace are NOT two independently proven pairs.
+                    if sum(j in xs for xs in edges.values()) != 1:
+                        issues.append("AMBIGUOUS_PAIRING")
+                        continue
+                    basis = "SHARED_CORRELATION_ID"
+                elif len(candidates) > 1:
+                    issues.append("AMBIGUOUS_PAIRING")
+                    continue
+                elif len(rests) == len(suppliers) == 1 and not rest["ids"] and not suppliers[0]["ids"]:
+                    j, basis = 0, "UNIQUE_SINGLE_EXCHANGE"
+                else:
+                    # Distinguish explicit contradiction from missing IDs.
+                    issues.append("CORRELATION_MISMATCH" if len(rests) == len(suppliers) == 1
+                                  and rest["ids"] and suppliers[0]["ids"] else
+                                  "UNCORRELATED_EXCHANGE")
+                    continue
+                supplier = suppliers[j]
+                matched_rest.add(i)
+                matched_supplier.add(j)
+                result.append({
+                    "direction": direction, "restFile": rest["path"],
+                    "supplierFile": supplier["path"], "pairingBasis": basis,
+                    # Equality is NEVER proof of semantic transformation.
+                    **_compare_fields(rest, supplier),
+                })
+        coverage.append({
+            "direction": direction,
+            "restExchanges": len(rests), "supplierExchanges": len(suppliers),
+            "candidatePairs": len(matched_rest),
+            "unpairedRest": len(rests) - len(matched_rest),
+            "unpairedSupplier": len(suppliers) - len(matched_supplier),
+            "state": "CANDIDATE_ONLY" if matched_rest and
+                     len(matched_rest) == len(rests) == len(suppliers) else "INCOMPLETE_OR_AMBIGUOUS",
+        })
+    return {"comparisons": result, "coverage": coverage,
+            "issues": sorted(set(issues)),
+            "disclaimer": ("Value equality/difference was inspected only on private ZIP data. "
+                           "Pairing requires unique correlation IDs on both sides or "
+                           "one exchange without identifiers on either side; it is "
+                           "CANDIDATE_ONLY and never proves transformation semantics. "
+                           "Unpaired exchanges and missing evidence remain visible. "
+                           "No raw payload values or correlation IDs are returned.")}
 
 
 def compare_for_manifest(raw, aliases):
