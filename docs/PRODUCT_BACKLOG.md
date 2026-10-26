@@ -28,7 +28,7 @@
 
 ### Звірка коду після v2.48.1 (26.10.2026)
 
-- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **63 PARTIAL**, **19 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
+- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **64 PARTIAL**, **18 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
 - Зіставлено й перекласифіковано **15 окремих ID** за конкретним source/test evidence (13 у #53, ще UI-07 і QA-14 у #54). Решта **114** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
 - `IMPLEMENTED` означає лише підтверджений механізм (synthetic/code), `PARTIAL` - лише частину критеріїв, `PLANNED` - критерії не закрито. Оригінальні 37/52/32/1 у розділі v2.39 нижче - **історичний baseline**, а не поточні числа.
 - Незмінні external gates: реальні Jira/Kibana/CCON, 26 gold cases, людський UX, native Edge/NVDA/8h, Windows backup/restore та локальне оновлення. CI не доводить business signoff.
@@ -146,7 +146,7 @@
 | PERF-05 | P1 | PARTIAL (v2.31 delegated clicks and focused-row update without full list repaint; windowing requires browser profiling) | Event delegation and scrolling for large task list | No focus/aria regression; compare 500/1000 |
 | PERF-06 | P1 | IMPLEMENTED (v2.31 immutable full-JSON bytes cache by transactional SQLite revision + error; external writer tests) | Cache full server serialized task read by committed revision | Atomic invalidation on import/save; concurrent tests |
 | PERF-07 | P1 | PARTIAL (v2.31 reproducible Python/Node 100/500/1000 synthetic timings in CI; real browser/8h UAT open) | Benchmark browser cold/warm, DOM scripting/paint, 8h session | Named Windows machine p50/p95, memory trend |
-| PERF-08 | P1 | PLANNED | Avoid repeated heavyweight detail fetch on list refresh | Fetch selected only on selection/revision, compare versions |
+| PERF-08 | P1 | PARTIAL (PR #55 task-specific detail fingerprint plus stale same-key request guards; native Windows perf/UAT open) | Avoid repeated heavyweight detail fetch on list refresh | Fetch selected only on selection/revision, compare versions |
 | PERF-09 | P2 | PLANNED | Simplify 1374-line CSS cascade after visual/a11y regression | No unexpected fonts/spacing/contrast changes |
 | PERF-10 | P2 | PLANNED | Evaluate SQLite WAL, busy timeouts and JSON index with empirical trace | Do not enable blindly; Windows/backup compatibility |
 | REL-01 | P0 | IMPLEMENTED (v2.27 per-task SQLite CAS, 409 and human resolution; live browser UAT open) | Per-task optimistic concurrency token and stale edit conflict UX | Two tabs cannot silently overwrite each other's note/draft |

@@ -1,4 +1,5 @@
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -7,7 +8,7 @@ import tempfile
 import threading
 import unittest
 import uuid
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.error import HTTPError
 from urllib.request import build_opener, ProxyHandler
 from zipfile import ZipFile
@@ -45,6 +46,22 @@ class StaticReleaseTests(unittest.TestCase):
                 self.assertEqual(error.exception.code, 404)
         finally:
             server.shutdown(); server.server_close(); thread.join()
+
+    def test_every_relative_js_module_import_is_served_by_static_allowlist(self):
+        # A missing JS route breaks the whole browser app while Node/Python
+        # unit tests still pass. Validate the dependency graph without OCR,
+        # private data, a network server or any real browser session.
+        for route, (filename, mime) in STATIC_FILES.items():
+            if not filename.endswith('.mjs'):
+                continue
+            content = (ROOT / filename).read_text(encoding='utf-8')
+            for relative in re.findall(r"""\bfrom\s*['"](\.[^'"]+)['"]""", content):
+                expected = '/' + str(PurePosixPath(filename).parent / relative).replace('/./', '/')
+                # Resolve the ordinary ./component.mjs spellings.
+                expected = expected.replace('/./', '/')
+                with self.subTest(importer=route, dependency=relative):
+                    self.assertIn(expected, STATIC_FILES)
+                    self.assertTrue((ROOT / STATIC_FILES[expected][0]).is_file())
 
     def test_release_includes_all_assets_and_imports_independently_of_workspace(self):
         output = build_release(self.root / 'desk.zip')

@@ -42,7 +42,7 @@ function actionPayload(node) {
   };
 }
 
-export async function loadTaskActions(key, api, escape, notify, current, suggestion='') {
+export async function loadTaskActions(key, api, escape, notify, current, suggestion='', getActiveScope=()=>current) {
   const target = document.getElementById('actionPlan');
   if (!target) return;
   try {
@@ -61,7 +61,8 @@ export async function loadTaskActions(key, api, escape, notify, current, suggest
         try {
           await api('/api/actions/' + encodeURIComponent(key), payload);
           notify('Дію збережено локально. Jira не змінено.');
-          if (current() === key) loadTaskActions(key, api, escape, notify, current, '');
+          const live = getActiveScope();
+          if (live() === key) loadTaskActions(key, api, escape, notify, live, '', getActiveScope);
         } catch (error) {
           notify('Не збережено: ' + error.message, true);
           button.disabled = false;

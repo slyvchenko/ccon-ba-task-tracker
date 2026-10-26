@@ -1,6 +1,7 @@
 import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueTier, priorityLane, rankTasks, filterTasks} from './task-rules.mjs';
 import {createLogsController} from './logs.mjs';
 import {needsFullTaskRefresh} from './revision-policy.mjs';
+import {detailContentFingerprint,createDetailRequestScope} from './detail-refresh-policy.mjs';
 import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './manual-edit-policy.mjs';
 import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload} from './manual-done-undo.mjs';
 import {createDraftRecoveryStore,RETENTION_DAYS} from './draft-recovery.mjs';
@@ -32,6 +33,7 @@ let signature = '', renderedTaskVersion = '', renderedTaskKey = null, pendingDet
 let currentRevision = null, currentRevisionError = '', pollingInFlight = false, pollCycle = 0;
 const transportRecovery=createReconnectPolicy();
 const queueModel=createQueueModel();
+const detailRequests=createDetailRequestScope(()=>selected);
 const searchRefresh=createSearchDebouncer(()=>applyFilters());
 const forms = new Map();
 const manualConflicts = new Map();
@@ -321,7 +323,7 @@ function previousAnalysisMarkup(task) {
   if (!analysisIsStale(task) || !(previous.reasonUk || previous.nextActionUk)) return '';
   return `<details class="description"><summary>Попередній аналіз — застарів після зміни контексту</summary><p class="muted">Ці висновки збережені лише як історія; вони не визначають поточну чергу чи сигнали.</p><div class="section-label">Попереднє пояснення</div><p class="pre">${escapeHtml(previous.reasonUk || '')}</p><div class="section-label">Попередня дія</div><p class="pre">${escapeHtml(previous.nextActionUk || '')}</p><div class="section-label">Попередні джерела</div>${sourceMarkup(previous)}</details>`;
 }
-function taskVersion(task) { return JSON.stringify([latest?.hash || latest?.generated_at || '', task]); }
+function taskVersion(task) { return detailContentFingerprint(task); }
 function qualityGateMarkup(gate) {
   if (!gate) return '';
   const names = {BLOCKED:'Потрібне підтвердження', NEEDS_REVIEW:'Перевірити опис',
@@ -349,12 +351,12 @@ function qualityGateMarkup(gate) {
     (findings ? '<div class="section-label">Що виправити</div><ul>' + findings + '</ul>' : '') + '</details>';
 }
 
-async function loadApprovedDescription(key) {
+async function loadApprovedDescription(key, current=()=>selected) {
   const node = $('approvedReview');
   if (!node) return;
   try {
     const data = await api('/api/approved/' + encodeURIComponent(key));
-    if (selected !== key || !$('approvedReview')) return;
+    if (current() !== key || !$('approvedReview')) return;
     const labels = {NO_APPROVED_REFERENCE:'Ще немає вручну схваленого опису',
       UNCHANGED:'Опис збігається з останнім схваленим',
       NEW_DRAFT_DIFFERS:'Новий опис відрізняється від схваленого',
@@ -363,12 +365,15 @@ async function loadApprovedDescription(key) {
       (data.diff ? '<details><summary>Показати зміни від схваленої версії</summary>' +
        '<pre class="pre">' + escapeHtml(data.diff) + '</pre></details>' : '');
   } catch (error) {
-    if (selected === key && $('approvedReview')) $('approvedReview').textContent = 'Порівняння недоступне: ' + error.message;
+    if (current() === key && $('approvedReview')) $('approvedReview').textContent = 'Порівняння недоступне: ' + error.message;
   }
 }
 
 function renderDetail() {
   const task = tasks.find(item => item.key === selected);
+  // Every render invalidates responses belonging to a previous detail DOM,
+  // even if the same key is still selected after a manual edit.
+  const currentDetail = detailRequests.begin(task?.key || null);
   if (!task) {
     $('detail').innerHTML = tasks.length ? '<div class="empty"><h2>Оберіть задачу з черги</h2>Зміни фільтр, щоб побачити інші задачі.</div>' : '<div class="empty"><h2>Почни зі snapshot</h2>Збережи <b>CCON_BA_Snapshot.json</b> у папку <b>inbox</b> поруч із застосунком.<br>Дані імпортуються автоматично. Ручні статуси, нотатки та збережені чернетки залишаються між днями.</div>';
     renderedTaskVersion = '';
@@ -540,7 +545,8 @@ function renderDetail() {
     try {
       await api('/api/approved/' + encodeURIComponent(task.key), {});
       message('BA-опис схвалено локально. Jira не змінено.');
-      if (selected === task.key) loadApprovedDescription(task.key);
+      const live = detailRequests.current();
+      if (live() === task.key) loadApprovedDescription(task.key,live);
     } catch (error) { message('Опис не схвалено: ' + error.message, true); }
   });
   $('save').addEventListener('click', () => saveTask(false));
@@ -558,16 +564,18 @@ function renderDetail() {
   $('email').addEventListener('click', openEmail);
   if (cloudMode) $('email').textContent = mailActionLabels(true).open;
   $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
-  $('loadContext').addEventListener('click', () => loadContext(task.key));
+  $('loadContext').addEventListener('click', () => loadContext(task.key,currentDetail));
   updateFormStatus();
   showManualConflict();
-  loadTaskEvidence(task.key, api, escapeHtml, () => selected);
-  loadTaskQuestions(task.key, api, escapeHtml, message, () => selected);
-  loadTaskDecisions(task.key, api, escapeHtml, message, () => selected);
-  loadTaskActions(task.key, api, escapeHtml, message, () => selected,
-                  analysis.nextActionUk || '');
-  loadTaskHistory(task.key, api, escapeHtml, () => selected);
-  loadApprovedDescription(task.key);
+  loadTaskEvidence(task.key, api, escapeHtml, currentDetail);
+  loadTaskQuestions(task.key, api, escapeHtml, message, currentDetail,
+                    ()=>detailRequests.current());
+  loadTaskDecisions(task.key, api, escapeHtml, message, currentDetail,
+                    ()=>detailRequests.current());
+  loadTaskActions(task.key, api, escapeHtml, message, currentDetail,
+                  analysis.nextActionUk || '', ()=>detailRequests.current());
+  loadTaskHistory(task.key, api, escapeHtml, currentDetail);
+  loadApprovedDescription(task.key,currentDetail);
   loadLogs(task.key);
 }
 function captureForm() {
@@ -952,16 +960,16 @@ async function openEmail() {
   window.location.href = mailto;
   message('Чернетку збережено. Відкриваю її в поштовій програмі.');
 }
-async function loadContext(key) {
+async function loadContext(key, current=()=>selected) {
   const button = $('loadContext');
   button.disabled = true;
   try {
     const context = await api('/api/context/' + encodeURIComponent(key));
-    if (selected !== key || !$('contextPreview')) return;
+    if (current() !== key || !$('contextPreview')) return;
     if (!context.contextAvailable) { $('contextPreview').textContent = 'Повний контекст ще не завантажений. Відкрий задачу у Jira або дочекайся щоденного оновлення.'; return; }
     renderContext(context);
     button.textContent = 'Контекст завантажено';
-  } catch (error) { if (selected === key && $('contextPreview')) $('contextPreview').textContent = 'Не вдалося завантажити контекст: ' + error.message; }
+  } catch (error) { if (current() === key && $('contextPreview')) $('contextPreview').textContent = 'Не вдалося завантажити контекст: ' + error.message; }
   finally { if (button.isConnected) button.disabled = false; }
 }
 function plainText(value) {
@@ -1046,6 +1054,13 @@ async function load() {
     }
     const selectedTask = tasks.find(task => task.key === selected);
     const detailChanged = selectedTask ? taskVersion(selectedTask) !== renderedTaskVersion : renderedTaskVersion !== '';
+    // Global import time is still visible, without rebuilding the expensive
+    // selected detail DOM or refetching source panels for unrelated changes.
+    if (selectedTask && !detailChanged && renderedTaskKey === selected) {
+      const date = document.querySelector('#detail .task-date');
+      if (date) date.textContent = selectedTask.importedAt ?
+        'Дані: ' + dateLabel(selectedTask.importedAt) : '';
+    }
     if (detailChanged || pendingDetail || !$('detail').hasChildNodes()) {
       if (isDirty(selected) || detailInteractionFocused()) {
         pendingDetail = true;

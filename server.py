@@ -29,6 +29,7 @@ STATIC_FILES = {
     '/assets/dashboard.mjs': ('assets/dashboard.mjs', 'text/javascript; charset=utf-8'),
     '/assets/task-rules.mjs': ('assets/task-rules.mjs', 'text/javascript; charset=utf-8'),
     '/assets/revision-policy.mjs': ('assets/revision-policy.mjs', 'text/javascript; charset=utf-8'),
+    '/assets/detail-refresh-policy.mjs': ('assets/detail-refresh-policy.mjs', 'text/javascript; charset=utf-8'),
     '/assets/manual-edit-policy.mjs': ('assets/manual-edit-policy.mjs', 'text/javascript; charset=utf-8'),
     '/assets/manual-done-undo.mjs': ('assets/manual-done-undo.mjs', 'text/javascript; charset=utf-8'),
     '/assets/draft-recovery.mjs': ('assets/draft-recovery.mjs', 'text/javascript; charset=utf-8'),

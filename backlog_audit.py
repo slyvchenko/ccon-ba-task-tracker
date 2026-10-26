@@ -49,6 +49,7 @@ POINTERS = {
     "FOCUS-02": ("assets/draft-recovery.mjs", "tests/draft-recovery.test.mjs"),
     "PRIOR-03": ("sprint_priority.py", "tests/test_sprint_priority.py"),
     "UI-09": ("assets/progressive-layout.mjs", "tests/progressive-layout.test.mjs"),
+    "PERF-08": ("assets/detail-refresh-policy.mjs", "tests/detail-refresh-policy.test.mjs"),
     "PERF-09": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
     "REL-02": ("desk_store.py", "tests/test_manual_edit_cas.py"),
     "REL-03": ("local_backup.py", "tests/test_local_backup.py"),
