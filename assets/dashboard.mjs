@@ -919,7 +919,8 @@ async function saveTask(done = false) {
     return false;
   } finally {
     setBusy(false);
-    if (restoreAfterSave) focusAfterAction(document,['note','manual']);
+    if (restoreAfterSave && selected === task.key && document.activeElement === document.body)
+      focusAfterAction(document,['note','manual']);
   }
 }
 async function undoLastDone() {
