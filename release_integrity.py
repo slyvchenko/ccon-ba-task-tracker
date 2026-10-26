@@ -50,7 +50,7 @@ def verify_release(zip_path, expected):
             raise ValueError("Invalid entry")
         name, hash_value = item.get("relative"), item.get("sha256")
         if (not isinstance(name, str) or not name or name.startswith("/") or
-                ".." in Path(name).parts or name in wanted or
+                ".." in Path(name).parts or ("ccon-ba-desk/" + name) in wanted or
                 not isinstance(hash_value, str) or len(hash_value) != 64 or
                 any(ch not in "0123456789abcdef" for ch in hash_value)):
             raise ValueError("Unsafe/duplicate inventory entry")
