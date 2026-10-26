@@ -4,6 +4,7 @@ All database files are created under TemporaryDirectory; no PRAGMA mode change
 is made to the installed application. Outputs aggregate latency/plan labels.
 """
 import argparse
+from contextlib import closing
 import json
 import sqlite3
 import statistics
@@ -31,7 +32,11 @@ def evaluate(count=100, iterations=5):
                 root = Path(folder)
                 desk = Desk(root)
                 source = desk.inbox / "CCON_BA_Snapshot.json"
-                source.write_text(json.dumps(synthetic_document(count)), encoding="utf-8")
+                document = synthetic_document(count)
+                # Exercise both matching and nonmatching JSON expression paths.
+                for index, task in enumerate(document["tasks"]):
+                    task["priority"] = "High" if index % 4 == 0 else "Low"
+                source.write_text(json.dumps(document), encoding="utf-8")
                 desk.import_snapshot()
                 with desk.connect() as connection:
                     actual = connection.execute("PRAGMA journal_mode=" + journal).fetchone()[0]
@@ -45,6 +50,8 @@ def evaluate(count=100, iterations=5):
                              "json_extract(snapshot,'$.priority')=?")
                     plan = " ".join(row[3] for row in connection.execute(
                         "EXPLAIN QUERY PLAN " + query, ("High",)).fetchall())
+                    expected_matches = (count + 3) // 4
+                    assert connection.execute(query, ("High",)).fetchone()[0] == expected_matches
                     durations = []
                     for _ in range(iterations):
                         started = time.perf_counter()
@@ -53,7 +60,9 @@ def evaluate(count=100, iterations=5):
                     # sqlite3 backup() works with a WAL source; verify integrity
                     # without ever touching the installed user's DB.
                     backup_path = root / "synthetic-copy.db"
-                    with sqlite3.connect(backup_path) as target:
+                    # sqlite3.Connection.__exit__ does not close the handle.
+                    # Windows refuses TemporaryDirectory cleanup if it stays open.
+                    with closing(sqlite3.connect(backup_path)) as target:
                         connection.backup(target)
                         integrity = target.execute("PRAGMA integrity_check").fetchone()[0]
                     # Read current busy timeout rather than silently enabling a
@@ -65,6 +74,7 @@ def evaluate(count=100, iterations=5):
                     "queryUsesIndex": "USING INDEX idx_synthetic_json_priority" in plan,
                     "busyTimeoutMs": timeout,
                     "backupIntegrity": integrity,
+                    "matchingSyntheticRows": expected_matches,
                     "liveConfigurationChanged": False,
                 })
     return {"syntheticOnly": True, "taskCount": count,
