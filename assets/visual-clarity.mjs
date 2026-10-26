@@ -18,10 +18,12 @@ export function queueEmptyState({visible=0,total=0,hasSnapshot=false,importError
   };
   return {kind:'no-matches', text:'За поточним пошуком та фільтрами збігів немає. Очисть пошук або обери «Усі». Збережені задачі не видалено.'};
 }
-export function queueSummary({visible=0,sprint=0,write=0,active=0,analyzed=0,unverified=0,quick=0}={}) {
+export function queueSummary({visible=0,sprint=0,write=0,active=0,analyzed=0,unverified=0}={}) {
+  // VIS-11: quick-win guesses are already marked on each relevant row and in
+  // its effort details. A third global aggregate implies false precision.
   return {
     primary:`${visible} у списку · спринт ${sprint} · листи ${write}`,
-    diagnostics:`Поточних: ${active} · аналіз: ${analyzed}/${active} · короткі кандидати: ${quick} · спринт не підтверджено: ${unverified}`
+    diagnostics:`Поточних: ${active} · аналіз: ${analyzed}/${active} · спринт не підтверджено: ${unverified}`
   };
 }
 export function conciseSnapshotInfo(latest, dateLabel) {
@@ -46,7 +48,17 @@ export function statusPresentation({jiraStatus='',manualStatus='AUTO',manualLabe
   return {provenance,alerts};
 }
 export function shouldRenderBriefing(value) {
-  return !!value && typeof value==='object' && !Array.isArray(value);
+  if (!value || typeof value!=='object' || Array.isArray(value)) return false;
+  // VIS-16: an empty generated object is not a factual briefing. Keep the
+  // independent missing/stale-context warning instead of eight empty fields.
+  // Readiness, sourced facts, rules, risks and unknowns remain substantive.
+  return Object.values(value).some(item=>
+    typeof item==='string' ? item.trim().length>0 :
+    Array.isArray(item) ? item.length>0 :
+    !!item && typeof item==='object' && Object.values(item).some(entry=>
+      typeof entry==='string' && entry.trim().length>0 ||
+      Array.isArray(entry) && entry.length>0)
+  );
 }
 export function assessmentReason(value) {
   return typeof value==='string'?value.trim():'';

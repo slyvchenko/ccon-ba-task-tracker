@@ -58,3 +58,9 @@ VIS-06/07/10/12/13/14: signal/sprint filters now live in a native collapsed sect
 ## Implementation note for #38
 
 VIS-15: removed runtime-unused legacy status-strip and text-tone CSS with source grep evidence; maintained original design/layout and responsive rules. Added Chromium synthetic screenshot artifacts at 320/768/1440 plus overflow assertions and a CSS orphan test. Deliberately **not** rewriting media queries or moving to a new design language before real Windows/BA screenshots. Full review and post-#38 project roadmap: `docs/CSS_VISUAL_REGRESSION.md`, `docs/BACKLOG_CLOSEOUT_PLAN.md`.
+
+## PR #57 (26.10.2026): вузьке безпечне усунення дублювань
+
+- **VIS-11:** третій повтор S? у глобальній діагностиці прибрано. Позначка в рядку й індивідуальна XS–XL оцінка залишені, сортування не змінене.
+- **VIS-16:** пустий structured briefing не відображається; змістовний readiness/джерела/IF-THEN/невизначеності залишаються доступними. При відсутньому аналізі дубльований пустий текст прибрано, основне попередження лишається.
+- Регресії `tests/visual-clarity.test.mjs`, `browser_e2e.py`; подробиці `docs/LEAN_UI_DEDUP_57.md`. Статуси всіх 129 вимог і human UAT **не підвищувалися**: це UI-кодове покращення, не UAT-висновок.

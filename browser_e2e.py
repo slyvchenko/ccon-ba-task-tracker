@@ -457,6 +457,67 @@ class BrowserRegression(unittest.TestCase):
             "() => document.querySelector('#stickyAction')?.hidden===true",
             timeout=10000)
 
+    def test_lean_ui_skips_only_empty_briefing_but_keeps_proof_and_warning(self):
+        # Source-free synthetic visual dedup, never business readiness signoff.
+        doc=fixture_document("2026-10-26T11:00:00Z")
+        # No briefing in this valid snapshot: an empty shell must not appear.
+        # Invalid empty dicts are covered only by pure presentation unit tests;
+        # real ingestion must continue to reject malformed briefing payloads.
+        self.snapshot.write_text(json.dumps(doc),encoding="utf-8")
+        self.desk.import_snapshot()
+        self.page.reload(wait_until="domcontentloaded")
+        self.choose("CCON-1")
+        self.assertEqual(self.page.locator("#detail .ba-brief").count(),0)
+        self.assertEqual(self.page.locator("#nextText").count(),1)
+        diagnostics=self.page.locator("#countDetails").text_content()
+        self.assertNotIn("короткі кандидати", diagnostics)
+        self.assertIn("аналіз:", diagnostics)
+
+        doc["generatedAt"]="2026-10-26T11:01:00Z"
+        doc["tasks"][0]["analysis"]["briefing"]={
+            "overviewUk":"Synthetic source review needed",
+            "currentUk":"Synthetic REST includes an unwanted segment",
+            "targetUk":"Synthetic REST must exclude the segment under test",
+            "businessImpactUk":"Synthetic BA acceptance is pending",
+            "technicalScopeUk":"Synthetic endpoint only",
+            "readiness":"NEEDS_CONFIRMATION",
+            "readinessReasonUk":"Source review and manual signoff needed",
+            "sourceAudit":[{"descriptionUk":"Synthetic source trace",
+                            "status":"READ","sourceUrl":"https://example.invalid/source"}],
+            "confirmedFacts":[{"textUk":"Synthetic fact","sourceUrl":"https://example.invalid/source"}],
+            "timeline":[],
+            "rules":[{"whenUk":"Synthetic A","thenUk":"Synthetic B",
+                      "certainty":"OPEN","sourceUrl":"https://example.invalid/rule"}],
+            "verification":[{"scenarioUk":"Synthetic A","expectedUk":"Synthetic B",
+                             "sourceUrl":"https://example.invalid/rule"}],
+            "unknownsUk":["Supplier reply still needed"],
+            "risksUk":["Synthetic risk requires BA verification"]
+        }
+        self.snapshot.write_text(json.dumps(doc),encoding="utf-8")
+        self.desk.import_snapshot()
+        self.page.reload(wait_until="domcontentloaded")
+        self.choose("CCON-1")
+        self.assertEqual(self.page.locator("#detail .ba-brief").count(),1)
+        self.assertIn("Є відкриті рішення",self.page.locator(".ba-brief").inner_text())
+        self.page.locator(".ba-brief details").filter(has_text="Правила IF / THEN").locator("summary").click()
+        self.assertIn("Synthetic A",self.page.locator(".ba-brief").inner_text())
+        self.assertIn("Synthetic B",self.page.locator(".ba-brief").inner_text())
+        self.page.locator(".ba-brief details").filter(has_text="Що не встановлено").locator("summary").click()
+        self.assertIn("Supplier reply still needed",self.page.locator(".ba-brief").inner_text())
+        self.assertEqual(self.page.locator("#copyNext").count(),1)
+
+        doc["generatedAt"]="2026-10-26T11:02:00Z"
+        doc["tasks"][0].pop("analysis")
+        self.snapshot.write_text(json.dumps(doc),encoding="utf-8")
+        self.desk.import_snapshot()
+        self.page.reload(wait_until="domcontentloaded")
+        self.choose("CCON-1")
+        self.assertEqual(self.page.locator("#detail .ba-brief").count(),0)
+        self.assertEqual(self.page.locator("#detail .analysis-missing").filter(has_text="Для цієї задачі ще немає повного аналізу").count(),1)
+        self.assertNotIn("Поки не визначено — потрібен аналіз контексту.",
+                         self.page.locator("#detail").inner_text())
+        self.assertEqual(self.page.locator("#questionTracker").count(),1)
+
     def test_three_viewports_and_short_soak_no_external_writes(self):
         self.choose("CCON-2")
         for width,height in [(320,800),(768,900),(1440,900)]:
