@@ -114,6 +114,23 @@ class LogAttachmentsTests(unittest.TestCase):
             self.assertEqual(error.exception.code, 403)
             self.assertEqual(launch.call_count, 1)
 
+    def test_attachment_claim_requires_every_current_flow_not_one_ready_archive(self):
+        from draft_output import supplier_zip_ready, make_ready_draft
+        from log_attachments import log_catalog
+        self.assertEqual(log_catalog(self.desk,'CCON-1')['state'],'READY')
+        self.assertTrue(supplier_zip_ready(self.root,'CCON-1'))
+        context=read_json(self.root / 'data/jira_context.json')
+        missing='aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
+        context['issues']['CCON-1']['description'] += ' ' + KIBANA.replace(FLOW,missing)
+        write_json(self.root / 'data/jira_context.json',context)
+        self.assertEqual(log_catalog(self.desk,'CCON-1')['state'],'PARTIAL')
+        self.assertFalse(supplier_zip_ready(self.root,'CCON-1'))
+        letter=make_ready_draft('CCON-1',{'emailDraft':{
+            'to':'','subject':'Supplier clarification',
+            'body':'Dear Team,\\n\\nCould you check the behavior?'}},
+            attachment_ready=supplier_zip_ready(self.root,'CCON-1'))
+        self.assertNotIn('Logs are attached',letter['body'])
+
     def test_unknown_task_and_invalid_flow_are_rejected(self):
         for path in ('/api/logs/CCON-999', '/api/logs/CCON-1/%2e%2e/download', '/api/logs/%2e%2e'):
             with self.subTest(path=path), self.assertRaises(HTTPError) as error:
