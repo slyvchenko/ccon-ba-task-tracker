@@ -93,3 +93,7 @@ A safe UTC creation-identity check now ensures forged or clock-skewed SQLite man
 ### Post-#46 update
 
 Synthetic Chromium now records cold reload and debounced search across 100/500/1000 rows; punctuation-only tokens cannot spuriously match the entire list. These are CI diagnostics, not proven Windows device SLO or measured user time-to-action. Next #47: lean visible UI and optional feature rationalization. Final #48: backlog reconciliation against actual merged commits, unresolved human UAT/desktop deployment.
+
+### Post-#47 update
+
+The existing queue has semantic group headings and a non-hover accessible low-confidence quick hint; synthetic Chrome tests include 320px forced-colors, reduced-motion, focus outline and visible email actions. No actual NVDA/Windows/400% zoom or human 20–30 gold-case timing claim. Final #48 must reconcile merged code with the acceptance ledger while retaining these explicit UAT blockers.
