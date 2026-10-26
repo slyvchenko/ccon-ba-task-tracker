@@ -574,7 +574,13 @@ class BrowserRegression(unittest.TestCase):
             for token in geometry["tokens"]:
                 self.assertEqual(token["overflowWrap"],"anywhere")
                 self.assertEqual(token["whiteSpace"],"pre-wrap")
-            first=self.page.locator(".ba-brief").screenshot()
+            # Pointer/focus and the transient sticky action are not part of
+            # the static source panel being compared.
+            self.page.evaluate("document.activeElement?.blur()")
+            self.page.mouse.move(0,0)
+            screenshot_style="#stickyAction{visibility:hidden!important}"
+            first=self.page.locator(".ba-brief").screenshot(
+                animations="disabled",style=screenshot_style)
             signature=hashlib.sha256(first).hexdigest()
             self.page.reload(wait_until="domcontentloaded")
             self.choose("CCON-1")
@@ -582,7 +588,10 @@ class BrowserRegression(unittest.TestCase):
                 has_text="Правила IF / THEN").first
             if not rule.evaluate("(node)=>node.open"):
                 rule.locator("summary").click()
-            second=self.page.locator(".ba-brief").screenshot()
+            self.page.evaluate("document.activeElement?.blur()")
+            self.page.mouse.move(0,0)
+            second=self.page.locator(".ba-brief").screenshot(
+                animations="disabled",style=screenshot_style)
             self.assertEqual(first,second,
                              f"unchanged synthetic technical panel changed at {width}px")
             signatures[str(width)]=signature
