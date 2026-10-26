@@ -1,7 +1,7 @@
 """User-approved email conventions, applied to generated drafts."""
 import re
 
-def normalize_draft(key, draft, supplier_method=None):
+def normalize_draft(key, draft, supplier_method=None, *, attachment_ready=False):
     result = dict(draft)
     body = result.get('body', '').strip()
     if not body:
@@ -35,5 +35,7 @@ def normalize_draft(key, draft, supplier_method=None):
     if lines and re.match(r'^(?:Thanks\b|Thank you\b|We appreciate\b)', lines[-1], flags=re.I):
         closing = lines.pop().strip()
         body = '\n'.join(lines).strip()
-    result['body'] = 'Dear Team,\n\n' + body + '\n\nLogs are attached for your reference.\n' + closing
+    attachment_line = ('Logs are attached for your reference.\n'
+                       if attachment_ready is True else '')
+    result['body'] = 'Dear Team,\n\n' + body + '\n\n' + attachment_line + closing
     return result
