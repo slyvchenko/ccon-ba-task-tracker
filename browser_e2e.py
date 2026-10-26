@@ -331,6 +331,34 @@ class BrowserRegression(unittest.TestCase):
             self.assertTrue(self.page.locator("#detail").is_visible())
             self.assertTrue(self.page.locator("#search").is_visible())
 
+    def test_a11y_semantic_queue_headings_and_forced_color_keyboard_handoff(self):
+        self.choose("CCON-2")
+        self.page.set_viewport_size({"width":320,"height":850})
+        self.page.emulate_media(forced_colors="active", reduced_motion="reduce")
+        self.assertTrue(self.page.evaluate(
+            "() => matchMedia('(forced-colors: active)').matches"))
+        self.assertTrue(self.page.evaluate(
+            "() => matchMedia('(prefers-reduced-motion: reduce)').matches"))
+        headings=self.page.locator("#list [role=heading][aria-level='3']")
+        self.assertGreaterEqual(headings.count(),2)
+        self.assertIn("Спринт",headings.first.inner_text())
+        for selector in ("#draftTo","#draftSubject","#draftBody","#copyEmail","#email",
+                         "#save","#done"):
+            self.assertEqual(self.page.locator(selector).count(),1,selector)
+        self.assertTrue(self.page.locator("#copyEmail").is_visible())
+        self.assertTrue(self.page.locator("#email").is_visible())
+        self.page.locator("#copyEmail").focus()
+        focus=self.page.locator("#copyEmail").evaluate(
+            "(el)=>({focused:document.activeElement===el,outline:getComputedStyle(el).outlineStyle})")
+        self.assertTrue(focus["focused"])
+        self.assertNotEqual(focus["outline"],"none")
+        geometry=self.page.evaluate("""() => ({
+            doc:document.documentElement.scrollWidth,
+            viewport:document.documentElement.clientWidth
+        })""")
+        self.assertLessEqual(geometry["doc"],geometry["viewport"]+2)
+        self.assertFalse(self.page.locator("#bulkDialog").evaluate("(el)=>el.open"))
+
     def test_three_viewports_and_short_soak_no_external_writes(self):
         self.choose("CCON-2")
         for width,height in [(320,800),(768,900),(1440,900)]:
