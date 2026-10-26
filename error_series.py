@@ -60,8 +60,10 @@ def _observations(manifest):
                             for name in ("rest", "supplier", "errors")},
             "candidatePairCount": candidate_pairs,
             "differentNamedFieldCount": changes,
-            "hasAmbiguousMapping": "AMBIGUOUS_PAIRING" in
-                                   ((manifest.get("valueReview") or {}).get("issues") or [])}
+            "hasAmbiguousMapping": bool(
+                {"AMBIGUOUS_PAIRING", "UNCORRELATED_EXCHANGE",
+                 "CORRELATION_MISMATCH", "INCOMPLETE_EXCHANGE"} &
+                set((manifest.get("valueReview") or {}).get("issues") or []))}
 
 
 def _make_case(manifest, key, expected_supplier):

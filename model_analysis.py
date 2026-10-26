@@ -229,7 +229,9 @@ def request_analysis(settings, instructions, task_context, note="", opener=None)
                 "reported under valueReview, including REST request -> supplier request "
                 "and supplier response -> REST response. These are CANDIDATE_ONLY "
                 "until confirmed against mapping rules and chronology. Never invent "
-                "raw values omitted for privacy. "
+                "raw values omitted for privacy. Inspect valueReview.coverage: "
+                "unpaired exchanges or correlation mismatches require an OPEN gap, "
+                "not a verified mapping or completed flow claim. "
 
                 "For flowDiagnostics, distinguish REST operation if unknown, "
                 "native supplier method, null/repeated field shapes, and ordered "
@@ -341,6 +343,7 @@ def evidence_for_issue(root, key, limit=30):
             "valueReview": {
                 "comparisons": (result.get("valueReview") or {}).get("comparisons", [])[:30],
                 "issues": (result.get("valueReview") or {}).get("issues", [])[:50],
+                "coverage": (result.get("valueReview") or {}).get("coverage", [])[:2],
                 "disclaimer": (result.get("valueReview") or {}).get("disclaimer"),
             },
             "samples": [{
@@ -356,6 +359,27 @@ def evidence_for_issue(root, key, limit=30):
     signature = hashlib.sha256(
         json.dumps(sorted(fingerprints), ensure_ascii=False).encode()).hexdigest()[:16]
     return reports, signature
+
+
+def linked_document_version(source):
+    """Bounded deterministic fingerprint of *verified* local source coverage.
+
+    A newly downloaded or changed Confluence/attachment source must invalidate
+    cached AI output even if Jira, ZIP manifests, manual notes and sprint do
+    not change. Never hash/persist private source text as part of this report.
+    """
+    audit = source.get("linkedDocumentAudit") or {}
+    relevant = {
+        "eligible": audit.get("eligibleLinkedSourceCount"),
+        "verified": audit.get("verifiedLocalSourceCount"),
+        "missing": audit.get("notVerifiedCount"),
+        "attachments": audit.get("attachments") or [],
+        "wikiPages": audit.get("wikiPages") or [],
+        "variants": audit.get("variantCandidates") or [],
+    }
+    encoded = json.dumps(relevant, sort_keys=True, ensure_ascii=False,
+                         separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()[:16]
 
 
 def task_source(context, task, notes, evidence_reports=None, investigation=None, root=None):
@@ -460,7 +484,15 @@ def analyze_all(root=ROOT, model_call=request_analysis, issue_key=None):
                               hashlib.sha256(json.dumps(source["attachmentEvidence"],
                               sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16])
         sprint_version = sprint_cache_version(source)
+        linked_version = linked_document_version(source)
+        source_audit = source.get("linkedDocumentAudit") or {}
+        # Existing caches predating v2.40 are valid when there are genuinely
+        # zero linked/verified documents, but NOT once any source is referenced.
+        legacy_empty_version = linked_version if not (
+            source_audit.get("eligibleLinkedSourceCount") or
+            source_audit.get("verifiedLocalSourceCount")) else None
         if (issue_key is None and previous.get("contextFingerprint") == fingerprint and
+                previous.get("linkedDocumentVersion", legacy_empty_version) == linked_version and
                 previous.get("evidenceVersion", "none") == evidence_version and
                 previous.get("attachmentEvidenceVersion", "none") == attachment_version and
                 previous.get("sprintVersion") == sprint_version and
@@ -481,6 +513,7 @@ def analyze_all(root=ROOT, model_call=request_analysis, issue_key=None):
         analysis["sprintVersion"] = sprint_version
         analysis["evidenceVersion"] = evidence_version
         analysis["attachmentEvidenceVersion"] = attachment_version
+        analysis["linkedDocumentVersion"] = linked_version
         validate_analysis(analysis)
         analyses[key] = analysis
         generated += 1

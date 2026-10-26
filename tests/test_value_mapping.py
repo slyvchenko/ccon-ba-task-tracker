@@ -88,6 +88,75 @@ class ValueMappingTests(unittest.TestCase):
         self.assertEqual(result["comparisons"][0]["pairingBasis"], "UNIQUE_SINGLE_EXCHANGE")
         self.assertEqual(result["comparisons"][0]["mappingStatus"], "CANDIDATE_ONLY")
 
+
+    def test_single_pair_with_conflicting_explicit_ids_is_not_mapped(self):
+        raw = zip_bytes([
+            ("rest/1-request.json", b'{"correlationId":"REST-12345678","Price":"200.00"}'),
+            ("supplier/AirFranceKLM/1-request.xml",
+             b'<Req><correlationId>SUP-98765432</correlationId><Amount>200.00</Amount></Req>')
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"], [])
+        self.assertIn("CORRELATION_MISMATCH", result["issues"])
+        self.assertEqual(result["coverage"][0]["unpairedRest"], 1)
+        self.assertEqual(result["coverage"][0]["unpairedSupplier"], 1)
+
+    def test_multiple_rest_exchanges_cannot_reuse_one_supplier_response(self):
+        flow = "SHARED-987654321"
+        raw = zip_bytes([
+            ("rest/1-response.json", json.dumps({"correlationId":flow,"Fare":"ABCDE123"})),
+            ("rest/2-response.json", json.dumps({"correlationId":flow,"Fare":"ABCDE123"})),
+            ("supplier/AirFranceKLM/1-response.xml",
+             f"<RS><correlationId>{flow}</correlationId><Fare>ABCDE123</Fare></RS>".encode())
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"], [])
+        self.assertIn("AMBIGUOUS_PAIRING", result["issues"])
+        response = next(c for c in result["coverage"] if
+                        c["direction"] == "SUPPLIER_RESPONSE_TO_REST_RESPONSE")
+        self.assertEqual(response["unpairedRest"],2)
+        self.assertEqual(response["unpairedSupplier"],1)
+        self.assertNotIn(flow, json.dumps(result))
+
+    def test_multiple_supplier_exchanges_with_same_flow_are_ambiguous(self):
+        flow = "SHARED-87654321"
+        raw = zip_bytes([
+            ("rest/1-request.json", json.dumps({"correlationId":flow,"Price":"102.56"})),
+            ("supplier/AirFranceKLM/1-request.xml",
+             f"<RQ><correlationId>{flow}</correlationId><Price>102.56</Price></RQ>".encode()),
+            ("supplier/AirFranceKLM/2-request.xml",
+             f"<RQ><correlationId>{flow}</correlationId><Price>102.56</Price></RQ>".encode())
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"],[])
+        self.assertIn("AMBIGUOUS_PAIRING",result["issues"])
+
+    def test_missing_supplier_exchange_is_an_open_evidence_gap(self):
+        raw = zip_bytes([("rest/1-request.json",b'{"price":"135.00"}')])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"],[])
+        self.assertIn("INCOMPLETE_EXCHANGE",result["issues"])
+        self.assertEqual(result["coverage"][0]["supplierExchanges"],0)
+        self.assertEqual(result["coverage"][0]["state"],"INCOMPLETE_OR_AMBIGUOUS")
+
+    def test_partial_correlation_never_claims_full_coverage(self):
+        flow = "VALID-12345678"
+        raw = zip_bytes([
+            ("rest/1-request.json",json.dumps({"correlationId":flow,"Price":"102.56"})),
+            ("rest/2-request.json",b'{"correlationId":"UNKNOWN-9999999","Price":"135.99"}'),
+            ("supplier/AirFranceKLM/1-request.xml",
+             f"<RQ><correlationId>{flow}</correlationId><Amount>102.56</Amount></RQ>".encode()),
+            ("supplier/AirFranceKLM/2-request.xml",
+             b'<RQ><correlationId>DIFFERENT-8888888</correlationId><Amount>135.99</Amount></RQ>')
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(len(result["comparisons"]),1)
+        self.assertEqual(result["coverage"][0]["candidatePairs"],1)
+        self.assertEqual(result["coverage"][0]["unpairedRest"],1)
+        self.assertEqual(result["coverage"][0]["state"],"INCOMPLETE_OR_AMBIGUOUS")
+        self.assertIn("UNCORRELATED_EXCHANGE",result["issues"])
+        self.assertNotIn(flow,json.dumps(result))
+
     def test_schema_parsing_rejects_external_xml_entities(self):
         values, warning = leaf_values(b'<!DOCTYPE x [<!ENTITY leak SYSTEM "file:///etc/passwd">]><x>&leak;</x>', ".xml")
         self.assertFalse(values)
