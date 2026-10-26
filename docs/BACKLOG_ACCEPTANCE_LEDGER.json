@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 67,
-      "PLANNED": 15
+      "PARTIAL": 69,
+      "PLANNED": 13
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 51,
-    "no_direct_locator": 72
+    "code_plus_test_locators": 53,
+    "no_direct_locator": 70
   },
   "items": [
     {
@@ -1609,15 +1609,15 @@
     {
       "id": "REL-08",
       "priority": "P1",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50 opt-in metadata-only POSIX mode/symlink checks, Windows ACL remains UNVERIFIED; native ACL/encryption audit open)",
+      "category": "PARTIAL",
       "requirement": "OS folder permissions/encryption checks for private local ZIP",
       "acceptance_criteria": "Fail closed/notice for insecure ACL configuration",
       "suggested_batch": "#45",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "local_diagnostics.py",
+      "test_locator": "tests/test_local_diagnostics.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
@@ -1871,15 +1871,15 @@
     {
       "id": "OPS-02",
       "priority": "P1",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50 explicit-consent sanitized ZIP with zero raw logs/PNR/credentials and synthetic regression; Windows/BA consent UX open)",
+      "category": "PARTIAL",
       "requirement": "Private local diagnostic bundle with PII redaction and consent",
       "acceptance_criteria": "No production logs by default; explicit export",
       "suggested_batch": "#45",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "local_diagnostics.py",
+      "test_locator": "tests/test_local_diagnostics.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
