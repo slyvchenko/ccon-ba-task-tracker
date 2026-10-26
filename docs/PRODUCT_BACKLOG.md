@@ -28,7 +28,7 @@
 
 ### Звірка коду після v2.48.1 (26.10.2026)
 
-- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **64 PARTIAL**, **18 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
+- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **65 PARTIAL**, **17 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
 - Зіставлено й перекласифіковано **15 окремих ID** за конкретним source/test evidence (13 у #53, ще UI-07 і QA-14 у #54). Решта **114** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
 - `IMPLEMENTED` означає лише підтверджений механізм (synthetic/code), `PARTIAL` - лише частину критеріїв, `PLANNED` - критерії не закрито. Оригінальні 37/52/32/1 у розділі v2.39 нижче - **історичний baseline**, а не поточні числа.
 - Незмінні external gates: реальні Jira/Kibana/CCON, 26 gold cases, людський UX, native Edge/NVDA/8h, Windows backup/restore та локальне оновлення. CI не доводить business signoff.
@@ -120,7 +120,7 @@
 | FOCUS-02 | P0 | PARTIAL (v2.30 tab-local selected issue, scroll/disclosures and caret coordinates; browser UAT pending) | Відновлення scroll, open details, cursor при поверненні | Resume p95 goal ≤45 s; browser UAT |
 | FOCUS-03 | P1 | PARTIAL (v2.30 Alt+arrow, / search, Alt+C, Ctrl/Cmd+Enter; keyboard UAT pending) | Keyboard shortcuts Next / Search / Copy / Save із захистом input focus | Keyboard-only critical path A-01; no destructive collision |
 | FOCUS-04 | P1 | PARTIAL (native details and progressive labels; user deep-evidence UAT pending) | Розділити high-signal інфо та deep evidence в existing details | No extra tabs/modes; J-03/J-06 |
-| FOCUS-05 | P1 | PLANNED | Sticky next-action/progress microheader в існуючій detail pane | No page redesign; responsive A-03/A-04 |
+| FOCUS-05 | P1 | PARTIAL (v2.49.1 scroll-only compact next-action bar in existing detail; mobile/NVDA/native BA acceptance open) | Sticky next-action/progress microheader в існуючій detail pane | No page redesign; responsive A-03/A-04 |
 | FOCUS-06 | P1 | PARTIAL (v2.30 never rerender focused detail, restore keyboard row and typed cursor; browser traces pending) | Захист від фонових тостів/DOM rerender під час набору тексту | No focus loss, cursor jump, stale overwrite |
 | FOCUS-07 | P2 | PLANNED | Pin personal deep-work task без зміни official Jira priority | Manual pin only within lane; clear override and reset |
 | FOCUS-08 | P2 | PLANNED | Відновити фокус після bulk dialog/mailto/error | A-01/A-11; action accessible |
@@ -143,7 +143,7 @@
 | PERF-02 | P0 | IMPLEMENTED (v2.26 code; browser UAT pending) | Load full tasks only on revision change, hidden tab idle | P-02/P-11/P-12, no false staleness |
 | PERF-03 | P0 | IMPLEMENTED (v2.26 code; browser UAT pending) | Skip expensive no-query search path and early reject | P-09/P-10, Unicode and sprint regression |
 | PERF-04 | P1 | IMPLEMENTED (v2.31 debounced search, per-snapshot Unicode index, exact parity tests; Windows p95 UAT open) | Debounced full-text search with cached per-snapshot index | Search p95 target ≤100 ms at 1000 rich tasks |
-| PERF-05 | P1 | PARTIAL (v2.31 delegated clicks and focused-row update without full list repaint; windowing requires browser profiling) | Event delegation and scrolling for large task list | No focus/aria regression; compare 500/1000 |
+| PERF-05 | P1 | PARTIAL (v2.49.1 keyed DOM patch for unchanged 100–1000-row queue plus delegated actions; live 500/1000 Windows p95 pending) | Event delegation and scrolling for large task list | No focus/aria regression; compare 500/1000 |
 | PERF-06 | P1 | IMPLEMENTED (v2.31 immutable full-JSON bytes cache by transactional SQLite revision + error; external writer tests) | Cache full server serialized task read by committed revision | Atomic invalidation on import/save; concurrent tests |
 | PERF-07 | P1 | PARTIAL (v2.31 reproducible Python/Node 100/500/1000 synthetic timings in CI; real browser/8h UAT open) | Benchmark browser cold/warm, DOM scripting/paint, 8h session | Named Windows machine p50/p95, memory trend |
 | PERF-08 | P1 | PARTIAL (PR #55 task-specific detail fingerprint plus stale same-key request guards; native Windows perf/UAT open) | Avoid repeated heavyweight detail fetch on list refresh | Fetch selected only on selection/revision, compare versions |
