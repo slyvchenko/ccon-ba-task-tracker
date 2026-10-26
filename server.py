@@ -386,4 +386,4 @@ def serve_locked(args, cloud, url):
     return 0
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
