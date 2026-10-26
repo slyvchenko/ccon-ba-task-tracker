@@ -333,3 +333,11 @@
 - Кількість 30 стосується **прикладів конкретної помилки**, не 30 випадкових перших ZIP; відбір і representativeness має бути зафіксовано.
 - Живий Kibana browser/CCON download в локальному Codex є окремою дією; Python offline group analytics обробляє **лише вже реально отримані локальні докази**, не симулює мережевий доступ.
 - Плани старих `docs/BA_PRODUCT_REQUIREMENTS.md` і `docs/BA_DESK_VNEXT_REQUIREMENTS.md` можуть містити історичні статуси PR; цей файл має пріоритет у функціональному backlog.
+
+### v2.40 #40: evidence provenance implementation and acceptance
+
+- Value-level REST↔supplier matching now **requires one-to-one correlation**; conflicting explicit IDs, duplicate supplier/rest matches and incomplete exchanges remain OPEN/AMBIGUOUS, not verified. Directional pairing coverage retains missing REST/supplier counts without raw identifiers; unmodified matched fields remain candidates.
+- Local Confluence/attachment hash-verification metadata is now part of the BA analysis cache key. A newly downloaded or changed verified document forces reanalysis rather than silently reusing an old generated claim.
+- `tests/test_value_mapping.py` and `tests/test_evidence_provenance_40.py` contain synthetic collision, incompleteness, no-token-leak and source version cases. `docs/EVIDENCE_PROVENANCE_CONTRACT.md` details the live BA UAT matrix.
+- **EVD-03, EVD-06, EVD-13, BA-09, OUT-04, QA-08 retain their human source-accuracy UAT requirements.** They are not auto-promoted from PARTIAL to DONE.
+
