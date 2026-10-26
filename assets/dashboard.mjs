@@ -276,7 +276,7 @@ function briefingMarkup(briefing, stale) {
   const facts = entries(briefing.confirmedFacts, item => `${escapeHtml(item.textUk)}${source(item.sourceUrl)}`);
   const history = entries(briefing.timeline, item => `${escapeHtml(item.date || 'Дата невідома')} · ${escapeHtml(item.status)}: ${escapeHtml(item.eventUk)}${source(item.sourceUrl)}`);
   const sourceAudit = entries(briefing.sourceAudit, item => `${escapeHtml(item.status)}: ${escapeHtml(item.descriptionUk)}${source(item.sourceUrl)}`);
-  const rules = entries(briefing.rules, item => `<b>IF</b> ${escapeHtml(item.whenUk)} <b>THEN</b> ${escapeHtml(item.thenUk)} · ${escapeHtml(item.certainty)}${source(item.sourceUrl)}`);
+  const rules = entries(briefing.rules, item => `<b>IF</b> <code class="technical-token">${escapeHtml(item.whenUk)}</code> <b>THEN</b> <code class="technical-token">${escapeHtml(item.thenUk)}</code> · ${escapeHtml(item.certainty)}${source(item.sourceUrl)}`);
   const tests = entries(briefing.verification, item => `<b>Сценарій:</b> ${escapeHtml(item.scenarioUk)} <b>Очікування:</b> ${escapeHtml(item.expectedUk)}${source(item.sourceUrl)}`);
   const plain = values => entries(values, item => escapeHtml(item));
   return `<section class="panel ba-brief" aria-label="Розбір ситуації та вимог">
