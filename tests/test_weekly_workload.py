@@ -1,5 +1,7 @@
 """Synthetic weekly work-state tests. No real Jira or BA database access."""
+import io
 import json
+from contextlib import redirect_stderr, redirect_stdout
 import os
 import shutil
 from contextlib import closing
@@ -9,7 +11,7 @@ import unittest
 from datetime import date
 from pathlib import Path
 
-from weekly_workload import weekly_report, _window
+from weekly_workload import weekly_report, _window, main
 
 
 class WeeklyWorkloadTests(unittest.TestCase):
@@ -158,6 +160,21 @@ class WeeklyWorkloadTests(unittest.TestCase):
         weekly = weekly_report(self.root, "2026-W43", today=date(2026, 10, 26))
         self.assertEqual(weekly["weeklyTransitions"]["completed"], 2)
         self.assertEqual(weekly["asOfWeekEnd"]["completedState"], 3)
+
+    def test_invalid_cli_arguments_never_echo_private_paths_or_identifiers(self):
+        for args in (
+            ["--private-SYNTHETIC-PNR987", "SYNTHETIC-SECRET"],
+            ["--root", str(self.root), "SYNTHETIC-SECRET-PNR"],
+            ["--week", "2026-W43", "--unexpected", "/private/SYNTHETIC-SECRET"],
+        ):
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                status = main(args)
+            self.assertEqual(status, 1)
+            output = stdout.getvalue() + stderr.getvalue()
+            for secret in ("SYNTHETIC-SECRET", "SYNTHETIC-PNR987",
+                           str(self.root), "/private/"):
+                self.assertNotIn(secret, output)
 
     def test_no_state_created_and_bad_week_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
