@@ -52,6 +52,16 @@ class BriefingTests(unittest.TestCase):
         self.assertIn("NO_ACCEPTANCE_TESTS", codes)
         self.assertIn("READY_WITH_UNKNOWNS", codes)
 
+    def test_empty_briefing_cannot_bypass_source_validation(self):
+        # PR #57 only suppresses empty UI shells; ingest must still reject
+        # malformed payloads before reaching the browser.
+        with self.assertRaisesRegex(ValueError, "briefing.currentUk"):
+            validate_briefing({"confirmedFacts": [], "rules": [], "timeline": []})
+        with self.assertRaisesRegex(ValueError, "briefing.rules"):
+            invalid = briefing()
+            invalid["rules"][0]["certainty"] = "HYPOTHESIS"
+            validate_briefing(invalid)
+
     def test_invalid_url_and_status_rejected(self):
         draft = briefing()
         draft["confirmedFacts"][0]["sourceUrl"] = "javascript:alert(1)"
