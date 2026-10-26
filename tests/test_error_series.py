@@ -113,6 +113,48 @@ class ErrorSeriesTests(unittest.TestCase):
         self.assertTrue(any("supplier layer" in q for q in report["questionsUk"]))
         self.assertEqual(report["causality"], "ROOT_CAUSE_UNCONFIRMED")
 
+    def test_error_contrast_candidates_never_count_as_success_or_affected(self):
+        positive = _make_case(manifest(1, code=CODE), "CCON-123", AF)
+        other = _make_case(manifest(2, code="OTHER_ERROR"), "CCON-123", AF)
+        absent = _make_case(manifest(3, code=None), "CCON-123", AF)
+        outcome = investigate_cases([positive, other, absent], "CCON-123", AF,
+                                    code=CODE)
+        self.assertEqual(outcome["analyzedCases"], 1)
+        self.assertEqual(outcome["availableUniqueFlows"], 1)
+        self.assertEqual(outcome["contrastCandidateCount"], 2)
+        self.assertEqual(outcome["contrastCandidateFlowIds"],
+                         [other["flowId"], absent["flowId"]])
+        self.assertEqual(outcome["contrastInterpretation"],
+                         "NO_TARGET_ERROR_CODE_OBSERVED_NOT_SUCCESS_PROOF")
+        self.assertEqual(outcome["causality"], "ROOT_CAUSE_UNCONFIRMED")
+        self.assertTrue(any("НЕ доказ" in q for q in outcome["questionsUk"]))
+        self.assertTrue(all(h["classification"] == "HYPOTHESIS_NOT_CONFIRMED"
+                            for h in outcome["hypotheses"]))
+
+    def test_contrast_candidates_deduplicated_by_flow_and_bounded(self):
+        cases = [_make_case(manifest(1, code=CODE), "CCON-123", AF)]
+        cases.extend(_make_case(manifest(i,code="ANOTHER_ERROR"),"CCON-123",AF)
+                     for i in range(2, 19))
+        cases.append(dict(cases[1],capturedAt="2026-10-25T12:00:00+00:00"))
+        report=investigate_cases(cases,"CCON-123",AF,code=CODE)
+        self.assertEqual(report["contrastCandidateCount"],17)
+        self.assertEqual(len(report["contrastCandidateFlowIds"]),10)
+        self.assertEqual(len(set(report["contrastCandidateFlowIds"])),10)
+        self.assertEqual(report["analyzedCases"],1)
+
+    def test_no_contrast_available_is_explicit_gap_not_fake_success(self):
+        result=investigate_cases([_make_case(manifest(1),"CCON-123",AF)],
+                                 "CCON-123",AF,code=CODE)
+        self.assertEqual(result["contrastCandidateCount"],0)
+        self.assertEqual(result["contrastCandidateFlowIds"],[])
+        self.assertTrue(any("немає окремого flow" in q for q in result["questionsUk"]))
+
+    def test_unfiltered_series_has_no_implied_control_group(self):
+        item=_make_case(manifest(1),"CCON-123",AF)
+        report=investigate_cases([item],"CCON-123",AF)
+        self.assertEqual(report["contrastCandidateCount"],0)
+        self.assertEqual(report["contrastCandidateFlowIds"],[])
+
     def test_unavailable_source_is_not_silently_treated_as_complete(self):
         report = build_investigation(self.root, "CCON-123", code=CODE)
         self.assertEqual(report["analyzedCases"], 0)
