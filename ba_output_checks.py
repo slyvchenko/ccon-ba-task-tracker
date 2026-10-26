@@ -68,7 +68,8 @@ def email_checks(draft, *, attachment_ready=None, verified_supplier_method=None)
         return []
     findings = []
     body = draft.get("body") if isinstance(draft.get("body"), str) else ""
-    if attachment_ready is False:
+    if attachment_ready is not True:
+        # Unknown readiness is NOT permission to assert a verified archive.
         for line in body.splitlines():
             if ATTACHMENT_CLAIM.search(line) and not NEGATED_CLAIM.search(line):
                 findings.append(issue(
