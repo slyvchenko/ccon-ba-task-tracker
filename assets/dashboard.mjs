@@ -475,7 +475,7 @@ function renderDetail() {
           ${potentialQuick ? '<span class="effort-hint">Кандидат короткої дії, не новий пріоритет</span>' : ''}
         </p>
         ${task.active && effectiveSignal(task) !== 'DONE' ?
-          `<button type="button" class="quiet" id="pinDeepWork" aria-pressed="${task.key === pinnedKey}">${task.key === pinnedKey ? 'Скинути мій фокус' : 'Закріпити мій фокус у цій групі'}</button>` : ''}
+          `<button type="button" class="quiet" id="pinDeepWork" aria-pressed="${task.key === pinnedKey}" ${busy ? 'disabled' : ''}>${task.key === pinnedKey ? 'Скинути мій фокус' : 'Закріпити мій фокус у цій групі'}</button>` : ''}
         <p class="muted">Фокус лише для цієї вкладки та поточної групи дій. Не обходить активний спринт або WRITE, не змінює Jira.</p>
         <ol class="brief-list">${ranking.sourceOrder.map(item => '<li>' + escapeHtml(item) + '</li>').join('')}</ol>
         <p class="muted">Порядок: активний спринт, потреба в листі, тип дії, оцінка та блокування. Копіювання не змінює Jira.</p>
@@ -575,6 +575,7 @@ function renderDetail() {
     {focusElement:Boolean(focusedEditor)});
   ['note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener('input', captureForm));
   if ($('pinDeepWork')) $('pinDeepWork').addEventListener('click',()=>{
+    if (busy) return;
     setPersonalPin(task.key === pinnedKey ? null : task.key);
     renderList();
     renderDetail();
@@ -815,7 +816,7 @@ function discardForm() {
 function setBusy(value) {
   busy = value;
   ['manual', 'manualEffort', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard',
-    'conflictOverwrite', 'conflictUseSaved', 'undoLastDone'].forEach(id => { if ($(id)) $(id).disabled = value; });
+    'conflictOverwrite', 'conflictUseSaved', 'undoLastDone', 'pinDeepWork'].forEach(id => { if ($(id)) $(id).disabled = value; });
   $('import').disabled = value;
   updateFormStatus();
 }
@@ -875,6 +876,7 @@ async function saveTask(done = false) {
   if (!task) return false;
   if (done && !confirm(completionPrompt(task))) return false;
   const editingBeforeSave = isTextEditingTarget(document.activeElement);
+  let restoreAfterSave = false;
   captureForm();
   const form = formFor(task);
   const value = structuredClone(form.value);
@@ -903,9 +905,9 @@ async function saveTask(done = false) {
     if (done) selected = visibleTasks().find(item => item.key !== task.key)?.key || null;
     renderList();
     renderDetail();
-    // The click target was replaced; keep a keyboard path back to Save,
-    // unless the user invoked Ctrl+Enter while still editing text.
-    if (!done && !editingBeforeSave) focusAfterAction(document,['save']);
+    // The original Save button is replaced and hidden once the form is clean.
+    // Restore to an enabled editor after busy clears, not to hidden Save.
+    restoreAfterSave = !done && !editingBeforeSave;
     message(cloudMode ? 'Статус, нотатки та чернетку збережено у приватній базі.' : 'Статус, нотатки та чернетку збережено в локальній базі.');
     return true;
   } catch (error) {
@@ -915,7 +917,10 @@ async function saveTask(done = false) {
       message(error.message, true);
     }
     return false;
-  } finally { setBusy(false); }
+  } finally {
+    setBusy(false);
+    if (restoreAfterSave) focusAfterAction(document,['note','manual']);
+  }
 }
 async function undoLastDone() {
   if(busy || !lastDoneToken) return;
