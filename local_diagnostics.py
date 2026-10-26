@@ -55,7 +55,12 @@ def _audit_path(path, kind):
 def _zip_permissions(root):
     """Bounded metadata-only traversal of known supplier ZIP handoff tree."""
     folder = root / "downloads" / "ccon"
-    state = _audit_path(folder, "dir")
+    # lstat of a child alone misses a symlink in its parent. Never scan
+    # outside the real workspace via downloads -> /external/ccon.
+    parent_state = _audit_path(root / "downloads", "dir")
+    state = (_audit_path(folder, "dir") if parent_state not in
+             ("UNSAFE_SYMLINK", "UNSAFE_TYPE", "UNVERIFIED_READ_ERROR")
+             else "UNSAFE_ANCESTOR")
     result = {"scope": "supplier_zip_handoff", "folder": state,
               "examined": 0, "complete": True, "statusCounts": {}}
     if state not in ("OWNER_ONLY_MODE", "UNSAFE_SHARED_MODE", "UNVERIFIED_WINDOWS_ACL"):
@@ -95,11 +100,12 @@ def collect(root=ROOT):
     root = Path(root)
     if root.is_symlink() or not root.is_dir():
         raise ValueError("Local workspace must be an existing nonsymlink directory.")
-    checks = {label: _audit_path(root / relative, kind)
-              for label, relative, kind in PRIVATE}
+    checks = {"workspace_dir": _audit_path(root, "dir")}
+    checks.update({label: _audit_path(root / relative, kind)
+                   for label, relative, kind in PRIVATE})
     zips = _zip_permissions(root)
     unsafe = {"UNSAFE_SYMLINK", "UNSAFE_TYPE", "UNSAFE_SHARED_MODE",
-              "UNVERIFIED_READ_ERROR", "UNVERIFIED_OWNER"}
+              "UNVERIFIED_READ_ERROR", "UNVERIFIED_OWNER", "UNSAFE_ANCESTOR"}
     statuses = list(checks.values()) + list(zips["statusCounts"])
     attention = bool(unsafe.intersection(statuses) or
                      "UNVERIFIED_WINDOWS_ACL" in statuses or
@@ -164,14 +170,21 @@ def export(root, output, confirm):
             "outsideWorkspace": True, "requiresReviewBeforeSharing": True}
 
 
+class _PrivateArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        # argparse normally echoes unrecognized tokens, possibly including
+        # user names, filenames or PNR. Never include those in terminal logs.
+        raise ValueError("Invalid sanitized diagnostics arguments.")
+
+
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = _PrivateArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("check", "export"))
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--confirm", default="")
-    args = parser.parse_args(argv)
     try:
+        args = parser.parse_args(argv)
         if args.command == "check":
             if args.output or args.confirm:
                 raise ValueError("Check mode cannot export files.")
