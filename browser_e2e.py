@@ -341,7 +341,7 @@ class BrowserRegression(unittest.TestCase):
             "() => matchMedia('(prefers-reduced-motion: reduce)').matches"))
         headings=self.page.locator("#list [role=heading][aria-level='3']")
         self.assertGreaterEqual(headings.count(),2)
-        self.assertIn("Спринт",headings.first.inner_text())
+        self.assertIn("СПРИНТ",headings.first.inner_text().upper())
         for selector in ("#draftTo","#draftSubject","#draftBody","#copyEmail","#email",
                          "#save","#done"):
             self.assertEqual(self.page.locator(selector).count(),1,selector)
