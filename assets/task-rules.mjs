@@ -69,11 +69,16 @@ function actionRank(task) {
   return 4;
 }
 
-function rankTasks(tasks) {
+// The personal focus pin is a view-only tie-breaker within the SAME hard
+// sprint lane and action group. It never promotes backlog over sprint or
+// non-WRITE over WRITE and never changes Jira/SQLite task priority.
+function rankTasks(tasks, {pinnedKey=null}={}) {
+  const pin = /^CCON-\\d+$/.test(pinnedKey || '') ? pinnedKey : null;
   return tasks.map((task, index) => ({task, index})).sort((left, right) => {
     const lane = priorityLane(left.task) - priorityLane(right.task);
     const group = actionRank(left.task) - actionRank(right.task);
-    return lane || group || queueScore(right.task) - queueScore(left.task) || Number(right.task.blocking) - Number(left.task.blocking) || left.index - right.index;
+    const personal = Number(right.task.key === pin) - Number(left.task.key === pin);
+    return lane || group || personal || queueScore(right.task) - queueScore(left.task) || Number(right.task.blocking) - Number(left.task.blocking) || left.index - right.index;
   }).map(item => item.task);
 }
 
