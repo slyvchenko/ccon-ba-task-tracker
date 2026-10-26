@@ -6,9 +6,9 @@ import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './
 import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload} from './manual-done-undo.mjs';
 import {createDraftRecoveryStore,RETENTION_DAYS} from './draft-recovery.mjs';
 import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
-  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus}
+  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
   from './focus-navigation.mjs';
-import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
+import {quickHandoff, priorityExplanation, priorityDimensions, completionPrompt} from './fast-handoff.mjs';
 import {handoffCopyPolicy,mailActionLabels} from './handoff-ui-policy.mjs';
 import {advancedFilterSummary,evidenceSectionLabel} from './progressive-layout.mjs';
 import {queueSummary,queueEmptyState,conciseSnapshotInfo,statusPresentation,shouldRenderBriefing,assessmentReason} from './visual-clarity.mjs';
@@ -28,12 +28,15 @@ const recoveryStore=createDraftRecoveryStore({
   newId:()=>window.crypto.randomUUID()
 });
 const LOCAL_VIEW_KEY = 'ccon-ba-desk.view-context.v1';
+const LOCAL_PIN_KEY = 'ccon-ba-desk.personal-focus-pin.v1';
+let pinnedKey = readPersonalPin();
 const restoredFocusView = readViewContext();
 let tasks = [], selected = restoredFocusView.selected, latest = null, busy = false, browserRecoveryAvailable = true, loadRequest = 0, cloudMode = false;
 let signature = '', renderedTaskVersion = '', renderedTaskKey = null, pendingDetail = false;
 let currentRevision = null, currentRevisionError = '', pollingInFlight = false, pollCycle = 0;
 const transportRecovery=createReconnectPolicy();
 const queueModel=createQueueModel();
+queueModel.setPinnedKey(pinnedKey);
 const queueDom=createQueueDomRenderer();
 const detailRequests=createDetailRequestScope(()=>selected);
 const searchRefresh=createSearchDebouncer(()=>applyFilters());
@@ -68,6 +71,24 @@ if (typeof BroadcastChannel === 'function' && recoveryStore.id) {
     }
   };
   channel.postMessage({type:'HELLO',tab:recoveryStore.id,instance:tabInstanceId});
+}
+
+function readPersonalPin() {
+  try {
+    const value=sessionStorage.getItem(LOCAL_PIN_KEY);
+    return typeof value === 'string' && /^CCON-\d+$/.test(value) ? value : null;
+  } catch { return null; }
+}
+function setPersonalPin(key) {
+  pinnedKey=queueModel.setPinnedKey(key);
+  try {
+    if (pinnedKey) sessionStorage.setItem(LOCAL_PIN_KEY,pinnedKey);
+    else sessionStorage.removeItem(LOCAL_PIN_KEY);
+  } catch { /* Disabled session storage cannot change Jira priority. */ }
+}
+function reconcilePersonalPin() {
+  if (pinnedKey && !tasks.some(task => task.key === pinnedKey &&
+      task.active && effectiveSignal(task) !== 'DONE')) setPersonalPin(null);
 }
 
 function readViewContext() {
@@ -178,6 +199,7 @@ function updateUndoControl() {
   if(lastDoneToken) $('undoLastDone').textContent='Скасувати «Виконано» · '+lastDoneToken.key;
 }
 function renderList() {
+  reconcilePersonalPin();
   updateUndoControl();
   const focusedRow = document.activeElement?.closest?.('#list [data-key]')?.dataset.key || null;
   const previousListScroll = $('list').scrollTop;
@@ -205,7 +227,7 @@ function renderList() {
     if (group !== previousGroup) entries.push({id:'group:'+index+':'+group,
       html:`<div class="queue-group" role="heading" aria-level="3">${escapeHtml(group)}</div>`});
     previousGroup = group;
-    entries.push({id:'task:'+task.key,html:`<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${quickWinCandidate(task) ? '<span class="effort-hint" role="note" aria-label="Можлива коротка дія: орієнтовний час, не підтверджено. Пріоритет черги незмінний." title="Можлива коротка дія, оцінка орієнтовна. Порядок черги не змінено.">S?</span>' : ''}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`});
+    entries.push({id:'task:'+task.key,html:`<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${quickWinCandidate(task) ? '<span class="effort-hint" role="note" aria-label="Можлива коротка дія: орієнтовний час, не підтверджено. Пріоритет черги незмінний." title="Можлива коротка дія, оцінка орієнтовна. Порядок черги не змінено.">S?</span>' : ''}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${task.key === pinnedKey ? '<span class="effort-hint" aria-label="Мій фокус у межах поточної групи пріоритету">Фокус</span>' : ''}</span></span></button>`});
   });
   if (!entries.length) {
     const state=queueEmptyState({visible:items.length,total:tasks.length,
@@ -416,6 +438,7 @@ function renderDetail() {
   const quick = quickHandoff(task);
   const ranking = priorityExplanation(task);
   const effort = effortInfo({...task, manualEffort:form.manualEffort});
+  const dimensions = priorityDimensions(task,effort);
   const potentialQuick = quickWinCandidate({...task, manualEffort:form.manualEffort});
   const handoff=handoffCopyPolicy({description:quick.description,
     readyForCopy:quick.readyForCopy,qualityState:quick.state});
@@ -444,11 +467,16 @@ function renderDetail() {
       </div>
       <p class="muted quick-proof-note">${escapeHtml(quick.evidenceNote)}</p>
       <details class="description"><summary>Пріоритет і орієнтовний обсяг</summary>
-        <p class="muted effort-summary">${escapeHtml('Обсяг: ' + effort.label +
-          (effort.source === 'MANUAL' ? ' · моя оцінка' : ' · автоматична гіпотеза, низька впевненість') +
+        <p class="muted effort-summary">${escapeHtml(
+          'Вплив: ' + dimensions.impact + ' · Терміновість: ' + dimensions.urgency +
+          ' · Залежності: ' + dimensions.dependencies + ' · Обсяг: ' + dimensions.effort +
+          ' (' + dimensions.effortSource + ') · Блокування: ' + dimensions.unblocking +
           '. ' + effort.reason)}
           ${potentialQuick ? '<span class="effort-hint">Кандидат короткої дії, не новий пріоритет</span>' : ''}
         </p>
+        ${task.active && effectiveSignal(task) !== 'DONE' ?
+          `<button type="button" class="quiet" id="pinDeepWork" aria-pressed="${task.key === pinnedKey}">${task.key === pinnedKey ? 'Скинути мій фокус' : 'Закріпити мій фокус у цій групі'}</button>` : ''}
+        <p class="muted">Фокус лише для цієї вкладки та поточної групи дій. Не обходить активний спринт або WRITE, не змінює Jira.</p>
         <ol class="brief-list">${ranking.sourceOrder.map(item => '<li>' + escapeHtml(item) + '</li>').join('')}</ol>
         <p class="muted">Порядок: активний спринт, потреба в листі, тип дії, оцінка та блокування. Копіювання не змінює Jira.</p>
       </details>
@@ -546,6 +574,14 @@ function renderDetail() {
   restoreEditorFocus($('detail'), focusedEditor || state?.focus,
     {focusElement:Boolean(focusedEditor)});
   ['note', 'draftTo', 'draftSubject', 'draftBody'].forEach(id => $(id).addEventListener('input', captureForm));
+  if ($('pinDeepWork')) $('pinDeepWork').addEventListener('click',()=>{
+    setPersonalPin(task.key === pinnedKey ? null : task.key);
+    renderList();
+    renderDetail();
+    focusAfterAction(document,['pinDeepWork']);
+    message(pinnedKey ? 'Мій фокус закріплено лише в цій групі. Jira не змінено.' :
+      'Мій фокус скинуто. Офіційний порядок відновлено.');
+  });
   if ($('useRecipientHint')) $('useRecipientHint').addEventListener('click',()=>{
     if($('draftTo').value.trim() && !confirm('Замінити поточного адресата шаблонною адресою? Перевір його вручну.'))return;
     $('draftTo').value=suggestedRecipient;
