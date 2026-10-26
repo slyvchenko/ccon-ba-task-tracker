@@ -109,8 +109,11 @@ function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprin
       ].filter(x => typeof x === 'string').join(' ').toLocaleLowerCase('uk-UA');
       folded = text.replace(/[^\p{L}\p{N}]/gu, '');
     }
+    // Punctuation-only tokens fold to an empty string, which matches every
+    // task. Keep exact punctuation searches possible, but never treat an
+    // empty folded candidate as a universal match.
     return queryTerms.every((term, index) => text.includes(term) ||
-      folded.includes(cleanTerms[index]));
+      (cleanTerms[index].length > 0 && folded.includes(cleanTerms[index])));
   });
 }
 
