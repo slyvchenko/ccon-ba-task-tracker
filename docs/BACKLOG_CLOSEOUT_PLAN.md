@@ -97,3 +97,7 @@ Synthetic Chromium now records cold reload and debounced search across 100/500/1
 ### Post-#47 update
 
 The existing queue has semantic group headings and a non-hover accessible low-confidence quick hint; synthetic Chrome tests include 320px forced-colors, reduced-motion, focus outline and visible email actions. No actual NVDA/Windows/400% zoom or human 20–30 gold-case timing claim. Final #48 must reconcile merged code with the acceptance ledger while retaining these explicit UAT blockers.
+
+### Post-#48: scoped code package closure vs actual product acceptance
+
+PR #39–48 constitute the planned *engineering* sequence, conditional on #48 being reviewed, green and merged. The canonical 129 original requirement statuses were **not falsely rewritten as DONE**. `release_readiness.py` reports `BLOCKED_INDEPENDENT_UAT` because all real BA/Windows signoffs still lack independent evidence. Any future work to close QA-02/03/10/13 and actual Windows deployment is a separate explicit acceptance/operations activity, not silently claimed by this merge series. Optional P2/P3 decisions remain visible.
