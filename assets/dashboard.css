@@ -1485,3 +1485,23 @@ a:focus-visible {
 /* v2.42: lightweight reversible local completion without layout mode. */
 #undoLastDone[hidden] {display:none}
 #undoLastDone {white-space:normal;font-size:12px;overflow-wrap:anywhere}
+
+/* v2.49.1 FOCUS-05: one compact action during deep detail scrolling.
+   Zero-height slot avoids moving the editor or the scroll anchor. */
+.sticky-next-action {position:sticky;top:0;height:0;overflow:visible;z-index:20}
+.sticky-next-action[hidden] {display:none!important}
+.sticky-action-inner {
+  display:flex;align-items:center;gap:12px;
+  padding:9px 12px;background:#fff;border:1px solid var(--line);
+  border-left:4px solid var(--blue);border-radius:8px;
+  box-shadow:0 2px 8px rgba(25,50,85,.12);max-width:100%;
+}
+.sticky-action-text {flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.sticky-action-inner button {flex:none}
+@media (max-width:380px) {
+  .sticky-action-inner {padding:7px 8px;gap:6px}
+  .sticky-action-inner button {padding:6px;font-size:12px}
+}
+@media (forced-colors:active) {
+  .sticky-action-inner {border:1px solid CanvasText;border-left:4px solid Highlight;box-shadow:none}
+}
