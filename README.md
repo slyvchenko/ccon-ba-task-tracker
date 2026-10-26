@@ -440,3 +440,9 @@ Playwright **не потрібен для звичайного запуску** 
 Не всі позначені `IMPLEMENTED (code)` пункти мають людське підтвердження. `docs/BACKLOG_ACCEPTANCE_LEDGER.json` тепер містить **129 рядків** із незмінним початковим статусом, окремим `human_acceptance=NOT_RECORDED`, маршрутом до тематичного PR, ризиком дублювання і конкретним посиланням на код/тест (де його перевірено). Автоматичний CI перевіряє синхронізацію: `python backlog_audit.py --check`. Після зміни `docs/PRODUCT_BACKLOG.md` повторно згенеруй реєстр командою `python backlog_audit.py` і переглянь diff.
 
 `docs/BACKLOG_RECONCILIATION.md` описує **9 перетинів вимог** для можливого об’єднання приймання, без видалення функціоналу. `docs/BA_GOLD_CASE_ACCEPTANCE.md` задає 26 рекомендованих приватних кейсів для BA, QA-02/03/10/13 та межу synthetic CI. Розрахункова робота після #39: **9 тематичних PR #40–48 плюс людський UAT**. Cloud/SSO P3 поки не входить до локальної версії.
+
+## v2.40: безпечне зіставлення REST ↔ supplier та актуальність джерел
+
+ZIP review більше не прирівнює єдині RQ/RS із **різними explicit correlation IDs**, а також не зіставляє повторні REST операції з одним supplier exchange. Результат показує кандидатні пари й кількість exchange без пари за напрямом, але не публікує values/IDs. Всі mapping залишаються **CANDIDATE_ONLY**, не фактом бізнес-правила.
+
+Коли локально підтверджена Confluence-сторінка або Jira attachment змінила hash/verification, попередній кешований BA-аналіз переглядається, навіть коли Jira fingerprint той самий. Правила й приватні UAT-приклади: `docs/EVIDENCE_PROVENANCE_CONTRACT.md`. Live Jira/Kibana/CCON evidence та незалежний семантичний BA review досі потрібні; git CI використовує лише synthetic дані.
