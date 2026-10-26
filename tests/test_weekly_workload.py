@@ -34,13 +34,14 @@ class WeeklyWorkloadTests(unittest.TestCase):
         self.append("CCON-15", "2026-10-23T10:00:00+00:00", "DONE")
         self.append("CCON-16", "2026-10-24T10:00:00+00:00", "AUTO")
 
-    def append(self, key, timestamp, status, active=True, signal=None):
+    def append(self, key, timestamp, status, active=True, signal=None, fresh=True):
         with closing(sqlite3.connect(self.db)) as conn:
             conn.execute("INSERT INTO task_history(task_key,recorded_at,snapshot_json) "
                          "VALUES(?,?,?)", (
                              key, timestamp, json.dumps({
                                  "active": active, "manualStatus": status,
                                  "jiraStatus": "OPEN", "signal": signal,
+                                  "analysisVerified": bool(signal) and fresh,
                                  "note": "SYNTHETIC-PRIVATE-SUPPLIER-NOTE"})))
             conn.commit()
 
@@ -96,6 +97,28 @@ class WeeklyWorkloadTests(unittest.TestCase):
         metrics=weekly_report(self.root,"2026-W43",today=date(2026,10,26))
         self.assertEqual(metrics["weeklyTransitions"]["completed"],2)
         self.assertEqual(metrics["asOfWeekEnd"]["completedState"],3)
+
+    def test_stale_auto_done_is_reopened_not_counted_as_completed(self):
+        self.append("CCON-93", "2026-10-18T13:00:00+00:00",
+                    "AUTO", signal="DONE", fresh=True)
+        self.append("CCON-93", "2026-10-23T13:00:00+00:00",
+                    "AUTO", signal="DONE", fresh=False)
+        values=weekly_report(self.root,"2026-W43",today=date(2026,10,26))
+        self.assertEqual(values["weeklyTransitions"]["reopened"],2)
+        self.assertEqual(values["asOfWeekEnd"]["workInProgress"],3)
+        self.assertEqual(values["asOfWeekEnd"]["completedState"],2)
+
+    def test_historical_freshness_matches_real_history_contract(self):
+        from task_history import view_state
+        task={"contextFingerprint":"new","analysis":{
+            "signal":"WAIT", "reasonUk":"Synthetic BA analysis",
+            "nextActionUk":"Investigate synthetic REST source",
+            "contextFingerprint":"old"}}
+        self.assertFalse(view_state(task)["analysisVerified"])
+        task["analysis"]["contextFingerprint"]="new"
+        self.assertTrue(view_state(task)["analysisVerified"])
+        task["analysis"]["stale"]=True
+        self.assertFalse(view_state(task)["analysisVerified"])
 
     def test_no_state_created_and_bad_week_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
