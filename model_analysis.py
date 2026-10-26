@@ -485,8 +485,14 @@ def analyze_all(root=ROOT, model_call=request_analysis, issue_key=None):
                               sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16])
         sprint_version = sprint_cache_version(source)
         linked_version = linked_document_version(source)
+        source_audit = source.get("linkedDocumentAudit") or {}
+        # Existing caches predating v2.40 are valid when there are genuinely
+        # zero linked/verified documents, but NOT once any source is referenced.
+        legacy_empty_version = linked_version if not (
+            source_audit.get("eligibleLinkedSourceCount") or
+            source_audit.get("verifiedLocalSourceCount")) else None
         if (issue_key is None and previous.get("contextFingerprint") == fingerprint and
-                previous.get("linkedDocumentVersion") == linked_version and
+                previous.get("linkedDocumentVersion", legacy_empty_version) == linked_version and
                 previous.get("evidenceVersion", "none") == evidence_version and
                 previous.get("attachmentEvidenceVersion", "none") == attachment_version and
                 previous.get("sprintVersion") == sprint_version and
