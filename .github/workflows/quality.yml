@@ -59,6 +59,9 @@ jobs:
   windows-smoke:
     runs-on: windows-latest
     timeout-minutes: 18
+    env:
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
     permissions:
       contents: read
     steps:
@@ -68,6 +71,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Install IANA timezone data for Windows cloud-scheduler unit tests
+        run: python -m pip install tzdata==2025.3
       - name: Native Windows Python and CMD regression checks (synthetic only)
         shell: pwsh
         run: |
