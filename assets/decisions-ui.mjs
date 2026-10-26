@@ -33,7 +33,7 @@ export function decisionsMarkup(data, escape) {
         ' (' + escape(e.actor) + '), ' + escape(e.reason) + '</li>').join('') +
     '</ol></details>';
 }
-export async function loadTaskDecisions(key, api, escape, notify, current) {
+export async function loadTaskDecisions(key, api, escape, notify, current, getActiveScope=()=>current) {
   const node = document.getElementById('decisionTracker');
   if (!node) return;
   try {
@@ -51,7 +51,8 @@ export async function loadTaskDecisions(key, api, escape, notify, current) {
           impact: value('#decisionImpact'), reason: value('#decisionReason')
         });
         notify('Рішення додано в локальну історію. Jira не змінена.');
-        if (current() === key) loadTaskDecisions(key, api, escape, notify, current);
+        const live = getActiveScope();
+        if (live() === key) loadTaskDecisions(key, api, escape, notify, live, getActiveScope);
       } catch (error) {
         notify('Рішення не збережено: ' + error.message, true);
         button.disabled = false;
