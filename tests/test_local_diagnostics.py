@@ -57,7 +57,7 @@ class LocalDiagnosticsTests(unittest.TestCase):
             with self.subTest(consent=consent), self.assertRaises(ValueError):
                 export(self.root, self.output, consent)
         self.assertFalse(self.output.exists())
-        with redirect_stderr(io.StringIO()), self.assertLogs(level="ERROR") if False else redirect_stdout(io.StringIO()):
+        with redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
             self.assertEqual(main(["export", "--root", str(self.root)]), 1)
         self.assertFalse(self.output.exists())
 
