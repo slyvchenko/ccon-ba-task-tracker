@@ -1,5 +1,5 @@
-from contextlib import closing
 """Synthetic, local-only effort estimate persistence and conflict regression tests."""
+from contextlib import closing
 import json
 import sqlite3
 import tempfile
