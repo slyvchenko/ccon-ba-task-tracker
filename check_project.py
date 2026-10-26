@@ -15,6 +15,8 @@ def main():
     # The source-controlled backlog must never drift from its audit ledger.
     # Validation contains only requirement text and paths, no private Jira data.
     commands.append([sys.executable, 'backlog_audit.py', '--check'])
+    # Every still-unfinished requirement must remain in the deterministic plan.
+    commands.append([sys.executable, 'remaining_work_plan.py', '--check'])
     # Structural check must remain green even when independent human UAT is
     # correctly BLOCKED. This does not turn CI success into release approval.
     commands.append([sys.executable, 'release_readiness.py', '--check'])

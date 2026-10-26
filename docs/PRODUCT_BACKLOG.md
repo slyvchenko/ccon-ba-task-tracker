@@ -28,8 +28,8 @@
 
 ### Звірка коду після v2.48.1 (26.10.2026)
 
-- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **61 PARTIAL**, **21 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
-- Зіставлено й перекласифіковано **13 окремих ID** за конкретним source/test evidence. Решта **116** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
+- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **63 PARTIAL**, **19 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
+- Зіставлено й перекласифіковано **15 окремих ID** за конкретним source/test evidence (13 у #53, ще UI-07 і QA-14 у #54). Решта **114** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
 - `IMPLEMENTED` означає лише підтверджений механізм (synthetic/code), `PARTIAL` - лише частину критеріїв, `PLANNED` - критерії не закрито. Оригінальні 37/52/32/1 у розділі v2.39 нижче - **історичний baseline**, а не поточні числа.
 - Незмінні external gates: реальні Jira/Kibana/CCON, 26 gold cases, людський UX, native Edge/NVDA/8h, Windows backup/restore та локальне оновлення. CI не доводить business signoff.
 - Підстави коригувань, межі доказів і невирішені P1/P2 scope питання: `docs/BACKLOG_RECONCILIATION.md`. Issue #50 залишається відкритим.
@@ -135,7 +135,7 @@
 | PRIOR-09 | P2 | PLANNED | Show weekly WIP / blockers / completion versus rework | Not a gamified Done count, J-01 |
 | UI-05 | P1 | PARTIAL (synthetic 320px responsive checks; 768/1440 native viewport UAT open) | Density and hierarchy audit at 320/768/1440 viewport | A-03; no horizontal overflow/hidden primary action |
 | UI-06 | P1 | PARTIAL (v2.30 unsaved/saving/error/CAS conflict states; real error and screen reader UAT open) | Clear statuses saved, unsaved, saving, failed, stale | A-07/A-12 and race tests |
-| UI-07 | P1 | PLANNED | Distinct empty / unavailable / permissions / stale / no matches states | Correct recovery action in each state |
+| UI-07 | P1 | PARTIAL (distinct no-snapshot/empty/filtered/stale states; 403/permissions UX and Windows UAT open) | Distinct empty / unavailable / permissions / stale / no matches states | Correct recovery action in each state |
 | UI-08 | P2 | PLANNED | Readable PNR/field/code formatting and safe wrapping | No truncation in clipboard/export, A-06 |
 | UI-09 | P2 | PARTIAL (native evidence disclosures and labels; human 5-second scan pending) | Default collapsed evidence sections after human 5-sec test | Keep main results visible, never bury next action |
 | UI-10 | P2 | PLANNED | Visual diff regression for existing layout and copy buttons | Snapshot on 3 viewport sizes; no brand approval bypass |
@@ -170,7 +170,7 @@
 | QA-11 | P0 | PARTIAL (v2.27 synthetic concurrent instances/restarts/conflicts; real browser crash drill open) | Cross-tab edits, stale conflict and crash recovery integration | P-15/P-17/P-18, 0 silent overwrite |
 | QA-12 | P1 | PARTIAL (v2.34 dedicated Chromium Playwright synthetic DOM E2E CI; Windows/Edge/NVDA still open) | DOM behavior tests with approved Playwright/browser runner | Focus, click, screenreader, history, network reconnect |
 | QA-13 | P1 | PLANNED | Local-only 20–30 real-case semantic BA handoff study | Actual independent gold scores, not CI counts |
-| QA-14 | P1 | PLANNED | Quantified code/branch coverage baseline, gaps by critical path | No invented 100%; dev-only tooling approval |
+| QA-14 | P1 | PARTIAL (Python branch coverage in synthetic CI; critical-path gaps and coverage threshold review open) | Quantified code/branch coverage baseline, gaps by critical path | No invented 100%; dev-only tooling approval |
 | QA-15 | P2 | PARTIAL (v2.34 90-transition synthetic Chromium short-soak; real 8h/diverse OS scheduled drill open) | Scheduled offline regression drill on diverse machine profiles | OS, Python version, locale, browser, power mode |
 | OPS-01 | P1 | IMPLEMENTED (repeatable 100/500/1000 synthetic Python/Node smoke; actual-device UAT pending) | Standard synthetic performance smoke + fixed cohort sizes | Repeatable local script and measurement doc |
 | OPS-02 | P1 | PLANNED | Private local diagnostic bundle with PII redaction and consent | No production logs by default; explicit export |

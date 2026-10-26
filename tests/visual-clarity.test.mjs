@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {queueSummary,conciseSnapshotInfo,statusPresentation,
+import {queueSummary,queueEmptyState,conciseSnapshotInfo,statusPresentation,
   shouldRenderBriefing,assessmentReason} from '../assets/visual-clarity.mjs';
 
 test('primary queue has only scan-critical counters while all previous counts survive',()=>{
@@ -52,4 +52,23 @@ test('avoid duplicate empty briefing and reason only, no loss of real data',()=>
   assert.equal(assessmentReason(null),'');
   assert.equal(assessmentReason('  '),'');
   assert.equal(assessmentReason(' Supplier requires new RT fields '),'Supplier requires new RT fields');
+});
+
+test('empty queue messaging separates no snapshot, empty scope, filtered and stale',()=>{
+  assert.equal(queueEmptyState({visible:1,total:4,hasSnapshot:true}),null);
+  const states=[
+    queueEmptyState({visible:0,total:0,hasSnapshot:false}),
+    queueEmptyState({visible:0,total:0,hasSnapshot:true}),
+    queueEmptyState({visible:0,total:7,hasSnapshot:true}),
+    queueEmptyState({visible:0,total:7,hasSnapshot:true,importError:true}),
+    queueEmptyState({visible:0,total:0,hasSnapshot:false,importError:true})
+  ];
+  assert.deepEqual(states.map(x=>x.kind),['unavailable','empty','no-matches','stale','error']);
+  for (const state of states) {
+    assert.ok(state.text.trim());
+    assert.ok(!/успішно синхронізовано/i.test(state.text));
+  }
+  assert.match(states[2].text,/фільтр/);
+  assert.match(states[3].text,/не вдалося/);
+  assert.match(states[4].text,/Попереднього списку немає/);
 });

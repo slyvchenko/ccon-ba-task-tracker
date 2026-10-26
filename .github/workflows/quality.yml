@@ -27,6 +27,28 @@ jobs:
       - name: Validate private cloud Compose manifest without credentials
         run: docker compose --env-file .env.example config --quiet
 
+  coverage-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned developer-only Python branch coverage
+        run: python -m pip install coverage==7.11.0
+      - name: Print synthetic regression branch coverage without exporting private data
+        run: |
+          python -m coverage run --branch --source=. --omit='tests/*,examples/*' -m unittest discover -s tests
+          python -m coverage report -m --skip-covered
+          python -m coverage json -o coverage-summary.json
+          python -c "import json; x=json.load(open('coverage-summary.json')); print('TOTAL_STMTS=',x['totals']['num_statements'],'BRANCHES=',x['totals']['num_branches'],'MISSING_BRANCHES=',x['totals']['missing_branches'])"
+      # No CI artifact upload of .coverage, source files, runtime inbox or user payloads.
+
   browser-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 14

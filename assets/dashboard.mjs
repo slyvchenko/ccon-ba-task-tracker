@@ -10,7 +10,7 @@ import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
 import {quickHandoff, priorityExplanation, completionPrompt} from './fast-handoff.mjs';
 import {handoffCopyPolicy,mailActionLabels} from './handoff-ui-policy.mjs';
 import {advancedFilterSummary,evidenceSectionLabel} from './progressive-layout.mjs';
-import {queueSummary,conciseSnapshotInfo,statusPresentation,shouldRenderBriefing,assessmentReason} from './visual-clarity.mjs';
+import {queueSummary,queueEmptyState,conciseSnapshotInfo,statusPresentation,shouldRenderBriefing,assessmentReason} from './visual-clarity.mjs';
 import {createQueueModel,createSearchDebouncer,selectedAfterFilter} from './queue-performance.mjs';
 import {createReconnectPolicy} from './reconnect-policy.mjs';
 import {EFFORT_LABELS, effortInfo, quickWinCandidate, quickWinExplanation} from './effort-planning.mjs';
@@ -201,7 +201,12 @@ function renderList() {
     const heading = group !== previousGroup ? `<div class="queue-group" role="heading" aria-level="3">${escapeHtml(group)}</div>` : '';
     previousGroup = group;
     return `${heading}<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${quickWinCandidate(task) ? '<span class="effort-hint" role="note" aria-label="Можлива коротка дія: орієнтовний час, не підтверджено. Пріоритет черги незмінний." title="Можлива коротка дія, оцінка орієнтовна. Порядок черги не змінено.">S?</span>' : ''}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}</span></span></button>`;
-  }).join('') || '<div class="empty">Немає задач за цими фільтрами.</div>';
+  }).join('') || (() => {
+    const state=queueEmptyState({visible:items.length,total:tasks.length,
+      hasSnapshot:!!latest,importError:!!currentRevisionError});
+    return '<div class="empty queue-empty" role="status" data-state="' +
+      escapeHtml(state.kind) + '">' + escapeHtml(state.text) + '</div>';
+  })();
   $('list').scrollTop = previousListScroll;
   if ($('list').closest('aside')) $('list').closest('aside').scrollTop = previousSidebarScroll;
   // innerHTML replaces buttons: restore keyboard focus only if it WAS on

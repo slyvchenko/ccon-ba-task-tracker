@@ -54,6 +54,11 @@ class StaticReleaseTests(unittest.TestCase):
             self.assertIsNone(archive.testzip())
             for filename, _ in STATIC_FILES.values():
                 self.assertIn('ccon-ba-desk/' + filename, names)
+            # The packaged check_project.py now invokes the work-plan checker.
+            for name in ('remaining_work_plan.py', 'docs/REMAINING_WORK_PLAN.md',
+                         'tests/priority-property.test.mjs',
+                         'tests/test_public_artifact_boundary.py'):
+                self.assertIn('ccon-ba-desk/' + name, names)
             self.assertFalse(any('/data/' in name or '/logs/' in name or 'ba_state.db' in name or '.jira-credentials' in name for name in names))
             archive.extractall(self.root)
         environment = {key: value for key, value in os.environ.items() if key != 'PYTHONPATH'}

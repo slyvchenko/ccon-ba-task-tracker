@@ -21,3 +21,7 @@ log_config.json
 tests/tmp*/
 downloads/
 .local-server/
+
+# Developer-only branch coverage; never export source/PII context.
+.coverage*
+coverage-summary.json
