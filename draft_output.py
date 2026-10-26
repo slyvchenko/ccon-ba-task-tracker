@@ -18,8 +18,10 @@ def supplier_zip_ready(root, key):
     """Valid, current, issue-scoped supplier ZIP from the catalog."""
     try:
         data = log_catalog(Desk(root), key)
-        return any(not item.get("stale") and not item.get("needsReview")
-                   for item in data.get("items", []))
+        # One fresh ZIP is not enough if Jira references multiple flows.
+        # This state checks ALL required flow archives, current Jira context,
+        # verified supplier and archive hashes.
+        return data.get("state") == "READY"
     except (OSError, KeyError, TypeError, ValueError):
         return False
 
@@ -60,13 +62,4 @@ def make_ready_draft(key, analysis, method=None, attachment_ready=False):
                     "Could you please confirm the expected behavior and provide "
                     "a relevant example if available?")
         draft["body"] = body
-    result = normalize_draft(key, draft, method)
-    if not attachment_ready:
-        # normalize_draft historically states logs are attached on all
-        # drafts, even before any CCON download. Remove that false statement.
-        result["body"] = re.sub(
-            r"(?m)^\s*Logs are attached for your reference\.\s*\n?",
-            "", result["body"]
-        )
-        result["body"] = re.sub(r"\n{3,}", "\n\n", result["body"]).strip()
-    return result
+    return normalize_draft(key, draft, method, attachment_ready=attachment_ready)
