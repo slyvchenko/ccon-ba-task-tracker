@@ -240,6 +240,8 @@ def request_analysis(settings, instructions, task_context, note="", opener=None)
                 "Multiple calls to the same method are a retry candidate, not proof. "
                 "When a multi-flow errorSeriesInvestigation is available, use it "
                 "to describe recurrence, coverage, exceptions and missing proof. "
+                "A contrasting flow lacking the target error code is only a candidate "
+                "for manual comparison, NEVER proof that its operation succeeded. "
                 "Every root-cause hypothesis remains UNCONFIRMED; never turn "
                 "an observation that the provider returned an error into a "
                 "conclusion that the provider caused the bug. "
@@ -472,6 +474,9 @@ def analyze_all(root=ROOT, model_call=request_analysis, issue_key=None):
                     "coverage": series["coverage"],
                     "analyzedCases": series["analyzedCases"],
                     "availableUniqueFlows": series["availableUniqueFlows"],
+                    "contrastCandidateCount": series["contrastCandidateCount"],
+                    "contrastCandidateFlowIds": series["contrastCandidateFlowIds"][:10],
+                    "contrastInterpretation": series["contrastInterpretation"],
                     "groups": series["groups"][:15],
                     "hypotheses": series["hypotheses"][:15],
                     "questionsUk": series["questionsUk"][:12],
