@@ -231,8 +231,10 @@ class BrowserRegression(unittest.TestCase):
         self.page.locator('#list button[data-key="CCON-4"]').wait_for()
         self.assertEqual(order(),["CCON-2","CCON-1","CCON-4","CCON-3"])
         self.choose("CCON-1")
-        self.page.locator("summary").filter(
-            has_text="Пріоритет і орієнтовний обсяг").click()
+        # View-state restore can keep this existing <details> open after reload.
+        if not self.page.locator("#pinDeepWork").is_visible():
+            self.page.locator("summary").filter(
+                has_text="Пріоритет і орієнтовний обсяг").click()
         self.page.locator("#pinDeepWork").click()
         self.assertEqual(order(),["CCON-2","CCON-4","CCON-1","CCON-3"])
         self.assertIsNone(self.page.evaluate(
