@@ -1,5 +1,6 @@
 """Synthetic weekly work-state tests. No real Jira or BA database access."""
 import json
+import os
 from contextlib import closing
 import sqlite3
 import tempfile
@@ -32,13 +33,13 @@ class WeeklyWorkloadTests(unittest.TestCase):
         self.append("CCON-15", "2026-10-23T10:00:00+00:00", "DONE")
         self.append("CCON-16", "2026-10-24T10:00:00+00:00", "AUTO")
 
-    def append(self, key, timestamp, status, active=True):
+    def append(self, key, timestamp, status, active=True, signal=None):
         with sqlite3.connect(self.db) as conn:
             conn.execute("INSERT INTO task_history(task_key,recorded_at,snapshot_json) "
                          "VALUES(?,?,?)", (
                              key, timestamp, json.dumps({
                                  "active": active, "manualStatus": status,
-                                 "jiraStatus": "OPEN",
+                                 "jiraStatus": "OPEN", "signal": signal,
                                  "note": "SYNTHETIC-PRIVATE-SUPPLIER-NOTE"})))
             conn.commit()
 
@@ -59,6 +60,26 @@ class WeeklyWorkloadTests(unittest.TestCase):
         for secret in ("CCON-11", "SYNTHETIC-PRIVATE",str(self.root),
                        "task_key","snapshot_json"):
             self.assertNotIn(secret, output)
+
+    def test_auto_signal_controls_blockers_and_completed_transitions(self):
+        self.append("CCON-90", "2026-10-18T14:00:00+00:00",
+                    "AUTO", signal="READY")
+        self.append("CCON-90", "2026-10-23T14:00:00+00:00",
+                    "AUTO", signal="DONE")
+        self.append("CCON-91", "2026-10-23T15:00:00+00:00",
+                    "AUTO", signal="WAIT")
+        result=weekly_report(self.root,"2026-W43",today=date(2026,10,26))
+        self.assertEqual(result["asOfWeekEnd"]["blocked"],2)
+        self.assertEqual(result["asOfWeekEnd"]["completedState"],3)
+        self.assertEqual(result["weeklyTransitions"]["completed"],2)
+
+    def test_relative_path_and_sunday_week_are_supported(self):
+        relative=Path(os.path.relpath(self.root,Path.cwd()))
+        report=weekly_report(relative,"2026-W43",today=date(2026,10,25))
+        self.assertTrue(report["weekMayBeIncomplete"])
+        monday=weekly_report(relative,"2026-W43",today=date(2026,10,26))
+        self.assertFalse(monday["weekMayBeIncomplete"])
+        self.assertEqual(report["asOfWeekEnd"],monday["asOfWeekEnd"])
 
     def test_no_state_created_and_bad_week_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
