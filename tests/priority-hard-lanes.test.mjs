@@ -32,7 +32,7 @@ test('manual DONE never outranks any open backlog and unverified is never sprint
               make('CCON-3',true,'WRITE',100,{activeSprintStatus:'NOT_CONFIGURED'})];
  const keys=rankTasks(input).map(x=>x.key);
  assert.equal(keys.at(-1),'CCON-1');
- assert.equal(keys[0],'CCON-2');
+ assert.equal(keys[0],'CCON-3'); // WRITE within outside-sprint lane still precedes READY
  assert.equal(priorityLane(input[2]),1);
 });
 test('quick-task heuristic cannot change queue order, task state or source score',()=>{
