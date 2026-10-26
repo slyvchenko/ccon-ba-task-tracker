@@ -1644,7 +1644,7 @@
       "requirement": "Safe signed release/backup metadata and rollback rehearsal",
       "acceptance_criteria": "Verify hashes; old app loads additive migration",
       "suggested_batch": "#45",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
       "code_locator": "release_integrity.py",
       "test_locator": "tests/test_release_integrity.py",
       "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
