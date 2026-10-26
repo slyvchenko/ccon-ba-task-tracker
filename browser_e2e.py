@@ -242,6 +242,19 @@ class BrowserRegression(unittest.TestCase):
         self.assertEqual(next(t for t in self.desk.view()["tasks"] if t["key"]=="CCON-1")
                          ["analysis"]["queueScore"],88)
 
+    def test_save_restores_focus_to_enabled_note_not_hidden_save(self):
+        self.choose("CCON-1")
+        self.page.locator("#note").fill("Synthetic save focus check")
+        self.page.locator("#save").click()
+        self.page.wait_for_function(
+            "()=>document.querySelector('#savedIndicator')?.hidden===false")
+        self.page.wait_for_function(
+            "()=>document.activeElement?.id==='note'")
+        self.assertTrue(self.page.locator("#note").is_enabled())
+        self.assertTrue(self.page.locator("#save").is_hidden())
+        self.assertEqual(self.page.locator("#note").input_value(),
+                         "Synthetic save focus check")
+
     def test_bulk_failure_focuses_retry_and_escape_returns_to_launcher(self):
         self.page.route("**/api/email/open-batch",lambda route:route.fulfill(
             status=503,content_type="application/json",
