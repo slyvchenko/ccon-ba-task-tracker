@@ -90,3 +90,16 @@ test('search finds mixed technical method, supplier alias and linked issue token
   assert.deepEqual(filterTasks(list, {search:'rest GetOrder'}).map(x=>x.key), ['CCON-888']);
   assert.deepEqual(filterTasks(list, {search:'unknown method'}), []);
 });
+
+test('punctuation-only query must not match all tasks via empty folded text', () => {
+  const list = [
+    task('CCON-101', 'READY', 50, {summary:'Normal synthetic order'}),
+    task('CCON-102', 'READY', 50, {summary:'Synthetic: method failed'}),
+    task('CCON-103', 'READY', 50, {summary:'Value 100% is observed'})
+  ];
+  assert.deepEqual(filterTasks(list,{search:'!!!'}).map(x=>x.key),[]);
+  assert.deepEqual(filterTasks(list,{search:'@'}).map(x=>x.key),[]);
+  assert.deepEqual(filterTasks(list,{search:'%'}).map(x=>x.key),['CCON-103']);
+  assert.deepEqual(filterTasks(list,{search:'method !!!'}).map(x=>x.key),[]);
+  assert.deepEqual(filterTasks(list,{search:'method:'}).map(x=>x.key),['CCON-102']);
+});
