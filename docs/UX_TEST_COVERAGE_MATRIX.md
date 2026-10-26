@@ -168,3 +168,7 @@ New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, 
 ## v2.39: backlog evidence integrity and explicit human UAT
 
 `tests/test_backlog_audit.py` freezes the 129-row canonical inventory, verifies unique/prioritized rows, required acceptance criteria, missing evidence pointers, deferred cloud scope, route ownership, potential duplicate acceptance and cannot-auto-DONE gates. The CI `backlog_audit.py --check` regenerates the JSON and rejects manual/stale ledger changes. No actual Windows, Jira, Kibana, CCON or 20–30 gold-case acceptance was performed. See `docs/BACKLOG_RECONCILIATION.md` and `docs/BA_GOLD_CASE_ACCEPTANCE.md`.
+
+## v2.40: cross-layer identity and local source freshness
+
+`tests/test_value_mapping.py`: conflicting explicit IDs, one supplier used twice, multiple supplier retry IDs, incomplete exchanges, partial unique matching; no sensitive values/trace ID in outputs. `tests/test_evidence_provenance_40.py`: deterministic local source verification version and non-HTTP Kibana action-planning boundaries. Live Jira/Confluence source meaning and supplier API transformation remain outside synthetic CI.
