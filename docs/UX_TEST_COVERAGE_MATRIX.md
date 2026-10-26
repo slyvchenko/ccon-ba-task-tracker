@@ -176,3 +176,7 @@ New `tests/progressive-layout.test.mjs` covers active nondefault filter marker, 
 ## v2.41: manual supplier handoff readiness
 
 `tests/test_email_rules.py` verifies that legacy attachment wording is stripped without explicit archive proof and that verified normalization stays idempotent. `tests/test_ba_output_checks.py` blocks affirmative attachment language when archive readiness is unknown. `tests/test_log_attachments.py` verifies single valid ZIP plus missing second flow returns PARTIAL, preventing falsely ready email copy. Real recipient and Outlook composer human UAT remains open.
+
+## v2.42: undo safety and real browser focus
+
+`tests/manual-done-undo.test.mjs`: token validation, wrong issue, stale revision, inactive task, once-only DONE undo; payload sends exact expectedManualRevision and status only, never Jira/email. `browser_e2e.py`: actual Chromium Done confirmation → successful SQLite save → click undo → original manual status restored. Real Windows keyboard/time-to-action and human semantic approval remain open.

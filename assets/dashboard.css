@@ -1481,3 +1481,7 @@ a:focus-visible {
   font-weight:700;
 }
 .data-menu-group > p {padding-left:10px;padding-right:10px}
+
+/* v2.42: lightweight reversible local completion without layout mode. */
+#undoLastDone[hidden] {display:none}
+#undoLastDone {white-space:normal;font-size:12px;overflow-wrap:anywhere}

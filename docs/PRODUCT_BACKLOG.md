@@ -350,3 +350,11 @@
 - Positive, partial, no-ZIP and manually authored/legacy body regressions are synthetic and do not establish real supplier, correct recipient, exact REST behavior or human BA approval.
 - Full boundary contract and practical UAT: `docs/HANDOFF_GATE_CONTRACT.md`. BA-01/02/05, OUT-01/02 and QUICK-02/03/04 remain source/business UAT gates, not automatically DONE.
 
+
+### v2.42 #42: одне безпечне локальне Undo
+
+- Після явного «Виконано → Далі» або встановлення manual status DONE з’являється тимчасова кнопка `Скасувати «Виконано» · CCON-…`. Це **локальна дія** для останньої успішно завершеної задачі, а не Jira Reopen.
+- Повернення попереднього manual status виконується з **exact `expectedManualRevision`**. Інша вкладка або новий save змінює revision і блокує Undo. Нотатки/чернетки не відкотяться разом зі статусом і не будуть тихо перезаписані.
+- Кнопка зникає після одного Undo, інвалідного стану, перезавантаження вкладки або подальшої локальної операції. No external Jira/mail request or automatic batch completion.
+- Pure unit + real synthetic Chromium test з фізичним кліком Done/Undo. QUICK-05/07/08 і FOCUS-04/05/07/08 лишаються для human workflow UAT або scope review; не додаємо другу систему пріоритетів.
+
