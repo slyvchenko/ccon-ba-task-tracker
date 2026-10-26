@@ -28,7 +28,7 @@
 
 ### Звірка коду після v2.48.1 (26.10.2026)
 
-- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **78 PARTIAL**, **4 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
+- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **79 PARTIAL**, **3 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
 - Зіставлено й перекласифіковано **15 окремих ID** за конкретним source/test evidence (13 у #53, ще UI-07 і QA-14 у #54). Решта **114** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
 - `IMPLEMENTED` означає лише підтверджений механізм (synthetic/code), `PARTIAL` - лише частину критеріїв, `PLANNED` - критерії не закрито. Оригінальні 37/52/32/1 у розділі v2.39 нижче - **історичний baseline**, а не поточні числа.
 - Незмінні external gates: реальні Jira/Kibana/CCON, 26 gold cases, людський UX, native Edge/NVDA/8h, Windows backup/restore та локальне оновлення. CI не доводить business signoff.
@@ -132,7 +132,7 @@
 | PRIOR-06 | P1 | PARTIAL (manual owner, waitingOn, due/review dates and overdue; no-duplicate-letter UAT open) | Waiting sweep follow-up due date and owner with no repeat letter | Due status visible, source-backed, J-05 |
 | PRIOR-07 | P2 | PARTIAL (v2.50.6 local opt-in manual time-to-handoff aggregates by BA archetype; real measurement UAT open) | Time-to-handoff metrics by real work archetype | Local opt-in, no PII, no cloud telemetry |
 | PRIOR-08 | P2 | PARTIAL (v2.50.6 user-entered anonymized priority band corrections; no auto ranking feedback, human UAT open) | Feedback on wrong priority captured as manual correction | Never silently retrain queue ranking; human UAT |
-| PRIOR-09 | P2 | PLANNED | Show weekly WIP / blockers / completion versus rework | Not a gamified Done count, J-01 |
+| PRIOR-09 | P2 | PARTIAL (v2.50.7 local read-only WIP/blocker/rework weekly aggregates; real multiweek BA UAT open) | Show weekly WIP / blockers / completion versus rework | Not a gamified Done count, J-01 |
 | UI-05 | P1 | PARTIAL (synthetic 320px responsive checks; 768/1440 native viewport UAT open) | Density and hierarchy audit at 320/768/1440 viewport | A-03; no horizontal overflow/hidden primary action |
 | UI-06 | P1 | PARTIAL (v2.30 unsaved/saving/error/CAS conflict states; real error and screen reader UAT open) | Clear statuses saved, unsaved, saving, failed, stale | A-07/A-12 and race tests |
 | UI-07 | P1 | PARTIAL (distinct no-snapshot/empty/filtered/stale states; 403/permissions UX and Windows UAT open) | Distinct empty / unavailable / permissions / stale / no matches states | Correct recovery action in each state |

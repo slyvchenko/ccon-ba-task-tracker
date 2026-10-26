@@ -7,7 +7,7 @@ updated inside the same transaction as Desk's import/save operation.
 import hashlib
 import json
 import re
-from app_config import utc_now
+from app_config import utc_now, SIGNALS
 
 MAX_TEXT = 22000
 MAX_HISTORY_PAGE = 40
@@ -29,6 +29,12 @@ def init(conn):
 def view_state(task, manual_status="AUTO", note="", draft=None, active=True):
     analysis = task.get("analysis") or {}
     email = analysis.get("emailDraft") or {}
+    stale = bool(analysis.get("stale")) or bool(
+        analysis.get("contextFingerprint") and task.get("contextFingerprint") and
+        analysis["contextFingerprint"] != task["contextFingerprint"])
+    analysis_verified = bool(
+        not stale and analysis.get("signal") in SIGNALS and
+        analysis.get("reasonUk") and analysis.get("nextActionUk"))
     return {
         "summary": str(task.get("summary") or "")[:3000],
         "jiraStatus": str(task.get("jiraStatus") or "")[:200],
@@ -36,6 +42,7 @@ def view_state(task, manual_status="AUTO", note="", draft=None, active=True):
         "active": bool(active),
         "queueScore": analysis.get("queueScore"),
         "signal": analysis.get("signal"),
+        "analysisVerified": analysis_verified,
         "needsEmail": analysis.get("needsEmail"),
         "nextActionUk": str(analysis.get("nextActionUk") or "")[:3000],
         "standardDescription": str(analysis.get("standardDescription") or "")[:12000],

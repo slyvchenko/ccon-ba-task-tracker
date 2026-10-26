@@ -103,7 +103,7 @@
 | FOCUS-08 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | A-01/A-11; action accessible |
 | PRIOR-07 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Local opt-in, no PII, no cloud telemetry |
 | PRIOR-08 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Never silently retrain queue ranking; human UAT |
-| PRIOR-09 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | Not a gamified Done count, J-01 |
+| PRIOR-09 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Not a gamified Done count, J-01 |
 | UI-08 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | No truncation in clipboard/export, A-06 |
 | UI-09 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-06, VIS-10. | Keep main results visible, never bury next action |
 | UI-10 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-15. | Snapshot on 3 viewport sizes; no brand approval bypass |
