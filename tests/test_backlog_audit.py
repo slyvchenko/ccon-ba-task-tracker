@@ -14,7 +14,7 @@ class AuditTest(unittest.TestCase):
         self.assertEqual(report["counts"]["total"], 129)
         self.assertEqual(report["counts"]["reported_statuses"], {
             "DEFERRED": 4, "GATE": 3, "IMPLEMENTED": 40,
-            "PARTIAL": 67, "PLANNED": 15})
+            "PARTIAL": 69, "PLANNED": 13})
         items = report["items"]
         self.assertEqual(len(items), len({x["id"] for x in items}))
         self.assertTrue(all(x["suggested_batch"] and x["acceptance_criteria"] for x in items))
@@ -32,8 +32,8 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
                             for key in rows))
         self.assertEqual(len(rows), 129)
-        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 51)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 72)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 53)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 70)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
@@ -57,6 +57,14 @@ class AuditTest(unittest.TestCase):
         for key in ("UI-08", "UI-10"):
             self.assertEqual(rows[key]["category"], "PARTIAL")
             self.assertEqual(rows[key]["test_locator"], "browser_e2e.py")
+            self.assertEqual(rows[key]["human_acceptance"], "NOT_RECORDED")
+
+    def test_local_diagnostics_permissions_are_partial_without_real_windows_uat(self):
+        rows={entry["id"]:entry for entry in audit.produce()["items"]}
+        for key in ("REL-08", "OPS-02"):
+            self.assertEqual(rows[key]["category"], "PARTIAL")
+            self.assertEqual(rows[key]["code_locator"], "local_diagnostics.py")
+            self.assertEqual(rows[key]["test_locator"], "tests/test_local_diagnostics.py")
             self.assertEqual(rows[key]["human_acceptance"], "NOT_RECORDED")
 
     def test_p0_business_gates_cannot_become_done_by_code_only(self):
