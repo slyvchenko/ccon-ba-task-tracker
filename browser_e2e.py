@@ -489,8 +489,10 @@ class BrowserRegression(unittest.TestCase):
         self.choose("CCON-1")
         self.assertEqual(self.page.locator("#detail .ba-brief").count(),1)
         self.assertIn("Є відкриті рішення",self.page.locator(".ba-brief").inner_text())
+        self.page.locator(".ba-brief details").filter(has_text="Правила IF / THEN").locator("summary").click()
         self.assertIn("Synthetic A",self.page.locator(".ba-brief").inner_text())
         self.assertIn("Synthetic B",self.page.locator(".ba-brief").inner_text())
+        self.page.locator(".ba-brief details").filter(has_text="Що не встановлено").locator("summary").click()
         self.assertIn("Supplier reply still needed",self.page.locator(".ba-brief").inner_text())
         self.assertEqual(self.page.locator("#copyNext").count(),1)
 
