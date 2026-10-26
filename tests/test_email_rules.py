@@ -19,7 +19,7 @@ class EmailRules(unittest.TestCase):
 
     def test_default_and_explicit_false_never_invent_a_supplier_attachment(self):
         original = {"subject":"AER. question [1]",
-                    "body":"Dear Team,\\n\\nCould you clarify this?\\n\\nLogs are attached for your reference."}
+                    "body":"Dear Team,\n\nCould you clarify this?\n\nLogs are attached for your reference."}
         for ready in (False, None):
             with self.subTest(ready=ready):
                 result=normalize_draft("CCON-1", original, attachment_ready=ready)
