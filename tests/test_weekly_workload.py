@@ -1,5 +1,6 @@
 """Synthetic weekly work-state tests. No real Jira or BA database access."""
 import json
+from contextlib import closing
 import sqlite3
 import tempfile
 import unittest
@@ -15,10 +16,11 @@ class WeeklyWorkloadTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.db = self.root / "ba_state.db"
-        with sqlite3.connect(self.db) as conn:
+        with closing(sqlite3.connect(self.db)) as conn:
             conn.execute("""CREATE TABLE task_history(
                 id INTEGER PRIMARY KEY,task_key TEXT NOT NULL,
                 recorded_at TEXT NOT NULL,snapshot_json TEXT NOT NULL)""")
+            conn.commit()
         self.append("CCON-11", "2026-10-18T10:00:00+00:00", "IN PROGRESS")
         self.append("CCON-12", "2026-10-18T10:00:00+00:00", "DONE")
         self.append("CCON-13", "2026-10-18T10:00:00+00:00", "WAITING INPUT")
@@ -38,6 +40,7 @@ class WeeklyWorkloadTests(unittest.TestCase):
                                  "active": active, "manualStatus": status,
                                  "jiraStatus": "OPEN",
                                  "note": "SYNTHETIC-PRIVATE-SUPPLIER-NOTE"})))
+            conn.commit()
 
     def test_weekly_counts_include_blockers_and_rework_not_just_done(self):
         before = self.db.read_bytes()
