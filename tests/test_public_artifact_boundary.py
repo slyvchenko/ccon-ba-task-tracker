@@ -35,6 +35,23 @@ class PublicArtifactBoundaryTests(unittest.TestCase):
         self.assertNotIn("path: backups/",workflow)
         self.assertNotIn("path: logs/",workflow)
         self.assertNotIn("path: .coverage",workflow)
+        # Enumerate ALL upload actions; a second untrusted upload must fail
+        # rather than being masked by the existing safe browser artifact.
+        lines=workflow.splitlines()
+        uploads=[]
+        for index,line in enumerate(lines):
+            if "uses: actions/upload-artifact@" not in line:
+                continue
+            block=[]
+            for following in lines[index+1:]:
+                if following.startswith("      - ") or following.startswith("  " + "browser-e2e:"):
+                    break
+                block.append(following.strip())
+            names=[v.split("name:",1)[1].strip() for v in block if v.startswith("name:")]
+            paths=[v.split("path:",1)[1].strip() for v in block if v.startswith("path:")]
+            uploads.append((names,paths))
+        self.assertEqual(uploads,[(['browser-synthetic-results'],['browser-artifacts/'])])
+
 
 
 if __name__=="__main__":
