@@ -55,6 +55,8 @@ POINTERS = {
     "REL-07": ("assets/reconnect-policy.mjs", "tests/reconnect-policy.test.mjs"),
     "SEC-01": ("desk_store.py", "tests/test_manual_edit_cas.py"),
     "A11Y-02": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
+    "UI-07": ("assets/visual-clarity.mjs", "tests/visual-clarity.test.mjs"),
+    "QA-14": (".github/workflows/quality.yml", None),
     "QUICK-04": ("email_rules.py", "tests/test_email_rules.py"),
     "QUICK-06": ("assets/manual-done-undo.mjs", "tests/manual-done-undo.test.mjs"),
     "QUICK-07": ("assets/fast-handoff.mjs", "tests/fast-handoff.test.mjs"),
