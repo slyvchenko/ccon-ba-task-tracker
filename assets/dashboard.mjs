@@ -1051,6 +1051,13 @@ async function load() {
     }
     const selectedTask = tasks.find(task => task.key === selected);
     const detailChanged = selectedTask ? taskVersion(selectedTask) !== renderedTaskVersion : renderedTaskVersion !== '';
+    // Global import time is still visible, without rebuilding the expensive
+    // selected detail DOM or refetching source panels for unrelated changes.
+    if (selectedTask && !detailChanged && renderedTaskKey === selected) {
+      const date = $('detail .task-date');
+      if (date) date.textContent = selectedTask.importedAt ?
+        'Дані: ' + dateLabel(selectedTask.importedAt) : '';
+    }
     if (detailChanged || pendingDetail || !$('detail').hasChildNodes()) {
       if (isDirty(selected) || detailInteractionFocused()) {
         pendingDetail = true;
