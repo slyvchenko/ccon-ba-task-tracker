@@ -375,6 +375,22 @@ async function loadApprovedDescription(key, current=()=>selected) {
   }
 }
 
+// FOCUS-05: a compact next action over the existing detail, only after the
+// original action panel has scrolled out of view. The zero-height sticky slot
+// does not move the user's current scroll position or duplicate the full panel.
+function updateStickyNextAction() {
+  const sticky=document.getElementById('stickyAction');
+  const lead=document.querySelector('#detail .quick-handoff');
+  if (!sticky || !lead) return;
+  const host=$('detail');
+  const scrollTop=host.getBoundingClientRect().top;
+  const threshold=window.matchMedia('(max-width:750px)').matches ? 0 : scrollTop;
+  const visible=lead.getBoundingClientRect().bottom <= threshold + 8;
+  if (sticky.hidden===visible) sticky.hidden=!visible;
+}
+$('detail').addEventListener('scroll',updateStickyNextAction,{passive:true});
+window.addEventListener('scroll',updateStickyNextAction,{passive:true});
+window.addEventListener('resize',updateStickyNextAction,{passive:true});
 function renderDetail() {
   const task = tasks.find(item => item.key === selected);
   // Every render invalidates responses belonging to a previous detail DOM,
@@ -413,6 +429,7 @@ function renderDetail() {
     isWrite:effectiveSignal(task)==='WRITE'});
   const reason=assessmentReason(analysis.reasonUk);
   $('detail').innerHTML = `
+    ${quick.nextAction ? `<div id="stickyAction" class="sticky-next-action" hidden role="region" aria-label="Наступна дія під час прокручування"><div class="sticky-action-inner"><span class="sticky-action-text">${escapeHtml(quick.nextAction)}</span><button id="stickyCopyNext" class="quiet" type="button">Скопіювати дію</button></div></div>` : ''}
     <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span><span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
     <h2>${escapeHtml(task.summary)}</h2>
     <div class="task-meta-compact" aria-label="Джерело станів задачі">
@@ -541,6 +558,8 @@ function renderDetail() {
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
   if ($('copyNext')) $('copyNext').addEventListener('click', () =>
     copyText(quick.nextAction, 'Дію скопійовано. Це не означає її виконання.'));
+  if ($('stickyCopyNext')) $('stickyCopyNext').addEventListener('click', () =>
+    copyText(quick.nextAction, 'Дію скопійовано. Це не означає її виконання.'));
   if ($('copyFastDescription')) $('copyFastDescription').addEventListener('click', () =>
     copyText(quick.description, 'Jira-чернетку скопійовано. Перевір факти й передай вручну.'));
   if ($('copyDescription')) $('copyDescription').addEventListener('click', () =>
@@ -583,6 +602,7 @@ function renderDetail() {
   loadTaskHistory(task.key, api, escapeHtml, currentDetail);
   loadApprovedDescription(task.key,currentDetail);
   loadLogs(task.key);
+  updateStickyNextAction();
 }
 function captureForm() {
   const task = tasks.find(item => item.key === selected);
