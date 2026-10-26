@@ -14,7 +14,7 @@ class AuditTest(unittest.TestCase):
         self.assertEqual(report["counts"]["total"], 129)
         self.assertEqual(report["counts"]["reported_statuses"], {
             "DEFERRED": 4, "GATE": 3, "IMPLEMENTED": 40,
-            "PARTIAL": 64, "PLANNED": 18})
+            "PARTIAL": 65, "PLANNED": 17})
         items = report["items"]
         self.assertEqual(len(items), len({x["id"] for x in items}))
         self.assertTrue(all(x["suggested_batch"] and x["acceptance_criteria"] for x in items))
@@ -32,8 +32,8 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
                             for key in rows))
         self.assertEqual(len(rows), 129)
-        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 47)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 76)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 49)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 74)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
@@ -43,6 +43,14 @@ class AuditTest(unittest.TestCase):
         self.assertEqual(row["code_locator"], "assets/detail-refresh-policy.mjs")
         self.assertEqual(row["test_locator"], "tests/detail-refresh-policy.test.mjs")
         self.assertEqual(row["human_acceptance"], "NOT_RECORDED")
+
+    def test_queue_performance_and_sticky_action_are_partial_without_native_uat(self):
+        rows = {item["id"]: item for item in audit.produce()["items"]}
+        for key in ("PERF-05", "FOCUS-05"):
+            self.assertEqual(rows[key]["category"], "PARTIAL")
+            self.assertIsNotNone(rows[key]["code_locator"])
+            self.assertIsNotNone(rows[key]["test_locator"])
+            self.assertEqual(rows[key]["human_acceptance"], "NOT_RECORDED")
 
     def test_p0_business_gates_cannot_become_done_by_code_only(self):
         rows = {x["id"]: x for x in audit.produce()["items"]}
