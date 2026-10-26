@@ -144,7 +144,7 @@ export async function loadTaskEvidence(key, api, escape, current) {
   }
 }
 
-export async function loadTaskQuestions(key, api, escape, notify, current) {
+export async function loadTaskQuestions(key, api, escape, notify, current, getActiveScope=()=>current) {
   const destination = document.getElementById('questionTracker');
   if (!destination) return;
   try {
@@ -200,7 +200,8 @@ export async function loadTaskQuestions(key, api, escape, notify, current) {
           evidenceUrl: box.querySelector('.question-url').value
         });
         notify('Питання збережено локально. Jira не змінена.');
-        if (current() === key) loadTaskQuestions(key, api, escape, notify, current);
+        const live = getActiveScope();
+        if (live() === key) loadTaskQuestions(key, api, escape, notify, live, getActiveScope);
       } catch (error) {
         notify('Питання не збережено: ' + error.message, true);
         button.disabled = false;
