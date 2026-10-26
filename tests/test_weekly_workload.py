@@ -34,13 +34,13 @@ class WeeklyWorkloadTests(unittest.TestCase):
         self.append("CCON-15", "2026-10-23T10:00:00+00:00", "DONE")
         self.append("CCON-16", "2026-10-24T10:00:00+00:00", "AUTO")
 
-    def append(self, key, timestamp, status, active=True, signal=None, fresh=True):
+    def append(self, key, timestamp, status, active=True, signal=None, fresh=True, jira_status="OPEN"):
         with closing(sqlite3.connect(self.db)) as conn:
             conn.execute("INSERT INTO task_history(task_key,recorded_at,snapshot_json) "
                          "VALUES(?,?,?)", (
                              key, timestamp, json.dumps({
                                  "active": active, "manualStatus": status,
-                                 "jiraStatus": "OPEN", "signal": signal,
+                                 "jiraStatus": jira_status, "signal": signal,
                                   "analysisVerified": bool(signal) and fresh,
                                  "note": "SYNTHETIC-PRIVATE-SUPPLIER-NOTE"})))
             conn.commit()
@@ -139,6 +139,25 @@ class WeeklyWorkloadTests(unittest.TestCase):
         state=weekly_report(self.root,"2026-W43",today=date(2026,10,26))
         self.assertEqual(state["weeklyTransitions"]["completed"],1)
         self.assertEqual(state["asOfWeekEnd"]["completedState"],3)
+
+    def test_legacy_freshness_upgrade_does_not_hide_jira_completion(self):
+        # A real Jira transition must not be discarded as a schema upgrade.
+        self.append("CCON-95", "2026-10-18T13:00:00+00:00",
+                    "AUTO", signal="DONE", jira_status="OPEN")
+        with closing(sqlite3.connect(self.db)) as conn:
+            ident, raw = conn.execute(
+                "SELECT id,snapshot_json FROM task_history ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+            state = json.loads(raw)
+            del state["analysisVerified"]
+            conn.execute("UPDATE task_history SET snapshot_json=? WHERE id=?",
+                         (json.dumps(state), ident))
+            conn.commit()
+        self.append("CCON-95", "2026-10-23T13:00:00+00:00",
+                    "AUTO", signal="DONE", jira_status="DONE")
+        weekly = weekly_report(self.root, "2026-W43", today=date(2026, 10, 26))
+        self.assertEqual(weekly["weeklyTransitions"]["completed"], 2)
+        self.assertEqual(weekly["asOfWeekEnd"]["completedState"], 3)
 
     def test_no_state_created_and_bad_week_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
