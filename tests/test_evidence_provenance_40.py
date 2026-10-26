@@ -8,6 +8,7 @@ from zipfile import ZipFile
 
 from kibana_evidence import discover_links, plan_for_issue
 from model_analysis import linked_document_version, evidence_for_issue, task_source
+from error_series import _observations
 from storage import write_json
 
 class EvidenceProvenanceTests(unittest.TestCase):
@@ -64,6 +65,15 @@ class EvidenceProvenanceTests(unittest.TestCase):
         self.assertTrue(all(x["readOnly"] is True for x in plan["kibana"]))
         self.assertTrue(all(x["kind"] in ("SEARCH","ERROR_SEARCH") for x in plan["kibana"]))
         self.assertNotIn("CONFIRMED",json.dumps(plan))
+
+    def test_rca_flags_every_new_correlational_gap_as_ambiguous(self):
+        for gap in ("AMBIGUOUS_PAIRING","CORRELATION_MISMATCH",
+                    "UNCORRELATED_EXCHANGE","INCOMPLETE_EXCHANGE"):
+            with self.subTest(gap=gap):
+                result = _observations({"valueReview":{"issues":[gap]}})
+                self.assertTrue(result["hasAmbiguousMapping"])
+        result = _observations({"valueReview":{"issues":[]}})
+        self.assertFalse(result["hasAmbiguousMapping"])
 
     def test_no_browser_access_cannot_make_source_confirmed(self):
         ctx={"issues":{"CCON-1":{"key":"CCON-1","fingerprint":"f1",
