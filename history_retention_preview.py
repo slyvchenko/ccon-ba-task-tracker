@@ -4,6 +4,7 @@ This intentionally does NOT archive/delete history. Human approval and a
 verified restore path are prerequisites to any future retention mutation.
 """
 import argparse
+from contextlib import closing
 import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
