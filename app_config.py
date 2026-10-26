@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '2.40.0'
+VERSION = '2.41.0'
 LIMIT = SNAPSHOT_LIMIT = 5 * 1024 * 1024
 CONTEXT_LIMIT = 50 * 1024 * 1024
 STATUSES = ['AUTO', 'IN PROGRESS', 'WAITING INPUT', 'WAITING DEPENDENCY', 'NEEDS DECISION', 'DONE']
