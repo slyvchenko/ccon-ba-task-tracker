@@ -153,6 +153,20 @@ class BrowserRegression(unittest.TestCase):
                               if t["key"]=="CCON-1"),"Synthetic TAB A")
         second.close()
 
+    def test_manual_done_can_be_undone_once_without_external_jira_write(self):
+        self.choose("CCON-1")
+        self.assertTrue(self.page.locator("#undoLastDone").is_hidden())
+        self.page.on("dialog",lambda dialog:dialog.accept())
+        self.page.locator("#done").click()
+        self.page.locator("#undoLastDone").wait_for(state="visible",timeout=15000)
+        task = next(t for t in self.desk.view()["tasks"] if t["key"]=="CCON-1")
+        self.assertEqual(task["manualStatus"],"DONE")
+        self.page.locator("#undoLastDone").click()
+        self.page.wait_for_function("() => document.querySelector('#undoLastDone').hidden")
+        task = next(t for t in self.desk.view()["tasks"] if t["key"]=="CCON-1")
+        self.assertEqual(task["manualStatus"],"AUTO")
+        self.assertEqual(self.page.locator("#detail .task-key").inner_text(),"CCON-1")
+
     def test_bulk_modal_escape_restores_focus_and_never_opens_email(self):
         requests=[]
         self.page.on("request",lambda req: requests.append(req.url)
