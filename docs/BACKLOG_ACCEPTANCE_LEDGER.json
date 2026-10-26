@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 61,
-      "PLANNED": 21
+      "PARTIAL": 63,
+      "PLANNED": 19
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 45,
-    "no_direct_locator": 79
+    "code_plus_test_locators": 46,
+    "no_direct_locator": 77
   },
   "items": [
     {
@@ -1287,15 +1287,15 @@
     {
       "id": "UI-07",
       "priority": "P1",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (distinct no-snapshot/empty/filtered/stale states; 403/permissions UX and Windows UAT open)",
+      "category": "PARTIAL",
       "requirement": "Distinct empty / unavailable / permissions / stale / no matches states",
       "acceptance_criteria": "Correct recovery action in each state",
       "suggested_batch": "#47",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "assets/visual-clarity.mjs",
+      "test_locator": "tests/visual-clarity.test.mjs",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
@@ -1823,15 +1823,15 @@
     {
       "id": "QA-14",
       "priority": "P1",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (Python branch coverage in synthetic CI; critical-path gaps and coverage threshold review open)",
+      "category": "PARTIAL",
       "requirement": "Quantified code/branch coverage baseline, gaps by critical path",
       "acceptance_criteria": "No invented 100%; dev-only tooling approval",
       "suggested_batch": "#46",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
+      "code_locator": ".github/workflows/quality.yml",
       "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "evidence_level": "CODE_LOCATOR_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
