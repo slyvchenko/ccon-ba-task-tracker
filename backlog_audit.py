@@ -55,6 +55,8 @@ POINTERS = {
     "PERF-05": ("assets/queue-dom.mjs", "tests/queue-dom.test.mjs"),
     "PERF-08": ("assets/detail-refresh-policy.mjs", "tests/detail-refresh-policy.test.mjs"),
     "PERF-09": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
+    "PERF-10": ("sqlite_mode_study.py", "tests/test_sqlite_retention_study.py"),
+    "REL-09": ("history_retention_preview.py", "tests/test_sqlite_retention_study.py"),
     "REL-02": ("desk_store.py", "tests/test_manual_edit_cas.py"),
     "REL-03": ("local_backup.py", "tests/test_local_backup.py"),
     "REL-05": ("server.py", "tests/test_crash_consistency.py"),
@@ -214,7 +216,16 @@ def main(argv=None):
         text = serialized(produce())
         if args.check:
             if not OUTPUT.exists() or OUTPUT.read_text(encoding="utf-8") != text:
-                print("Backlog ledger stale. Run python backlog_audit.py and review diff.", file=sys.stderr)
+                # Give actionable location without dumping backlog or private BA data.
+                existing = OUTPUT.read_text(encoding="utf-8") if OUTPUT.exists() else ""
+                expected_lines = text.splitlines()
+                actual_lines = existing.splitlines()
+                mismatch = next((i for i in range(min(len(expected_lines), len(actual_lines)))
+                                 if expected_lines[i] != actual_lines[i]), None)
+                line_number = mismatch + 1 if mismatch is not None else min(
+                    len(expected_lines), len(actual_lines)) + 1
+                print(f"Backlog ledger stale near line {line_number}; "
+                      "run python backlog_audit.py and review diff.", file=sys.stderr)
                 return 1
             print("Backlog audit ledger is synchronized (no semantic UAT claimed).")
         else:

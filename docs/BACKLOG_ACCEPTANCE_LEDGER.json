@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 69,
-      "PLANNED": 13
+      "PARTIAL": 71,
+      "PLANNED": 11
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 54,
-    "no_direct_locator": 69
+    "code_plus_test_locators": 56,
+    "no_direct_locator": 67
   },
   "items": [
     {
@@ -1489,15 +1489,15 @@
     {
       "id": "PERF-10",
       "priority": "P2",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.2 synthetic WAL/index/backup/busy-timeout comparison; no live PRAGMA switch, real Windows traces open)",
+      "category": "PARTIAL",
       "requirement": "Evaluate SQLite WAL, busy timeouts and JSON index with empirical trace",
       "acceptance_criteria": "Do not enable blindly; Windows/backup compatibility",
       "suggested_batch": "#46",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
+      "code_locator": "sqlite_mode_study.py",
+      "test_locator": "tests/test_sqlite_retention_study.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
@@ -1624,15 +1624,15 @@
     {
       "id": "REL-09",
       "priority": "P2",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.2 read-only age/origin eligibility counts, latest revision preserved; archive/delete require explicit approval)",
+      "category": "PARTIAL",
       "requirement": "Bound old history/reports while preserving important user audit",
       "acceptance_criteria": "No unexpected data deletion, archive user-approved",
       "suggested_batch": "#45",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
+      "code_locator": "history_retention_preview.py",
+      "test_locator": "tests/test_sqlite_retention_study.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
