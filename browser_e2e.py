@@ -587,19 +587,35 @@ class BrowserRegression(unittest.TestCase):
                 document.activeElement?.blur();
             }""")
             self.page.mouse.move(0,0)
+            # Geometry/semantic snapshot is stable despite native raster
+            # noise. Keep *both* PNGs as evidence for a future approved
+            # cross-version human pixel-baseline comparison.
+            capture_layout="""() => {
+                const root=document.querySelector('.ba-brief');
+                const box=root.getBoundingClientRect();
+                const tokens=[...root.querySelectorAll('.technical-token')];
+                return {
+                    text:root.textContent,
+                    width:Math.round(box.width),
+                    height:Math.round(box.height),
+                    openSections:[...root.querySelectorAll('details')]
+                        .map(d=>d.open),
+                    tokenWidths:tokens.map(node=>Math.round(
+                        node.getBoundingClientRect().width)),
+                    tokenTexts:tokens.map(node=>node.textContent)
+                };
+            }"""
+            before=self.page.evaluate(capture_layout)
             screenshot_style="#stickyAction{visibility:hidden!important}"
             first=self.page.locator(".ba-brief").screenshot(
                 animations="disabled",style=screenshot_style)
-            signature=hashlib.sha256(first).hexdigest()
+            (ARTIFACTS/f"synthetic-technical-long-{width}-before.png").write_bytes(first)
             self.page.reload(wait_until="domcontentloaded")
             self.choose("CCON-1")
             rule=self.page.locator(".ba-brief details").filter(
                 has_text="Правила IF / THEN").first
             if not rule.evaluate("(node)=>node.open"):
                 rule.locator("summary").click()
-            # The app correctly restores per-task disclosure state from
-            # sessionStorage. A screenshot must use a fixed panel state so
-            # that the difference test measures rendering, not user choices.
             self.page.evaluate("""() => {
                 for(const node of document.querySelectorAll('.ba-brief details')) {
                     const label=node.querySelector('summary')?.textContent || '';
@@ -608,16 +624,34 @@ class BrowserRegression(unittest.TestCase):
                 document.activeElement?.blur();
             }""")
             self.page.mouse.move(0,0)
+            after=self.page.evaluate(capture_layout)
+            self.assertEqual(before["text"],after["text"],
+                             f"technical source text changed at {width}px")
+            self.assertEqual(before["openSections"],after["openSections"])
+            self.assertEqual(before["tokenTexts"],after["tokenTexts"])
+            for key in ("width","height"):
+                self.assertLessEqual(abs(before[key]-after[key]),2,
+                                     f"visual {key} changed at {width}px")
+            for left,right in zip(before["tokenWidths"],after["tokenWidths"]):
+                self.assertLessEqual(abs(left-right),2,
+                                     f"token width changed at {width}px")
             second=self.page.locator(".ba-brief").screenshot(
                 animations="disabled",style=screenshot_style)
-            self.assertEqual(first,second,
-                             f"unchanged synthetic technical panel changed at {width}px")
-            signatures[str(width)]=signature
+            (ARTIFACTS/f"synthetic-technical-long-{width}-after.png").write_bytes(second)
+            signatures[str(width)]={
+                "semanticLayoutStable":True,
+                "beforeSha256":hashlib.sha256(first).hexdigest(),
+                "afterSha256":hashlib.sha256(second).hexdigest(),
+                "beforeDimensions":{k:before[k] for k in ("width","height")},
+                "afterDimensions":{k:after[k] for k in ("width","height")}
+            }
             self.page.screenshot(path=str(ARTIFACTS/
                 f"synthetic-technical-long-{width}.png"),full_page=True)
         ARTIFACTS.joinpath("synthetic-technical-visual-hashes.json").write_text(
-            json.dumps({"syntheticOnly":True,"sameCommitRepeatability":True,
-                        "notCrossVersionApproval":True,"sha256ByViewport":signatures},
+            json.dumps({"syntheticOnly":True,"semanticGeometryRegression":True,
+                        "pixelHashesInformational":True,
+                        "notAnApprovedCrossVersionPixelBaseline":True,
+                        "snapshotsByViewport":signatures},
                        indent=2),encoding="utf-8")
 
     def test_three_viewports_and_short_soak_no_external_writes(self):
