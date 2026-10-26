@@ -77,14 +77,14 @@
 | REL-05 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No database damage/partial save, Windows UAT |
 | REL-06 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | v2.23→current, old DB revision initialized once |
 | REL-07 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No duplicate mailto or Done, bounded retry |
-| REL-08 | P1 | PLANNED | Розробити код + синтетичні тести; потім реальна перевірка. | Fail closed/notice for insecure ACL configuration |
+| REL-08 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Fail closed/notice for insecure ACL configuration |
 | A11Y-01 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | A-01/J-03/J-08 with focus protection |
 | A11Y-02 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | A-03/A-04; primary actions reachable |
 | A11Y-03 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | A-02, announcements not noisy |
 | A11Y-04 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | A-11; no unintended send |
 | QA-12 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Focus, click, screenreader, history, network reconnect |
 | QA-14 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No invented 100%; dev-only tooling approval |
-| OPS-02 | P1 | PLANNED | Розробити код + синтетичні тести; потім реальна перевірка. | No production logs by default; explicit export |
+| OPS-02 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No production logs by default; explicit export |
 | OPS-03 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Main merge does not update installed local copy |
 | SEC-02 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Host restrictions and current OIDC origin untouched |
 | SEC-03 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Synthetic samples only; cross-check on PR |
