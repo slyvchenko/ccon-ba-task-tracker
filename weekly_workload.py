@@ -4,6 +4,7 @@ Only aggregate counts leave this process. Never emit task IDs, drafts,
 notes, history payloads or person names. No network, no background scheduler.
 """
 import argparse
+from contextlib import closing
 import json
 import re
 import sqlite3
@@ -56,7 +57,7 @@ def weekly_report(root=ROOT, week=None, *, today=None):
     latest = {}
     completed, reopened, touched = set(), set(), set()
     total_events = 0
-    with sqlite3.connect(db.as_uri() + "?mode=ro", uri=True) as conn:
+    with closing(sqlite3.connect(db.as_uri() + "?mode=ro", uri=True)) as conn:
         # Historical revisions are append-only. Do not expose keys or content.
         for key, stamp, raw in conn.execute(
                 "SELECT task_key,recorded_at,snapshot_json "
