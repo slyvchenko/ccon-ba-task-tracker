@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 53,
-    "no_direct_locator": 70
+    "code_plus_test_locators": 54,
+    "no_direct_locator": 69
   },
   "items": [
     {
@@ -1519,7 +1519,7 @@
     {
       "id": "REL-02",
       "priority": "P0",
-      "reported_status": "PARTIAL (v2.27 recovered drafts pin original revision, explicit conflict; power-loss multi-tab recovery UAT open)",
+      "reported_status": "PARTIAL (v2.50.1 subprocess crash before/after SQLite commit validates rollback/acknowledged save with revision/history; hardware outage and UI UAT open)",
       "category": "PARTIAL",
       "requirement": "Atomic user-draft recovery and edit revision validation",
       "acceptance_criteria": "Forced close/reopen/reload leaves acknowledged edits intact",
@@ -1534,7 +1534,7 @@
     {
       "id": "REL-03",
       "priority": "P0",
-      "reported_status": "PARTIAL (v2.32 verified local SQLite backup, checksum, online API, offline restore and rescue; Windows crash UAT open)",
+      "reported_status": "PARTIAL (v2.50.1 synced SQLite/manifest before atomic publication plus interrupted backup/restore tests; Windows hardware crash UAT open)",
       "category": "PARTIAL",
       "requirement": "Safe backup/restore of private SQLite + manifest without export secrets",
       "acceptance_criteria": "Crash drill, documented recovery and permissions",
@@ -1564,15 +1564,15 @@
     {
       "id": "REL-05",
       "priority": "P1",
-      "reported_status": "PARTIAL (v2.32 server lifetime cross-process lock, shutdown watcher join, SQLite backup pre-migration; forced kill UAT open)",
+      "reported_status": "PARTIAL (v2.50.1 synthetic hard process termination mid-import/save and restart tested; native Windows service shutdown and forced-power UAT open)",
       "category": "PARTIAL",
       "requirement": "Graceful server shutdown and restart during import",
       "acceptance_criteria": "No database damage/partial save, Windows UAT",
       "suggested_batch": "#45",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "server.py",
+      "test_locator": "tests/test_crash_consistency.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
