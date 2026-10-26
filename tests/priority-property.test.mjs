@@ -22,6 +22,33 @@ function task(n,rng) {
     }
   };
 }
+test('seeded synthetic queue generator is reproducible',()=>{
+  const a=seeded(2026),b=seeded(2026);
+  assert.deepEqual(Array.from({length:25},()=>a()),
+                   Array.from({length:25},()=>b()));
+  assert.notEqual(a(),seeded(2027)());
+});
+
+test('fixed independent expected lane and WRITE order, with extreme priority scores',()=>{
+  const create=(key,{sprint=false,signal='READY',manual='AUTO',active=true,score=50})=>({
+    key,active,activeSprintStatus:'VERIFIED',activeSprint:sprint,
+    manualStatus:manual,contextFingerprint:'same',blocking:false,
+    analysis:{contextFingerprint:'same',signal,
+      reasonUk:'Synthetic',nextActionUk:'Review',
+      needsEmail:signal==='WRITE',queueScore:score}
+  });
+  const input=[
+    create('CCON-16',{sprint:true,active:false,signal:'WRITE',score:100}),
+    create('CCON-15',{sprint:false,signal:'READY',score:100}),
+    create('CCON-13',{sprint:true,manual:'DONE',signal:'WRITE',score:100}),
+    create('CCON-11',{sprint:true,signal:'READY',score:100}),
+    create('CCON-14',{sprint:false,signal:'WRITE',score:0}),
+    create('CCON-12',{sprint:true,signal:'WRITE',score:0})
+  ];
+  assert.deepEqual(rankTasks(input).map(x=>x.key),
+    ['CCON-12','CCON-11','CCON-14','CCON-15','CCON-13','CCON-16']);
+});
+
 test('verified sprint, WRITE, Done, archive are ordered for 300 seeded randomized queues',()=>{
   const rng=seeded(), lanes=new Set();
   for(let run=0;run<300;run++) {
