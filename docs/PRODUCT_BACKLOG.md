@@ -28,7 +28,7 @@
 
 ### Звірка коду після v2.48.1 (26.10.2026)
 
-- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **67 PARTIAL**, **15 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
+- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **69 PARTIAL**, **13 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
 - Зіставлено й перекласифіковано **15 окремих ID** за конкретним source/test evidence (13 у #53, ще UI-07 і QA-14 у #54). Решта **114** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
 - `IMPLEMENTED` означає лише підтверджений механізм (synthetic/code), `PARTIAL` - лише частину критеріїв, `PLANNED` - критерії не закрито. Оригінальні 37/52/32/1 у розділі v2.39 нижче - **історичний baseline**, а не поточні числа.
 - Незмінні external gates: реальні Jira/Kibana/CCON, 26 gold cases, людський UX, native Edge/NVDA/8h, Windows backup/restore та локальне оновлення. CI не доводить business signoff.
@@ -156,7 +156,7 @@
 | REL-05 | P1 | PARTIAL (v2.32 server lifetime cross-process lock, shutdown watcher join, SQLite backup pre-migration; forced kill UAT open) | Graceful server shutdown and restart during import | No database damage/partial save, Windows UAT |
 | REL-06 | P1 | PARTIAL (legacy SQLite migration fixtures and Windows CI; full v2.23-to-current matrix open) | Data validation and schema migration matrix across releases | v2.23→current, old DB revision initialized once |
 | REL-07 | P1 | PARTIAL (v2.34 bounded GET reconnection, no repeat manual POST; Windows client error UAT open) | Retry strategy for recoverable local API failures with idempotency | No duplicate mailto or Done, bounded retry |
-| REL-08 | P1 | PLANNED | OS folder permissions/encryption checks for private local ZIP | Fail closed/notice for insecure ACL configuration |
+| REL-08 | P1 | PARTIAL (v2.50 opt-in metadata-only POSIX mode/symlink checks, Windows ACL remains UNVERIFIED; native ACL/encryption audit open) | OS folder permissions/encryption checks for private local ZIP | Fail closed/notice for insecure ACL configuration |
 | REL-09 | P2 | PLANNED | Bound old history/reports while preserving important user audit | No unexpected data deletion, archive user-approved |
 | REL-10 | P2 | PLANNED | Safe signed release/backup metadata and rollback rehearsal | Verify hashes; old app loads additive migration |
 | A11Y-01 | P1 | PARTIAL (v2.30 native keyboard shortcuts and guide; screen reader & real keyboard UAT open) | Keyboard full quick-task flow + shortcuts usability | A-01/J-03/J-08 with focus protection |
@@ -173,7 +173,7 @@
 | QA-14 | P1 | PARTIAL (Python branch coverage in synthetic CI; critical-path gaps and coverage threshold review open) | Quantified code/branch coverage baseline, gaps by critical path | No invented 100%; dev-only tooling approval |
 | QA-15 | P2 | PARTIAL (v2.34 90-transition synthetic Chromium short-soak; real 8h/diverse OS scheduled drill open) | Scheduled offline regression drill on diverse machine profiles | OS, Python version, locale, browser, power mode |
 | OPS-01 | P1 | IMPLEMENTED (repeatable 100/500/1000 synthetic Python/Node smoke; actual-device UAT pending) | Standard synthetic performance smoke + fixed cohort sizes | Repeatable local script and measurement doc |
-| OPS-02 | P1 | PLANNED | Private local diagnostic bundle with PII redaction and consent | No production logs by default; explicit export |
+| OPS-02 | P1 | PARTIAL (v2.50 explicit-consent sanitized ZIP with zero raw logs/PNR/credentials and synthetic regression; Windows/BA consent UX open) | Private local diagnostic bundle with PII redaction and consent | No production logs by default; explicit export |
 | OPS-03 | P1 | PARTIAL (v2.32 offline backup/verify/restore runbook; Windows Scheduler/upgrade rehearsal still open) | Version/upgrade and roll-back steps for local task scheduler | Main merge does not update installed local copy |
 | OPS-04 | P2 | PLANNED | Error budget dashboard for local app only, opt-in | No remote telemetry or background transfer |
 | OPS-05 | P2 | PARTIAL (v2.32 local backup+watcher readiness shown within existing Data menu; user acceptance pending) | Daily clean startup health checklist with offline fallback | Speed and accurate stale flags |
