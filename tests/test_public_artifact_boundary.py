@@ -15,6 +15,10 @@ class PublicArtifactBoundaryTests(unittest.TestCase):
         for name in names:
             with self.subTest(path=name):
                 normalized=name.replace("\\","/")
+                # An empty tracked directory placeholder is not a runtime file.
+                if normalized == "inbox/.gitkeep":
+                    self.assertEqual((ROOT/name).stat().st_size, 0)
+                    continue
                 self.assertFalse(normalized.startswith(forbidden_prefixes))
                 self.assertFalse(normalized.endswith((".zip",".sqlite3",".db",".pem",".key")))
                 self.assertTrue((ROOT/name).is_file())
