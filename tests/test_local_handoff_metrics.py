@@ -27,7 +27,7 @@ class LocalMetricsTests(unittest.TestCase):
         self.assertFalse((self.root / "data").exists())
         self.assertEqual(before, (self.root / "ba_state.db").read_bytes())
         self.assertFalse(result["cloudTelemetry"])
-        self.assertFalse(result["noAutomaticPriorityChanges"])
+        self.assertTrue(result["noAutomaticPriorityChanges"])
 
     def test_manual_handoff_and_wrong_priority_feedback_are_aggregate_only(self):
         record_handoff(self.root, "ERROR_TRIAGE", 240, CONSENT)
@@ -93,8 +93,7 @@ class LocalMetricsTests(unittest.TestCase):
             summary(self.root)
         with self.assertRaises(ValueError):
             record_handoff(self.root,"EMAIL_HANDOFF",50,CONSENT)
-        self.assertEqual(_path(self.root,create=False) if False else private.stat().st_mode & 0o777,
-                         0o755)
+        self.assertEqual(stat.S_IMODE(private.stat().st_mode), 0o755)
 
 
 if __name__ == "__main__":
