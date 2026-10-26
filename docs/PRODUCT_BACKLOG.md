@@ -388,3 +388,10 @@
 - Пошуковий токен, що після очищення від пунктуації стає порожнім, не збігається з кожною задачею; exact punctuation matches remain supported.
 - Детерміновані unit test та Chrome E2E виконуються у CI, але вони **не** закривають Windows Edge/NVDA, 8h soak, реальні великі Jira/Confluence тексти чи human usability UAT.
 
+
+### v2.47 #47: accessible group structure and optional-feature rationalization
+
+- Збережено стандартну ліву чергу/праву картку. Групи черги позначені ARIA level-3 headings; `S?` має доступний опис його низької достовірності, не лише title hover.
+- Chromium synthetic: 320px, forced-colors emulation, reduced motion, keyboard-focus outline, видимість ручних email CTA, відсутність global overflow. **Не** еквівалент real Windows Edge/NVDA/native 200/400% zoom.
+- Додаткові quick templates, pinning, другі dashboards, глобальна error telemetry та aggressive CSS-rewrite лишаються **OPTIONAL / AWAIT HUMAN USAGE EVIDENCE**, не silently dropped. Full `docs/A11Y_FINAL_SCOPE_REVIEW.md`.
+
