@@ -226,16 +226,20 @@ def create_backup(root, *, force=False, interval_hours=24, keep=7):
         finally:
             source.close()
         checks = _check_database(temporary)
+        _sync_file(temporary)
         info = {"format": 1, "filename": filename,
                 "createdAt": moment.isoformat().replace("+00:00", "Z"),
                 "sha256": _sha(temporary), "bytes": temporary.stat().st_size,
                 **checks}
         _private_new(temporary_meta)
-        temporary_meta.write_text(json.dumps(info, indent=2), encoding="utf-8")
+        with temporary_meta.open("w", encoding="utf-8") as output:
+            output.write(json.dumps(info, indent=2))
+            output.flush()
+            os.fsync(output.fileno())
         # Publish DB, then manifest last. An interrupted backup lacks a
         # manifest and therefore is not eligible for recovery.
-        replace_file(temporary, target)
-        replace_file(temporary_meta, manifest)
+        _publish(temporary, target)
+        _publish(temporary_meta, manifest)
         verify_backup(root, filename)
         if keep > 0:
             _trim(folder, keep)
@@ -381,7 +385,8 @@ def restore_backup(root, filename, confirmation):
             finally:
                 origin.close()
             _check_database(stage)
-            replace_file(stage, database)
+            _sync_file(stage)
+            _publish(stage, database)
         finally:
             if stage.exists():
                 stage.unlink()
