@@ -22,6 +22,7 @@ class SqliteModeStudyTests(unittest.TestCase):
         self.assertEqual({x["syntheticJsonIndex"] for x in result["results"]},
                          {True, False})
         self.assertTrue(all(x["backupIntegrity"] == "ok" for x in result["results"]))
+        self.assertTrue(all(x["matchingSyntheticRows"] == 3 for x in result["results"]))
         self.assertTrue(all(not x["liveConfigurationChanged"] for x in result["results"]))
         self.assertTrue(all(x["busyTimeoutMs"] == 10000 for x in result["results"]))
         self.assertTrue(all(x["p95QueryMs"] >= 0 for x in result["results"]))
