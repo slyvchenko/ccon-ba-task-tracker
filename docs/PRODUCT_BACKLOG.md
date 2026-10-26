@@ -28,7 +28,7 @@
 
 ### Звірка коду після v2.48.1 (26.10.2026)
 
-- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **69 PARTIAL**, **13 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
+- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **71 PARTIAL**, **11 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
 - Зіставлено й перекласифіковано **15 окремих ID** за конкретним source/test evidence (13 у #53, ще UI-07 і QA-14 у #54). Решта **114** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
 - `IMPLEMENTED` означає лише підтверджений механізм (synthetic/code), `PARTIAL` - лише частину критеріїв, `PLANNED` - критерії не закрито. Оригінальні 37/52/32/1 у розділі v2.39 нижче - **історичний baseline**, а не поточні числа.
 - Незмінні external gates: реальні Jira/Kibana/CCON, 26 gold cases, людський UX, native Edge/NVDA/8h, Windows backup/restore та локальне оновлення. CI не доводить business signoff.
@@ -148,7 +148,7 @@
 | PERF-07 | P1 | PARTIAL (v2.31 reproducible Python/Node 100/500/1000 synthetic timings in CI; real browser/8h UAT open) | Benchmark browser cold/warm, DOM scripting/paint, 8h session | Named Windows machine p50/p95, memory trend |
 | PERF-08 | P1 | PARTIAL (PR #55 task-specific detail fingerprint plus stale same-key request guards; native Windows perf/UAT open) | Avoid repeated heavyweight detail fetch on list refresh | Fetch selected only on selection/revision, compare versions |
 | PERF-09 | P2 | PLANNED | Simplify 1374-line CSS cascade after visual/a11y regression | No unexpected fonts/spacing/contrast changes |
-| PERF-10 | P2 | PLANNED | Evaluate SQLite WAL, busy timeouts and JSON index with empirical trace | Do not enable blindly; Windows/backup compatibility |
+| PERF-10 | P2 | PARTIAL (v2.50.2 synthetic WAL/index/backup/busy-timeout comparison; no live PRAGMA switch, real Windows traces open) | Evaluate SQLite WAL, busy timeouts and JSON index with empirical trace | Do not enable blindly; Windows/backup compatibility |
 | REL-01 | P0 | IMPLEMENTED (v2.27 per-task SQLite CAS, 409 and human resolution; live browser UAT open) | Per-task optimistic concurrency token and stale edit conflict UX | Two tabs cannot silently overwrite each other's note/draft |
 | REL-02 | P0 | PARTIAL (v2.50.1 subprocess crash before/after SQLite commit validates rollback/acknowledged save with revision/history; hardware outage and UI UAT open) | Atomic user-draft recovery and edit revision validation | Forced close/reopen/reload leaves acknowledged edits intact |
 | REL-03 | P0 | PARTIAL (v2.50.1 synced SQLite/manifest before atomic publication plus interrupted backup/restore tests; Windows hardware crash UAT open) | Safe backup/restore of private SQLite + manifest without export secrets | Crash drill, documented recovery and permissions |
@@ -157,7 +157,7 @@
 | REL-06 | P1 | PARTIAL (legacy SQLite migration fixtures and Windows CI; full v2.23-to-current matrix open) | Data validation and schema migration matrix across releases | v2.23→current, old DB revision initialized once |
 | REL-07 | P1 | PARTIAL (v2.34 bounded GET reconnection, no repeat manual POST; Windows client error UAT open) | Retry strategy for recoverable local API failures with idempotency | No duplicate mailto or Done, bounded retry |
 | REL-08 | P1 | PARTIAL (v2.50 opt-in metadata-only POSIX mode/symlink checks, Windows ACL remains UNVERIFIED; native ACL/encryption audit open) | OS folder permissions/encryption checks for private local ZIP | Fail closed/notice for insecure ACL configuration |
-| REL-09 | P2 | PLANNED | Bound old history/reports while preserving important user audit | No unexpected data deletion, archive user-approved |
+| REL-09 | P2 | PARTIAL (v2.50.2 read-only age/origin eligibility counts, latest revision preserved; archive/delete require explicit approval) | Bound old history/reports while preserving important user audit | No unexpected data deletion, archive user-approved |
 | REL-10 | P2 | PLANNED | Safe signed release/backup metadata and rollback rehearsal | Verify hashes; old app loads additive migration |
 | A11Y-01 | P1 | PARTIAL (v2.30 native keyboard shortcuts and guide; screen reader & real keyboard UAT open) | Keyboard full quick-task flow + shortcuts usability | A-01/J-03/J-08 with focus protection |
 | A11Y-02 | P1 | PARTIAL (v2.33 320px reflow CSS; real 200–400% zoom browser UAT open) | 200%-400% zoom and 320px mobile acceptance | A-03/A-04; primary actions reachable |
