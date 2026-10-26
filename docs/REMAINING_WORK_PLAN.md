@@ -65,7 +65,7 @@
 | FOCUS-05 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No page redesign; responsive A-03/A-04 |
 | FOCUS-06 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | No focus loss, cursor jump, stale overwrite |
 | PRIOR-04 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Time benefit cannot overtake urgent sprint/blocker |
-| PRIOR-05 | P1 | PARTIAL | Виконати незалежне human acceptance >90% на реальних кейсах. | Explainable, human acceptance > 90% ordering confidence |
+| PRIOR-05 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Explainable, human acceptance > 90% ordering confidence |
 | PRIOR-06 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | Due status visible, source-backed, J-05 |
 | UI-05 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. Перевірити перетин: VIS-04, VIS-15. | A-03; no horizontal overflow/hidden primary action |
 | UI-06 | P1 | PARTIAL | Закрити відсутню частину DoD кодом/тестом або приватним UAT. | A-07/A-12 and race tests |
@@ -99,8 +99,8 @@
 | UX-03 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Дійсні токени/логотип потребують brand approval |
 | QA-07 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Coverage by supplier method, nested ZIP cases, pagination, retries |
 | QUICK-08 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | Template never invents source/method; gold QA |
-| FOCUS-07 | P2 | PARTIAL | Перевірити приватний UAT і фактичну користь без порушення hard lanes. | Manual pin only within lane; clear override and reset |
-| FOCUS-08 | P2 | PARTIAL | Перевірити приватний UAT і фактичну користь без порушення hard lanes. | A-01/A-11; action accessible |
+| FOCUS-07 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Manual pin only within lane; clear override and reset |
+| FOCUS-08 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | A-01/A-11; action accessible |
 | PRIOR-07 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | Local opt-in, no PII, no cloud telemetry |
 | PRIOR-08 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | Never silently retrain queue ranking; human UAT |
 | PRIOR-09 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | Not a gamified Done count, J-01 |
