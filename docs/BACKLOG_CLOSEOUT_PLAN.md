@@ -73,3 +73,7 @@ PR #40 implements verified source-cache invalidation and strictly one-to-one RES
 ### Post-#41 update
 
 The generated email no longer asserts a verified supplier archive when only a subset of required Jira flow ZIPs is current. Standalone normalization is conservative; unknown readiness is a QA blocker. Real recipient routing, supplier method approval, Jira output accuracy and manual sending remain independent BA gates. Next thematic package: #42 (rapid action/focus cycle).
+
+### Post-#42 update
+
+A single in-memory last-local-DONE undo provides a fast correction protected by SQLite CAS; it does not change Jira, email or official sprint ordering. Remaining QUICK/FOCUS improvements are candidates for measured human UX acceptance, not automatically mandatory code. #43 focuses sprint/WRITE invariants, scored effort and truthful performance diagnostics.
