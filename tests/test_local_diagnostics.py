@@ -129,6 +129,55 @@ class LocalDiagnosticsTests(unittest.TestCase):
         self.assertNotIn("CCON-", json.dumps(state))
         self.assertTrue(collect(self.root)["filesystemRiskObserved"])
 
+    def test_root_group_or_world_writable_is_not_mistaken_for_private(self):
+        if os.name == "nt":
+            self.assertEqual(collect(self.root)["accessChecks"]["workspace_dir"],
+                             "UNVERIFIED_WINDOWS_ACL")
+            return
+        self.root.chmod(0o777)
+        self.assertEqual(collect(self.root)["accessChecks"]["workspace_dir"],
+                         "UNSAFE_SHARED_MODE")
+        self.assertTrue(collect(self.root)["filesystemRiskObserved"])
+        self.root.chmod(0o700)
+        self.assertEqual(collect(self.root)["accessChecks"]["workspace_dir"],
+                         "OWNER_ONLY_MODE")
+
+    def test_symlink_in_parent_downloads_is_never_traversed(self):
+        import shutil
+        outside = self.base / "external"
+        (outside / "ccon" / "CCON-999").mkdir(parents=True)
+        (outside / "ccon" / "CCON-999" / "external.zip").write_bytes(
+            SECRET.encode())
+        downloads = self.root / "downloads"
+        shutil.rmtree(downloads)
+        try:
+            downloads.symlink_to(outside, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            return
+        audit = collect(self.root)
+        self.assertEqual(audit["accessChecks"]["downloads_dir"], "UNSAFE_SYMLINK")
+        self.assertEqual(audit["supplierZipChecks"]["folder"], "UNSAFE_ANCESTOR")
+        self.assertEqual(audit["supplierZipChecks"]["examined"], 0)
+        self.assertTrue(audit["filesystemRiskObserved"])
+        self.assertNotIn("CCON-999", json.dumps(audit))
+
+    def test_invalid_command_tokens_cannot_echo_paths_or_pnr(self):
+        for fragments in [
+            ["export", "--root", str(self.root), "--output",
+             str(self.output), "PRIVATE-PNR123"],
+            ["unknown-command", "--root", SECRET],
+            ["check", "--root", str(self.root), "user-home-SYNTHETIC-SECRET"],
+        ]:
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                result = main(fragments)
+            self.assertEqual(result, 1)
+            self.assertNotIn(SECRET, stdout.getvalue() + stderr.getvalue())
+            self.assertNotIn("PRIVATE-PNR123", stdout.getvalue() + stderr.getvalue())
+            self.assertNotIn("user-home-SYNTHETIC-SECRET",
+                             stdout.getvalue() + stderr.getvalue())
+            self.assertFalse(self.output.exists())
+
     def test_check_mode_stdout_is_synthetic_metadata_only(self):
         out = io.StringIO()
         with redirect_stdout(out):
