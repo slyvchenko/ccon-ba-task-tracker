@@ -7,6 +7,7 @@ Run: python -m pip install playwright==1.56.0
 Never exercises real Jira, Outlook, mailto sending or external attachments.
 Not included in Python-only startup dependencies.
 """
+import hashlib
 import json
 import os
 import statistics
@@ -517,6 +518,141 @@ class BrowserRegression(unittest.TestCase):
         self.assertNotIn("Поки не визначено — потрібен аналіз контексту.",
                          self.page.locator("#detail").inner_text())
         self.assertEqual(self.page.locator("#questionTracker").count(),1)
+
+    def test_long_technical_pnr_rest_rules_and_repeatable_viewport_snapshots(self):
+        # UI-08/UI-10 synthetic geometry and same-content pixel repeatability.
+        # This does not replace a reviewed cross-commit visual baseline.
+        pnr="LONGPNR" + "ZX97YJ" * 35
+        condition="Order/SegmentRefID/" + pnr + "/DeliveryStatusCode=REMOVED"
+        outcome="DoNotReturn/" + pnr + "/REST.RS.segment"
+        doc=fixture_document("2026-10-26T11:30:00Z")
+        doc["tasks"][0]["analysis"]["briefing"]={
+            "overviewUk":"Synthetic IF/THEN source review",
+            "currentUk":"Synthetic API returns a segment",
+            "targetUk":"Synthetic API must exclude segment under condition",
+            "businessImpactUk":"Synthetic test only",
+            "technicalScopeUk":"REST Read PNR / Booking response",
+            "readiness":"NEEDS_CONFIRMATION",
+            "readinessReasonUk":"Requires independent QA and supplier proof",
+            "sourceAudit":[],
+            "confirmedFacts":[],
+            "timeline":[],
+            "rules":[{"whenUk":condition,"thenUk":outcome,"certainty":"OPEN",
+                      "sourceUrl":"https://example.invalid/technical"}],
+            "verification":[],
+            "unknownsUk":["Synthetic long token requires visual review"],
+            "risksUk":[]
+        }
+        self.snapshot.write_text(json.dumps(doc),encoding="utf-8")
+        self.desk.import_snapshot()
+        signatures={}
+        for width,height in ((320,850),(768,900),(1440,900)):
+            self.page.set_viewport_size({"width":width,"height":height})
+            self.page.reload(wait_until="domcontentloaded")
+            self.choose("CCON-1")
+            rule=self.page.locator(".ba-brief details").filter(
+                has_text="Правила IF / THEN").first
+            if not rule.evaluate("(node)=>node.open"):
+                rule.locator("summary").click()
+            self.page.locator(".ba-brief .technical-token").first.wait_for()
+            values=self.page.locator(".ba-brief .technical-token").all_text_contents()
+            self.assertEqual(values,[condition,outcome])
+            geometry=self.page.evaluate("""() => {
+                const tokens=[...document.querySelectorAll('.ba-brief .technical-token')];
+                return {
+                    viewport:document.documentElement.clientWidth,
+                    document:document.documentElement.scrollWidth,
+                    tokens:tokens.map(el=>({
+                        overflowWrap:getComputedStyle(el).overflowWrap,
+                        whiteSpace:getComputedStyle(el).whiteSpace,
+                        scrollWidth:el.scrollWidth,
+                        clientWidth:el.clientWidth
+                    }))
+                };
+            }""")
+            self.assertLessEqual(geometry["document"],geometry["viewport"]+2,geometry)
+            for token in geometry["tokens"]:
+                self.assertEqual(token["overflowWrap"],"anywhere")
+                self.assertEqual(token["whiteSpace"],"pre-wrap")
+            # Pointer/focus and the transient sticky action are not part of
+            # the static source panel being compared.
+            # The app correctly restores per-task disclosure state from
+            # sessionStorage. A screenshot must use a fixed panel state so
+            # that the difference test measures rendering, not user choices.
+            self.page.evaluate("""() => {
+                for(const node of document.querySelectorAll('.ba-brief details')) {
+                    const label=node.querySelector('summary')?.textContent || '';
+                    node.open=label.includes('Правила IF / THEN');
+                }
+                document.activeElement?.blur();
+            }""")
+            self.page.mouse.move(0,0)
+            # Geometry/semantic snapshot is stable despite native raster
+            # noise. Keep *both* PNGs as evidence for a future approved
+            # cross-version human pixel-baseline comparison.
+            capture_layout="""() => {
+                const root=document.querySelector('.ba-brief');
+                const box=root.getBoundingClientRect();
+                const tokens=[...root.querySelectorAll('.technical-token')];
+                return {
+                    text:root.textContent,
+                    width:Math.round(box.width),
+                    height:Math.round(box.height),
+                    openSections:[...root.querySelectorAll('details')]
+                        .map(d=>d.open),
+                    tokenWidths:tokens.map(node=>Math.round(
+                        node.getBoundingClientRect().width)),
+                    tokenTexts:tokens.map(node=>node.textContent)
+                };
+            }"""
+            before=self.page.evaluate(capture_layout)
+            screenshot_style="#stickyAction{visibility:hidden!important}"
+            first=self.page.locator(".ba-brief").screenshot(
+                animations="disabled",style=screenshot_style)
+            (ARTIFACTS/f"synthetic-technical-long-{width}-before.png").write_bytes(first)
+            self.page.reload(wait_until="domcontentloaded")
+            self.choose("CCON-1")
+            rule=self.page.locator(".ba-brief details").filter(
+                has_text="Правила IF / THEN").first
+            if not rule.evaluate("(node)=>node.open"):
+                rule.locator("summary").click()
+            self.page.evaluate("""() => {
+                for(const node of document.querySelectorAll('.ba-brief details')) {
+                    const label=node.querySelector('summary')?.textContent || '';
+                    node.open=label.includes('Правила IF / THEN');
+                }
+                document.activeElement?.blur();
+            }""")
+            self.page.mouse.move(0,0)
+            after=self.page.evaluate(capture_layout)
+            self.assertEqual(before["text"],after["text"],
+                             f"technical source text changed at {width}px")
+            self.assertEqual(before["openSections"],after["openSections"])
+            self.assertEqual(before["tokenTexts"],after["tokenTexts"])
+            for key in ("width","height"):
+                self.assertLessEqual(abs(before[key]-after[key]),2,
+                                     f"visual {key} changed at {width}px")
+            for left,right in zip(before["tokenWidths"],after["tokenWidths"]):
+                self.assertLessEqual(abs(left-right),2,
+                                     f"token width changed at {width}px")
+            second=self.page.locator(".ba-brief").screenshot(
+                animations="disabled",style=screenshot_style)
+            (ARTIFACTS/f"synthetic-technical-long-{width}-after.png").write_bytes(second)
+            signatures[str(width)]={
+                "semanticLayoutStable":True,
+                "beforeSha256":hashlib.sha256(first).hexdigest(),
+                "afterSha256":hashlib.sha256(second).hexdigest(),
+                "beforeDimensions":{k:before[k] for k in ("width","height")},
+                "afterDimensions":{k:after[k] for k in ("width","height")}
+            }
+            self.page.screenshot(path=str(ARTIFACTS/
+                f"synthetic-technical-long-{width}.png"),full_page=True)
+        ARTIFACTS.joinpath("synthetic-technical-visual-hashes.json").write_text(
+            json.dumps({"syntheticOnly":True,"semanticGeometryRegression":True,
+                        "pixelHashesInformational":True,
+                        "notAnApprovedCrossVersionPixelBaseline":True,
+                        "snapshotsByViewport":signatures},
+                       indent=2),encoding="utf-8")
 
     def test_three_viewports_and_short_soak_no_external_writes(self):
         self.choose("CCON-2")

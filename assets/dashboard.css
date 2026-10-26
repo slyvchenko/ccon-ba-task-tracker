@@ -212,7 +212,7 @@ textarea {
   overflow:hidden;
   font-size:13px;
   font-weight:400;
-  margin:4px 0 5px;
+  margin:3px 0 4px;
   line-height:1.35
 }
 .rank {
@@ -564,10 +564,7 @@ label {
   overflow-wrap:anywhere
 }
 .row .badge {
-  font-size:11px;
-  font-weight:400;
-  padding:3px 6px;
-  margin:1px 4px 0 0
+  font-weight:400
 }
 .right-column {
   display:flex;
@@ -601,9 +598,6 @@ body,button,input,select,textarea,option {
 .row-content {
   display:block;
   min-width:0
-}
-.row-title {
-  margin:3px 0 4px
 }
 .row-statuses {
   display:flex;
@@ -1330,7 +1324,7 @@ header {
 .evidence-report {border-left:3px solid var(--brand-blue,#0879b6);padding:10px;background:#f3f8fc;margin:9px 0;}
 .evidence-scroll {max-height:240px;overflow:auto;}
 .evidence-scroll table {border-collapse:collapse;width:100%;font-size:12px;}
-.evidence-scroll td,.evidence-scroll th {border:1px solid var(--line);padding:6px;text-align:left;}
+.evidence-scroll td,.evidence-scroll th {border:1px solid var(--line);padding:6px;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-width:300px}
 
 /* v2.28: a compact next-action strip inside the existing task detail. */
 .quick-handoff {
@@ -1504,4 +1498,30 @@ a:focus-visible {
 }
 @media (forced-colors:active) {
   .sticky-action-inner {border:1px solid CanvasText;border-left:4px solid Highlight;box-shadow:none}
+}
+
+/* v2.49.3: original palette/layout, lossless rendering of REST/PNR codes.
+   break opportunities are visual only; no ellipsis or source mutation. */
+.technical-token {
+  font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+  font-size:.94em;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  border-radius:3px;
+  background:#eef3f9;
+  padding:1px 3px;
+}
+.ba-brief .brief-list,
+.ba-brief .brief-list li,
+.source-list li,
+#contextPreview,
+#evidenceSummary,
+#approvedReview,
+.question-record {
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+@media (forced-colors:active) {
+  .technical-token {background:Canvas;color:CanvasText;border:1px solid CanvasText}
 }

@@ -25,3 +25,20 @@ test('responsive/accessibility guardrails remain represented in CSS',()=>{
   assert.ok(css.includes(fragment));
  }
 });
+
+test('technical REST/PNR snippets can wrap without ellipsis or text truncation',()=>{
+ const rule=css.match(/\.technical-token\s*\{([^}]+)\}/)?.[1] || '';
+ assert.match(rule,/overflow-wrap:\s*anywhere/);
+ assert.match(rule,/white-space:\s*pre-wrap/);
+ assert.doesNotMatch(rule,/text-overflow:\s*ellipsis|overflow:\s*hidden/);
+ assert.match(js,/code class="technical-token"/);
+ const evidence=css.match(/\.evidence-scroll td,\.evidence-scroll th\s*\{([^}]+)\}/)?.[1] || '';
+ assert.match(evidence,/overflow-wrap:anywhere/);
+ for(const fragment of ['#contextPreview','#evidenceSummary','#approvedReview'])
+   assert.ok(css.includes(fragment),'missing technical overflow scope '+fragment);
+});
+test('legacy overridden row density rules stay consolidated',()=>{
+ assert.equal((css.match(/\.row-title\s*\{\s*margin:/g)||[]).length,0);
+ assert.ok(css.includes('margin:3px 0 4px;'));
+ assert.ok(!css.includes('font-size:11px;\n  font-weight:400;\n  padding:3px 6px;'));
+});
