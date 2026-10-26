@@ -1,6 +1,7 @@
 """Synthetic weekly work-state tests. No real Jira or BA database access."""
 import json
 import os
+import shutil
 from contextlib import closing
 import sqlite3
 import tempfile
@@ -74,12 +75,16 @@ class WeeklyWorkloadTests(unittest.TestCase):
         self.assertEqual(result["weeklyTransitions"]["completed"],2)
 
     def test_relative_path_and_sunday_week_are_supported(self):
-        relative=Path(os.path.relpath(self.root,Path.cwd()))
-        report=weekly_report(relative,"2026-W43",today=date(2026,10,25))
-        self.assertTrue(report["weekMayBeIncomplete"])
-        monday=weekly_report(relative,"2026-W43",today=date(2026,10,26))
-        self.assertFalse(monday["weekMayBeIncomplete"])
-        self.assertEqual(report["asOfWeekEnd"],monday["asOfWeekEnd"])
+        # Windows runner workspace may be on D: while temp DB is on C:.
+        # Create a separate synthetic relative fixture on the current drive.
+        with tempfile.TemporaryDirectory(prefix="tmp-week-relative-", dir=Path.cwd() / "tests") as folder:
+            shutil.copyfile(self.db, Path(folder) / "ba_state.db")
+            relative=Path(os.path.relpath(folder,Path.cwd()))
+            report=weekly_report(relative,"2026-W43",today=date(2026,10,25))
+            self.assertTrue(report["weekMayBeIncomplete"])
+            monday=weekly_report(relative,"2026-W43",today=date(2026,10,26))
+            self.assertFalse(monday["weekMayBeIncomplete"])
+            self.assertEqual(report["asOfWeekEnd"],monday["asOfWeekEnd"])
 
     def test_archived_task_return_can_complete_known_prior_work(self):
         self.append("CCON-92", "2026-10-18T14:00:00+00:00",
