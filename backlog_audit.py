@@ -55,6 +55,8 @@ POINTERS = {
     "PERF-05": ("assets/queue-dom.mjs", "tests/queue-dom.test.mjs"),
     "PERF-08": ("assets/detail-refresh-policy.mjs", "tests/detail-refresh-policy.test.mjs"),
     "PERF-09": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
+    "PERF-10": ("sqlite_mode_study.py", "tests/test_sqlite_retention_study.py"),
+    "REL-09": ("history_retention_preview.py", "tests/test_sqlite_retention_study.py"),
     "REL-02": ("desk_store.py", "tests/test_manual_edit_cas.py"),
     "REL-03": ("local_backup.py", "tests/test_local_backup.py"),
     "REL-05": ("server.py", "tests/test_crash_consistency.py"),
