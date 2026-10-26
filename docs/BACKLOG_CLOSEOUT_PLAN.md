@@ -65,3 +65,7 @@
 - Product Owner окремо затверджує, чи всі P2/P3 optional фічі взагалі входять у цільовий локальний продукт.
 
 **Висновок:** **10 тематичних PR після #38** є найрозумнішою робочою оцінкою для локального BA Desk, якщо згрупувати пов'язані рядки і не додавати функції заради кількості. Реальна оцінка може зменшитися після #39 або зрости через проблеми, виявлені на реальних даних.
+
+### Post-#40 update
+
+PR #40 implements verified source-cache invalidation and strictly one-to-one REST↔supplier candidate pairing. **Live Kibana authorization, verified supplier contract mapping and gold-set BA acceptance remain open**: engineering success is not human signoff. Next package is #41, focused on source-backed Jira task drafts, recipients, supplier XML attachment and manual email handoff.
