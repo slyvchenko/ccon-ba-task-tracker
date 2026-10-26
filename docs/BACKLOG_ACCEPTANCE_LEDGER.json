@@ -26,7 +26,7 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 46,
+    "code_plus_test_locators": 45,
     "no_direct_locator": 79
   },
   "items": [
@@ -924,8 +924,8 @@
       "acceptance_criteria": "No false ready for missing ZIP/method/recipient; J-04",
       "suggested_batch": "#41",
       "disposition": "REVIEW_POSSIBLE_ACCEPTANCE_OVERLAP",
-      "code_locator": "BA-02",
-      "test_locator": "OUT-02",
+      "code_locator": "email_rules.py",
+      "test_locator": "tests/test_email_rules.py",
       "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [
         "BA-02",
@@ -972,8 +972,8 @@
       "acceptance_criteria": "User 5-second scan, no loss of proof status",
       "suggested_batch": "#42",
       "disposition": "REVIEW_POSSIBLE_ACCEPTANCE_OVERLAP",
-      "code_locator": "VIS-01",
-      "test_locator": "VIS-04",
+      "code_locator": "assets/fast-handoff.mjs",
+      "test_locator": "tests/fast-handoff.test.mjs",
       "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [
         "VIS-01",
@@ -1260,8 +1260,8 @@
       "acceptance_criteria": "A-03; no horizontal overflow/hidden primary action",
       "suggested_batch": "#47",
       "disposition": "REVIEW_POSSIBLE_ACCEPTANCE_OVERLAP",
-      "code_locator": "VIS-04",
-      "test_locator": "VIS-15",
+      "code_locator": "assets/dashboard.css",
+      "test_locator": "tests/css-cleanup.test.mjs",
       "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [
         "VIS-04",
@@ -1323,8 +1323,8 @@
       "acceptance_criteria": "Keep main results visible, never bury next action",
       "suggested_batch": "#47",
       "disposition": "REVIEW_POSSIBLE_ACCEPTANCE_OVERLAP",
-      "code_locator": "VIS-06",
-      "test_locator": "VIS-10",
+      "code_locator": "assets/progressive-layout.mjs",
+      "test_locator": "tests/progressive-layout.test.mjs",
       "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [
         "VIS-06",
@@ -1859,9 +1859,9 @@
       "acceptance_criteria": "Repeatable local script and measurement doc",
       "suggested_batch": "#48 ACCEPTANCE_RECHECK",
       "disposition": "REVIEW_POSSIBLE_ACCEPTANCE_OVERLAP",
-      "code_locator": "QA-09",
-      "test_locator": "PERF-05",
-      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
+      "code_locator": "performance_smoke.py",
+      "test_locator": null,
+      "evidence_level": "CODE_LOCATOR_ONLY",
       "possible_overlaps": [
         "QA-09",
         "PERF-05"
