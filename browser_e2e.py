@@ -469,7 +469,7 @@ class BrowserRegression(unittest.TestCase):
         self.choose("CCON-1")
         self.assertEqual(self.page.locator("#detail .ba-brief").count(),0)
         self.assertEqual(self.page.locator("#nextText").count(),1)
-        diagnostics=self.page.locator("#countDetails").inner_text()
+        diagnostics=self.page.locator("#countDetails").text_content()
         self.assertNotIn("короткі кандидати", diagnostics)
         self.assertIn("аналіз:", diagnostics)
 
