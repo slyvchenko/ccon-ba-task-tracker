@@ -15,10 +15,13 @@ export function detailContentFingerprint(task) {
 // No storage, timers, business network writes or global mutable state.
 export function createDetailRequestScope(getSelected) {
   let generation = 0;
+  let current = () => null;
   return {
     begin(key) {
       const currentGeneration = ++generation;
-      return () => currentGeneration === generation && getSelected() === key ? key : null;
-    }
+      current = () => currentGeneration === generation && getSelected() === key ? key : null;
+      return current;
+    },
+    current() { return current; }
   };
 }
