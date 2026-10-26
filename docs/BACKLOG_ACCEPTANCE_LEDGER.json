@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 75,
-      "PLANNED": 7
+      "PARTIAL": 76,
+      "PLANNED": 6
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 60,
-    "no_direct_locator": 63
+    "code_plus_test_locators": 61,
+    "no_direct_locator": 62
   },
   "items": [
     {
@@ -1639,15 +1639,15 @@
     {
       "id": "REL-10",
       "priority": "P2",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.5 offline release SHA256 verification with advisory rollback; independent signing and older SQLite migration UAT open)",
+      "category": "PARTIAL",
       "requirement": "Safe signed release/backup metadata and rollback rehearsal",
       "acceptance_criteria": "Verify hashes; old app loads additive migration",
       "suggested_batch": "#45",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
+      "code_locator": "release_integrity.py",
+      "test_locator": "tests/test_release_integrity.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
