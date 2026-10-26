@@ -50,7 +50,7 @@ class AuditTest(unittest.TestCase):
         self.assertGreater(report["counts"]["code_plus_test_locators"], 20)
         self.assertGreater(report["counts"]["no_direct_locator"], 0)
         for row in report["items"]:
-            self.assertIn("LOCATOR", row["evidence_level"])
+            self.assertIn(row["evidence_level"], ("CODE_AND_TEST_LOCATORS_ONLY", "CODE_LOCATOR_ONLY", "UNMAPPED_NEEDS_INSPECTION"))
             self.assertNotEqual(row["human_acceptance"], "PASSED")
             if row["code_locator"]:
                 self.assertTrue((audit.ROOT / row["code_locator"]).is_file())
