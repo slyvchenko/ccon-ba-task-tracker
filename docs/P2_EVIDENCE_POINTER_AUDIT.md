@@ -20,3 +20,14 @@
 **Результат:** прямі code+test locators **94 → 106**, вимоги без прямого code locator **29 → 17**. Категорії всіх 129 вимог незмінні: 40 `IMPLEMENTED` за кодом, 82 `PARTIAL`, 3 `GATE`, 4 `DEFERRED`, 0 `PLANNED`. Людське приймання для **кожного** пункту: `NOT_RECORDED`.
 
 Без доказів залишаються, зокрема, `QA-02/QA-10` (приватні людські гейти), `EVD-05` (авторизований доступ до ZIP), `INF-01..04` (свідомо відкладений cloud scope), а також декілька довгих Windows/UX-сценаріїв. Не призначати їм випадкові source pointers. Жодної корпоративної задачі, PNR, XML, email або приватного шляху до цієї документації не переноситься.
+
+
+## Наступний обмежений аудит: 3 локальні шляхи
+
+| ID | Код | Тест | Що перевірено і що лишається |
+|---|---|---|---|
+| FOCUS-06 | `assets/detail-refresh-policy.mjs` | `tests/detail-refresh-policy.test.mjs` | Source fingerprint, stale response guard; перевірка поведінки реального редактора/курсора в Windows лишається |
+| QUICK-05 | `assets/effort-planning.mjs` | `tests/effort-planning.test.mjs` | Гіпотези швидкого handoff у незмінних hard priority lanes; повноцінний batch workflow та людський time-study не прийняті |
+| REL-04 | `snapshot_monitor.py` | `tests/test_local_backup.py` | Unchanged snapshot skip, 30s bounded retry, health states, manual note preservation; реальне блокування файловою системою та live Windows UAT відкриті |
+
+Стан після аудиту: `129` вимог, `109` пар source+test, `6` code-only, `14` без обох; `40 IMPLEMENTED`, `82 PARTIAL`, `3 GATE`, `4 DEFERRED`. Усі `human_acceptance=NOT_RECORDED`. Це уточнення **не** реалізує відсутню функціональність і не підтверджує бізнес-відповідність.

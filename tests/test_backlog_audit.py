@@ -32,8 +32,8 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
                             for key in rows))
         self.assertEqual(len(rows), 129)
-        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 106)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 17)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 109)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 14)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
@@ -126,6 +126,27 @@ class AuditTest(unittest.TestCase):
                 self.assertEqual(row["human_acceptance"], "NOT_RECORDED")
                 self.assertTrue((audit.ROOT / source).is_file())
                 self.assertTrue((audit.ROOT / test_file).is_file())
+
+
+    def test_three_existing_local_code_paths_have_direct_test_locators(self):
+        # Evidence pointers are navigation aids, not a claim that UAT passed.
+        expected = {
+            "FOCUS-06": ("assets/detail-refresh-policy.mjs",
+                         "tests/detail-refresh-policy.test.mjs"),
+            "QUICK-05": ("assets/effort-planning.mjs",
+                         "tests/effort-planning.test.mjs"),
+            "REL-04": ("snapshot_monitor.py", "tests/test_local_backup.py"),
+        }
+        rows = {row["id"]: row for row in audit.produce()["items"]}
+        for ident, (source, test) in expected.items():
+            with self.subTest(requirement=ident):
+                row = rows[ident]
+                self.assertEqual((row["code_locator"], row["test_locator"]),
+                                 (source, test))
+                self.assertTrue((audit.ROOT / source).is_file())
+                self.assertTrue((audit.ROOT / test).is_file())
+                self.assertEqual(row["category"], "PARTIAL")
+                self.assertEqual(row["human_acceptance"], "NOT_RECORDED")
 
     def test_perf_08_is_source_backed_but_device_acceptance_is_open(self):
         row = next(r for r in audit.produce()["items"] if r["id"] == "PERF-08")

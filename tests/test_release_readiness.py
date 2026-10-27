@@ -64,9 +64,9 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual(result["totalRequirements"],129)
         self.assertEqual(len(result["items"]),129)
         self.assertEqual(len(set(x["id"] for x in result["items"])),129)
-        self.assertEqual(result["sourceTestPointerCoverage"],106)
+        self.assertEqual(result["sourceTestPointerCoverage"],109)
         self.assertEqual(result["pointerCoverageBreakdown"],
-                         {"codeAndTest":106,"codeOnly":6,"testOnly":0,"neither":17})
+                         {"codeAndTest":109,"codeOnly":6,"testOnly":0,"neither":14})
         self.assertEqual({row["id"] for row in result["p0PointerGaps"]},
                          {"EVD-05","EVD-06","QA-02","QA-09","QA-10"})
         self.assertEqual(sum(result["pointerCoverageBreakdown"].values()),129)
@@ -94,7 +94,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         data["items"][0]["test_locator"]=secret
         result=closeout_matrix(data)
         self.assertNotIn(secret,json.dumps(result))
-        self.assertEqual(result["sourceTestPointerCoverage"],106)
+        self.assertEqual(result["sourceTestPointerCoverage"],109)
         data["items"][0]["id"]="PRIVATE-PNR-12345"
         with self.assertRaisesRegex(ValueError,"identifier"):
             closeout_matrix(data)
@@ -112,9 +112,9 @@ class ReleaseReadinessTests(unittest.TestCase):
         forged["counts"]["code_plus_test_locators"]-=1
         forged["counts"]["no_direct_locator"]+=1
         result=closeout_matrix(forged)
-        self.assertEqual(result["sourceTestPointerCoverage"],105)
+        self.assertEqual(result["sourceTestPointerCoverage"],108)
         self.assertEqual(result["pointerCoverageBreakdown"],
-                         {"codeAndTest":105,"codeOnly":6,"testOnly":1,"neither":17})
+                         {"codeAndTest":108,"codeOnly":6,"testOnly":1,"neither":14})
         self.assertIn("CORE-01", {x["id"] for x in result["p0PointerGaps"]})
         self.assertFalse(result["releaseApproved"])
 
@@ -156,8 +156,8 @@ class ReleaseReadinessTests(unittest.TestCase):
         encoded=json.dumps(result)
         self.assertNotIn("PRIVATE_PNR_SYNTHETIC_999",encoded)
         self.assertNotIn("private-person-identifying-path",encoded)
-        self.assertEqual(result["sourceTestPointerCoverage"],107)
-        self.assertEqual(result["pointerCoverageBreakdown"]["codeAndTest"],107)
+        self.assertEqual(result["sourceTestPointerCoverage"],110)
+        self.assertEqual(result["pointerCoverageBreakdown"]["codeAndTest"],110)
         self.assertEqual(result["pointerCoverageBreakdown"]["codeOnly"],5)
         self.assertEqual(result["privateAcceptanceVerified"],0)
         self.assertFalse(result["releaseApproved"])

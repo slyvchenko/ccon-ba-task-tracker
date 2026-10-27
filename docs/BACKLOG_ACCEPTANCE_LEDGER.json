@@ -25,8 +25,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 106,
-    "no_direct_locator": 17
+    "code_plus_test_locators": 109,
+    "no_direct_locator": 14
   },
   "items": [
     {
@@ -941,9 +941,9 @@
       "acceptance_criteria": "Sprint/WRITE contract unchanged; reordering by time opt-in only",
       "suggested_batch": "#42",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "assets/effort-planning.mjs",
+      "test_locator": "tests/effort-planning.test.mjs",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
@@ -1079,9 +1079,9 @@
       "acceptance_criteria": "No focus loss, cursor jump, stale overwrite",
       "suggested_batch": "#42",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "assets/detail-refresh-policy.mjs",
+      "test_locator": "tests/detail-refresh-policy.test.mjs",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
@@ -1554,9 +1554,9 @@
       "acceptance_criteria": "No error swallowed; error state shown, P-12",
       "suggested_batch": "#45",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "snapshot_monitor.py",
+      "test_locator": "tests/test_local_backup.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
