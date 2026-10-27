@@ -37,6 +37,36 @@ class AuditTest(unittest.TestCase):
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
+    def test_p0_legacy_source_pointers_are_locations_not_human_approval(self):
+        rows = {row["id"]: row for row in audit.produce()["items"]}
+        inspected = {
+            "CORE-04": ("priority_score.py", "tests/test_priority_score.py"),
+            "BA-03": ("ba_briefing.py", "tests/test_ba_briefing.py"),
+            "UX-01": ("assets/dashboard.mjs", "browser_e2e.py"),
+            "QUICK-01": ("assets/fast-handoff.mjs", "tests/fast-handoff.test.mjs"),
+            "FOCUS-01": ("assets/queue-performance.mjs", "tests/queue-performance.test.mjs"),
+            "PRIOR-01": ("assets/effort-planning.mjs", "tests/effort-planning.test.mjs"),
+            "PRIOR-02": ("assets/task-rules.mjs", "tests/priority-hard-lanes.test.mjs"),
+            "PERF-01": ("desk_store.py", "tests/test_json_response_cache.py"),
+            "PERF-02": ("assets/revision-policy.mjs", "browser_e2e.py"),
+            "PERF-03": ("assets/queue-performance.mjs", "tests/queue-performance.test.mjs"),
+            "REL-01": ("desk_store.py", "tests/test_manual_edit_cas.py"),
+            "QA-11": ("desk_store.py", "tests/test_manual_edit_cas.py"),
+        }
+        self.assertEqual(len(inspected), 12)
+        for key, (source, test) in inspected.items():
+            with self.subTest(id=key):
+                self.assertEqual(rows[key]["priority"], "P0")
+                self.assertEqual(rows[key]["code_locator"], source)
+                self.assertEqual(rows[key]["test_locator"], test)
+                self.assertEqual(rows[key]["evidence_level"],
+                                 "CODE_AND_TEST_LOCATORS_ONLY")
+                self.assertEqual(rows[key]["human_acceptance"], "NOT_RECORDED")
+        # Do not invent implementation/test evidence for independent gates or
+        # ambiguous authorized ZIP acquisition. They need actual UAT/scope.
+        for key in ("EVD-05", "QA-02", "QA-10"):
+            self.assertIsNone(rows[key]["code_locator"])
+
     def test_perf_08_is_source_backed_but_device_acceptance_is_open(self):
         row = next(r for r in audit.produce()["items"] if r["id"] == "PERF-08")
         self.assertEqual(row["category"], "PARTIAL")
