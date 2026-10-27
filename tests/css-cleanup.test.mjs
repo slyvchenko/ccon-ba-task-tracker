@@ -91,3 +91,11 @@ test('PERF-09 brand cascade is single-source without changing final token values
   'forced-colors:active','prefers-reduced-motion:reduce'])
    assert.ok(css.includes(query),'lost adaptive CSS '+query);
 });
+
+
+test('stale supplier ZIP warnings retain an emphasized amber helper',()=>{
+ const rule=css.match(/\.text-amber\s*\{([^}]+)\}/)?.[1] || '';
+ assert.match(rule,/color:\s*var\(--amber\)/);
+ assert.match(rule,/font-weight:\s*700/);
+ assert.match(js,/class=\\"text-amber\\"/);
+});
