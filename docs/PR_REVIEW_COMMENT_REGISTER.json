@@ -10,9 +10,14 @@
     "original_review_findings": 148,
     "inline_replies": 29,
     "verified_main_fixes": 4,
-    "github_threads_assessed": 140,
-    "open_review_threads": 92,
-    "resolved_review_threads": 48
+    "github_threads_assessed": 148,
+    "open_review_threads": 98,
+    "resolved_review_threads": 50,
+    "outdated_open_threads": 29,
+    "severity": {
+      "P2": 119,
+      "P1": 29
+    }
   },
   "findings": [
     {
@@ -2124,9 +2129,9 @@
       "author": "chatgpt-codex-connector[bot]",
       "summary": "** Reject prediction snapshots that contain no analyzed output**",
       "severity": "P2",
-      "thread_id": null,
-      "thread_resolved": null,
-      "thread_outdated": null,
+      "thread_id": "PRRT_kwDOU2bYjc6wkIEx",
+      "thread_resolved": false,
+      "thread_outdated": false,
       "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
       "linked_fix": null
     },
@@ -2139,9 +2144,9 @@
       "author": "chatgpt-codex-connector[bot]",
       "summary": "** Regenerate the ledger to preserve PERF-09's overlap disposition**",
       "severity": "P1",
-      "thread_id": null,
-      "thread_resolved": null,
-      "thread_outdated": null,
+      "thread_id": "PRRT_kwDOU2bYjc6wkOQQ",
+      "thread_resolved": false,
+      "thread_outdated": false,
       "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
       "linked_fix": null
     },
@@ -2154,9 +2159,9 @@
       "author": "chatgpt-codex-connector[bot]",
       "summary": "** Remove double escaping from the new regex literals**",
       "severity": "P2",
-      "thread_id": null,
-      "thread_resolved": null,
-      "thread_outdated": null,
+      "thread_id": "PRRT_kwDOU2bYjc6wkSys",
+      "thread_resolved": false,
+      "thread_outdated": true,
       "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
       "linked_fix": null
     },
@@ -2169,9 +2174,9 @@
       "author": "chatgpt-codex-connector[bot]",
       "summary": "** Validate the same filesystem path that is opened**",
       "severity": "P2",
-      "thread_id": null,
-      "thread_resolved": null,
-      "thread_outdated": null,
+      "thread_id": "PRRT_kwDOU2bYjc6wkVh7",
+      "thread_resolved": false,
+      "thread_outdated": false,
       "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
       "linked_fix": null
     },
@@ -2184,9 +2189,9 @@
       "author": "coderabbitai[bot]",
       "summary": "Functional Correctness",
       "severity": "P1",
-      "thread_id": null,
-      "thread_resolved": null,
-      "thread_outdated": null,
+      "thread_id": "PRRT_kwDOU2bYjc6wkW9i",
+      "thread_resolved": true,
+      "thread_outdated": true,
       "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
       "linked_fix": null
     },
@@ -2199,9 +2204,9 @@
       "author": "chatgpt-codex-connector[bot]",
       "summary": "** Reject junction parents on supported older Python versions**",
       "severity": "P2",
-      "thread_id": null,
-      "thread_resolved": null,
-      "thread_outdated": null,
+      "thread_id": "PRRT_kwDOU2bYjc6wkYW-",
+      "thread_resolved": false,
+      "thread_outdated": true,
       "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
       "linked_fix": null
     },
@@ -2214,9 +2219,9 @@
       "author": "coderabbitai[bot]",
       "summary": "Functional Correctness",
       "severity": "P2",
-      "thread_id": null,
-      "thread_resolved": null,
-      "thread_outdated": null,
+      "thread_id": "PRRT_kwDOU2bYjc6wlIxe",
+      "thread_resolved": false,
+      "thread_outdated": false,
       "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
       "linked_fix": null
     },
@@ -2229,9 +2234,9 @@
       "author": "coderabbitai[bot]",
       "summary": "Count only complete source/test pairs in `produce()`.",
       "severity": "P2",
-      "thread_id": null,
-      "thread_resolved": null,
-      "thread_outdated": null,
+      "thread_id": "PRRT_kwDOU2bYjc6wl6lX",
+      "thread_resolved": true,
+      "thread_outdated": false,
       "outcome": "FIXED_IN_MAIN_PR_85",
       "linked_fix": "#85"
     }
