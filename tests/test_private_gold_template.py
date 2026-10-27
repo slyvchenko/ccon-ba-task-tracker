@@ -82,6 +82,26 @@ class GoldTemplateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             create_template(redirected / "private.json", CONFIRM)
 
+    def test_symlink_followed_by_parent_traversal_cannot_redirect_into_other_folder(self):
+        # Raw /private/link/../review.json has different semantics from
+        # abspath(): an OS resolves the symlink *before* processing '..'.
+        private = self.root / "private"
+        private.mkdir()
+        other = self.root / "real"
+        (other / "subdir").mkdir(parents=True)
+        link = private / "redirect"
+        try:
+            link.symlink_to(other / "subdir", target_is_directory=True)
+        except (OSError, NotImplementedError):
+            return
+        target = link / ".." / "review.json"
+        with self.assertRaises(ValueError):
+            create_template(target, CONFIRM)
+        self.assertFalse((other / "review.json").exists())
+        self.assertFalse((private / "review.json").exists())
+        with self.assertRaises(ValueError):
+            create_template(self.root / ".." / "private-review.json", CONFIRM)
+
     def test_cli_redacts_user_supplied_arguments_and_does_not_write_on_error(self):
         cases = [
             ["--output", str(self.output)],
