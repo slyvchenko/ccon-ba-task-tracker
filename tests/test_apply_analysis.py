@@ -124,6 +124,19 @@ class AnalysisIntegrity(unittest.TestCase):
         check=self.desk.view()["tasks"][0]["analysis"]["qualityGate"]
         self.assertIn("OPEN_REQUIREMENTS_PENDING",{x["code"] for x in check["findings"]})
 
+    def test_new_evidence_question_blocks_ready_before_persistence(self):
+        from storage import write_json
+        from test_ba_quality_gate import analysis as good_analysis
+        self.analysis["briefing"]=good_analysis()["briefing"]
+        self.analysis["briefing"]["readiness"]="READY_FOR_REVIEW"
+        self.analysis["missingInfo"]=[]
+        write_json(self.root/"data/evidence/CCON-1/synthetic.json",{
+            "issueKey":"CCON-1","questionsUk":["Missing supplier clarification"]})
+        self.run_apply({"CCON-1":self.analysis})
+        result=self.desk.view()["tasks"][0]["analysis"]["qualityGate"]
+        self.assertIn("OPEN_REQUIREMENTS_PENDING",
+                      {f["code"] for f in result["findings"]})
+
     def test_quality_gate_never_overwrites_manual_draft_or_note(self):
         self.desk.save('CCON-1', {'manualStatus': 'IN PROGRESS',
                                  'note': 'Keep user note',
