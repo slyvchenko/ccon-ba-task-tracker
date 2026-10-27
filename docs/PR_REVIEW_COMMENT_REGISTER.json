@@ -6,26 +6,24 @@
   "caveat": "Tracks 148 original historical review findings. Additional newer PR review threads are not part of this original cohort. Review resolution is code/source evidence, not BA or Windows human UAT; 129 canonical requirements remain independent.",
   "counts": {
     "historical_prs": 90,
-    "inline_comments": 269,
+    "inline_comments": 281,
     "original_review_findings": 148,
-    "inline_replies": 121,
+    "inline_replies": 133,
     "pr_conversation_comments": 187,
     "issue50_conversation_comments": 19,
     "github_threads_assessed": 148,
-    "open_review_threads": 12,
-    "resolved_review_threads": 136,
-    "outdated_open_threads": 2,
+    "open_review_threads": 0,
+    "resolved_review_threads": 148,
+    "outdated_open_threads": 0,
     "original_severity": {
       "P2": 119,
       "P1": 29
     },
-    "open_severity": {
-      "P2": 12
-    },
+    "open_severity": {},
     "verified_main_fixes": 37,
-    "verified_preexisting": 52,
+    "verified_preexisting": 64,
     "superseded": 1,
-    "newly_source_verified_in_followup": 58
+    "newly_source_verified_in_followup": 70
   },
   "findings": [
     {
@@ -694,11 +692,11 @@
       "summary": "** Revisit deferred detail updates when the revision is unchanged**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wBiD6",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4370952173,
@@ -726,11 +724,11 @@
       "summary": "** Restore disclosure state by stable identity instead of index**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wBsaq",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4371020344,
@@ -742,11 +740,11 @@
       "summary": "** Revalidate the quick-copy gate against the latest task**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wBsau",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4371340644,
@@ -774,11 +772,11 @@
       "summary": "** Reset detail scroll when the destination has no remembered view**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wCcRZ",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4371340650,
@@ -790,11 +788,11 @@
       "summary": "** Restrict the save shortcut to the form it actually persists**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wCcRc",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4371422315,
@@ -1094,11 +1092,11 @@
       "summary": "** Allow recovery from records other than the newest tab**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wEe3w",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4372285498,
@@ -1462,11 +1460,11 @@
       "summary": "** Exclude archived tasks when detecting an empty current snapshot**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wRQle",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4377891733,
@@ -1526,11 +1524,11 @@
       "summary": "Functional Correctness",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wSOQu",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4378149653,
@@ -1542,11 +1540,11 @@
       "summary": "** Synchronize the row cache with direct dirty-indicator updates**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wSxpU",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4378149658,
@@ -1558,11 +1556,11 @@
       "summary": "** Keep the sticky action clear of the existing task toolbar**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wSxpX",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4378366915,
@@ -1750,11 +1748,11 @@
       "summary": "Functional Correctness",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wZZ6X",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4380947064,
@@ -2038,11 +2036,11 @@
       "summary": "Functional Correctness",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wbVP2",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "Current main, source-level verification 2026-10-27",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381765585,
