@@ -3,6 +3,14 @@
 const TASK_KEY = /^CCON-\d+$/;
 const INPUT_TAGS = new Set(['INPUT','TEXTAREA','SELECT']);
 const CURSOR_IDS = new Set(['note','draftTo','draftSubject','draftBody','manual','manualEffort']);
+const MAIN_SAVE_IDS = new Set(['note','draftTo','draftSubject','draftBody','manual','manualEffort']);
+
+// Ctrl/Cmd+Enter only persists the main status, note and email fields.
+// Independent action/question/decision editors use separate POST handlers.
+export function isMainFormSaveTarget(target) {
+  return Boolean(target && MAIN_SAVE_IDS.has(target.id) &&
+    INPUT_TAGS.has(String(target.tagName || '').toUpperCase()));
+}
 
 export function isTextEditingTarget(target) {
   if (!target) return false;
@@ -56,13 +64,35 @@ export function captureTaskView(detail) {
 }
 
 export function restoreTaskView(detail, state) {
-  if (!detail || !state) return;
+  if (!detail) return;
+  // A new task has no prior viewport; don't inherit the previous task's scroll.
+  if (!state) { detail.scrollTop = 0; return; }
   const openByKey = new Map(Array.isArray(state.sections) ? state.sections : []);
   for (const node of detail.querySelectorAll('details')) {
     const key = viewSectionKey(node);
     if (openByKey.has(key)) node.open = openByKey.get(key) === true;
   }
   if (Number.isFinite(state.scroll)) detail.scrollTop = Math.max(0,state.scroll);
+}
+
+// Async evidence/question/decision/history panels insert nested <details> after
+// the parent render. Restore only NEWLY inserted disclosures by semantic key;
+// never re-toggle an existing section while the user is interacting with it.
+export function restoreInsertedDisclosureStates(mutations, openByKey) {
+  if (!(openByKey instanceof Map)) return 0;
+  let restored=0;
+  for (const mutation of mutations || []) for (const root of mutation.addedNodes || []) {
+    if (root.nodeType !== 1) continue;
+    const nodes=[...(root.matches?.('details') ? [root] : []),
+      ...(root.querySelectorAll?.('details') || [])];
+    for (const node of nodes) {
+      const key=viewSectionKey(node);
+      if (!openByKey.has(key)) continue;
+      node.open=openByKey.get(key) === true;
+      restored++;
+    }
+  }
+  return restored;
 }
 
 export function captureEditorFocus(active, detail) {

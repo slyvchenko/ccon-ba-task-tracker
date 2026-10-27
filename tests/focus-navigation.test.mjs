@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {shortcutAction, adjacentTaskKey, isTextEditingTarget, captureTaskView,
-  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
+  restoreTaskView,restoreInsertedDisclosureStates,isMainFormSaveTarget,
+  captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
   from '../assets/focus-navigation.mjs';
 
 const event=(key,options={})=>({key,altKey:false,ctrlKey:false,metaKey:false,
@@ -118,4 +119,32 @@ test('async handoff restores focus only to live, enabled and visible explicit ac
   assert.equal(focused,'');
   assert.equal(focusAfterAction(root,['../bad']),false);
   assert.equal(focusAfterAction(null,['bulkOpen']),false);
+});
+
+test('save shortcut only targets main status/note/email controls, not independent editors',()=>{
+  for (const id of ['note','draftTo','draftSubject','draftBody','manual','manualEffort'])
+    assert.equal(isMainFormSaveTarget({id,tagName:'TEXTAREA'}),true);
+  for (const id of ['decisionText','questionAnswer','actionText','logFilter','search'])
+    assert.equal(isMainFormSaveTarget({id,tagName:'TEXTAREA'}),false);
+  assert.equal(isMainFormSaveTarget({id:'note',tagName:'BUTTON'}),false);
+  assert.equal(isMainFormSaveTarget(null),false);
+});
+
+test('unvisited task resets scroll and async disclosures restore by stable heading',()=>{
+  const fresh=fakeDetail([['','Нова панель',true]],420);
+  restoreTaskView(fresh,undefined);
+  assert.equal(fresh.scrollTop,0);
+  const before=fakeDetail([['','Nested REST proof',true]],130);
+  const captured=captureTaskView(before);
+  const newNode={nodeType:1,id:'',open:false,
+    matches:name=>name==='details',querySelectorAll:()=>[],
+    getAttribute:()=>null,closest:()=>({getAttribute:()=> 'Контекст'}),
+    querySelector:()=>({textContent:'Nested REST proof'})};
+  const store=new Map(captured.sections);
+  assert.equal(restoreInsertedDisclosureStates([{addedNodes:[newNode]}],store),1);
+  assert.equal(newNode.open,true);
+  // Unrelated nested disclosure retains its own default and cannot inherit by index.
+  const unrelated={...newNode,open:true,querySelector:()=>({textContent:'Other section'})};
+  assert.equal(restoreInsertedDisclosureStates([{addedNodes:[unrelated]}],store),0);
+  assert.equal(unrelated.open,true);
 });

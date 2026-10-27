@@ -6,11 +6,12 @@ import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './
 import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload,rebaseUndoForm} from './manual-done-undo.mjs';
 import {createDraftRecoveryStore,RETENTION_DAYS,safeBrowserStorage} from './draft-recovery.mjs';
 import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
-  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
+  restoreTaskView, restoreInsertedDisclosureStates, isMainFormSaveTarget,
+  captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
   from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, priorityDimensions, completionPrompt} from './fast-handoff.mjs';
 import {CANDIDATE_TEMPLATES,candidateTemplateFor} from './candidate-templates.mjs';
-import {handoffCopyPolicy,mailActionLabels} from './handoff-ui-policy.mjs';
+import {handoffCopyPolicy,mailActionLabels,readyToCopyCurrentHandoff} from './handoff-ui-policy.mjs';
 import {advancedFilterSummary,evidenceSectionLabel} from './progressive-layout.mjs';
 import {queueSummary,queueEmptyState,conciseSnapshotInfo,statusPresentation,shouldRenderBriefing,assessmentReason} from './visual-clarity.mjs';
 import {createQueueModel,createSearchDebouncer,selectedAfterFilter} from './queue-performance.mjs';
@@ -41,6 +42,7 @@ const queueModel=createQueueModel();
 queueModel.setPinnedKey(pinnedKey);
 const queueDom=createQueueDomRenderer();
 const detailRequests=createDetailRequestScope(()=>selected);
+let disclosureObserver=null, disclosureState=null;
 const searchRefresh=createSearchDebouncer(()=>applyFilters());
 const forms = new Map();
 const manualConflicts = new Map();
@@ -134,6 +136,16 @@ function updateRecoveryStatus() {
     'Незбережено в цій вкладці: '+pending+
     ' · інші вкладки: '+old.length+' · старі ('+RETENTION_DAYS+'+ днів): '+
     old.filter(x=>x.stale).length;
+  const sourceSelect=$('recoverySource');
+  const selectedSource=sourceSelect.value;
+  sourceSelect.replaceChildren(...old.map((entry,index)=>{
+    const option=document.createElement('option');
+    option.value=entry.id;
+    option.textContent='Набір '+(index+1)+' · '+entry.count+' чернеток · '+entry.ageDays+' дн. тому';
+    return option;
+  }));
+  if (old.some(entry=>entry.id===selectedSource)) sourceSelect.value=selectedSource;
+  sourceSelect.disabled=!old.length;
   $('recoverOther').disabled = !old.length;
   $('purgeOld').disabled = !old.some(x=>x.stale);
 }
@@ -407,7 +419,15 @@ function updateStickyNextAction() {
   if (!sticky || !lead) return;
   const host=$('detail');
   const scrollTop=host.getBoundingClientRect().top;
-  const threshold=window.matchMedia('(max-width:750px)').matches ? 0 : scrollTop;
+  const mobile=window.matchMedia('(max-width:750px)').matches;
+  // The toolbar can wrap to multiple rows; derive its actual height so the
+  // pinned action never covers the Jira link or task identity on mobile.
+  if (mobile) {
+    const toolbar=host.querySelector('.task-toolbar');
+    const height=toolbar?.getBoundingClientRect().height || 64;
+    sticky.style.setProperty('--task-toolbar-height', Math.ceil(height + 8)+'px');
+  } else sticky.style.removeProperty('--task-toolbar-height');
+  const threshold=mobile ? 0 : scrollTop;
   const visible=lead.getBoundingClientRect().bottom <= threshold + 8;
   if (sticky.hidden===visible) sticky.hidden=!visible;
 }
@@ -415,6 +435,9 @@ $('detail').addEventListener('scroll',updateStickyNextAction,{passive:true});
 window.addEventListener('scroll',updateStickyNextAction,{passive:true});
 window.addEventListener('resize',updateStickyNextAction,{passive:true});
 function renderDetail() {
+  disclosureObserver?.disconnect();
+  disclosureObserver=null;
+  disclosureState=null;
   const task = tasks.find(item => item.key === selected);
   // Every render invalidates responses belonging to a previous detail DOM,
   // even if the same key is still selected after a manual edit.
@@ -583,6 +606,12 @@ function renderDetail() {
   renderedTaskKey = task.key;
   pendingDetail = false;
   restoreTaskView($('detail'), state);
+  // Async panels hydrate later. Preserve nested disclosure choices from the
+  // previous render and track the user's subsequent toggles by stable key.
+  disclosureState=new Map(state?.sections || []);
+  disclosureObserver=new MutationObserver(changes=>
+    restoreInsertedDisclosureStates(changes,disclosureState));
+  disclosureObserver.observe($('detail'),{subtree:true,childList:true});
   // Renders triggered by Save must preserve an active note/email caret.
   // A background refresh intentionally doesn't rerender while the editor
   // is focused; this also safely handles explicit same-task rerenders.
@@ -628,8 +657,19 @@ function renderDetail() {
     copyText(quick.nextAction, 'Дію скопійовано. Це не означає її виконання.'));
   if ($('stickyCopyNext')) $('stickyCopyNext').addEventListener('click', () =>
     copyText(quick.nextAction, 'Дію скопійовано. Це не означає її виконання.'));
-  if ($('copyFastDescription')) $('copyFastDescription').addEventListener('click', () =>
-    copyText(quick.description, 'Jira-чернетку скопійовано. Перевір факти й передай вручну.'));
+  if ($('copyFastDescription')) $('copyFastDescription').addEventListener('click', () => {
+    // The rendered button can remain enabled during a deferred snapshot while
+    // a user edits a note. Recheck latest quality/state and the display version.
+    const liveTask=tasks.find(item=>item.key===task.key);
+    const liveQuick=liveTask ? quickHandoff(liveTask) : null;
+    if (!readyToCopyCurrentHandoff({selectedKey:selected,displayedKey:renderedTaskKey,
+      taskKey:task.key,renderedVersion:renderedTaskVersion,
+      latestVersion:taskVersion(liveTask),shown:quick,latest:liveQuick})) {
+      message('Чернетка змінилася або Quality Gate вже не підтверджений. Онови панель перед копіюванням.',true);
+      return;
+    }
+    copyText(liveQuick.description, 'Jira-чернетку скопійовано. Перевір факти й передай вручну.');
+  });
   if ($('copyDescription')) $('copyDescription').addEventListener('click', () =>
     copyText(analysis.standardDescription,
       'Неперевірену чернетку скопійовано лише для ручного доопрацювання. Це не передача Jira.'));
@@ -1261,7 +1301,8 @@ document.addEventListener('keydown', event => {
     dialogOpen:$('bulkDialog').open,editing:isTextEditingTarget(event.target)
   });
   if (!action || busy) return;
-  if (action === 'SAVE' && !$('detail').contains(event.target)) return;
+  if (action === 'SAVE' && (!$('detail').contains(event.target) ||
+      !isMainFormSaveTarget(event.target))) return;
   event.preventDefault();
   if (action === 'SEARCH') {
     $('search').focus({preventScroll:true});
@@ -1296,7 +1337,10 @@ $('dataMenu').addEventListener('toggle',()=>{
 $('recoverOther').addEventListener('click',()=>{
   const others=recoveryStore.others();
   if(!others.length){updateRecoveryStatus();return;}
-  const newest=others[0];
+  // The caller explicitly selects a source; do not repeatedly recover only the
+  // newest browser tab while older private drafts remain inaccessible.
+  const newest=others.find(item=>item.id===$('recoverySource').value);
+  if (!newest) { updateRecoveryStatus(); return; }
   const own=pendingFormRecords();
   const occupied=[...forms.keys()].filter(key=>isDirty(key));
   const ready = Object.keys(own).length;
@@ -1352,6 +1396,11 @@ window.addEventListener('beforeunload', event => {
   if (hasUnsaved()) { event.preventDefault(); event.returnValue = ''; }
 });
 window.addEventListener('pagehide', rememberViewContext);
+$('detail').addEventListener('toggle', event=>{
+  if (!event.target?.matches?.('details') || !disclosureState) return;
+  for (const [key,open] of captureTaskView($('detail')).sections)
+    disclosureState.set(key,open);
+},true);
 $('detail').addEventListener('focusout', event => {
   // Preserve the caret when the user switches from an unfinished deep task
   // to the queue. This stores positions, never the content of the edit.

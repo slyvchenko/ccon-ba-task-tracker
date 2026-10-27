@@ -1392,6 +1392,8 @@ a:focus-visible {
 .data-menu-items {min-width:min(350px,calc(100vw - 24px));max-width:calc(100vw - 24px)}
 .data-menu-items button {white-space:normal;overflow-wrap:anywhere}
 #recoveryState {margin:3px 0;line-height:1.45;overflow-wrap:anywhere}
+#recoverySource {display:block;width:100%;max-width:100%;margin:4px 0 8px;min-height:36px}
+.recovery-source-label {display:block;margin-top:6px;font-size:12px}
 #queueAnnouncer {white-space:nowrap}
 .row:focus-visible {outline:3px solid #2258a9;outline-offset:-3px}
 @media (max-width:380px) {
@@ -1457,6 +1459,10 @@ a:focus-visible {
    Zero-height slot avoids moving the editor or the scroll anchor. */
 .sticky-next-action {position:sticky;top:0;height:0;overflow:visible;z-index:20}
 .sticky-next-action[hidden] {display:none!important}
+@media (max-width:750px) {
+  /* The mobile toolbar stays at top:0. Its actual height is measured in JS. */
+  .sticky-next-action {top:var(--task-toolbar-height, 72px)}
+}
 .sticky-action-inner {
   display:flex;align-items:center;gap:12px;
   padding:9px 12px;background:#fff;border:1px solid var(--line);
