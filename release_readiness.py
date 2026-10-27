@@ -38,6 +38,8 @@ def release_report(ledger):
     ids, category_counts, priority_counts = set(), Counter(), Counter()
     p0_pending = 0
     stated_human_acceptance = 0
+    linked_code_and_test = 0
+    missing_code_locator = 0
     for row in rows:
         if not isinstance(row, dict):
             raise ValueError("Invalid backlog row.")
@@ -48,6 +50,16 @@ def release_report(ledger):
             raise ValueError("Duplicate or invalid acceptance identifier.")
         if category not in CATEGORIES or priority not in PRIORITIES:
             raise ValueError("Unexpected status or priority in acceptance ledger.")
+        # A test alone is not a source+test evidence pair. Neither pointer
+        # asserts functional correctness; the check only catches stale ledgers.
+        source = row.get("code_locator")
+        test = row.get("test_locator")
+        if any(value is not None and (
+                not isinstance(value, str) or not value.strip())
+               for value in (source, test)):
+            raise ValueError("Invalid code or test pointer.")
+        linked_code_and_test += int(bool(source) and bool(test))
+        missing_code_locator += int(not bool(source))
         ids.add(ident)
         category_counts[category] += 1
         priority_counts[priority] += 1
@@ -60,6 +72,9 @@ def release_report(ledger):
             p0_pending += 1
     if dict(category_counts) != totals.get("reported_statuses"):
         raise ValueError("Backlog category counts have drifted from ledger.")
+    if (totals.get("code_plus_test_locators") != linked_code_and_test
+            or totals.get("no_direct_locator") != missing_code_locator):
+        raise ValueError("Source/test evidence pointer totals have drifted.")
     missing = [ident for ident in HUMAN_GATES if ident not in ids]
     if missing:
         raise ValueError("Required human acceptance gate missing from inventory.")
@@ -133,8 +148,9 @@ def closeout_matrix(ledger):
         "releaseApproved": False,
         "totalRequirements": len(results),
         "nextActionCounts": dict(sorted(actions.items())),
-        "sourceTestPointerCoverage": readiness["totalRequirements"] -
-                                     sum(not row["testPointerExists"] for row in results),
+        "sourceTestPointerCoverage": sum(
+            row["sourcePointerExists"] and row["testPointerExists"]
+            for row in results),
         "privateAcceptanceVerified": 0,
         "externalRequiredChecks": [
             {"id": ident, "state": "NOT_VERIFIED_IN_PUBLIC_REPO"}
