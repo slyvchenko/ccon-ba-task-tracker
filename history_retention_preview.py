@@ -17,6 +17,10 @@ def preview(root=ROOT, days=365, *, now=None):
     if type(days) is not int or not 30 <= days <= 3650:
         raise ValueError("Retention horizon must be 30..3650 days")
     root = Path(root)
+    if root.is_symlink() or not root.is_dir():
+        raise ValueError("Existing nonsymlink workspace required")
+    # URI paths must be absolute, including caller-supplied relative roots.
+    root = root.resolve(strict=True)
     path = root / "ba_state.db"
     if not path.is_file() or path.is_symlink():
         raise ValueError("Existing local SQLite database required")
@@ -29,6 +33,9 @@ def preview(root=ROOT, days=365, *, now=None):
     # sqlite3 connection context only commits/rolls back; Windows needs an
     # explicit close before temporary folders or restored files are removed.
     with closing(sqlite3.connect(path.as_uri()+"?mode=ro", uri=True)) as conn:
+        # sqlite3 connection context does not begin read transactions for SELECT.
+        # Anchor every aggregate to the same SQLite snapshot across imports.
+        conn.execute("BEGIN")
         total = conn.execute("SELECT COUNT(*) FROM task_history").fetchone()[0]
         # Always retain the latest history record per task, even if old.
         # A preview is not approval to delete anything.
