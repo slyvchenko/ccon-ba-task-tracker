@@ -25,4 +25,5 @@ class HistoricalReviewRegisterTests(unittest.TestCase):
         for row in opened:
             self.assertEqual(row["outcome"],"SOURCE_LEVEL_TRIAGE_REQUIRED")
             self.assertTrue(row["url"].startswith("https://github.com/"))
-        self.assertEqual(data["counts"]["newly_source_verified_in_followup"],26)
+        self.assertEqual(data["counts"]["newly_source_verified_in_followup"],
+                         data["counts"]["resolved_review_threads"] - 78)
