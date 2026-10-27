@@ -75,8 +75,12 @@ For approved corporate Kibana domains, configure
 Never put tokens, credentials, URL paths, wildcards, or this configuration
 into GitHub. Hostnames are examples, not actual endpoints. An unapproved
 Kibana URL remains an unresolved evidence gap, not an invitation to
-open a lookalike host. Changing configuration does not establish live
-access, authenticity, or human acceptance.
+open a lookalike host. Even a locally approved origin does not permit
+arbitrary API or management URLs from Jira comments: browser handoff only
+accepts the Kibana UI paths `/app/kibana` (legacy) or `/app/discover`.
+cconFlowId extraction also rejects URLs containing login credentials. Unapproved
+routes remain evidence gaps requiring human inspection. Changing configuration
+does not establish live access, authenticity, or human acceptance.
 
 ## Local Codex procedure (before BA interpretation)
 
