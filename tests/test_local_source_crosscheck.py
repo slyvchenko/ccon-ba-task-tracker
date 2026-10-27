@@ -143,6 +143,17 @@ class LocalCrossCheckTests(unittest.TestCase):
         self.assertEqual(wiki_process(self.root, KEY)["results"][0]["status"],"FAILED")
         self.assertEqual(wiki_sources(self.root, KEY, self.issue),({},[]))
 
+    def test_literal_login_markup_in_script_does_not_hide_valid_page(self):
+        wiki_prepare(self.root, KEY)
+        self.local("wiki",(
+            b"<html><body><p>Valid decision text</p>"
+            b"<script>const template='<form><input type=password></form>';</script>"
+            b"<!-- <form><input type=password></form> -->"
+            b"<form><input type=text></form><input type=password>"
+            b"</body></html>"))
+        self.assertEqual(wiki_process(self.root, KEY)["results"][0]["status"],
+                         "LOCAL_TEXT_EXTRACTED")
+
     def test_value_variants_are_cautions_not_proof_and_no_values_leaked(self):
         self.prepare_all()
         self.local("wiki", b"<html><p>TypeCode=AB</p><p>TypeCode=TO</p></html>")
