@@ -44,6 +44,7 @@ STATIC_FILES = {
     '/assets/queue-dom.mjs': ('assets/queue-dom.mjs', 'text/javascript; charset=utf-8'),
     '/assets/reconnect-policy.mjs': ('assets/reconnect-policy.mjs', 'text/javascript; charset=utf-8'),
     '/assets/logs.mjs': ('assets/logs.mjs', 'text/javascript; charset=utf-8'),
+    '/assets/error-budget.mjs': ('assets/error-budget.mjs', 'text/javascript; charset=utf-8'),
     '/assets/evidence-ui.mjs': ('assets/evidence-ui.mjs', 'text/javascript; charset=utf-8'),
     '/assets/action-history.mjs': ('assets/action-history.mjs', 'text/javascript; charset=utf-8'),
     '/assets/decisions-ui.mjs': ('assets/decisions-ui.mjs', 'text/javascript; charset=utf-8'),
@@ -57,8 +58,14 @@ class LocalServer(ThreadingHTTPServer):
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
         super().server_bind()
 
-def handler(desk, cloud=None):
+def handler(desk, cloud=None, error_budget=None):
+    # Explicit opt-in is local-only, never enabled in trusted cloud mode.
+    budget = error_budget if not cloud else None
     class Handler(BaseHTTPRequestHandler):
+        def handle_one_request(self):
+            self._request_started = time.monotonic()
+            return super().handle_one_request()
+
         def send(self, code, value, content_type='application/json; charset=utf-8', filename=None):
             body = value if isinstance(value, bytes) else json.dumps(value, ensure_ascii=False).encode()
             self.send_response(code)
@@ -75,6 +82,10 @@ def handler(desk, cloud=None):
                 self.send_header('Content-Disposition', "attachment; filename*=UTF-8''" + quote(filename, safe=''))
             self.end_headers()
             self.wfile.write(body)
+            if budget is not None:
+                budget.record(self.path, code,
+                              (time.monotonic() - getattr(self, '_request_started',
+                                                         time.monotonic())) * 1000)
 
         def valid_host(self):
             if cloud:
@@ -85,6 +96,11 @@ def handler(desk, cloud=None):
             if not self.valid_host():
                 return self.send(403, {'error': 'Access denied.'})
             path = urlparse(self.path).path
+            if budget is not None and path == '/api/error-budget':
+                return self.send(200, budget.snapshot())
+            if budget is not None and path == '/local-error-budget':
+                return self.send(200, (ROOT / 'error_budget.html').read_bytes(),
+                                 'text/html; charset=utf-8')
             if path in STATIC_FILES:
                 filename, content_type = STATIC_FILES[path]
                 return self.send(200, (ROOT / filename).read_bytes(), content_type)
@@ -305,9 +321,13 @@ def main():
     p.add_argument('--port', type=int, default=8765)
     p.add_argument('--data-dir', type=Path, default=ROOT)
     p.add_argument('--open', action='store_true')
+    p.add_argument('--local-error-budget', action='store_true',
+                   help='Opt in to memory-only local API error-budget diagnostics (no telemetry).')
     p.add_argument('--cloud', action='store_true', help='Trusted reverse-proxy mode; internal Docker networking only.')
     args = p.parse_args()
     cloud = cloud_configuration() if args.cloud else None
+    if args.cloud and args.local_error_budget:
+        raise ValueError('Local error budget cannot run in cloud mode.')
     if not args.cloud and os.environ.get('CCON_CLOUD_MODE') == '1':
         raise ValueError("Refusing unauthenticated local-mode server when cloud mode is enabled.")
     url = f'http://localhost:{args.port}'
@@ -348,9 +368,11 @@ def serve_locked(args, cloud, url):
         create_backup(args.data_dir)
     monitor = SnapshotMonitor(desk)
     desk.watcher_status = monitor.status
+    from local_error_budget import LocalErrorBudget
+    budget = LocalErrorBudget() if args.local_error_budget and not cloud else None
     try:
         server = LocalServer(('0.0.0.0' if cloud else '127.0.0.1', args.port),
-                             handler(desk, cloud))
+                             handler(desk, cloud, error_budget=budget))
     except OSError:
         print(f'Port {args.port} is occupied. Stop the previous server or use --port 8766.', flush=True)
         return 1
