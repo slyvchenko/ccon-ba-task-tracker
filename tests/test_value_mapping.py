@@ -206,6 +206,63 @@ class ValueMappingTests(unittest.TestCase):
         self.assertEqual(result["coverage"][0]["candidatePairs"], 0)
         self.assertNotIn("FLOW-00000001", json.dumps(result))
 
+    def test_repeated_xml_value_blocks_false_uniqueness_elsewhere(self):
+        raw = zip_bytes([
+            ("rest/14-request.json", b'{"CustomerName":"BetaDemo"}'),
+            ("supplier/AirFranceKLM/14-request.xml",
+             b"<Req><Passenger><Name>AlphaDemo</Name></Passenger>"
+             b"<Passenger><Name>BetaDemo</Name></Passenger>"
+             b"<ContactName>BetaDemo</ContactName></Req>"),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"][0]["exactValueCandidates"], [])
+        self.assertIn("REPEATED_XML_PATH_SKIPPED", result["issues"])
+
+    def test_skipped_ambiguous_exchange_still_counts_against_unique_fallback(self):
+        raw = zip_bytes([
+            ("rest/15-request.json", b'{"Amount":"200.99"}'),
+            ("supplier/AirFranceKLM/15-request.xml",
+             b"<Req><correlationId>FLOW-00000001</correlationId>"
+             b"<correlationId>FLOW-00000002</correlationId>"
+             b"<Amount>200.99</Amount></Req>"),
+            ("supplier/AirFranceKLM/16-request.xml",
+             b"<Req><Amount>200.99</Amount></Req>"),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"], [])
+        self.assertEqual(result["coverage"][0]["supplierExchanges"], 2)
+        self.assertEqual(result["coverage"][0]["unpairedSupplier"], 2)
+        self.assertIn("AMBIGUOUS_CORRELATION_ID", result["issues"])
+
+    def test_namespaced_repeated_correlation_attributes_are_ambiguous(self):
+        raw = zip_bytes([
+            ("rest/16-request.json", b'{"Amount":"200.99"}'),
+            ("supplier/AirFranceKLM/16-request.xml",
+             b'<Req xmlns:id="urn:flow">'
+             b'<First id:correlationId="FLOW-00000001"/>'
+             b'<First id:correlationId="FLOW-00000002"/>'
+             b'<Amount>200.99</Amount></Req>'),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"], [])
+        self.assertIn("AMBIGUOUS_CORRELATION_ID", result["issues"])
+
+    def test_xml_field_budget_cannot_hide_repeated_path_candidates(self):
+        many = "".join("<Field{0}>Value{0:04d}</Field{0}>".format(i)
+                       for i in range(220))
+        source = ("<Req>" + many + "<Field0>Value9999</Field0></Req>").encode()
+        warnings = []
+        fields, problem = leaf_values(source, ".xml", warnings=warnings)
+        self.assertEqual(fields, {})
+        self.assertEqual(problem, "XML_FIELD_LIMIT_INCOMPLETE")
+        raw = zip_bytes([
+            ("rest/17-request.json", b'{"Field0":"Value0000"}'),
+            ("supplier/AirFranceKLM/17-request.xml", source),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"], [])
+        self.assertIn("XML_FIELD_LIMIT_INCOMPLETE", result["issues"])
+
     def test_schema_parsing_rejects_external_xml_entities(self):
         values, warning = leaf_values(b'<!DOCTYPE x [<!ENTITY leak SYSTEM "file:///etc/passwd">]><x>&leak;</x>', ".xml")
         self.assertFalse(values)
