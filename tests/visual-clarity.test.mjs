@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {queueSummary,queueEmptyState,conciseSnapshotInfo,statusPresentation,
@@ -85,4 +86,11 @@ test('empty queue messaging separates no snapshot, empty scope, filtered and sta
   assert.match(states[2].text,/фільтр/);
   assert.match(states[3].text,/не вдалося/);
   assert.match(states[4].text,/Попереднього списку немає/);
+});
+
+test('archived tasks cannot masquerade as populated current snapshot',()=>{
+ const js=readFileSync(new URL('../assets/dashboard.mjs',import.meta.url),'utf8');
+ assert.match(js,/queueEmptyState\(\{visible:items\.length,total:tasks\.filter\(task=>task\.active!==false\)\.length,/);
+ assert.equal(queueEmptyState({visible:0,total:0,hasSnapshot:true}).kind,'empty');
+ assert.equal(queueEmptyState({visible:0,total:2,hasSnapshot:true}).kind,'no-matches');
 });

@@ -232,7 +232,7 @@ function renderList() {
     entries.push({id:'task:'+task.key,html:`<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${quickWinCandidate(task) ? '<span class="effort-hint" role="note" aria-label="Можлива коротка дія: орієнтовний час, не підтверджено. Пріоритет черги незмінний." title="Можлива коротка дія, оцінка орієнтовна. Порядок черги не змінено.">S?</span>' : ''}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${task.key === pinnedKey ? '<span class="effort-hint" aria-label="Мій фокус у межах поточної групи пріоритету">Фокус</span>' : ''}</span></span></button>`});
   });
   if (!entries.length) {
-    const state=queueEmptyState({visible:items.length,total:tasks.length,
+    const state=queueEmptyState({visible:items.length,total:tasks.filter(task=>task.active!==false).length,
       hasSnapshot:!!latest,importError:!!currentRevisionError});
     entries.push({id:'empty:'+state.kind,html:'<div class="empty queue-empty" role="status" data-state="' +
       escapeHtml(state.kind) + '">' + escapeHtml(state.text) + '</div>'});
