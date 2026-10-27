@@ -8,7 +8,7 @@ Run `python sqlite_mode_study.py --tasks 100 --iterations 5`. The script creates
 
 ## REL-09: safe read-only preview, no archive/delete
 
-Run `python history_retention_preview.py --days 365` **only locally**, where your BA database is stored. The preview queries read-only SQLite and reports aggregate counts of history records older than the horizon, grouped by origin, excluding the **latest revision per task**. It does not include task IDs, notes, emails, history JSON, filenames or local paths. It preserves all import audit entries and every historical revision, and writes no files.
+Run `python history_retention_preview.py --days 365` **only locally**, where your BA database is stored. The preview queries read-only SQLite and reports aggregate counts of history records older than the horizon, grouped by origin, excluding the **latest revision per task**. It does not include task IDs, notes, emails, history JSON, filenames or local paths. It does not archive/delete or update the main database, and preserves all import audit entries and historical revisions. Read-only SQLite connections on live WAL databases may still create or update the `-wal`/`-shm` sidecars; **do not claim this preview writes no files**. The counts are read from one SQLite snapshot.
 
 No deletion or archive function is provided: the exact retention period, audit value, signed/encrypted archive destination, rescue/restore and explicit user approval are required before such a feature could be implemented. This avoids accidentally erasing useful user decisions.
 
