@@ -82,7 +82,13 @@ def maintenance(root=ROOT, *, retention_days=DEFAULT_RETENTION_DAYS,
         raise ValueError("quota_mb must be a positive integer.")
     if apply and confirm != CONFIRMATION:
         raise ValueError("Explicit cleanup confirmation is required.")
-    root = Path(root).resolve()
+    # The supplier helper resolves the log path, which can conceal a symlink
+    # pointing to another folder inside the same workspace. Reject links
+    # BEFORE resolving paths or deleting any log version (review #22).
+    requested_root = Path(root)
+    if any(part.is_symlink() for part in (requested_root, *requested_root.parents)):
+        raise ValueError("Symlink workspace root; no cleanup allowed.")
+    root = requested_root.resolve()
     if now is None:
         now_ts = datetime.now(timezone.utc).timestamp()
     elif isinstance(now, datetime) and now.tzinfo is not None:
@@ -90,6 +96,14 @@ def maintenance(root=ROOT, *, retention_days=DEFAULT_RETENTION_DAYS,
     else:
         raise ValueError("Clock must be timezone aware.")
     with pipeline_lock(root):
+        config = read_json(root / "log_config.json", {})
+        if not isinstance(config, dict):
+            raise ValueError("Invalid log configuration; no cleanup allowed.")
+        configured = config.get("logsDir")
+        raw_directory = (Path(configured) if isinstance(configured, str) and configured
+                         else root / "logs")
+        if any(part.is_symlink() for part in (raw_directory, *raw_directory.parents)):
+            raise ValueError("Symlink log root or ancestor; no cleanup allowed.")
         directory = logs_root(root)
         if not directory.is_relative_to(root):
             raise ValueError("External log root requires separate approved retention policy.")
