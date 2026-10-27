@@ -111,8 +111,11 @@ test('P0: manual WAIT and NEEDS DECISION cannot inherit stale WRITE ranking', ()
     overridden.analysis.needsEmail=true;
     assert.equal(priorityEmail(overridden),false,manualStatus);
     assert.ok(actionRank(overridden)>0,manualStatus);
-    assert.deepEqual(rankTasks([overridden,ready]).map(x=>x.key),
-      ['CCON-900','CCON-901'],manualStatus);
+    // Manual NEEDS DECISION shares READY's action tier; score remains its
+    // legitimate tie-breaker. WAIT and DONE must stay below READY.
+    const expected=manualStatus === 'NEEDS DECISION'
+      ? ['CCON-901','CCON-900'] : ['CCON-900','CCON-901'];
+    assert.deepEqual(rankTasks([overridden,ready]).map(x=>x.key),expected,manualStatus);
   }
 
   // Explicit current email work remains first among otherwise active tasks.
