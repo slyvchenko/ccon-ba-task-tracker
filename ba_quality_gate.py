@@ -202,9 +202,19 @@ def description_review(description, briefing):
         # prose or another rule must not validate a wrong AND/OR condition.
         conditions = [match.group(1) for match in re.finditer(
             r"(?is)\bIF\b(.{0,1500}?)\bTHEN\b", desc)]
+        # IF matching must belong to this rule's predicate, not merely share
+        # technical field names with an unrelated rule (e.g. ACTIVE/OR versus
+        # CANCELLED/AND over the same StatusCode and DeliveryStatusCode).
+        predicate_fields = set(TECHNICAL.findall(when))
+        predicate_literals = technical_literals(when, "")
         relevant = [condition for condition in conditions if
+                    (predicate_fields or predicate_literals) and
                     all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(field) +
-                                  r"(?![A-Za-z0-9_])", condition) for field in tokens)]
+                                  r"(?![A-Za-z0-9_])", condition)
+                        for field in predicate_fields) and
+                    all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(literal) +
+                                  r"(?![A-Za-z0-9_])", condition)
+                        for literal in predicate_literals)]
         declared_operators = [operator for operator in ("AND", "OR")
                               if re.search(r"\b" + operator + r"\b", when, re.I)]
         for operator in declared_operators:
