@@ -2,6 +2,11 @@
 // enters persisted UI state: only keys, scroll position and expanded sections.
 const TASK_KEY = /^CCON-\d+$/;
 const INPUT_TAGS = new Set(['INPUT','TEXTAREA','SELECT']);
+const MAIN_EDITOR_IDS = new Set(['note','manual','manualEffort',
+  'draftTo','draftSubject','draftBody']);
+export function isMainEditorTarget(target) {
+  return Boolean(target && MAIN_EDITOR_IDS.has(target.id));
+}
 const CURSOR_IDS = new Set(['note','draftTo','draftSubject','draftBody','manual','manualEffort']);
 
 export function isTextEditingTarget(target) {
@@ -56,7 +61,9 @@ export function captureTaskView(detail) {
 }
 
 export function restoreTaskView(detail, state) {
-  if (!detail || !state) return;
+  if (!detail) return;
+  // A never-opened task must start at its heading, not the old task's scroll.
+  if (!state) { detail.scrollTop=0; return; }
   const openByKey = new Map(Array.isArray(state.sections) ? state.sections : []);
   for (const node of detail.querySelectorAll('details')) {
     const key = viewSectionKey(node);
