@@ -55,3 +55,8 @@
 **#39:** inventory + перевірюваний acceptance ledger і цей протокол. **#40–41:** доказова база і handoff P0. **#42–44:** workflow/priority/RCA. **#45–47:** security/Windows/perf/accessibility. **#48:** реальне схвалення релізу, без автоматичного перетворення blocked UAT у DONE.
 
 Реальний UAT не виконується публічним GitHub Actions: це навмисна межа приватності й авторизації.
+
+
+## Доповнення v2.50.9: локальний анонімний preflight
+
+`python private_gold_review.py --input <local-private-review.json>` перевіряє структуру 20–30 **вже оцінених людиною** анонімних кейсів і рахує лише агрегати. Деталі JSON та обмеження описані в `docs/PRIVATE_GOLD_REVIEW.md`. Навіть якщо синтетичний набір формально заповнений, результат містить `humanAcceptance=NOT_RECORDED` і `releaseApproved=false`. Сама поява цього скрипта не є доказом доступу до реальних Jira/Kibana/CCON, правильних source mappings чи незалежного підпису.

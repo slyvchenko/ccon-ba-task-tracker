@@ -10,8 +10,7 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 80,
-      "PLANNED": 2
+      "PARTIAL": 82
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +25,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 65,
-    "no_direct_locator": 58
+    "code_plus_test_locators": 66,
+    "no_direct_locator": 57
   },
   "items": [
     {
@@ -1472,8 +1471,8 @@
     {
       "id": "PERF-09",
       "priority": "P2",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.9 small source-audited CSS consolidation, Node/Chromium responsive contracts; approved native Windows pixel baseline still open)",
+      "category": "PARTIAL",
       "requirement": "Simplify 1374-line CSS cascade after visual/a11y regression",
       "acceptance_criteria": "No unexpected fonts/spacing/contrast changes",
       "suggested_batch": "#46",
@@ -1808,15 +1807,15 @@
     {
       "id": "QA-13",
       "priority": "P1",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.9 local anonymous 20-30 gold review preflight plus synthetic tests; independent real-case scores and human signoff still open)",
+      "category": "PARTIAL",
       "requirement": "Local-only 20–30 real-case semantic BA handoff study",
       "acceptance_criteria": "Actual independent gold scores, not CI counts",
       "suggested_batch": "#39/#48 HUMAN_UAT",
       "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "code_locator": "private_gold_review.py",
+      "test_locator": "tests/test_private_gold_review.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },

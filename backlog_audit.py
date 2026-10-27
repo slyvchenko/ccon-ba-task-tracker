@@ -44,6 +44,7 @@ POINTERS = {
     "QA-03": ("quality_evaluation.py", "tests/test_quality_regression_pack.py"),
     "QA-08": ("prompt_safety.py", "tests/test_prompt_safety.py"),
     "QA-12": ("browser_e2e.py", None),
+    "QA-13": ("private_gold_review.py", "tests/test_private_gold_review.py"),
     "QUICK-02": ("assets/handoff-ui-policy.mjs", "tests/handoff-ui-policy.test.mjs"),
     "QUICK-03": ("ba_actions.py", "tests/test_action_history.py"),
     "FOCUS-02": ("assets/draft-recovery.mjs", "tests/draft-recovery.test.mjs"),
