@@ -32,8 +32,8 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
                             for key in rows))
         self.assertEqual(len(rows), 129)
-        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 78)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 45)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 94)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 29)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
@@ -66,6 +66,38 @@ class AuditTest(unittest.TestCase):
         # ambiguous authorized ZIP acquisition. They need actual UAT/scope.
         for key in ("EVD-05", "QA-02", "QA-10"):
             self.assertIsNone(rows[key]["code_locator"])
+
+    def test_p1_evidence_pointers_are_limited_to_checked_source_test_paths(self):
+        pairs = {
+            "CORE-07": ("task_history.py", "tests/test_action_history.py"),
+            "BA-06": ("question_candidates.py", "tests/test_question_decisions.py"),
+            "BA-08": ("one_task_review.py", "tests/test_one_task_review.py"),
+            "BA-10": ("ba_decisions.py", "tests/test_question_decisions.py"),
+            "EVD-10": ("evidence_health.py", "tests/test_evidence_health.py"),
+            "EVD-11": ("flow_diagnostics.py", "tests/test_flow_diagnostics.py"),
+            "EVD-12": ("evidence_health.py", "tests/test_evidence_health.py"),
+            "QA-04": ("ba_quality_gate.py", "tests/test_ba_quality_gate.py"),
+            "QA-05": ("prompt_calibration.py", "tests/test_prompt_calibration.py"),
+            "QA-06": ("prompt_experiments.py", "tests/test_prompt_experiments.py"),
+            "FOCUS-03": ("assets/focus-navigation.mjs", "tests/focus-navigation.test.mjs"),
+            "PRIOR-04": ("assets/effort-planning.mjs", "tests/effort-planning.test.mjs"),
+            "UI-06": ("assets/manual-edit-policy.mjs", "tests/manual-edit-policy.test.mjs"),
+            "PERF-04": ("assets/queue-performance.mjs", "tests/queue-performance.test.mjs"),
+            "PERF-06": ("desk_store.py", "tests/test_json_response_cache.py"),
+            "A11Y-01": ("assets/focus-navigation.mjs", "tests/focus-navigation.test.mjs"),
+        }
+        rows = {entry["id"]: entry for entry in audit.produce()["items"]}
+        self.assertEqual(len(pairs), 16)
+        for id_, (source, test_file) in pairs.items():
+            with self.subTest(id=id_):
+                entry = rows[id_]
+                self.assertEqual(entry["priority"], "P1")
+                self.assertEqual(entry["code_locator"], source)
+                self.assertEqual(entry["test_locator"], test_file)
+                self.assertEqual(entry["evidence_level"], "CODE_AND_TEST_LOCATORS_ONLY")
+                self.assertEqual(entry["human_acceptance"], "NOT_RECORDED")
+                self.assertTrue((audit.ROOT / source).is_file())
+                self.assertTrue((audit.ROOT / test_file).is_file())
 
     def test_perf_08_is_source_backed_but_device_acceptance_is_open(self):
         row = next(r for r in audit.produce()["items"] if r["id"] == "PERF-08")
