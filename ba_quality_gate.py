@@ -201,13 +201,13 @@ def description_review(description, briefing):
         # Check only the IF branch for this rule. An unrelated "or" in QA
         # prose or another rule must not validate a wrong AND/OR condition.
         conditions = [match.group(1) for match in re.finditer(
-            r"(?is)\\bIF\\b(.{0,1500}?)\\bTHEN\\b", desc)]
+            r"(?is)\bIF\b(.{0,1500}?)\bTHEN\b", desc)]
         relevant = [condition for condition in conditions if
                     all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(field) +
                                   r"(?![A-Za-z0-9_])", condition) for field in tokens)]
         for operator in ("AND", "OR"):
-            if re.search(r"\\b" + operator + r"\\b", when, re.I) and not any(
-                    re.search(r"\\b" + operator + r"\\b", condition, re.I)
+            if re.search(r"\b" + operator + r"\b", when, re.I) and not any(
+                    re.search(r"\b" + operator + r"\b", condition, re.I)
                     for condition in relevant):
                 findings.append({"code": "COMPOUND_OPERATOR_OMITTED", "ref": rule.get("id") or "rule",
                                  "messageUk": "Можливо втрачено AND/OR у складеній підтвердженій умові; перевір логіку."})
