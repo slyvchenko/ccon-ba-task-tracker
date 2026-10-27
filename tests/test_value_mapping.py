@@ -157,6 +157,55 @@ class ValueMappingTests(unittest.TestCase):
         self.assertIn("UNCORRELATED_EXCHANGE",result["issues"])
         self.assertNotIn(flow,json.dumps(result))
 
+    def test_repeated_xml_fields_are_not_single_value_mapping_candidates(self):
+        warnings = []
+        values, problem = leaf_values(
+            b"<Req><Passenger><Name>AlphaDemo</Name></Passenger>"
+            b"<Passenger><Name>BetaDemo</Name></Passenger>"
+            b"<Amount>200.99</Amount></Req>", ".xml", warnings=warnings)
+        self.assertIsNone(problem)
+        self.assertNotIn("Req.Passenger.Name", values)
+        self.assertEqual(values["Req.Amount"], "200.99")
+        self.assertIn("REPEATED_XML_PATH_SKIPPED", warnings)
+
+        raw = zip_bytes([
+            ("rest/12-request.json", b'{"Name":"BetaDemo","Amount":"200.99"}'),
+            ("supplier/AirFranceKLM/12-request.xml",
+             b"<Req><Name>AlphaDemo</Name><Name>BetaDemo</Name>"
+             b"<Amount>200.99</Amount></Req>"),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        candidates = result["comparisons"][0]["exactValueCandidates"]
+        self.assertFalse(any(x["restField"] == "Name" for x in candidates))
+        self.assertTrue(any(x["restField"] == "Amount" for x in candidates))
+        self.assertIn("REPEATED_XML_PATH_SKIPPED", result["issues"])
+        self.assertNotIn("BetaDemo", json.dumps(result))
+
+    def test_duplicate_xml_attributes_are_not_unique_candidates(self):
+        raw = zip_bytes([
+            ("rest/20-request.json", b'{"Price":"200.99"}'),
+            ("supplier/AirFranceKLM/20-request.xml",
+             b'<Req><Line Price="100.00"/><Line Price="200.99"/></Req>'),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(len(result["comparisons"]), 1)
+        self.assertEqual(result["comparisons"][0]["exactValueCandidates"], [])
+        self.assertIn("REPEATED_XML_PATH_SKIPPED", result["issues"])
+
+    def test_ambiguous_xml_correlation_id_cannot_enable_single_exchange_fallback(self):
+        raw = zip_bytes([
+            ("rest/13-request.json", b'{"Amount":"200.99"}'),
+            ("supplier/AirFranceKLM/13-request.xml",
+             b"<Req><correlationId>FLOW-00000001</correlationId>"
+             b"<correlationId>FLOW-00000002</correlationId>"
+             b"<Amount>200.99</Amount></Req>"),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"], [])
+        self.assertIn("AMBIGUOUS_CORRELATION_ID", result["issues"])
+        self.assertEqual(result["coverage"][0]["candidatePairs"], 0)
+        self.assertNotIn("FLOW-00000001", json.dumps(result))
+
     def test_schema_parsing_rejects_external_xml_entities(self):
         values, warning = leaf_values(b'<!DOCTYPE x [<!ENTITY leak SYSTEM "file:///etc/passwd">]><x>&leak;</x>', ".xml")
         self.assertFalse(values)
