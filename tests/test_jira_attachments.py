@@ -173,6 +173,30 @@ class JiraAttachmentIntakeTests(unittest.TestCase):
         self.assertTrue(all(report["tagCounts"][key] == 1 for key in keys))
         self.assertNotIn("urn:synthetic", str(report))
 
+    def test_departed_issue_is_stale_but_remaining_issue_processes(self):
+        original = self.issue
+        other = {"key": "CCON-6", "fingerprint": "fp-other",
+                 "attachments": [{"id": "2001", "filename": "valid.json"}],
+                 "links": []}
+        write_json(self.root / "data/jira_context.json",
+                   {"complete": True, "issues": {"CCON-5": original, "CCON-6": other}})
+        prepare(self.root)
+        self.issue = other
+        self.save_context()  # CCON-5 is no longer in current personal scope
+        other_file = attachment_path(self.root, "CCON-6", "2001", ".json")
+        other_file.parent.mkdir(parents=True, exist_ok=True)
+        other_file.write_bytes(b'{"synthetic":1}')
+        processed = process(self.root)
+        ccon5 = [x for x in processed["results"] if x["issueKey"] == "CCON-5"]
+        ccon6 = [x for x in processed["results"] if x["issueKey"] == "CCON-6"]
+        self.assertTrue(ccon5)
+        self.assertTrue(all(x["state"] == "STALE" for x in ccon5))
+        self.assertEqual([x["state"] for x in ccon6], ["STRUCTURE_ONLY"])
+        write_json(self.root / "data/jira_context.json",
+                   {"complete": False, "issues": {"CCON-6": other}})
+        with self.assertRaisesRegex(ValueError, "Complete Jira sync required"):
+            process(self.root)
+
     def test_stale_source_cannot_reuse_prior_attachment_manifest(self):
         prepare(self.root)
         self.save("1001", ".json", b'{"TypeCode":"TO"}')
