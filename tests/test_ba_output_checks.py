@@ -158,6 +158,7 @@ class BAOutputChecksTests(unittest.TestCase):
         self.assertNotIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
                          {f["code"] for f in email_checks(safe, attachment_ready=False)})
         for body in (
+            "No logs are attached.",
             "We have not attached logs.",
             "We haven't attached the logs.",
             "The ZIP will be attached with the logs after review.",
