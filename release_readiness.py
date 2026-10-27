@@ -38,6 +38,8 @@ def release_report(ledger):
     ids, category_counts, priority_counts = set(), Counter(), Counter()
     p0_pending = 0
     stated_human_acceptance = 0
+    linked_code_and_test = 0
+    missing_code_locator = 0
     for row in rows:
         if not isinstance(row, dict):
             raise ValueError("Invalid backlog row.")
@@ -48,6 +50,16 @@ def release_report(ledger):
             raise ValueError("Duplicate or invalid acceptance identifier.")
         if category not in CATEGORIES or priority not in PRIORITIES:
             raise ValueError("Unexpected status or priority in acceptance ledger.")
+        # A test pointer alone is not a verified code+test pair. Pointer
+        # presence remains navigation metadata, never a business PASS.
+        source = row.get("code_locator")
+        test = row.get("test_locator")
+        if any(value is not None and
+               (not isinstance(value, str) or not value.strip())
+               for value in (source, test)):
+            raise ValueError("Invalid source or test pointer.")
+        linked_code_and_test += int(bool(source) and bool(test))
+        missing_code_locator += int(not bool(source))
         ids.add(ident)
         category_counts[category] += 1
         priority_counts[priority] += 1
@@ -63,6 +75,11 @@ def release_report(ledger):
     missing = [ident for ident in HUMAN_GATES if ident not in ids]
     if missing:
         raise ValueError("Required human acceptance gate missing from inventory.")
+    if (type(totals.get("code_plus_test_locators")) is not int or
+        type(totals.get("no_direct_locator")) is not int or
+        totals["code_plus_test_locators"] != linked_code_and_test or
+        totals["no_direct_locator"] != missing_code_locator):
+        raise ValueError("Source/test pointer totals inconsistent.")
     # Real signoff cannot be validated from GitHub-local synthetic fixtures.
     # Thus even 129 manually edited PASSED strings cannot return READY.
     external = [{"id":ident, "state":"NOT_VERIFIED_IN_PUBLIC_REPO"}
