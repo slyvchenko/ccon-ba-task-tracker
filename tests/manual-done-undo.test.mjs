@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload,rebaseUndoForm} from '../assets/manual-done-undo.mjs';
@@ -39,4 +40,11 @@ test('undo rebase preserves uncommitted note and email while refreshing CAS stat
  assert.equal(result.baseRevision,19);
  assert.equal(result.base,JSON.stringify(current));
  assert.equal(rebaseUndoForm({base:JSON.stringify(current),value:current},current,20),null);
+});
+
+test('recovered local editor state is persisted after undo rebase',()=>{
+ const source=readFileSync(new URL('../assets/dashboard.mjs',import.meta.url),'utf8');
+ const undo=source.split('async function undoLastDone()')[1]?.split("$('undoLastDone').addEventListener")[0] || '';
+ assert.match(undo,/rebaseUndoForm\(/);
+ assert.match(undo,/rememberEdits\(\)/);
 });
