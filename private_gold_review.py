@@ -91,7 +91,8 @@ def summarize(pack):
     complete = (not missing and reviewed == len(rows) and frozen == len(rows)
                 and verified == len(rows) and not any(unsafe.values())
                 and not outcomes["FAILED"] and not outcomes["BLOCKED"]
-                and all(grades[key]["PASS"] == len(rows) for key in grades))
+                and all(grades[key]["PASS"] == len(rows) for key in grades)
+                and len(ttnas) == len(rows) and len(ttshs) == len(rows))
     return {
         "schemaVersion": 1,
         "privateOnly": True,
