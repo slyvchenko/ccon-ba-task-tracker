@@ -8,9 +8,9 @@ export function describeMetrics(data) {
   const n = value => Number.isFinite(value) ? String(value) : '—';
   return {
     total:n(data.sampledApiResponses), failures:n(data.server5xx),
-    client:n(data.client4xx), rate:n(data.successPercent)+'%',
+    client:n(data.client4xx), rate:Number.isFinite(data.successPercent) ? n(data.successPercent)+'%' : '—',
     remaining:n(data.errorBudgetRemaining),
-    latency:n(data.responseLatencyP95Ms)+' ms',
+    latency:Number.isFinite(data.responseLatencyP95Ms) ? n(data.responseLatencyP95Ms)+' ms' : '—',
     state:data.insufficientSamples
       ? 'Недостатньо даних для надійного висновку (менше 100 відповідей).'
       : data.sampleTruncated
@@ -27,7 +27,7 @@ export async function refreshBudget(fetcher=fetch) {
     else $(id).textContent=value;
   }
 }
-const button=$('refreshBudget');
+const button=typeof document !== 'undefined' ? $('refreshBudget') : null;
 if (button) {
   button.addEventListener('click',()=>{
     refreshBudget().catch(()=>{$('budgetState').textContent='Не вдалося завантажити локальні лічильники.';});
