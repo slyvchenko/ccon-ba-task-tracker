@@ -77,8 +77,11 @@ into GitHub. Hostnames are examples, not actual endpoints. An unapproved
 Kibana URL remains an unresolved evidence gap, not an invitation to
 open a lookalike host. Even a locally approved origin does not permit
 arbitrary API or management URLs from Jira comments: browser handoff only
-accepts the Kibana UI paths `/app/kibana` (legacy) or `/app/discover`.
-cconFlowId extraction also rejects URLs containing login credentials. Unapproved
+accepts the Kibana Discover UI path `/app/discover`, or the legacy
+`/app/kibana` shell **only** with a `#/discover` fragment route.
+Other legacy fragments such as `#/management` and `#/dev_tools` are
+not safe Discover actions. cconFlowId extraction also rejects URLs
+containing login credentials or a non-Discover fragment. Unapproved
 routes remain evidence gaps requiring human inspection. Changing configuration
 does not establish live access, authenticity, or human acceptance.
 
