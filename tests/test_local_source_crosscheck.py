@@ -123,6 +123,26 @@ class LocalCrossCheckTests(unittest.TestCase):
         self.assertEqual(wiki_process(self.root, KEY)["results"][0]["status"], "FAILED")
         self.assertEqual(wiki_sources(self.root, KEY, self.issue), ({}, []))
 
+    def test_comment_adf_hyperlink_is_discovered_without_visible_url(self):
+        self.issue["descriptionAdf"]={"type":"doc","content":[]}
+        self.issue["comments"]=[{"body":"See Confluence decision",
+                                 "bodyAdf":{"type":"doc","content":[{
+                                     "type":"paragraph","content":[{
+                                         "type":"text","text":"Decision notes",
+                                         "marks":[{"type":"link","attrs":{"href":URL}}]
+                                     }]}]}}]
+        self.assertEqual(linked_pages(self.issue),{"98765":URL})
+
+    def test_branded_login_form_never_counts_as_verified_wiki_source(self):
+        wiki_prepare(self.root, KEY)
+        self.local("wiki",(
+            b"<html><body><header>Atlassian workspace</header>"
+            b"<section><h1>Log in to continue</h1>"
+            b"<form><input name='account'><input type='password'></form>"
+            b"</section></body></html>"))
+        self.assertEqual(wiki_process(self.root, KEY)["results"][0]["status"],"FAILED")
+        self.assertEqual(wiki_sources(self.root, KEY, self.issue),({},[]))
+
     def test_value_variants_are_cautions_not_proof_and_no_values_leaked(self):
         self.prepare_all()
         self.local("wiki", b"<html><p>TypeCode=AB</p><p>TypeCode=TO</p></html>")
