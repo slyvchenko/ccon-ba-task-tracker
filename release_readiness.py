@@ -38,6 +38,8 @@ def release_report(ledger):
     ids, category_counts, priority_counts = set(), Counter(), Counter()
     p0_pending = 0
     stated_human_acceptance = 0
+    code_and_test = 0
+    no_code_pointer = 0
     for row in rows:
         if not isinstance(row, dict):
             raise ValueError("Invalid backlog row.")
@@ -48,6 +50,14 @@ def release_report(ledger):
             raise ValueError("Duplicate or invalid acceptance identifier.")
         if category not in CATEGORIES or priority not in PRIORITIES:
             raise ValueError("Unexpected status or priority in acceptance ledger.")
+        source = row.get("code_locator")
+        test = row.get("test_locator")
+        if any(item is not None and
+               (not isinstance(item, str) or not item.strip())
+               for item in (source, test)):
+            raise ValueError("Invalid code or test pointer.")
+        code_and_test += int(bool(source) and bool(test))
+        no_code_pointer += int(not source)
         ids.add(ident)
         category_counts[category] += 1
         priority_counts[priority] += 1
@@ -63,6 +73,9 @@ def release_report(ledger):
     missing = [ident for ident in HUMAN_GATES if ident not in ids]
     if missing:
         raise ValueError("Required human acceptance gate missing from inventory.")
+    if (totals.get("code_plus_test_locators") != code_and_test or
+            totals.get("no_direct_locator") != no_code_pointer):
+        raise ValueError("Source/test evidence pointer totals have drifted.")
     # Real signoff cannot be validated from GitHub-local synthetic fixtures.
     # Thus even 129 manually edited PASSED strings cannot return READY.
     external = [{"id":ident, "state":"NOT_VERIFIED_IN_PUBLIC_REPO"}
