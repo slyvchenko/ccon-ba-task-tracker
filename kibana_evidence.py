@@ -64,7 +64,15 @@ KIBANA_VIEW_PATHS = frozenset({"/app/kibana", "/app/discover"})
 def _is_discover_view(raw):
     try:
         parsed = urlparse(raw)
-        return parsed.path.rstrip("/") in KIBANA_VIEW_PATHS
+        path = parsed.path.rstrip("/")
+        if path == "/app/discover":
+            return True
+        if path == "/app/kibana":
+            # The legacy route lives in the fragment, not the pathname.
+            # /app/kibana#/dev_tools/console is NOT read-only Discover.
+            fragment = unquote(parsed.fragment).lower()
+            return fragment == "/discover" or fragment.startswith(("/discover/", "/discover?"))
+        return False
     except ValueError:
         return False
 
