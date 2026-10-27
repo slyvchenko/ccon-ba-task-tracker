@@ -176,6 +176,29 @@ class WeeklyWorkloadTests(unittest.TestCase):
                            str(self.root), "/private/"):
                 self.assertNotIn(secret, output)
 
+    def test_wal_without_sidecars_fails_closed_before_read_only_connection(self):
+        import shutil
+        copy=self.root / "synthetic-wal-without-sidecars.db"
+        shutil.copyfile(self.db,copy)
+        # Snapshot tests only: mark the copied SQLite header as WAL without
+        # creating any sidecar. The preview must not open it to create files.
+        with copy.open("r+b") as stream:
+            stream.seek(18)
+            stream.write(bytes([2,2]))
+        self.assertFalse(Path(str(copy)+"-shm").exists())
+        original=self.root/"ba_state.db"
+        alternate=self.root/"synthetic-normal-original.db"
+        original.rename(alternate)
+        copy.rename(original)
+        try:
+            with self.assertRaisesRegex(ValueError,"Read-only WAL sidecars unavailable"):
+                weekly_report(self.root,"2026-W43",today=date(2026,10,27))
+            self.assertFalse(Path(str(original)+"-shm").exists())
+            self.assertFalse(Path(str(original)+"-wal").exists())
+        finally:
+            original.rename(copy)
+            alternate.rename(original)
+
     def test_no_state_created_and_bad_week_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(ValueError):
