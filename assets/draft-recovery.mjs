@@ -72,7 +72,13 @@ export function createDraftRecoveryStore({local,session,newId,now=()=>Date.now()
       // run the previous release; future edits cannot overwrite this copy.
       const legacy=local.getItem(LEGACY_DRAFT_KEY);
       if (!legacy || legacy.length>MAX_PAYLOAD_BYTES) return {};
-      const forms=sanitizeDraftMap(JSON.parse(legacy));
+      const legacyData=JSON.parse(legacy);
+      if (legacyData && typeof legacyData === 'object' && !Array.isArray(legacyData) &&
+          Object.keys(legacyData).length > MAX_TASKS) {
+        // Never migrate just the first 100 then delete the sole legacy copy.
+        error='CAPACITY_EXCEEDED';return {};
+      }
+      const forms=sanitizeDraftMap(legacyData);
       if(Object.keys(forms).length && persist(forms)) local.removeItem(LEGACY_DRAFT_KEY);
       return forms;
     } catch {error='READ_FAILED';return {};}
@@ -80,6 +86,10 @@ export function createDraftRecoveryStore({local,session,newId,now=()=>Date.now()
   function persist(forms) {
     if(!id) {error='STORAGE_DENIED';return false;}
     try {
+      if (!forms || typeof forms !== 'object' || Array.isArray(forms) ||
+          Object.keys(forms).length > MAX_TASKS) {
+        error='CAPACITY_EXCEEDED';return false;
+      }
       const validated=sanitizeDraftMap(forms);
       const serialized=JSON.stringify({version:3,savedAt:new Date(now()).toISOString(),forms:validated});
       if (bytes(serialized)>MAX_PAYLOAD_BYTES) {
