@@ -10,7 +10,7 @@ ATTACHMENT_CLAIM = re.compile(
     r"(?i)(?:"
     r"\b(?:logs?|zip|evidence|files?)\s+(?:are|is|were)\s+(?:already\s+)?attached\b|"
     r"\b(?:I|we)\s+(?:have|'ve)\s+attached\b|"
-    r"\bplease\s+find\b.{0,100}\battached\b|"
+    r"\bplease\s+find\b.{0,100}?\battached\b|"
     r"\battached\b.{0,65}\b(?:logs?|zip|files?)\b"
     r")")
 NEGATED_CLAIM = re.compile(
@@ -72,6 +72,18 @@ def technical_literals(when, then):
     return tokens
 
 
+def _negated_attachment_match(clause, match):
+    """Scope an attachment's negation/future tense to its own assertion."""
+    if NEGATED_CLAIM.search(match.group(0)):
+        return True
+    # Patterns like "attached logs" begin at "attached"; the safe "not" or
+    # "will be" is immediately before that match, not within its substring.
+    prefix = clause[max(0, match.start() - 40):match.start()]
+    return bool(re.search(
+        r"(?i)\b(?:no|not(?:\s+yet)?|never|haven't|hasn't|didn't|can't|cannot|won't|"
+        r"(?:will|can|could|may)\s+be)\s*$", prefix))
+
+
 def email_checks(draft, *, attachment_ready=None, verified_supplier_method=None):
     """Only generated draft, never a human-saved email. No mutation."""
     if not isinstance(draft, dict):
@@ -80,13 +92,14 @@ def email_checks(draft, *, attachment_ready=None, verified_supplier_method=None)
     body = draft.get("body") if isinstance(draft.get("body"), str) else ""
     subject = draft.get("subject") if isinstance(draft.get("subject"), str) else ""
     if attachment_ready is not True:
-        # Unknown readiness is NOT permission to assert a verified archive.
-        for line in body.splitlines():
-            # A negative statement about the response cannot excuse a
-            # separate positive assertion that the request logs are attached.
+        # The email subject is also a generated claim. Do not let a negative
+        # statement about one attachment excuse a separate positive claim
+        # about another within the same sentence or subject.
+        for line in [subject, *body.splitlines()]:
             clauses = re.split(r"(?<=[.!?;])\s+|\s*;\s*|\s*,\s*but\s+|\s+but\s+", line, flags=re.I)
-            if any(ATTACHMENT_CLAIM.search(clause) and not NEGATED_CLAIM.search(clause)
-                   for clause in clauses):
+            if any(not _negated_attachment_match(clause, match)
+                   for clause in clauses
+                   for match in ATTACHMENT_CLAIM.finditer(clause)):
                 findings.append(issue(
                     "EMAIL_UNVERIFIED_ATTACHMENT_CLAIM", "emailDraft",
                     "Чернетка стверджує наявність вкладення без актуального перевіреного supplier ZIP."))

@@ -122,6 +122,55 @@ class BAOutputChecksTests(unittest.TestCase):
         self.assertEqual(email_checks({"body": "REST retrievePNR failed."},
                                       verified_supplier_method="doByLocatorPullPnr"), [])
 
+    def test_normalized_email_cannot_erase_original_false_attachment_claim(self):
+        data = analysis()
+        data["emailDraft"] = {"subject": "AER. Clarification [123]",
+                              "body": "Dear Team, could you investigate?"}
+        original = {"subject": "AER. Clarification [123]",
+                    "body": "Dear Team, please find the supplier logs attached."}
+        for ready in (False, None):
+            with self.subTest(ready=ready):
+                result = quality_gate(data, issue(), attachment_ready=ready,
+                                      original_email_draft=original)
+                self.assertEqual(result["state"], "BLOCKED")
+                self.assertIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
+                              {f["code"] for f in result["findings"]})
+                self.assertNotIn("supplier logs attached", str(result["findings"]))
+        verified = quality_gate(data, issue(), attachment_ready=True,
+                                original_email_draft=original)
+        self.assertNotIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
+                         {f["code"] for f in verified["findings"]})
+
+    def test_unverified_attachment_subject_and_mixed_assertions_are_blocked(self):
+        for draft in (
+            {"subject": "AER. Supplier ZIP is attached [123]", "body": ""},
+            {"subject": "AER. Clarification [123]",
+             "body": "Logs are attached and the response is not attached."},
+            {"subject": "AER. Clarification [123]",
+             "body": "Please find the request logs attached although the reply is not attached."},
+        ):
+            with self.subTest(draft=draft):
+                findings = email_checks(draft, attachment_ready=False)
+                self.assertIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
+                              {f["code"] for f in findings})
+        safe = {"subject": "ZIP will be attached after manual review",
+                "body": "Logs are not attached. Could you provide the XML?"}
+        self.assertNotIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
+                         {f["code"] for f in email_checks(safe, attachment_ready=False)})
+        for body in (
+            "No logs are attached.",
+            "We have not attached logs.",
+            "We haven't attached the logs.",
+            "The ZIP will be attached with the logs after review.",
+            "We can attach the logs later.",
+            "The XML response is not attached but the ZIP will be attached.",
+        ):
+            with self.subTest(safe_body=body):
+                self.assertNotIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
+                                 {f["code"] for f in email_checks(
+                                     {"body": body}, attachment_ready=None)})
+
+
     def test_original_method_conflict_is_not_erased_by_normalization(self):
         data=analysis()
         data["emailDraft"]={"body":"Error during doByLocatorPullPnr"}
