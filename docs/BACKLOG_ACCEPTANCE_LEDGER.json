@@ -1906,7 +1906,7 @@
       "requirement": "Error budget dashboard for local app only, opt-in",
       "acceptance_criteria": "No remote telemetry or background transfer",
       "suggested_batch": "#46",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
       "code_locator": "local_error_budget.py",
       "test_locator": "tests/test_local_error_budget.py",
       "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
