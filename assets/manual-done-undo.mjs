@@ -16,5 +16,15 @@ export function undoLocalDonePayload(token,task) {
   // Status-only edit. The preserved saved note is sent exactly as in
   // existing saveStatus; the backend's expectedManualRevision is required.
   return {manualStatus:token.priorStatus,note:task.note||'',
-    expectedManualRevision:token.revision};
+    expectedManualRevision:token.revision,requireActiveTask:true};
+}
+
+export function rebaseUndoForm(form,savedSnapshot,revision) {
+  if(!form) return null;
+  if(JSON.stringify(form.value)===form.base) return null;
+  // Preserve unsaved notes/email while rebasing the now-restored status.
+  form.value.manualStatus=savedSnapshot.manualStatus;
+  form.base=JSON.stringify(savedSnapshot);
+  form.baseRevision=revision;
+  return form;
 }

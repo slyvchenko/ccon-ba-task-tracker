@@ -97,6 +97,22 @@ class ManualEditCASTests(unittest.TestCase):
         result = self.post("CCON-1", {"manualStatus": "IN PROGRESS", "note": "legacy"})
         self.assertEqual(result["manualRevision"], 1)
 
+    def test_undo_rejects_departed_task_even_when_revision_is_unchanged(self):
+        done=self.post("CCON-1",{"manualStatus":"DONE","note":"Kept",
+                                     "expectedManualRevision":0})
+        self.source.write_text(json.dumps({"generatedAt":"2026-10-27T09:10:00Z",
+            "tasks":[{"key":"CCON-2","summary":"Independent synthetic issue"}]}))
+        self.desk.import_snapshot()
+        with self.assertRaises(HTTPError) as conflict:
+            self.post("CCON-1",{"manualStatus":"IN PROGRESS","note":"Kept",
+                                "expectedManualRevision":done["manualRevision"],
+                                "requireActiveTask":True})
+        self.assertEqual(conflict.exception.code,409)
+        task=self.initial()
+        self.assertFalse(task["active"])
+        self.assertEqual(task["manualStatus"],"DONE")
+        self.assertEqual(task["manualRevision"],done["manualRevision"])
+
     def test_snapshot_reimport_preserves_manual_revision(self):
         self.post("CCON-1", {"manualStatus": "IN PROGRESS", "note": "Private",
                            "expectedManualRevision": 0})

@@ -1,6 +1,7 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload} from '../assets/manual-done-undo.mjs';
+import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload,rebaseUndoForm} from '../assets/manual-done-undo.mjs';
 
 test('a local successful DONE creates one CAS protected reversible action',()=>{
   const t={key:'CCON-101',manualStatus:'DONE',manualRevision:18,active:true,
@@ -8,7 +9,7 @@ test('a local successful DONE creates one CAS protected reversible action',()=>{
   const token=makeUndoToken(t,'IN PROGRESS',18);
   assert.equal(canUndoLocalDone(token,t),true);
   assert.deepEqual(undoLocalDonePayload(token,t),
-    {manualStatus:'IN PROGRESS',note:'Keep these human notes',expectedManualRevision:18});
+    {manualStatus:'IN PROGRESS',note:'Keep these human notes',expectedManualRevision:18,requireActiveTask:true});
   assert.equal(undoLocalDonePayload(token,{...t,manualRevision:19}),null);
 });
 test('cannot undo a third-party status update or another issue',()=>{
@@ -25,4 +26,25 @@ test('no token can be made for already-DONE/invalid version and no external repl
   const result=makeUndoToken({key:'CCON-1'},'AUTO',5);
   assert.equal(typeof result.send,'undefined');
   assert.equal(typeof result.updateJira,'undefined');
+});
+
+test('undo rebase preserves uncommitted note and email while refreshing CAS status',()=>{
+ const saved={manualStatus:'DONE',note:'Saved',emailDraft:{body:'Original'}};
+ const form={base:JSON.stringify(saved),baseRevision:18,
+   value:{manualStatus:'DONE',note:'Local uncommitted',emailDraft:{body:'Edited'}}};
+ const current={...saved,manualStatus:'IN PROGRESS'};
+ const result=rebaseUndoForm(form,current,19);
+ assert.equal(result.value.note,'Local uncommitted');
+ assert.equal(result.value.emailDraft.body,'Edited');
+ assert.equal(result.value.manualStatus,'IN PROGRESS');
+ assert.equal(result.baseRevision,19);
+ assert.equal(result.base,JSON.stringify(current));
+ assert.equal(rebaseUndoForm({base:JSON.stringify(current),value:current},current,20),null);
+});
+
+test('recovered local editor state is persisted after undo rebase',()=>{
+ const source=readFileSync(new URL('../assets/dashboard.mjs',import.meta.url),'utf8');
+ const undo=source.split('async function undoLastDone()')[1]?.split("$('undoLastDone').addEventListener")[0] || '';
+ assert.match(undo,/rebaseUndoForm\(/);
+ assert.match(undo,/rememberEdits\(\)/);
 });
