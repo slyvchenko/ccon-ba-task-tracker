@@ -6,6 +6,7 @@ The template is intentionally BLOCKED until real independent human review.
 import argparse
 import json
 import os
+import stat
 import sys
 from pathlib import Path
 
@@ -48,6 +49,12 @@ def blank_cohort():
     return pack
 
 
+def _has_reparse_attribute(details):
+    """Detect NTFS junction/reparse points on Python 3.10+, not only 3.12+."""
+    return bool(getattr(details, "st_file_attributes", 0) &
+                getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+
+
 def create_template(destination, confirm):
     if confirm != CONFIRM:
         raise ValueError("Explicit private template confirmation required")
@@ -65,7 +72,14 @@ def create_template(destination, confirm):
     # Inspect actual filesystem entries (including NTFS junctions) instead.
     lexical_parent = Path(os.path.abspath(parent))
     for component in (lexical_parent, *lexical_parent.parents):
-        if component.is_symlink() or (
+        # lstat observes the link itself, not its target. st_file_attributes
+        # has been available on Windows since well before Path.is_junction().
+        # Reject every reparse-point type conservatively, including junctions.
+        try:
+            details = component.lstat()
+        except OSError as exc:
+            raise ValueError("Cannot verify private destination ancestry") from exc
+        if component.is_symlink() or _has_reparse_attribute(details) or (
             hasattr(component, "is_junction") and component.is_junction()
         ):
             raise ValueError("Private template destination has a redirected parent")
