@@ -87,15 +87,47 @@ class ManualEditCASTests(unittest.TestCase):
         self.assertEqual(ack["manualRevision"], 2)
         self.assertEqual(self.initial()["note"], "My reviewed override")
 
-    def test_missing_and_invalid_tokens_keep_legacy_backward_compatibility(self):
+    def test_http_rejects_missing_token_and_invalid_tokens(self):
+        # Old same-origin clients must reload and supply a revision rather than
+        # silently bypassing CAS after another tab has saved manual edits.
+        with self.assertRaises(HTTPError) as caught:
+            self.post("CCON-1", {"manualStatus": "DONE", "note": "unversioned"})
+        self.assertEqual(caught.exception.code, 428)
+        response = json.loads(caught.exception.read())
+        self.assertEqual(response["code"], "TASK_REVISION_REQUIRED")
+        self.assertNotIn("unversioned", json.dumps(response))
+        self.assertEqual(self.initial()["manualRevision"], 0)
         for invalid in (None, -1, True, False, 1.0, "0"):
             with self.subTest(invalid=invalid), self.assertRaises(HTTPError) as caught:
                 self.post("CCON-1", {"manualStatus": "DONE", "note": "",
                                     "expectedManualRevision": invalid})
             self.assertEqual(caught.exception.code, 400)
             self.assertEqual(self.initial()["manualRevision"], 0)
-        result = self.post("CCON-1", {"manualStatus": "IN PROGRESS", "note": "legacy"})
-        self.assertEqual(result["manualRevision"], 1)
+
+    def test_stale_unversioned_client_cannot_override_newer_manual_draft(self):
+        draft = {"to": "", "subject": "Saved", "body": "Never overwrite"}
+        self.post("CCON-1", {"manualStatus": "IN PROGRESS", "note": "Original",
+                            "emailDraft": draft, "expectedManualRevision": 0})
+        for status in ("DONE", "WAITING INPUT"):
+            with self.subTest(status=status), self.assertRaises(HTTPError) as caught:
+                self.post("CCON-1", {"manualStatus": status,
+                                    "note": "Stale client update"})
+            self.assertEqual(caught.exception.code, 428)
+        state = self.initial()
+        self.assertEqual(state["note"], "Original")
+        self.assertEqual(state["savedEmailDraft"], draft)
+        self.assertEqual(state["manualRevision"], 1)
+
+    def test_direct_desk_save_legacy_migration_path_not_exposed_through_http(self):
+        # Explicitly trusted local scripts can still use the Python Desk API
+        # while they migrate; only the HTTP write boundary requires CAS.
+        saved = self.desk.save("CCON-1", {
+            "manualStatus": "IN PROGRESS", "note": "legacy local script"})
+        self.assertEqual(saved["manualRevision"], 1)
+        with self.assertRaises(HTTPError) as caught:
+            self.post("CCON-1", {"manualStatus": "DONE", "note": "old HTTP"})
+        self.assertEqual(caught.exception.code, 428)
+        self.assertEqual(self.initial()["note"], "legacy local script")
 
     def test_undo_rejects_departed_task_even_when_revision_is_unchanged(self):
         done=self.post("CCON-1",{"manualStatus":"DONE","note":"Kept",

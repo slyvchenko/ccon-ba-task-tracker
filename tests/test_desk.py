@@ -32,6 +32,12 @@ class EndToEnd(unittest.TestCase):
         shutil.rmtree(target)
 
     def request(self, path, data=None, origin=None):
+        if (path.startswith('/api/tasks/CCON-') and isinstance(data, dict) and
+                'expectedManualRevision' not in data):
+            key = path.rsplit('/', 1)[-1]
+            # All HTTP clients now submit their last observed per-task version.
+            task = next((t for t in self.desk.view()['tasks'] if t['key'] == key), None)
+            data = {**data, 'expectedManualRevision': task['manualRevision'] if task else 0}
         req = Request(self.base+path, data=None if data is None else json.dumps(data).encode(),
                       headers={'Origin': origin or self.base, 'Content-Type': 'application/json'})
         with build_opener(ProxyHandler({})).open(req) as r:
