@@ -8,7 +8,7 @@ test('a local successful DONE creates one CAS protected reversible action',()=>{
   const token=makeUndoToken(t,'IN PROGRESS',18);
   assert.equal(canUndoLocalDone(token,t),true);
   assert.deepEqual(undoLocalDonePayload(token,t),
-    {manualStatus:'IN PROGRESS',note:'Keep these human notes',expectedManualRevision:18});
+    {manualStatus:'IN PROGRESS',note:'Keep these human notes',expectedManualRevision:18,requireActiveTask:true});
   assert.equal(undoLocalDonePayload(token,{...t,manualRevision:19}),null);
 });
 test('cannot undo a third-party status update or another issue',()=>{
@@ -25,4 +25,18 @@ test('no token can be made for already-DONE/invalid version and no external repl
   const result=makeUndoToken({key:'CCON-1'},'AUTO',5);
   assert.equal(typeof result.send,'undefined');
   assert.equal(typeof result.updateJira,'undefined');
+});
+
+test('undo rebase preserves uncommitted note and email while refreshing CAS status',()=>{
+ const saved={manualStatus:'DONE',note:'Saved',emailDraft:{body:'Original'}};
+ const form={base:JSON.stringify(saved),baseRevision:18,
+   value:{manualStatus:'DONE',note:'Local uncommitted',emailDraft:{body:'Edited'}}};
+ const current={...saved,manualStatus:'IN PROGRESS'};
+ const result=rebaseUndoForm(form,current,19);
+ assert.equal(result.value.note,'Local uncommitted');
+ assert.equal(result.value.emailDraft.body,'Edited');
+ assert.equal(result.value.manualStatus,'IN PROGRESS');
+ assert.equal(result.baseRevision,19);
+ assert.equal(result.base,JSON.stringify(current));
+ assert.equal(rebaseUndoForm({base:JSON.stringify(current),value:current},current,20),null);
 });
