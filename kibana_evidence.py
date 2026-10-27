@@ -6,7 +6,7 @@ records exported ZIPs with layered_evidence.py. No token/cookie capture.
 """
 import argparse
 import json
-import re
+import os
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -16,26 +16,52 @@ from supplier_logs import links_in, flow_references, supplier_hint
 
 MAX_KIBANA_LINKS = 80
 MAX_ERROR_CASES = 30
+# An arbitrary Jira link whose hostname happens to contain "kibana" is not
+# authorization to open that external origin in the analyst's browser.
+BUILTIN_KIBANA_ORIGINS = {"http://192.168.197.246:5601"}
+ALLOWED_ORIGINS_ENV = "CCON_KIBANA_ALLOWED_ORIGINS"
+
+
+def _origin(raw, *, configuration=False):
+    """Canonical exact scheme/hostname/port; reject credentials and bad ports."""
+    if not isinstance(raw, str) or len(raw) > 8000:
+        return None
+    try:
+        parsed = urlparse(raw.strip())
+        if parsed.scheme not in ("http", "https") or not parsed.hostname:
+            return None
+        if parsed.username or parsed.password:
+            return None
+        port = parsed.port  # Explicitly validate nonnumeric or out-of-range ports.
+        if configuration and (parsed.path not in ("", "/") or
+                              parsed.params or parsed.query or parsed.fragment):
+            return None
+        return "{}://{}:{}".format(
+            parsed.scheme, parsed.hostname.lower(),
+            port or (443 if parsed.scheme == "https" else 80))
+    except ValueError:
+        return None
+
+
+def approved_kibana_origins():
+    origins = set(BUILTIN_KIBANA_ORIGINS)
+    # Opt-in local configuration, never from Jira, URLs, AI, or supplier logs.
+    # Bare hostnames and wildcards are intentionally not accepted.
+    for configured in os.environ.get(ALLOWED_ORIGINS_ENV, "").split(",")[:20]:
+        origin = _origin(configured, configuration=True)
+        if origin:
+            origins.add(origin)
+    return origins
 
 
 def discover_links(issue):
     found = {}
+    allowed = approved_kibana_origins()
     values = {"description": issue.get("descriptionAdf") or issue.get("description"),
               "comments": issue.get("comments") or []}
     for url in links_in(values):
         url = url.strip().strip(".,);")
-        try:
-            parsed = urlparse(url)
-        except ValueError:
-            continue
-        host = parsed.hostname or ""
-        # Existing Kibana endpoint + other names that explicitly contain
-        # Kibana. Arbitrary external links are not browser instructions.
-        if parsed.scheme not in ("http", "https") or not (
-                host == "192.168.197.246" and parsed.port == 5601 or
-                re.search(r"(^|\.)kibana([.-]|$)", host, re.I)):
-            continue
-        if parsed.username or parsed.password or len(url) > 8000:
+        if _origin(url) not in allowed:
             continue
         label = "ERROR_SEARCH" if any(x in unquote(url).lower()
                    for x in ("errorlog", "error_log", "exception", "errorlevel", "error level", "errors")) else "SEARCH"
