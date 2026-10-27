@@ -17,7 +17,7 @@ def replace_file(source, target):
 
 
 @contextmanager
-def pipeline_lock(root):
+def pipeline_lock(root, *, busy_message=None):
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
     # Keep the file after release: deleting it could let a third process lock a
@@ -35,8 +35,9 @@ def pipeline_lock(root):
                 import fcntl
                 fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
-            raise ValueError('Another Jira sync or analysis import is running. '
-                             'Wait for it to finish, then try again.') from None
+            raise ValueError(
+                busy_message or ('Another Jira sync or analysis import is running. '
+                                 'Wait for it to finish, then try again.')) from None
         try:
             yield
         finally:

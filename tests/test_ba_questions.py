@@ -6,7 +6,7 @@ from unittest.mock import patch
 from pathlib import Path
 
 from ba_questions import (sync_questions, read_questions, update_question,
-                          question_id, proposed_questions, STATES)
+                          question_id, proposed_questions, question_write_lock, STATES)
 from kibana_evidence import plan_for_issue, discover_links
 from supplier_logs import flow_references
 
@@ -55,6 +55,37 @@ class QuestionsAndKibanaTests(unittest.TestCase):
             read_questions(self.root, "../evil")
         with self.assertRaisesRegex(ValueError, "Invalid question state"):
             update_question(self.root, "CCON-123", "Q-notfound", status="CLOSED")
+
+    def test_manual_question_update_and_ai_sync_share_one_issue_lock(self):
+        first = sync_questions(self.root, "CCON-123", {
+            "missingInfo": ["Clarify supplier behavior"]})
+        identifier = first["questions"][0]["id"]
+        with question_write_lock(self.root, "CCON-123"):
+            with self.assertRaisesRegex(ValueError, "Another question update"):
+                sync_questions(self.root, "CCON-123", {
+                    "missingInfo": ["AI-added conflicting question"]})
+            with self.assertRaisesRegex(ValueError, "Another question update"):
+                update_question(self.root, "CCON-123", identifier,
+                                status="ANSWERED", answer="Confirmed by analyst",
+                                evidence_url="https://jira.example/CCON-123")
+        self.assertEqual(len(read_questions(self.root, "CCON-123")["questions"]), 1)
+        self.assertEqual(read_questions(self.root, "CCON-123")["questions"][0]["status"], "OPEN")
+        answer = update_question(self.root, "CCON-123", identifier,
+                                 status="ANSWERED", answer="Confirmed by analyst",
+                                 evidence_url="https://jira.example/CCON-123")
+        self.assertTrue(answer["answerVerified"])
+        sync_questions(self.root, "CCON-123", {
+            "missingInfo": ["AI-added conflicting question"]})
+        questions = read_questions(self.root, "CCON-123")["questions"]
+        self.assertEqual(len(questions), 2)
+        self.assertEqual(next(q for q in questions if q["id"] == identifier)["status"],
+                         "ANSWERED")
+        self.assertEqual(next(q for q in questions if q["id"] == identifier)["answer"],
+                         "Confirmed by analyst")
+
+    def test_question_lock_validates_issue_key_before_creating_paths(self):
+        with self.assertRaisesRegex(ValueError, "Invalid task key"):
+            question_write_lock(self.root, "../escape")
 
     def test_evidence_questions_get_a_distinct_source(self):
         result = proposed_questions({"missingInfo": ["A"]}, [

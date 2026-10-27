@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 from app_config import ROOT, utc_now
 from storage import read_json, write_json
+from pipeline_lock import pipeline_lock
 
 STATES = {"OPEN", "ANSWERED", "SUPERSEDED", "NOT_APPLICABLE"}
 MAX_QUESTIONS = 200
@@ -29,6 +30,19 @@ def question_file(root, key):
     if not re.fullmatch(r"CCON-\d+", str(key)):
         raise ValueError("Invalid task key.")
     return Path(root) / "data/questions" / (key + ".json")
+
+
+def question_write_lock(root, key):
+    """Per-issue cross-process read-modify-write lock for manual and AI edits.
+
+    Atomic rename keeps JSON well formed, but cannot prevent stale writers from
+    overwriting an analyst's answer. All writers of this file share one lock.
+    """
+    question_file(root, key)  # Validate the key before creating lock paths.
+    return pipeline_lock(
+        Path(root) / "data/question-locks" / key,
+        busy_message="Another question update for this issue is in progress. "
+                     "Wait for it to finish, then try again.")
 
 
 def task_in_scope(root, key):
@@ -69,59 +83,61 @@ def read_questions(root, key):
 
 
 def sync_questions(root, key, analysis=None, evidence=None):
-    task_in_scope(root, key)
-    source = read_questions(root, key)
-    prior = {item["id"]: item for item in source["questions"]}
-    date = utc_now()
-    seen = set()
-    for proposal in proposed_questions(analysis, evidence):
-        text = proposal["text"][:3000]
-        identifier = question_id(key, text)
-        seen.add(identifier)
-        if identifier in prior:
-            prior[identifier]["lastSeenAt"] = date
-            # No automatic status change. An answered question stays answered.
-        else:
-            prior[identifier] = {
-                "id": identifier, "text": text, "status": "OPEN",
-                "origin": proposal["origin"], "firstSeenAt": date,
-                "lastSeenAt": date, "presentInLatestAnalysis": True,
-                "owner": "", "answer": "", "evidenceUrl": "",
-                "updatedAt": date,
-            }
-    for q in prior.values():
-        q["presentInLatestAnalysis"] = q["id"] in seen
-    source = {"key": key, "updatedAt": date,
-              "questions": sorted(prior.values(), key=lambda q: (q["status"] != "OPEN", q["firstSeenAt"], q["id"]))}
-    write_json(question_file(root, key), source, 1 * 1024 * 1024)
-    return source
+    with question_write_lock(root, key):
+        task_in_scope(root, key)
+        source = read_questions(root, key)
+        prior = {item["id"]: item for item in source["questions"]}
+        date = utc_now()
+        seen = set()
+        for proposal in proposed_questions(analysis, evidence):
+            text = proposal["text"][:3000]
+            identifier = question_id(key, text)
+            seen.add(identifier)
+            if identifier in prior:
+                prior[identifier]["lastSeenAt"] = date
+                # No automatic status change. An answered question stays answered.
+            else:
+                prior[identifier] = {
+                    "id": identifier, "text": text, "status": "OPEN",
+                    "origin": proposal["origin"], "firstSeenAt": date,
+                    "lastSeenAt": date, "presentInLatestAnalysis": True,
+                    "owner": "", "answer": "", "evidenceUrl": "",
+                    "updatedAt": date,
+                }
+        for q in prior.values():
+            q["presentInLatestAnalysis"] = q["id"] in seen
+        source = {"key": key, "updatedAt": date,
+                  "questions": sorted(prior.values(), key=lambda q: (q["status"] != "OPEN", q["firstSeenAt"], q["id"]))}
+        write_json(question_file(root, key), source, 1 * 1024 * 1024)
+        return source
 
 
 def update_question(root, key, identifier, *, status, owner="", answer="", evidence_url=""):
-    task_in_scope(root, key)
-    if status not in STATES:
-        raise ValueError("Invalid question state.")
-    for name, value, limit in (("owner", owner, 180), ("answer", answer, 8000),
-                               ("evidenceUrl", evidence_url, 2000)):
-        if not isinstance(value, str) or len(value) > limit:
-            raise ValueError(name + " must be bounded text.")
-    if evidence_url:
-        url = urlparse(evidence_url)
-        if url.scheme not in ("http", "https") or not url.hostname or url.username or url.password:
-            raise ValueError("Evidence must be an HTTP(S) URL.")
-    if status == "ANSWERED" and not answer.strip():
-        raise ValueError("ANSWERED requires a written answer.")
-    source = read_questions(root, key)
-    match = next((item for item in source["questions"] if item.get("id") == identifier), None)
-    if not match:
-        raise ValueError("Unknown question ID.")
-    # Even a human-entered answer without a source is flagged, not called verified.
-    match.update({"status": status, "owner": owner, "answer": answer,
-                  "evidenceUrl": evidence_url, "updatedAt": utc_now(),
-                  "answerVerified": status == "ANSWERED" and bool(evidence_url)})
-    source["updatedAt"] = utc_now()
-    write_json(question_file(root, key), source, 1 * 1024 * 1024)
-    return match
+    with question_write_lock(root, key):
+        task_in_scope(root, key)
+        if status not in STATES:
+            raise ValueError("Invalid question state.")
+        for name, value, limit in (("owner", owner, 180), ("answer", answer, 8000),
+                                   ("evidenceUrl", evidence_url, 2000)):
+            if not isinstance(value, str) or len(value) > limit:
+                raise ValueError(name + " must be bounded text.")
+        if evidence_url:
+            url = urlparse(evidence_url)
+            if url.scheme not in ("http", "https") or not url.hostname or url.username or url.password:
+                raise ValueError("Evidence must be an HTTP(S) URL.")
+        if status == "ANSWERED" and not answer.strip():
+            raise ValueError("ANSWERED requires a written answer.")
+        source = read_questions(root, key)
+        match = next((item for item in source["questions"] if item.get("id") == identifier), None)
+        if not match:
+            raise ValueError("Unknown question ID.")
+        # Even a human-entered answer without a source is flagged, not called verified.
+        match.update({"status": status, "owner": owner, "answer": answer,
+                      "evidenceUrl": evidence_url, "updatedAt": utc_now(),
+                      "answerVerified": status == "ANSWERED" and bool(evidence_url)})
+        source["updatedAt"] = utc_now()
+        write_json(question_file(root, key), source, 1 * 1024 * 1024)
+        return match
 
 
 def all_evidence(root, key):
