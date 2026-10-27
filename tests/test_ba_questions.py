@@ -120,6 +120,8 @@ class QuestionsAndKibanaTests(unittest.TestCase):
             "https://kibana.example.com/login",
             "https://kibana.example.com/app/discover-extra",
             "https://kibana.example.com/app/discover/../api/delete",
+            "https://kibana.example.com/app/discover;api",
+            "https://kibana.example.com/app/kibana;management#/discover",
             "https://kibana.example.com/app/kibana#/management",
             "https://kibana.example.com/app/kibana#/dev_tools/console",
             "https://kibana.example.com/app/kibana",
