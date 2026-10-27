@@ -141,7 +141,7 @@ class LocalEndpointTests(unittest.TestCase):
                 if not chunk:
                     break
                 received+=chunk
-        self.assertIn(b"HTTP/1.1 200",received)
+        self.assertIn(b" 200 OK",received)
         observed=self.budget.snapshot()
         self.assertEqual(observed["sampledApiResponses"],1)
         self.assertLess(observed["responseLatencyP95Ms"],450)
