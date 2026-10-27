@@ -49,6 +49,19 @@ class ErrorBudgetUnitTests(unittest.TestCase):
             b.record(*args)
         self.assertEqual(b.snapshot()["sampledApiResponses"],20)
 
+    def test_truncation_warning_expires_with_rolling_window(self):
+        now=[1000]
+        budget=LocalErrorBudget(clock=lambda:now[0], window_seconds=60, max_samples=20)
+        for _ in range(25):
+            budget.record("/api/tasks",200,1)
+        self.assertTrue(budget.snapshot()["sampleTruncated"])
+        now[0]+=61
+        self.assertFalse(budget.snapshot()["sampleTruncated"])
+        self.assertEqual(budget.snapshot()["sampledApiResponses"],0)
+        for _ in range(19):
+            budget.record("/api/tasks",200,1)
+        self.assertFalse(budget.snapshot()["sampleTruncated"])
+
     def test_status_is_an_observation_not_an_availability_guarantee(self):
         b=LocalErrorBudget()
         self.assertIsNone(b.snapshot()["responseLatencyP95Ms"])
