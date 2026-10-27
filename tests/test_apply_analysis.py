@@ -137,6 +137,19 @@ class AnalysisIntegrity(unittest.TestCase):
         self.assertIn("OPEN_REQUIREMENTS_PENDING",
                       {f["code"] for f in result["findings"]})
 
+    def test_answered_long_question_does_not_create_unresolvable_open_gate(self):
+        from storage import write_json
+        from ba_questions import question_id
+        from apply_analysis import pending_questions_for_gate
+        long_text="Long synthetic decision "*200
+        qid=question_id("CCON-1",long_text[:3000])
+        write_json(self.root/"data/questions/CCON-1.json",{
+            "key":"CCON-1","questions":[{
+                "id":qid,"text":long_text[:3000],"status":"ANSWERED"}]})
+        result=pending_questions_for_gate(self.root,"CCON-1",
+                                          {"missingInfo":[long_text]})
+        self.assertFalse(any(x.get("status")=="OPEN" for x in result))
+
     def test_quality_gate_never_overwrites_manual_draft_or_note(self):
         self.desk.save('CCON-1', {'manualStatus': 'IN PROGRESS',
                                  'note': 'Keep user note',
