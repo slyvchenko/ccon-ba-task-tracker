@@ -65,6 +65,11 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual(len(result["items"]),129)
         self.assertEqual(len(set(x["id"] for x in result["items"])),129)
         self.assertEqual(result["sourceTestPointerCoverage"],106)
+        self.assertEqual(result["pointerCoverageBreakdown"],
+                         {"codeAndTest":106,"codeOnly":6,"testOnly":0,"neither":17})
+        self.assertEqual({row["id"] for row in result["p0PointerGaps"]},
+                         {"EVD-05","EVD-06","QA-02","QA-09","QA-10"})
+        self.assertEqual(sum(result["pointerCoverageBreakdown"].values()),129)
         self.assertFalse(result["releaseApproved"])
         self.assertEqual(result["readiness"],"BLOCKED_INDEPENDENT_UAT")
         self.assertEqual(result["privateAcceptanceVerified"],0)
@@ -93,6 +98,37 @@ class ReleaseReadinessTests(unittest.TestCase):
         data["items"][0]["id"]="PRIVATE-PNR-12345"
         with self.assertRaisesRegex(ValueError,"identifier"):
             closeout_matrix(data)
+
+    def test_test_only_pointer_cannot_be_counted_as_code_plus_test(self):
+        # Regression for review of PR #76: the old total used test pointer
+        # presence alone and would accept a missing source locator.
+        forged=copy.deepcopy(self.ledger)
+        row=next(x for x in forged["items"] if x["id"]=="CORE-01")
+        self.assertIsNotNone(row["code_locator"])
+        self.assertIsNotNone(row["test_locator"])
+        row["code_locator"]=None
+        result=closeout_matrix(forged)
+        self.assertEqual(result["sourceTestPointerCoverage"],105)
+        self.assertEqual(result["pointerCoverageBreakdown"],
+                         {"codeAndTest":105,"codeOnly":6,"testOnly":1,"neither":17})
+        self.assertIn("CORE-01", {x["id"] for x in result["p0PointerGaps"]})
+        self.assertFalse(result["releaseApproved"])
+
+    def test_public_gap_report_never_includes_private_or_locator_values(self):
+        forged=copy.deepcopy(self.ledger)
+        row=next(x for x in forged["items"] if x["id"]=="EVD-06")
+        row["requirement"]="PRIVATE_PNR_SYNTHETIC_999"
+        row["code_locator"]="private-person-identifying-path/SECRET"
+        row["test_locator"]="PRIVATE_PNR_SYNTHETIC_999"
+        result=closeout_matrix(forged)
+        encoded=json.dumps(result)
+        self.assertNotIn("PRIVATE_PNR_SYNTHETIC_999",encoded)
+        self.assertNotIn("private-person-identifying-path",encoded)
+        self.assertEqual(result["sourceTestPointerCoverage"],107)
+        self.assertEqual(result["pointerCoverageBreakdown"]["codeAndTest"],107)
+        self.assertEqual(result["pointerCoverageBreakdown"]["codeOnly"],5)
+        self.assertEqual(result["privateAcceptanceVerified"],0)
+        self.assertFalse(result["releaseApproved"])
 
     def test_fake_human_pass_claims_do_not_influence_closeout(self):
         data=copy.deepcopy(self.ledger)
