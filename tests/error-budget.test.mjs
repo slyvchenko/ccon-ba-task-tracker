@@ -7,7 +7,7 @@ test('dashboard displays only opt-in fixed-key aggregates',()=>{
  const result=describeMetrics({
    localOnly:true,remoteTelemetry:false,sampledApiResponses:140,
    server5xx:1,client4xx:2,successPercent:99.29,
-   errorBudgetRemaining:.4,responseLatencyP95Ms:50,
+   errorBudgetRemaining:.4,serverTimeToStatusP95Ms:50,
    insufficientSamples:false,sampleTruncated:false,
  });
  assert.equal(result.rate,'99.29%');
