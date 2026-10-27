@@ -131,6 +131,16 @@ class BAOutputChecksTests(unittest.TestCase):
                       {f["code"] for f in result["findings"]})
         self.assertEqual(result["state"],"BLOCKED")
 
+    def test_original_subject_method_conflict_is_audit_finding(self):
+        data=analysis()
+        data["emailDraft"]={"subject":"AER. doByLocatorPullPnr. Corrected [1]","body":"Dear Team"}
+        gate=quality_gate(data,issue(),supplier_method="doByLocatorPullPnr",
+                          original_email_draft={
+                              "subject":"AER. doVerifyFare. Wrong [1]",
+                              "body":"Dear Team"})
+        self.assertIn("EMAIL_METHOD_CONFLICT",
+                      {f["code"] for f in gate["findings"]})
+
     def test_persisted_open_question_still_blocks_ready(self):
         data=analysis()
         data["missingInfo"]=[]
