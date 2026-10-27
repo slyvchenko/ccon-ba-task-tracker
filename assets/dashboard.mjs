@@ -425,6 +425,11 @@ function renderDetail() {
     renderedTaskKey = null;
     return;
   }
+  // A clean form may still represent an older DOM/revision while focus held
+  // a background refresh. Only throw it away when the deferred DOM can
+  // actually be replaced. Never promote stale displayed values to new CAS.
+  if (pendingDetail && renderedTaskKey === task.key &&
+      !isDirty(task.key) && !detailInteractionFocused()) forms.delete(task.key);
   const retainPosition = renderedTaskKey === task.key;
   const state = retainPosition ? {...captureTaskView($('detail')),
     focus:taskViews.get(task.key)?.focus} : taskViews.get(task.key);
@@ -1146,7 +1151,15 @@ async function load() {
       signature = nextSignature;
       // A new snapshot must never overwrite a typed note or email draft.
       forms.forEach((form, key) => {
-        if (!isDirty(key)) { forms.delete(key); return; }
+        // A clean buffer must survive while its OLD DOM is still on screen.
+        // Otherwise typing into that deferred DOM would create a new form
+        // from the NEW revision and bypass the optimistic concurrency token.
+        const displayedAndFocused = key === renderedTaskKey &&
+          key === selected && detailInteractionFocused();
+        if (!isDirty(key) && !displayedAndFocused) {
+          forms.delete(key);
+          return;
+        }
         const remote = tasks.find(task => task.key === key);
         if (remote && manualVersionChanged(form.baseRevision, remote.manualRevision))
           manualConflicts.set(key, {remote});

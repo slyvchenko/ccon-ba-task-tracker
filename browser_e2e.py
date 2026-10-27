@@ -154,6 +154,35 @@ class BrowserRegression(unittest.TestCase):
                               if t["key"]=="CCON-1"),"Synthetic TAB A")
         second.close()
 
+    def test_clean_focused_form_cannot_adopt_new_revision_from_another_tab(self):
+        # Regression of historical PR #30 review: a stale DOM held under
+        # focus must never silently overwrite another tab after background poll.
+        second = self.context.new_page()
+        second.goto(self.url, wait_until="domcontentloaded")
+        second.locator('#list button[data-key="CCON-1"]').wait_for()
+        self.choose("CCON-1")
+        self.choose("CCON-1", second)
+        self.assertEqual(self.page.locator("#note").input_value(), "")
+        self.page.locator("#manual").focus()  # clean focused form, no edits
+
+        second.locator("#note").fill("Other tab authoritative note")
+        second.locator("#save").click()
+        second.wait_for_function(
+            "() => document.querySelector('#savedIndicator')?.hidden === false")
+        self.assertEqual(next(t["note"] for t in self.desk.view()["tasks"]
+                              if t["key"] == "CCON-1"),
+                         "Other tab authoritative note")
+
+        # Wait for the real five-second background poll, not a page reload.
+        self.page.locator("#manualConflict").wait_for(state="visible", timeout=18000)
+        self.assertEqual(self.page.locator("#note").input_value(), "",
+                         "stale visible fields stay attached to their old revision")
+        self.assertTrue(self.page.locator("#done").is_disabled())
+        self.assertEqual(next(t["note"] for t in self.desk.view()["tasks"]
+                              if t["key"] == "CCON-1"),
+                         "Other tab authoritative note")
+        second.close()
+
     def test_manual_done_can_be_undone_once_without_external_jira_write(self):
         self.choose("CCON-1")
         self.assertTrue(self.page.locator("#undoLastDone").is_hidden())
