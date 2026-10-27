@@ -1,25 +1,19 @@
 # CCON BA: historical GitHub review audit (2026-10-27)
 
-[Canonical JSON register](PR_REVIEW_COMMENT_REGISTER.json) has exact comment URLs, source paths, review thread IDs, severity, dispositions, linked fixes and remaining next actions for the **148 original historical findings**.
+[Canonical JSON register](PR_REVIEW_COMMENT_REGISTER.json) contains the exact comment URLs, source paths, original review thread IDs, severity, dispositions, linked fixes and follow-up decisions for the **148 original historical findings**.
 
-## Status after merged PR #102 and reviewed current-main findings
+## Status after merged PR #113
 
-- **136 resolved / 12 open** of the original 148 findings, remaining all P2; historical P1 open = 0. **2** of the 12 open are marked outdated but still require source-level verification.
-- The baseline before follow-up was 78 resolved / 70 open. **58 original findings** have been individually reviewed, replied to at their original comment and resolved during follow-up.
-- PRs #94 through #103 (excluding no review-safe claims) have merged with all four synthetic GitHub Actions jobs successful. PR #104 is a standalone register reconciliation change.
-- New AI-review threads in subsequent PRs are **not** members of the original 148 historical findings; original counts are unchanged.
+- **148 resolved / 0 open** of the 148 original historical inline review threads across 90 earlier PRs. Historical P1 open = 0; historical P2 open = 0.
+- Baseline before follow-up: 78 resolved / 70 open. All **70 remaining original findings** were individually checked, replied to and resolved during follow-up, including the final 12.
+- Final six source-verified findings: PRs #26 (deferred detail refresh), #54 (archived queue empty state), #55 (reload after async write), #56 (row dirtiness cache), #61 (read-only WAL sidecar wording), #67 (WAL guard).
+- Final six functional issues fixed with regression coverage in [PR #113](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/113): #28 (nested disclosure state; stale quick-copy gate), #30 (first-visit detail scroll; scoped save shortcut), #33 (specific other-tab recovery source) and #56 (mobile sticky action overlap).
+- PR #113 was merged as `f367bafd37c11f9366ff794fb10d4da34c1eb23c`; all four GitHub Actions checks passed: test, coverage-baseline, browser-e2e and windows-smoke.
+- Review threads on newer PRs are not automatically included in this fixed **original 148-comment cohort**. This audit does not claim no future or new review comments will occur.
 
-## Remaining historical P2 by file
+## Historical original review debt
 
-| Source file | Open findings |
-|---|---:|
-| `assets/dashboard.mjs` | 8 |
-| `assets/dashboard.css` | 1 |
-| `assets/queue-dom.mjs` | 1 |
-| `docs/SQLITE_RETENTION_EVALUATION.md` | 1 |
-| `weekly_workload.py` | 1 |
-
-Remaining exact comments and thread IDs: [JSON register](PR_REVIEW_COMMENT_REGISTER.json). Fix confirmed bugs in separate scoped PRs with regression and green CI, reply to exact original thread and only then resolve it. Outdated status or adding comments does not prove implementation.
+No unresolved original review threads remain. Source-level reasoning and links to exact review threads are in the [JSON register](PR_REVIEW_COMMENT_REGISTER.json).
 
 ## Product backlog and human acceptance
 
