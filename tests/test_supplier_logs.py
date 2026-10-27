@@ -48,6 +48,7 @@ class SupplierLogsTests(unittest.TestCase):
             KIBANA.replace('http://', 'http://@', 1),
             KIBANA.replace('http://', 'ftp://', 1),
             KIBANA.replace('/app/kibana', '/api/security/session', 1),
+            KIBANA.replace('/app/kibana', '/app/kibana;management', 1),
             KIBANA.replace('#/discover/saved', '#/management', 1),
             KIBANA.replace('#/discover/saved', '#/dev_tools/console', 1),
             KIBANA.replace('192.168.197.246:5601', '192.168.197.246:9999', 1),
