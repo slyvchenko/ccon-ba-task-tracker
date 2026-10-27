@@ -198,9 +198,17 @@ def description_review(description, briefing):
             if not re.search(r"(?<![A-Za-z0-9_])" + re.escape(literal) + r"(?![A-Za-z0-9_])", desc):
                 findings.append({"code": "CONFIRMED_LITERAL_OMITTED", "ref": rule.get("id") or "rule",
                                  "messageUk": "У Jira описі відсутнє точне значення enum/code із підтвердженого правила."})
+        # Check only the IF branch for this rule. An unrelated "or" in QA
+        # prose or another rule must not validate a wrong AND/OR condition.
+        conditions = [match.group(1) for match in re.finditer(
+            r"(?is)\\bIF\\b(.{0,1500}?)\\bTHEN\\b", desc)]
+        relevant = [condition for condition in conditions if
+                    all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(field) +
+                                  r"(?![A-Za-z0-9_])", condition) for field in tokens)]
         for operator in ("AND", "OR"):
-            if re.search(r"\b" + operator + r"\b", when, re.I) and not re.search(
-                    r"\b" + operator + r"\b", desc, re.I):
+            if re.search(r"\\b" + operator + r"\\b", when, re.I) and not any(
+                    re.search(r"\\b" + operator + r"\\b", condition, re.I)
+                    for condition in relevant):
                 findings.append({"code": "COMPOUND_OPERATOR_OMITTED", "ref": rule.get("id") or "rule",
                                  "messageUk": "Можливо втрачено AND/OR у складеній підтвердженій умові; перевір логіку."})
     return findings
@@ -215,7 +223,7 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
     for url, content in (local_sources or {}).items():
         normalized = normalized_url(url)
         if normalized and isinstance(content, str):
-            sources[normalized] = content[:160000]
+            sources[normalized] = compact(content)[:160000]
     claims, source_findings = claim_audit(briefing, sources)
     coverage, qa_findings = rule_coverage(briefing)
     writing_findings = description_review(analysis.get("standardDescription"), briefing)
@@ -224,8 +232,8 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
         analysis.get("emailDraft"), attachment_ready=attachment_ready,
         verified_supplier_method=supplier_method)
     # Reserve space for generated-output warnings, even when source review has many findings.
-    findings = (output_findings + source_findings + qa_findings +
-                writing_findings + compact_findings)[:MAX_FINDINGS]
+    blocking_candidates = (output_findings + source_findings + qa_findings + writing_findings)
+    findings = (blocking_candidates + compact_findings)[:MAX_FINDINGS]
     if not claims:
         findings.append({"code": "NO_CONFIRMED_SOURCE_CLAIMS", "ref": "briefing",
                          "messageUk": "Немає підтверджених фактів або правил із перевірюваним джерелом."})
@@ -239,8 +247,8 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
                 "CONFIRMED_LITERAL_OMITTED", "COMPOUND_OPERATOR_OMITTED",
                 "EMAIL_UNVERIFIED_ATTACHMENT_CLAIM", "EMAIL_METHOD_CONFLICT",
                 "OPEN_REQUIREMENTS_PENDING", "OPEN_RULES_PENDING"}
-    state = ("BLOCKED" if any(x["code"] in critical for x in findings)
-             else "NEEDS_REVIEW" if findings else "STRUCTURALLY_VERIFIED")
+    state = ("BLOCKED" if any(x["code"] in critical for x in blocking_candidates)
+             else "NEEDS_REVIEW" if blocking_candidates else "STRUCTURALLY_VERIFIED")
     return {
         "version": 2, "state": state,
         "isReadyForReview": state == "STRUCTURALLY_VERIFIED",
