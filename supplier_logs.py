@@ -98,6 +98,9 @@ def flow_references(issue):
         if not allowed:
             continue
         decoded = unquote(parsed.fragment)
+        if not (decoded.lower() == '/discover' or
+                decoded.lower().startswith(('/discover/', '/discover?'))):
+            continue
         if not re.search(r'key:\s*\'?cconFlowId\'?', decoded):
             continue
         # Limit matching to the named filter so unrelated UUIDs are never used.
