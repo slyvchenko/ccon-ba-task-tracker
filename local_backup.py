@@ -111,11 +111,14 @@ def _validated_creation_time(filename, created_at):
         name_timestamp = datetime.strptime(
             filename[len("backup-"):len("backup-") + 16],
             "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         raise ValueError("Invalid backup creation timestamp.") from None
     if timestamp.tzinfo is None:
         raise ValueError("Backup creation time must include UTC timezone.")
-    timestamp = timestamp.astimezone(timezone.utc)
+    try:
+        timestamp = timestamp.astimezone(timezone.utc)
+    except (OverflowError, ValueError):
+        raise ValueError("Invalid backup creation timestamp.") from None
     if abs((timestamp - name_timestamp).total_seconds()) >= 1:
         raise ValueError("Backup filename and manifest creation time differ.")
     return timestamp
@@ -135,7 +138,7 @@ def _ordered_manifests(folder):
             if when.tzinfo is None:
                 continue
             entries.append((when, path.stat().st_mtime_ns, path))
-        except (OSError, ValueError, TypeError):
+        except (OSError, ValueError, TypeError, OverflowError):
             continue
     entries.sort(key=lambda item: (item[0], item[1]), reverse=True)
     return [entry[2] for entry in entries]
