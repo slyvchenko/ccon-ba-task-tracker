@@ -5,6 +5,7 @@ missingInfo does NOT mean an answer was found. No Jira/Confluence write API.
 """
 import argparse
 import hashlib
+import ipaddress
 import json
 import re
 from pathlib import Path
@@ -20,6 +21,31 @@ MAX_QUESTIONS = 200
 
 def normalize(text):
     return " ".join(text.split()).casefold()
+
+
+def valid_source_url(value):
+    """HTTP(S) source pointer only. Does not verify semantic correctness."""
+    if (not isinstance(value, str) or not value or len(value) > 2000 or
+            any(char.isspace() or ord(char) < 32 for char in value)):
+        return False
+    try:
+        url = urlparse(value)
+        host = url.hostname
+        if (url.scheme not in ("http", "https") or not host or
+                url.username is not None or url.password is not None or
+                (url.port is not None and url.port <= 0)):
+            return False
+        # urlparse is a splitter, not hostname validation. Accept ordinary
+        # ASCII DNS labels and properly formed IPv6 literals, never spaces or
+        # encoded-host masquerades from imported legacy question files.
+        if ":" in host:
+            ipaddress.IPv6Address(host)
+            return True
+        return (len(host) <= 253 and all(
+            re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", part)
+            for part in host.split(".")))
+    except ValueError:
+        return False
 
 
 def question_id(key, text):
@@ -79,6 +105,15 @@ def read_questions(root, key):
     source = read_json(question_file(root, key), {"key": key, "questions": []})
     if not isinstance(source, dict) or not isinstance(source.get("questions"), list):
         raise ValueError("Invalid local question state.")
+    # Historical versions set answerVerified=True on any HTTP(S) URL.
+    # Downgrade that unsound claim even before the next write. A link is a
+    # source pointer, never machine-confirmed semantic support for an answer.
+    for item in source["questions"]:
+        if isinstance(item, dict):
+            item["answerVerified"] = False
+            item["sourceLinkProvided"] = bool(
+                item.get("status") == "ANSWERED" and
+                valid_source_url(item.get("evidenceUrl")))
     return source
 
 
@@ -121,20 +156,21 @@ def update_question(root, key, identifier, *, status, owner="", answer="", evide
                                    ("evidenceUrl", evidence_url, 2000)):
             if not isinstance(value, str) or len(value) > limit:
                 raise ValueError(name + " must be bounded text.")
-        if evidence_url:
-            url = urlparse(evidence_url)
-            if url.scheme not in ("http", "https") or not url.hostname or url.username or url.password:
-                raise ValueError("Evidence must be an HTTP(S) URL.")
+        if evidence_url and not valid_source_url(evidence_url):
+            raise ValueError("Evidence must be a valid HTTP(S) URL.")
         if status == "ANSWERED" and not answer.strip():
             raise ValueError("ANSWERED requires a written answer.")
         source = read_questions(root, key)
         match = next((item for item in source["questions"] if item.get("id") == identifier), None)
         if not match:
             raise ValueError("Unknown question ID.")
-        # Even a human-entered answer without a source is flagged, not called verified.
+        # The analyst controls ANSWERED, but neither an HTTP(S) URL nor the
+        # answer text verifies its truth. Preserve source-link availability
+        # separately; semantic verification requires independent private UAT.
         match.update({"status": status, "owner": owner, "answer": answer,
                       "evidenceUrl": evidence_url, "updatedAt": utc_now(),
-                      "answerVerified": status == "ANSWERED" and bool(evidence_url)})
+                      "sourceLinkProvided": status == "ANSWERED" and bool(evidence_url),
+                      "answerVerified": False})
         source["updatedAt"] = utc_now()
         write_json(question_file(root, key), source, 1 * 1024 * 1024)
         return match

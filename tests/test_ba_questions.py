@@ -43,10 +43,86 @@ class QuestionsAndKibanaTests(unittest.TestCase):
         answer = update_question(self.root, "CCON-123", key, status="ANSWERED",
                                  owner="Supplier", answer="Так, потрібно.",
                                  evidence_url="https://jira.example/browse/CCON-123")
-        self.assertTrue(answer["answerVerified"])
+        self.assertFalse(answer["answerVerified"])
+        self.assertTrue(answer["sourceLinkProvided"])
         self.assertEqual(read_questions(self.root, "CCON-123")["questions"][0]["status"], "ANSWERED")
         sync_questions(self.root, "CCON-123", {"missingInfo": ["Чи потрібен код?"]})
         self.assertEqual(read_questions(self.root, "CCON-123")["questions"][0]["status"], "ANSWERED")
+
+    def test_legacy_true_verified_flag_is_downgraded_on_read_and_sync(self):
+        first = sync_questions(self.root, "CCON-123", {
+            "missingInfo": ["Confirm supplier evidence"]})
+        identifier = first["questions"][0]["id"]
+        path = self.root / "data/questions/CCON-123.json"
+        value = json.loads(path.read_text(encoding="utf-8"))
+        value["questions"][0].update({
+            "status": "ANSWERED", "answer": "Manually entered",
+            "evidenceUrl": "https://unrelated.example.invalid/unverified",
+            "answerVerified": True})
+        path.write_text(json.dumps(value), encoding="utf-8")
+        loaded = read_questions(self.root, "CCON-123")["questions"][0]
+        self.assertFalse(loaded["answerVerified"])
+        self.assertTrue(loaded["sourceLinkProvided"])
+        self.assertEqual(loaded["answer"], "Manually entered")
+        again = sync_questions(self.root, "CCON-123", {"missingInfo": []})
+        preserved = next(q for q in again["questions"] if q["id"] == identifier)
+        self.assertFalse(preserved["answerVerified"])
+        self.assertTrue(preserved["sourceLinkProvided"])
+        self.assertEqual(preserved["status"], "ANSWERED")
+        self.assertEqual(preserved["answer"], "Manually entered")
+        self.assertFalse(json.loads(path.read_text())["questions"][0]["answerVerified"])
+
+    def test_legacy_invalid_source_cannot_be_painted_as_linked_evidence(self):
+        first = sync_questions(self.root, "CCON-123", {
+            "missingInfo": ["Confirm source"]})
+        path = self.root / "data/questions/CCON-123.json"
+        for url in ("javascript:alert(1)", "https://user:pass@example.invalid",
+                    "https://example.invalid:bad/path", "https://[broken",
+                    "https://example.invalid:0/path", "https://bad host/path",
+                    "https://bad..host/path", "https://bad%20host/path",
+                    "https://host.example/path with spaces"):
+            with self.subTest(url=url):
+                value = json.loads(path.read_text(encoding="utf-8"))
+                value["questions"][0].update({
+                    "status": "ANSWERED", "answer": "Human text",
+                    "evidenceUrl": url, "answerVerified": True})
+                path.write_text(json.dumps(value), encoding="utf-8")
+                result = read_questions(self.root, "CCON-123")["questions"][0]
+                self.assertFalse(result["answerVerified"])
+                self.assertFalse(result["sourceLinkProvided"])
+                self.assertEqual(result["answer"], "Human text")
+                self.assertEqual(result["evidenceUrl"], url)
+
+    def test_valid_http_hostnames_remain_source_pointers_only(self):
+        first = sync_questions(self.root, "CCON-123", {"missingInfo": ["Check"]})
+        identifier = first["questions"][0]["id"]
+        for valid in ("https://jira.example.invalid/browse/CCON-123",
+                      "http://127.0.0.1:5601/app/discover",
+                      "http://[::1]:5601/app/discover"):
+            with self.subTest(valid=valid):
+                result = update_question(self.root, "CCON-123", identifier,
+                    status="ANSWERED", answer="Human statement",
+                    evidence_url=valid)
+                self.assertTrue(result["sourceLinkProvided"])
+                self.assertFalse(result["answerVerified"])
+
+    def test_answer_without_source_stays_unverified_and_source_flag_clears(self):
+        first = sync_questions(self.root, "CCON-123", {
+            "missingInfo": ["Confirm mapping rule"]})
+        identifier = first["questions"][0]["id"]
+        answered = update_question(self.root, "CCON-123", identifier,
+            status="ANSWERED", answer="Human answer without URL")
+        self.assertFalse(answered["answerVerified"])
+        self.assertFalse(answered["sourceLinkProvided"])
+        with_link = update_question(self.root, "CCON-123", identifier,
+            status="ANSWERED", answer="Human answer with source pointer",
+            evidence_url="https://jira.example.invalid/browse/CCON-123")
+        self.assertFalse(with_link["answerVerified"])
+        self.assertTrue(with_link["sourceLinkProvided"])
+        reopened = update_question(self.root, "CCON-123", identifier,
+            status="OPEN", answer="", evidence_url="")
+        self.assertFalse(reopened["answerVerified"])
+        self.assertFalse(reopened["sourceLinkProvided"])
 
     def test_question_updates_are_restricted_to_personal_scope(self):
         with self.assertRaisesRegex(ValueError, "personal"):
@@ -73,7 +149,8 @@ class QuestionsAndKibanaTests(unittest.TestCase):
         answer = update_question(self.root, "CCON-123", identifier,
                                  status="ANSWERED", answer="Confirmed by analyst",
                                  evidence_url="https://jira.example/CCON-123")
-        self.assertTrue(answer["answerVerified"])
+        self.assertFalse(answer["answerVerified"])
+        self.assertTrue(answer["sourceLinkProvided"])
         sync_questions(self.root, "CCON-123", {
             "missingInfo": ["AI-added conflicting question"]})
         questions = read_questions(self.root, "CCON-123")["questions"]
