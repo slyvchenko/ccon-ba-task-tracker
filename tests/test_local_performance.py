@@ -32,6 +32,11 @@ class RevisionProtocolTests(unittest.TestCase):
         self.thread.join()
 
     def request(self, path, payload=None):
+        if (path.startswith("/api/tasks/CCON-") and isinstance(payload, dict) and
+                "expectedManualRevision" not in payload):
+            key = path.rsplit("/", 1)[-1]
+            task = next((t for t in self.desk.view()["tasks"] if t["key"] == key), None)
+            payload = {**payload, "expectedManualRevision": task["manualRevision"] if task else 0}
         data = None if payload is None else json.dumps(payload).encode("utf-8")
         request = Request(self.base + path, data=data,
                           headers={"Origin": self.base, "Content-Type": "application/json"})
