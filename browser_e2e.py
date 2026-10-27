@@ -25,6 +25,14 @@ ARTIFACTS = Path(os.getenv("CCON_BROWSER_ARTIFACTS", "browser-artifacts"))
 SYNTH = "Synthetic E2E only, no supplier or real Jira source"
 
 
+def recorded_failure(result, testcase):
+    """Check the recorded unittest result; _outcome.success resets in tearDown."""
+    if result is None:
+        return False
+    return any(test is testcase for test, _ in
+               list(result.failures) + list(result.errors))
+
+
 def fixture_document(moment="2026-10-25T09:00:00Z"):
     def analysis(signal, score):
         return {"signal": signal, "reasonUk": "Синтетичний сценарій для QA",
@@ -92,7 +100,7 @@ class BrowserRegression(unittest.TestCase):
             ARTIFACTS.joinpath(self.id().split(".")[-1] + "-errors.json").write_text(
                 json.dumps(self.pageerrors, ensure_ascii=False), encoding="utf-8")
         try:
-            if self._outcome and not self._outcome.success:
+            if self._outcome and recorded_failure(self._outcome.result, self):
                 self.page.screenshot(path=str(ARTIFACTS /
                     (self.id().split(".")[-1] + "-failed.png")),full_page=True)
         except Exception:
@@ -343,11 +351,17 @@ class BrowserRegression(unittest.TestCase):
     def test_snapshot_refresh_preserves_dirty_editor_and_focus(self):
         self.choose("CCON-1")
         self.page.locator("#note").fill("Pending snapshot change")
-        self.snapshot.write_text(json.dumps(fixture_document(
-            moment="2026-10-25T12:00:00Z")),encoding="utf-8")
+        refreshed=fixture_document(moment="2026-10-25T12:00:00Z")
+        changed=next(t for t in refreshed["tasks"] if t["key"]=="CCON-3")
+        changed["summary"]="Observable synthetic background refresh"
+        self.snapshot.write_text(json.dumps(refreshed),encoding="utf-8")
         self.desk.import_snapshot()
         self.page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
-        self.page.wait_for_timeout(700)
+        # This must fail if the dashboard never consumes the new SQLite revision.
+        self.page.wait_for_function("""() => {
+          const row=document.querySelector('#list button[data-key="CCON-3"] .row-title');
+          return row && row.textContent.includes('Observable synthetic background refresh');
+        }""",timeout=18000)
         self.assertEqual(self.page.locator("#note").input_value(),"Pending snapshot change")
         self.assertTrue(self.page.locator("#save").is_visible())
 

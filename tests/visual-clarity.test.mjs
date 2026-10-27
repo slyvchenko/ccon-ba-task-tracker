@@ -39,6 +39,12 @@ test('only actionable warnings visible, but all critical blockers retained',()=>
   assert.ok(!result.provenance.join(' ').includes('Не очікуємо'));
 });
 
+test('manual IN PROGRESS still shows an actual supplier email action',()=>{
+ const r=statusPresentation({manualStatus:'IN PROGRESS',email:true,isWrite:false,
+   waiting:false});
+ assert.ok(r.alerts.includes('Потрібен лист'));
+});
+
 test('neutral email/wait statuses are omitted, not treated as ready',()=>{
   const r=statusPresentation({manualStatus:'AUTO',email:false,waiting:false,isWrite:false});
   assert.deepEqual(r.alerts,[]);
