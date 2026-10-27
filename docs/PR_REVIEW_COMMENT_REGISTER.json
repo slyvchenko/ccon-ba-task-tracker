@@ -6,26 +6,26 @@
   "caveat": "Tracks 148 original historical review findings. Additional newer PR review threads are not part of this original cohort. Review resolution is code/source evidence, not BA or Windows human UAT; 129 canonical requirements remain independent.",
   "counts": {
     "historical_prs": 90,
-    "inline_comments": 267,
+    "inline_comments": 269,
     "original_review_findings": 148,
-    "inline_replies": 119,
+    "inline_replies": 121,
     "pr_conversation_comments": 187,
     "issue50_conversation_comments": 19,
     "github_threads_assessed": 148,
-    "open_review_threads": 14,
-    "resolved_review_threads": 134,
+    "open_review_threads": 12,
+    "resolved_review_threads": 136,
     "outdated_open_threads": 2,
     "original_severity": {
       "P2": 119,
       "P1": 29
     },
     "open_severity": {
-      "P2": 14
+      "P2": 12
     },
     "verified_main_fixes": 37,
-    "verified_preexisting": 50,
+    "verified_preexisting": 52,
     "superseded": 1,
-    "newly_source_verified_in_followup": 56
+    "newly_source_verified_in_followup": 58
   },
   "findings": [
     {
@@ -1766,11 +1766,11 @@
       "summary": "Functional Correctness",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wZZ6f",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + direct source inspection",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4380947077,
@@ -1782,11 +1782,11 @@
       "summary": "Read all preview counts from one snapshot.",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wZZ6l",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + direct source inspection",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381236989,
