@@ -263,6 +263,38 @@ class ValueMappingTests(unittest.TestCase):
         self.assertEqual(result["comparisons"], [])
         self.assertIn("XML_FIELD_LIMIT_INCOMPLETE", result["issues"])
 
+    def test_rejected_xml_id_candidates_cannot_hide_duplicate_correlated_exchange(self):
+        flow = "FLOW-00000002"
+        raw = zip_bytes([
+            ("rest/18-request.json",
+             json.dumps({"correlationId": flow, "Amount": "200.99"})),
+            ("supplier/AirFranceKLM/18-request.xml",
+             b"<Req><correlationId>FLOW-00000001</correlationId>"
+             b"<correlationId>FLOW-00000002</correlationId>"
+             b"<Amount>200.99</Amount></Req>"),
+            ("supplier/AirFranceKLM/19-request.xml",
+             b"<Req><correlationId>FLOW-00000002</correlationId>"
+             b"<Amount>200.99</Amount></Req>"),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"], [])
+        self.assertIn("AMBIGUOUS_PAIRING", result["issues"])
+        self.assertEqual(result["coverage"][0]["supplierExchanges"], 2)
+        self.assertNotIn(flow, json.dumps(result))
+
+    def test_repeated_terminal_names_block_false_difference_checkpoint(self):
+        raw = zip_bytes([
+            ("rest/19-request.json", b'{"Name":"RestDemo"}'),
+            ("supplier/AirFranceKLM/19-request.xml",
+             b"<Req><Passenger><Name>AlphaDemo</Name></Passenger>"
+             b"<Passenger><Name>BetaDemo</Name></Passenger>"
+             b"<Contact><Name>ContactDemo</Name></Contact></Req>"),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(len(result["comparisons"]), 1)
+        self.assertEqual(result["comparisons"][0]["sameNamedDifferentValues"], [])
+        self.assertIn("REPEATED_XML_PATH_SKIPPED", result["issues"])
+
     def test_schema_parsing_rejects_external_xml_entities(self):
         values, warning = leaf_values(b'<!DOCTYPE x [<!ENTITY leak SYSTEM "file:///etc/passwd">]><x>&leak;</x>', ".xml")
         self.assertFalse(values)
