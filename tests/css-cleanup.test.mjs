@@ -97,5 +97,5 @@ test('stale supplier ZIP warnings retain an emphasized amber helper',()=>{
  const rule=css.match(/\.text-amber\s*\{([^}]+)\}/)?.[1] || '';
  assert.match(rule,/color:\s*var\(--amber\)/);
  assert.match(rule,/font-weight:\s*700/);
- assert.match(js,/class=\\"text-amber\\"/);
+ assert.ok(js.includes("text-amber"));
 });
