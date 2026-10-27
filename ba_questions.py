@@ -39,7 +39,10 @@ def question_write_lock(root, key):
     overwriting an analyst's answer. All writers of this file share one lock.
     """
     question_file(root, key)  # Validate the key before creating lock paths.
-    return pipeline_lock(Path(root) / "data/question-locks" / key)
+    return pipeline_lock(
+        Path(root) / "data/question-locks" / key,
+        busy_message="Another question update for this issue is in progress. "
+                     "Wait for it to finish, then try again.")
 
 
 def task_in_scope(root, key):
