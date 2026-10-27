@@ -107,6 +107,10 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIsNotNone(row["code_locator"])
         self.assertIsNotNone(row["test_locator"])
         row["code_locator"]=None
+        with self.assertRaisesRegex(ValueError,"pointer totals"):
+            closeout_matrix(forged)
+        forged["counts"]["code_plus_test_locators"]-=1
+        forged["counts"]["no_direct_locator"]+=1
         result=closeout_matrix(forged)
         self.assertEqual(result["sourceTestPointerCoverage"],105)
         self.assertEqual(result["pointerCoverageBreakdown"],
@@ -114,12 +118,40 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn("CORE-01", {x["id"] for x in result["p0PointerGaps"]})
         self.assertFalse(result["releaseApproved"])
 
+    def test_bad_pointer_types_fail_even_with_reconciled_claimed_counts(self):
+        for invalid in ("   ", 0, False, [], {"file": "bad"}):
+            forged=copy.deepcopy(self.ledger)
+            entry=next(x for x in forged["items"] if x["code_locator"])
+            entry["code_locator"]=invalid
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(ValueError, "pointer"):
+                closeout_matrix(forged)
+        for key in ("code_plus_test_locators","no_direct_locator"):
+            forged=copy.deepcopy(self.ledger)
+            forged["counts"][key]=True
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError,"pointer totals"):
+                release_report(forged)
+
+    def test_missing_source_pointer_requires_reconciled_global_totals(self):
+        forged=copy.deepcopy(self.ledger)
+        entry=next(x for x in forged["items"] if x["code_locator"] and x["test_locator"])
+        entry["code_locator"]=None
+        with self.assertRaisesRegex(ValueError, "pointer totals"):
+            release_report(forged)
+        forged["counts"]["code_plus_test_locators"]-=1
+        forged["counts"]["no_direct_locator"]+=1
+        report=release_report(forged)
+        self.assertFalse(report["releaseApproved"])
+        self.assertEqual(report["readiness"],"BLOCKED_INDEPENDENT_UAT")
+
     def test_public_gap_report_never_includes_private_or_locator_values(self):
         forged=copy.deepcopy(self.ledger)
         row=next(x for x in forged["items"] if x["id"]=="EVD-06")
         row["requirement"]="PRIVATE_PNR_SYNTHETIC_999"
         row["code_locator"]="private-person-identifying-path/SECRET"
         row["test_locator"]="PRIVATE_PNR_SYNTHETIC_999"
+        with self.assertRaisesRegex(ValueError,"pointer totals"):
+            closeout_matrix(forged)
+        forged["counts"]["code_plus_test_locators"]+=1
         result=closeout_matrix(forged)
         encoded=json.dumps(result)
         self.assertNotIn("PRIVATE_PNR_SYNTHETIC_999",encoded)
