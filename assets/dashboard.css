@@ -1459,6 +1459,10 @@ a:focus-visible {
    Zero-height slot avoids moving the editor or the scroll anchor. */
 .sticky-next-action {position:sticky;top:0;height:0;overflow:visible;z-index:20}
 .sticky-next-action[hidden] {display:none!important}
+@media (max-width:750px) {
+  /* The mobile toolbar stays at top:0. Its actual height is measured in JS. */
+  .sticky-next-action {top:var(--task-toolbar-height, 72px)}
+}
 .sticky-action-inner {
   display:flex;align-items:center;gap:12px;
   padding:9px 12px;background:#fff;border:1px solid var(--line);
