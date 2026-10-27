@@ -28,7 +28,7 @@
 
 ### Звірка коду після v2.48.1 (26.10.2026)
 
-- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **79 PARTIAL**, **3 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
+- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **80 PARTIAL**, **2 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
 - Зіставлено й перекласифіковано **15 окремих ID** за конкретним source/test evidence (13 у #53, ще UI-07 і QA-14 у #54). Решта **114** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
 - `IMPLEMENTED` означає лише підтверджений механізм (synthetic/code), `PARTIAL` - лише частину критеріїв, `PLANNED` - критерії не закрито. Оригінальні 37/52/32/1 у розділі v2.39 нижче - **історичний baseline**, а не поточні числа.
 - Незмінні external gates: реальні Jira/Kibana/CCON, 26 gold cases, людський UX, native Edge/NVDA/8h, Windows backup/restore та локальне оновлення. CI не доводить business signoff.
@@ -175,7 +175,7 @@
 | OPS-01 | P1 | IMPLEMENTED (repeatable 100/500/1000 synthetic Python/Node smoke; actual-device UAT pending) | Standard synthetic performance smoke + fixed cohort sizes | Repeatable local script and measurement doc |
 | OPS-02 | P1 | PARTIAL (v2.50 explicit-consent sanitized ZIP with zero raw logs/PNR/credentials and synthetic regression; Windows/BA consent UX open) | Private local diagnostic bundle with PII redaction and consent | No production logs by default; explicit export |
 | OPS-03 | P1 | PARTIAL (v2.32 offline backup/verify/restore runbook; Windows Scheduler/upgrade rehearsal still open) | Version/upgrade and roll-back steps for local task scheduler | Main merge does not update installed local copy |
-| OPS-04 | P2 | PLANNED | Error budget dashboard for local app only, opt-in | No remote telemetry or background transfer |
+| OPS-04 | P2 | PARTIAL (v2.50.8 opt-in loopback HTTP error budget, no persistent/remote telemetry; real Windows/browser observability UAT open) | Error budget dashboard for local app only, opt-in | No remote telemetry or background transfer |
 | OPS-05 | P2 | PARTIAL (v2.32 local backup+watcher readiness shown within existing Data menu; user acceptance pending) | Daily clean startup health checklist with offline fallback | Speed and accurate stale flags |
 | SEC-01 | P0 | PARTIAL (v2.27 CAS in new UI, legacy no-token API remains compatible; stronger enforcement after migration) | Cross-tab and concurrent browser save authorization plus revision CAS | No CSRF/security relaxation |
 | SEC-02 | P1 | PARTIAL (localhost/cloud boundary tests; exhaustive per-endpoint auth matrix open) | Full localhost/cloud auth tests for new small endpoints | Host restrictions and current OIDC origin untouched |

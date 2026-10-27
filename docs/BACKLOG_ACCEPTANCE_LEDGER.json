@@ -10,8 +10,8 @@
       "DEFERRED": 4,
       "GATE": 3,
       "IMPLEMENTED": 40,
-      "PARTIAL": 79,
-      "PLANNED": 3
+      "PARTIAL": 80,
+      "PLANNED": 2
     },
     "suggested_batches": {
       "#39/#48 HUMAN_UAT": 4,
@@ -26,8 +26,8 @@
       "#48 ACCEPTANCE_RECHECK": 40,
       "OPTIONAL_CLOUD_SCOPE": 4
     },
-    "code_plus_test_locators": 64,
-    "no_direct_locator": 59
+    "code_plus_test_locators": 65,
+    "no_direct_locator": 58
   },
   "items": [
     {
@@ -1901,15 +1901,15 @@
     {
       "id": "OPS-04",
       "priority": "P2",
-      "reported_status": "PLANNED",
-      "category": "PLANNED",
+      "reported_status": "PARTIAL (v2.50.8 opt-in loopback HTTP error budget, no persistent/remote telemetry; real Windows/browser observability UAT open)",
+      "category": "PARTIAL",
       "requirement": "Error budget dashboard for local app only, opt-in",
       "acceptance_criteria": "No remote telemetry or background transfer",
       "suggested_batch": "#46",
-      "disposition": "OPTIONAL_SCOPE_REVIEW",
-      "code_locator": null,
-      "test_locator": null,
-      "evidence_level": "UNMAPPED_NEEDS_INSPECTION",
+      "disposition": "REQUIRES_IMPLEMENTATION_OR_EVIDENCE",
+      "code_locator": "local_error_budget.py",
+      "test_locator": "tests/test_local_error_budget.py",
+      "evidence_level": "CODE_AND_TEST_LOCATORS_ONLY",
       "possible_overlaps": [],
       "human_acceptance": "NOT_RECORDED"
     },
