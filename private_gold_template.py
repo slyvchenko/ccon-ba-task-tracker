@@ -52,6 +52,11 @@ def create_template(destination, confirm):
     if confirm != CONFIRM:
         raise ValueError("Explicit private template confirmation required")
     target = Path(destination)
+    # A symlink followed by '..' resolves differently from abspath():
+    # lexical normalization collapses '..' *before* checking symlinks.
+    # Refuse parent traversal at the raw path level instead of guessing.
+    if ".." in target.parts:
+        raise ValueError("Private template destination must not contain parent traversal")
     parent = target.parent
     if not parent.is_dir() or parent.is_symlink():
         raise ValueError("Use a private existing nonsymlink directory")
