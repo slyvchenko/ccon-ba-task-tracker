@@ -214,7 +214,7 @@ def description_review(description, briefing):
     return findings
 
 
-def quality_gate(analysis, issue, related=None, *, attachment_ready=None, supplier_method=None, local_sources=None):
+def quality_gate(analysis, issue, related=None, *, attachment_ready=None, supplier_method=None, local_sources=None, original_email_draft=None, persisted_questions=None):
     """Inspect model output locally. Never claim semantic validation."""
     briefing = analysis.get("briefing") or {}
     sources = source_registry(issue, related)
@@ -228,9 +228,17 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
     coverage, qa_findings = rule_coverage(briefing)
     writing_findings = description_review(analysis.get("standardDescription"), briefing)
     compact_findings = advisory_findings(analysis.get("standardDescription"))
-    output_findings = dossier_checks(analysis) + email_checks(
+    output_findings = dossier_checks(
+        analysis, persisted_questions=persisted_questions) + email_checks(
         analysis.get("emailDraft"), attachment_ready=attachment_ready,
         verified_supplier_method=supplier_method)
+    # Normalization may hide a mismatch from the original generated text.
+    for finding in email_checks(original_email_draft, attachment_ready=True,
+                                verified_supplier_method=supplier_method):
+        if finding["code"] == "EMAIL_METHOD_CONFLICT" and not any(
+                existing["code"] == "EMAIL_METHOD_CONFLICT"
+                for existing in output_findings):
+            output_findings.append(finding)
     # Reserve space for generated-output warnings, even when source review has many findings.
     blocking_candidates = (output_findings + source_findings + qa_findings + writing_findings)
     findings = (blocking_candidates + compact_findings)[:MAX_FINDINGS]

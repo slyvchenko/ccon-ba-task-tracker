@@ -122,6 +122,42 @@ class BAOutputChecksTests(unittest.TestCase):
         self.assertEqual(email_checks({"body": "REST retrievePNR failed."},
                                       verified_supplier_method="doByLocatorPullPnr"), [])
 
+    def test_original_method_conflict_is_not_erased_by_normalization(self):
+        data=analysis()
+        data["emailDraft"]={"body":"Error during doByLocatorPullPnr"}
+        result=quality_gate(data,issue(),supplier_method="doByLocatorPullPnr",
+                            original_email_draft={"body":"Error during doVerifyFare:"})
+        self.assertIn("EMAIL_METHOD_CONFLICT",
+                      {f["code"] for f in result["findings"]})
+        self.assertEqual(result["state"],"BLOCKED")
+
+    def test_original_subject_method_conflict_is_audit_finding(self):
+        data=analysis()
+        data["emailDraft"]={"subject":"AER. doByLocatorPullPnr. Corrected [1]","body":"Dear Team"}
+        gate=quality_gate(data,issue(),supplier_method="doByLocatorPullPnr",
+                          original_email_draft={
+                              "subject":"AER. doVerifyFare. Wrong [1]",
+                              "body":"Dear Team"})
+        self.assertIn("EMAIL_METHOD_CONFLICT",
+                      {f["code"] for f in gate["findings"]})
+
+    def test_plain_word_double_is_not_a_supplier_method(self):
+        from ba_output_checks import email_checks
+        draft={"subject":"AER. Double booking detected [123]",
+               "body":"Dear Team, booking problem"}
+        self.assertNotIn("EMAIL_METHOD_CONFLICT",
+                         {x["code"] for x in email_checks(
+                             draft, verified_supplier_method="doBooking")})
+
+    def test_persisted_open_question_still_blocks_ready(self):
+        data=analysis()
+        data["missingInfo"]=[]
+        gate=quality_gate(data,issue(),persisted_questions=[
+            {"status":"OPEN","presentInLatestAnalysis":False}])
+        self.assertIn("OPEN_REQUIREMENTS_PENDING",
+                      {f["code"] for f in gate["findings"]})
+        self.assertEqual(gate["state"],"BLOCKED")
+
     def test_legacy_missing_brief_and_unverified_method_remain_compatible(self):
         self.assertEqual(dossier_checks({"emailDraft": {}}), [])
         self.assertEqual(email_checks({"body": "Dear Team"}, attachment_ready=None), [])
