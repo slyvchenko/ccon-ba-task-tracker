@@ -8,7 +8,7 @@ import {createDraftRecoveryStore,RETENTION_DAYS,safeBrowserStorage} from './draf
 import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
   from './focus-navigation.mjs';
-import {quickHandoff, priorityExplanation, priorityDimensions, completionPrompt} from './fast-handoff.mjs';
+import {quickHandoff, priorityExplanation, priorityDimensions, completionPrompt, mayCopyDisplayedQuickDraft} from './fast-handoff.mjs';
 import {CANDIDATE_TEMPLATES,candidateTemplateFor} from './candidate-templates.mjs';
 import {handoffCopyPolicy,mailActionLabels} from './handoff-ui-policy.mjs';
 import {advancedFilterSummary,evidenceSectionLabel} from './progressive-layout.mjs';
@@ -628,8 +628,14 @@ function renderDetail() {
     copyText(quick.nextAction, 'Дію скопійовано. Це не означає її виконання.'));
   if ($('stickyCopyNext')) $('stickyCopyNext').addEventListener('click', () =>
     copyText(quick.nextAction, 'Дію скопійовано. Це не означає її виконання.'));
-  if ($('copyFastDescription')) $('copyFastDescription').addEventListener('click', () =>
-    copyText(quick.description, 'Jira-чернетку скопійовано. Перевір факти й передай вручну.'));
+  if ($('copyFastDescription')) $('copyFastDescription').addEventListener('click', () => {
+    const live=tasks.find(item=>item.key===task.key);
+    if (selected!==task.key || !mayCopyDisplayedQuickDraft(live,quick.description)) {
+      message('Швидке копіювання заблоковано: аналіз або джерела оновилися. Перевір задачу.',true);
+      return;
+    }
+    copyText(quick.description,'Jira-чернетку скопійовано. Перевір факти й передай вручну.');
+  });
   if ($('copyDescription')) $('copyDescription').addEventListener('click', () =>
     copyText(analysis.standardDescription,
       'Неперевірену чернетку скопійовано лише для ручного доопрацювання. Це не передача Jira.'));
