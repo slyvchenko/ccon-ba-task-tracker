@@ -63,3 +63,31 @@ test('email legibility and adaptive accessibility styles survive consolidation',
    '@media (forced-colors:active)','@media (prefers-reduced-motion:reduce)',
    'summary:focus-visible']) assert.ok(css.includes(fragment),'lost '+fragment);
 });
+
+test('PERF-09 brand cascade is single-source without changing final token values',()=>{
+ const one=(pattern,label)=>(()=>{
+   const matches=[...css.matchAll(pattern)];
+   assert.equal(matches.length,1,'duplicate canonical '+label);
+   return matches[0][1];
+ })();
+ const root=one(/:root\\s*\\{([^}]+)\\}/g,':root');
+ assert.match(root,/--blue:var\\(--brand-blue\\)/);
+ assert.match(root,/--brand-blue:#0879b6/);
+ assert.match(root,/--brand-canvas:#f4f7f9/);
+ assert.match(root,/--line:#dbe3e9/);
+ assert.match(root,/--muted:#64717b/);
+ assert.match(root,/font-family:Aptos,"Segoe UI",Arial,sans-serif/);
+ const header=css.match(/header\\s*\\{([^}]+)\\}/)?.[1]||'';
+ assert.match(header,/border-bottom:2px solid var\\(--brand-blue\\)/);
+ const primary=one(/\\.primary\\s*\\{([^}]+)\\}/g,'.primary');
+ assert.match(primary,/background:var\\(--brand-blue\\)/);
+ assert.match(primary,/border-color:var\\(--brand-blue\\)/);
+ const hover=one(/\\.primary:hover\\s*\\{([^}]+)\\}/g,'.primary:hover');
+ assert.match(hover,/background:#09628f/);
+ const selected=css.match(/\\.row\\.selected\\s*\\{([^}]+)\\}/)?.[1]||'';
+ assert.match(selected,/background:var\\(--brand-blue-light\\)/);
+ assert.match(selected,/border-left-color:var\\(--brand-blue\\)/);
+ for(const query of ['max-width:1150px','max-width:750px','max-width:380px',
+  'forced-colors:active','prefers-reduced-motion:reduce'])
+   assert.ok(css.includes(query),'lost adaptive CSS '+query);
+});
