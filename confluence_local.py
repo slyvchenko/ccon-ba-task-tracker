@@ -72,12 +72,22 @@ class Extractor(HTMLParser):
         self.blocked = 0
         self.tokens = []
         self.chars = 0
+        self.form_depth = 0
+        self.password_form = False
     def handle_starttag(self, tag, attrs):
+        if tag == "form":
+            self.form_depth += 1
+        elif tag == "input" and self.form_depth:
+            self.password_form |= any(
+                key == "type" and isinstance(value, str) and value.lower() == "password"
+                for key, value in attrs)
         if tag in ("script", "style", "head", "svg"):
             self.blocked += 1
         if tag in ("p", "div", "br", "li", "td", "tr", "h1", "h2", "h3"):
             self.tokens.append(" ")
     def handle_endtag(self, tag):
+        if tag == "form" and self.form_depth:
+            self.form_depth -= 1
         if tag in ("script", "style", "head", "svg") and self.blocked:
             self.blocked -= 1
         if tag in ("p", "div", "li", "td", "tr"):
@@ -100,9 +110,9 @@ def extract_html(raw):
     text = " ".join(" ".join(parser.tokens).split())[:MAX_TEXT]
     if not text:
         raise ValueError("WIKI_EMPTY_TEXT")
-    # Branded navigation before the login form cannot count as wiki evidence.
-    if (re.search(r"(?is)<form\b", decoded) and
-            re.search(r"""(?is)<input\b[^>]{0,1000}\btype\s*=\s*['"]?password\b""", decoded)):
+    # Only a password input inside a real form is an authentication signal.
+    # HTMLParser ignores literal markup in scripts and HTML comments.
+    if parser.password_form:
         raise ValueError("WIKI_SIGN_IN")
     if re.search(r"(?i)^(?:sign in|log in|you need to log in)", text[:100]):
         raise ValueError("WIKI_SIGN_IN")
