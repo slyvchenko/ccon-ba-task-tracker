@@ -43,7 +43,7 @@ export function statusPresentation({jiraStatus='',manualStatus='AUTO',manualLabe
   const alerts=[];
   if(blocking) alerts.push('Блокує інших');
   if(!active) alerts.push('Поза поточним snapshot');
-  if(isWrite&&email===true) alerts.push('Потрібен лист');
+  if(email===true) alerts.push('Потрібен лист');
   if(waiting===true) alerts.push(waitingLabel||'Очікуємо відповідь');
   return {provenance,alerts};
 }
