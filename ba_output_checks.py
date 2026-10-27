@@ -10,7 +10,7 @@ ATTACHMENT_CLAIM = re.compile(
     r"(?i)(?:"
     r"\b(?:logs?|zip|evidence|files?)\s+(?:are|is|were)\s+(?:already\s+)?attached\b|"
     r"\b(?:I|we)\s+(?:have|'ve)\s+attached\b|"
-    r"\bplease\s+find\b.{0,100}\battached\b|"
+    r"\bplease\s+find\b.{0,100}?\battached\b|"
     r"\battached\b.{0,65}\b(?:logs?|zip|files?)\b"
     r")")
 NEGATED_CLAIM = re.compile(
