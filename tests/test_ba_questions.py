@@ -1,6 +1,8 @@
 import json
+import os
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from ba_questions import (sync_questions, read_questions, update_question,
@@ -67,14 +69,44 @@ class QuestionsAndKibanaTests(unittest.TestCase):
         issue = {"key": "CCON-123", "summary": "AF/KL. retrievePNR",
                  "description": link,
                  "comments": [{"body": "Kibana error log: https://kibana.example.com/app/discover?error_log=yes"}]}
-        plan = plan_for_issue(issue)
+        with patch.dict(os.environ, {"CCON_KIBANA_ALLOWED_ORIGINS":
+                                      "https://kibana.example.com"}):
+            plan = plan_for_issue(issue)
+            self.assertEqual(len(discover_links(issue)), 2)
         self.assertEqual(plan["supplier"]["name"], "AirFranceKLM")
         self.assertTrue(any(item["kind"] == "ERROR_SEARCH" and item["maxCases"] == 30
                             for item in plan["kibana"]))
         self.assertTrue(plan["flows"])
-        self.assertEqual(len(discover_links(issue)), 2)
         with self.assertRaises(ValueError):
             plan_for_issue(issue, 31)
+
+    def test_unapproved_lookalike_kibana_and_bad_port_are_never_actions(self):
+        issue = {"key": "CCON-123", "summary": "AF/KL. retrievePNR",
+                 "description": (
+                     "https://kibana-victim.evil.test/app/discover "
+                     "https://kibana.example.com.evil.test/app/discover "
+                     "https://evil.test/kibana/app/discover "
+                     "https://kibana.example.com:invalid/app/discover "
+                     "https://user:secret@kibana.example.com/app/discover "
+                     "https://kibana.example.com/app/discover")}
+        with patch.dict(os.environ, {"CCON_KIBANA_ALLOWED_ORIGINS":
+                                      "https://kibana.example.com"}):
+            links = discover_links(issue)
+        self.assertEqual([x["url"] for x in links],
+                         ["https://kibana.example.com/app/discover"])
+
+    def test_unknown_kibana_origin_requires_explicit_local_configuration(self):
+        issue = {"key": "CCON-123", "summary": "AF/KL. retrievePNR",
+                 "description": "https://kibana.example.com/app/discover"}
+        with patch.dict(os.environ, {"CCON_KIBANA_ALLOWED_ORIGINS": ""}):
+            self.assertEqual(discover_links(issue), [])
+        with patch.dict(os.environ, {"CCON_KIBANA_ALLOWED_ORIGINS":
+                                      "https://kibana.example.com/path,"
+                                      "https://kibana.example.com.evil.test"}):
+            self.assertEqual(discover_links(issue), [])
+        with patch.dict(os.environ, {"CCON_KIBANA_ALLOWED_ORIGINS":
+                                      "https://kibana.example.com"}):
+            self.assertEqual(len(discover_links(issue)), 1)
 
     def test_unknown_supplier_never_follows_other_provider_folder(self):
         issue = {"key": "CCON-123", "summary": "Unknown. retrieve"}
