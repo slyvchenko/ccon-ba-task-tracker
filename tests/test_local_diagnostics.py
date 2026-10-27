@@ -161,6 +161,22 @@ class LocalDiagnosticsTests(unittest.TestCase):
         self.assertTrue(audit["filesystemRiskObserved"])
         self.assertNotIn("CCON-999", json.dumps(audit))
 
+    def test_symlinked_inbox_ancestor_never_redirects_snapshot_metadata(self):
+        import shutil
+        outside = self.base / "external-inbox"
+        outside.mkdir()
+        (outside / "CCON_BA_Snapshot.json").write_bytes(SECRET.encode())
+        shutil.rmtree(self.root / "inbox")
+        try:
+            (self.root / "inbox").symlink_to(outside, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("Symlinks unsupported")
+        result = collect(self.root)
+        self.assertEqual(result["accessChecks"]["inbox_dir"], "UNSAFE_SYMLINK")
+        self.assertEqual(result["accessChecks"]["snapshot"], "UNSAFE_ANCESTOR")
+        self.assertTrue(result["filesystemRiskObserved"])
+        self.assertNotIn(SECRET, json.dumps(result))
+
     def test_invalid_command_tokens_cannot_echo_paths_or_pnr(self):
         for fragments in [
             ["export", "--root", str(self.root), "--output",

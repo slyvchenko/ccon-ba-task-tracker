@@ -52,6 +52,19 @@ def _audit_path(path, kind):
             else "OWNER_ONLY_MODE")
 
 
+def _audit_bounded_path(root, relative, kind):
+    """Avoid metadata reads through any symlinked private path ancestor."""
+    parent = root
+    for component in Path(relative).parts[:-1]:
+        parent = parent / component
+        status = _audit_path(parent, "dir")
+        if status in ("UNSAFE_SYMLINK", "UNSAFE_TYPE", "UNVERIFIED_READ_ERROR"):
+            return "UNSAFE_ANCESTOR"
+        if status == "ABSENT":
+            return "ABSENT"
+    return _audit_path(root / relative, kind)
+
+
 def _zip_permissions(root):
     """Bounded metadata-only traversal of known supplier ZIP handoff tree."""
     folder = root / "downloads" / "ccon"
@@ -101,7 +114,7 @@ def collect(root=ROOT):
     if root.is_symlink() or not root.is_dir():
         raise ValueError("Local workspace must be an existing nonsymlink directory.")
     checks = {"workspace_dir": _audit_path(root, "dir")}
-    checks.update({label: _audit_path(root / relative, kind)
+    checks.update({label: _audit_bounded_path(root, relative, kind)
                    for label, relative, kind in PRIVATE})
     zips = _zip_permissions(root)
     unsafe = {"UNSAFE_SYMLINK", "UNSAFE_TYPE", "UNSAFE_SHARED_MODE",
