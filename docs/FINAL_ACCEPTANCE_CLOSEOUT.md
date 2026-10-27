@@ -51,3 +51,8 @@ python release_readiness.py --closeout --require-ready
 ## Додатковий source-level audit (без нового релізу)
 
 Після перевірки локальних реалізацій додано три вже існуючі пари code/test locator: `FOCUS-06` (збереження редакторського фокусу / захист від stale detail responses), `QUICK-05` (кандидати швидких передач без зміни sprint/WRITE lane) та `REL-04` (snapshot watcher з обмеженим retry і видимим станом). Це лише покращує навігацію за кодом і синтетичними тестами; повна batch-семантика, справжні браузерні сеанси та Windows/UAT лишаються неперевіреними. Статуси 129 вимог не змінені, `releaseApproved=false`.
+
+
+## Окремий review-fix: повний перелік human-gates
+
+Матриця `--closeout` класифікує всі чотири `QA-02`, `QA-03`, `QA-10`, `QA-13` як `INDEPENDENT_HUMAN_UAT`, навіть коли реалізаційна категорія `QA-13` лишається `PARTIAL`. Це лише виправляє next-action routing; 129 категорій і `privateAcceptanceVerified=0` не змінюються, а реліз не схвалений.

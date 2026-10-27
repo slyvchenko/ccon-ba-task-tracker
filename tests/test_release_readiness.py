@@ -80,10 +80,21 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual(len([x for x in result["items"]
                               if x["nextAction"]=="EXPLICIT_PRODUCT_SCOPE_DECISION"]),4)
         self.assertEqual(len([x for x in result["items"]
-                              if x["nextAction"]=="INDEPENDENT_HUMAN_UAT"]),3)
+                              if x["nextAction"]=="INDEPENDENT_HUMAN_UAT"]),4)
         self.assertEqual(len([x for x in result["items"]
                               if x["reportedCategory"] in ("PLANNED","NEXT")]),0)
         self.assertEqual([x["priority"] for x in result["items"]][:44],["P0"]*44)
+
+    def test_all_four_human_gates_take_priority_over_code_status(self):
+        matrix = closeout_matrix(self.ledger)
+        records = {item["id"]: item for item in matrix["items"]}
+        self.assertEqual(set(HUMAN_GATES),
+                         {item["id"] for item in matrix["items"]
+                          if item["nextAction"] == "INDEPENDENT_HUMAN_UAT"})
+        self.assertEqual(records["QA-13"]["reportedCategory"], "PARTIAL")
+        self.assertEqual(matrix["nextActionCounts"]["INDEPENDENT_HUMAN_UAT"], 4)
+        self.assertEqual(matrix["privateAcceptanceVerified"], 0)
+        self.assertFalse(matrix["releaseApproved"])
 
     def test_closeout_uses_only_public_ids_and_status_codes(self):
         data=copy.deepcopy(self.ledger)

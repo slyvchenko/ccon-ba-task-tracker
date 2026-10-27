@@ -119,7 +119,11 @@ def closeout_matrix(ledger):
         if not re.fullmatch(r"(?:CORE|BA|EVD|OUT|UX|QA|INF|QUICK|FOCUS|PRIOR|UI|PERF|REL|A11Y|OPS|SEC)-[0-9]{2}",code):
             raise ValueError("Invalid public requirement identifier")
         category = row["category"]
-        if category == "DEFERRED":
+        if code in HUMAN_GATES:
+            # QA-13 is PARTIAL by implementation status but still a mandatory
+            # independent human acceptance gate. Never hide it in code review.
+            next_action = "INDEPENDENT_HUMAN_UAT"
+        elif category == "DEFERRED":
             next_action = "EXPLICIT_PRODUCT_SCOPE_DECISION"
         elif category == "GATE":
             next_action = "INDEPENDENT_HUMAN_UAT"
