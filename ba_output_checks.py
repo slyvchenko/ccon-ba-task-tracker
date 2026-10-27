@@ -18,6 +18,11 @@ NEGATED_CLAIM = re.compile(
     r"\b(?:will|can|could|may)\s+be\s+attached\b|"
     r"\bnot\s+yet\s+attached\b")
 METHOD_ASSERTION = re.compile(r"(?i)\bduring\s+(do[A-Z][A-Za-z0-9_]*)\b")
+SUBJECT_METHOD_ASSERTION = re.compile(
+    r"(?i)^\s*(?:AER\.\s*)?"
+    r"(?:(?:CCON-\d+\s*(?:/\s*)?)+\s*[:—–-]?\s*)?"
+    r"(do[A-Z][A-Za-z0-9_]*)\b"
+)
 TECH_LITERAL = re.compile(
     r"(?<![A-Za-z0-9_])(?:[A-Za-z][A-Za-z0-9_]*Code|SegmentRefID)"
     r"\s*(?:==|=|:)\s*['\"]?([A-Z][A-Z0-9_]{1,70}|[a-z][a-z0-9_]*_[a-z0-9_]+)")
@@ -73,6 +78,7 @@ def email_checks(draft, *, attachment_ready=None, verified_supplier_method=None)
         return []
     findings = []
     body = draft.get("body") if isinstance(draft.get("body"), str) else ""
+    subject = draft.get("subject") if isinstance(draft.get("subject"), str) else ""
     if attachment_ready is not True:
         # Unknown readiness is NOT permission to assert a verified archive.
         for line in body.splitlines():
@@ -87,6 +93,9 @@ def email_checks(draft, *, attachment_ready=None, verified_supplier_method=None)
                 break
     if verified_supplier_method and isinstance(verified_supplier_method, str):
         methods = {match.group(1) for match in METHOD_ASSERTION.finditer(body)}
+        subject_match = SUBJECT_METHOD_ASSERTION.match(subject)
+        if subject_match:
+            methods.add(subject_match.group(1))
         if any(method != verified_supplier_method for method in methods):
             findings.append(issue(
                 "EMAIL_METHOD_CONFLICT", "emailDraft",
