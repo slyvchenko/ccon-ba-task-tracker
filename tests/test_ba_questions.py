@@ -109,6 +109,34 @@ class QuestionsAndKibanaTests(unittest.TestCase):
                                       "https://kibana.example.com"}):
             self.assertEqual(len(discover_links(issue)), 1)
 
+    def test_approved_origin_never_authorizes_arbitrary_kibana_get_routes(self):
+        # This list is all on a locally approved origin, but only views may
+        # become local browser actions. A GET URL is not inherently read-only.
+        urls = [
+            "https://kibana.example.com/api/saved_objects/_find",
+            "https://kibana.example.com/api/actions/connector/trigger",
+            "https://kibana.example.com/internal/security/session",
+            "https://kibana.example.com/app/management",
+            "https://kibana.example.com/login",
+            "https://kibana.example.com/app/discover-extra",
+            "https://kibana.example.com/app/discover/../api/delete",
+            "https://kibana.example.com/app/discover;api",
+            "https://kibana.example.com/app/kibana;management#/discover",
+            "https://kibana.example.com/app/kibana#/management",
+            "https://kibana.example.com/app/kibana#/dev_tools/console",
+            "https://kibana.example.com/app/kibana",
+            "https://kibana.example.com/app/kibana#/discover-extra",
+            "https://kibana.example.com/app/discover",
+            "https://kibana.example.com/app/kibana#/discover",
+            "https://kibana.example.com/app/discover/?_a=errors",
+        ]
+        issue = {"description": " ".join(urls), "comments": []}
+        with patch.dict(os.environ, {"CCON_KIBANA_ALLOWED_ORIGINS":
+                                      "https://kibana.example.com"}):
+            found = discover_links(issue)
+        self.assertEqual({i["url"] for i in found}, set(urls[-3:]))
+        self.assertTrue(all(i["kind"] in ("SEARCH", "ERROR_SEARCH") for i in found))
+
     def test_unknown_supplier_never_follows_other_provider_folder(self):
         issue = {"key": "CCON-123", "summary": "Unknown. retrieve"}
         plan = plan_for_issue(issue)

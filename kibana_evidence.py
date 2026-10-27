@@ -56,6 +56,31 @@ def approved_kibana_origins():
     return origins
 
 
+# Opening an arbitrary GET endpoint on a trusted Kibana host is not a
+# read-only Discover action. Allow only known analyst UI entry points.
+KIBANA_VIEW_PATHS = frozenset({"/app/kibana", "/app/discover"})
+
+
+def _is_discover_view(raw):
+    try:
+        parsed = urlparse(raw)
+        # urlparse treats ;params separately from path. Do not allow
+        # /app/discover;api or /app/kibana;management through route checks.
+        if parsed.params:
+            return False
+        path = parsed.path.rstrip("/")
+        if path == "/app/discover":
+            return True
+        if path == "/app/kibana":
+            # The legacy route lives in the fragment, not the pathname.
+            # /app/kibana#/dev_tools/console is NOT read-only Discover.
+            fragment = unquote(parsed.fragment).lower()
+            return fragment == "/discover" or fragment.startswith(("/discover/", "/discover?"))
+        return False
+    except ValueError:
+        return False
+
+
 def discover_links(issue):
     found = {}
     allowed = approved_kibana_origins()
@@ -63,7 +88,7 @@ def discover_links(issue):
               "comments": issue.get("comments") or []}
     for url in links_in(values):
         url = url.strip().strip(".,);")
-        if _origin(url) not in allowed:
+        if _origin(url) not in allowed or not _is_discover_view(url):
             continue
         label = "ERROR_SEARCH" if any(x in unquote(url).lower()
                    for x in ("errorlog", "error_log", "exception", "errorlevel", "error level", "errors")) else "SEARCH"

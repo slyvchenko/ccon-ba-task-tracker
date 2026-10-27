@@ -85,12 +85,23 @@ def flow_references(issue):
             break
         try:
             parsed = urlparse(url)
-            allowed = parsed.hostname == '192.168.197.246' and parsed.port == 5601 and parsed.path == '/app/kibana'
+            # A Jira-authored URL must not smuggle basic-auth credentials,
+            # arbitrary schemes or non-Kibana routes into a flow download plan.
+            allowed = (
+                len(url) <= 8000 and parsed.scheme in ('http', 'https')
+                and parsed.hostname == '192.168.197.246'
+                and parsed.port == 5601 and parsed.path == '/app/kibana'
+                and not parsed.params
+                and parsed.username is None and parsed.password is None
+            )
         except ValueError:
             continue
         if not allowed:
             continue
         decoded = unquote(parsed.fragment)
+        if not (decoded.lower() == '/discover' or
+                decoded.lower().startswith(('/discover/', '/discover?'))):
+            continue
         if not re.search(r'key:\s*\'?cconFlowId\'?', decoded):
             continue
         # Limit matching to the named filter so unrelated UUIDs are never used.
