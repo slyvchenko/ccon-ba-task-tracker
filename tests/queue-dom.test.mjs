@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {queuePatchIndexes} from '../assets/queue-dom.mjs';
+import {queuePatchIndexes,invalidateQueueEntry} from '../assets/queue-dom.mjs';
 
 function entries(size) {
   const nodes=[{id:'group:0:active',html:'<div class="queue-group">Active sprint</div>'}];
@@ -26,4 +26,14 @@ test('rank/order, group boundaries, item insertion and empty state force full sa
   const changedGroup=before.map(x=>({...x}));
   changedGroup[0].id='group:0:out-of-sprint';
   assert.equal(queuePatchIndexes(before,changedGroup),null);
+});
+
+test('inline dirty-dot mutation invalidates one cached row for the next render',()=>{
+ const cache=entries(3);
+ const next=cache.map(x=>({...x}));
+ assert.deepEqual(queuePatchIndexes(cache,next),[]);
+ assert.equal(invalidateQueueEntry(cache,'CCON-1'),true);
+ assert.deepEqual(queuePatchIndexes(cache,next),[2]);
+ assert.equal(invalidateQueueEntry(cache,'CCON-unknown'),false);
+ assert.deepEqual(queuePatchIndexes(null,next),null);
 });

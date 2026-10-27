@@ -695,6 +695,8 @@ function captureForm() {
       dot.textContent='● ';
       row.querySelector('.row-head > span:last-child')?.append(dot);
     } else if (!isDirty(task.key) && dot) dot.remove();
+    // Inline DOM change and queuePatchIndexes cache must agree after Save/Discard.
+    queueDom.invalidateRow(task.key);
   }
 }
 function updateFormStatus() {

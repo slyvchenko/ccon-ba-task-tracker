@@ -10,9 +10,19 @@ export function queuePatchIndexes(previous, next) {
   for(let i=0;i<next.length;i++) if(previous[i].html!==next[i].html) indexes.push(i);
   return indexes;
 }
+export function invalidateQueueEntry(previous,key) {
+  if (!previous) return false;
+  const row=previous.find(item=>item.id==='task:'+key);
+  if (!row) return false;
+  // An inline dirtiness mutation is not represented by the cached row HTML.
+  // Force only this one row to reconcile on the next render.
+  row.html=null;
+  return true;
+}
 export function createQueueDomRenderer() {
   let previous=null;
   return {
+    invalidateRow(key) { return invalidateQueueEntry(previous,key); },
     render(list, entries) {
       const changed=queuePatchIndexes(previous,entries);
       if (changed===null || list.children.length!==entries.length) {
