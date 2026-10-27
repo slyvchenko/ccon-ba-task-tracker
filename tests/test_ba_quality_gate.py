@@ -137,7 +137,7 @@ class QualityGateTests(unittest.TestCase):
         data["briefing"]["rules"][0]["whenUk"] = (
             "StatusCode=CANCELLED OR DeliveryStatusCode=REMOVED")
         data["standardDescription"] += (
-            "\\n- Check that missing or invalid inputs preserve the segment.")
+            "\n- Check that missing or invalid inputs preserve the segment.")
         gate=quality_gate(data, issue())
         self.assertIn("COMPOUND_OPERATOR_OMITTED",
                       {item["code"] for item in gate["findings"]})
@@ -149,15 +149,15 @@ class QualityGateTests(unittest.TestCase):
         data["briefing"]["confirmedFacts"][0]["sourceUrl"]=link
         data["briefing"]["confirmedFacts"][0]["sourceExcerpt"]="Supplier says TypeCode=TO"
         result=quality_gate(data, issue(), local_sources={
-            link: "Supplier says\\n\\tTypeCode=TO"})
+            link: "Supplier says\n\tTypeCode=TO"})
         self.assertNotIn("CLAIM_EXCERPT_NOT_FOUND",
                          {item["code"] for item in result["findings"]})
 
     def test_compactness_advice_does_not_downgrade_valid_ready_review(self):
         data=analysis()
         data["standardDescription"] += (
-            "\\nContext a: " + "a" * 420 +
-            "\\nContext b: " + "b" * 420)
+            "\nContext a: " + "a" * 420 +
+            "\nContext b: " + "b" * 420)
         result=quality_gate(data, issue())
         self.assertEqual(result["state"], "STRUCTURALLY_VERIFIED", result["findings"])
         self.assertIn("DESCRIPTION_LONG_PARAGRAPHS",
