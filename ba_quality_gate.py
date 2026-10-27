@@ -205,8 +205,8 @@ def description_review(description, briefing):
         relevant = [condition for condition in conditions if
                     all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(field) +
                                   r"(?![A-Za-z0-9_])", condition) for field in tokens)]
-        declared_operators = {operator for operator in ("AND", "OR")
-                              if re.search(r"\b" + operator + r"\b", when, re.I)}
+        declared_operators = [operator for operator in ("AND", "OR")
+                              if re.search(r"\b" + operator + r"\b", when, re.I)]
         for operator in declared_operators:
             if not any(re.search(r"\b" + operator + r"\b", condition, re.I)
                        for condition in relevant):
