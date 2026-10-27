@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {shortcutAction, adjacentTaskKey, isTextEditingTarget, captureTaskView,
-  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
+  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction, isMainEditorTarget}
   from '../assets/focus-navigation.mjs';
 
 const event=(key,options={})=>({key,altKey:false,ctrlKey:false,metaKey:false,
@@ -118,4 +118,19 @@ test('async handoff restores focus only to live, enabled and visible explicit ac
   assert.equal(focused,'');
   assert.equal(focusAfterAction(root,['../bad']),false);
   assert.equal(focusAfterAction(null,['bulkOpen']),false);
+});
+
+test('unvisited task detail scroll resets to heading, previous task state still restores',()=>{
+ const fresh={scrollTop:455,querySelectorAll:()=>[]};
+ restoreTaskView(fresh,undefined);
+ assert.equal(fresh.scrollTop,0);
+ fresh.scrollTop=300;
+ restoreTaskView(fresh,{scroll:88,sections:[]});
+ assert.equal(fresh.scrollTop,88);
+});
+test('Ctrl-Enter main SAVE shortcut never consumes an independent panel editor',()=>{
+ for(const id of ['note','manual','manualEffort','draftTo','draftSubject','draftBody'])
+   assert.equal(isMainEditorTarget({id}),true);
+ for(const id of ['questionAnswer','decisionReason','actionNote','approvedReview',''])
+   assert.equal(isMainEditorTarget({id}),false);
 });
