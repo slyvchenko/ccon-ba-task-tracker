@@ -20,7 +20,7 @@
 | QA-02 | P0 | GATE | Виконати незалежне приватне приймання за DoD. | Browser session, 1 normal flow, 1 multi-error flow, 1 ambiguous flow |
 | QA-03 | P0 | GATE | Виконати незалежне приватне приймання за DoD. | Measure false facts, missed conditions, task/edit quality |
 | QA-10 | P0 | GATE | Виконати незалежне приватне приймання за DoD. | TTNA/TTSH/MRI with 0 critical false-ready decisions |
-| QA-13 | P1 | PLANNED | Виконати незалежне приватне приймання за DoD. | Actual independent gold scores, not CI counts |
+| QA-13 | P1 | PARTIAL | Виконати незалежне приватне приймання за DoD. | Actual independent gold scores, not CI counts |
 
 ### Критичні P0 докази та достовірність (18)
 
@@ -107,7 +107,7 @@
 | UI-08 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | No truncation in clipboard/export, A-06 |
 | UI-09 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-06, VIS-10. | Keep main results visible, never bury next action |
 | UI-10 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-15. | Snapshot on 3 viewport sizes; no brand approval bypass |
-| PERF-09 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-15. | No unexpected fonts/spacing/contrast changes |
+| PERF-09 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-15. | No unexpected fonts/spacing/contrast changes |
 | PERF-10 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Do not enable blindly; Windows/backup compatibility |
 | REL-09 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | No unexpected data deletion, archive user-approved |
 | REL-10 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Verify hashes; old app loads additive migration |
