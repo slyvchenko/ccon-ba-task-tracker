@@ -199,3 +199,23 @@ test('a failure writing merged recovery cannot claim restored items',()=>{
   assert.equal(b.load()['CCON-1'],undefined);
   assert.equal(a.load()['CCON-1'].note,'source');
 });
+
+test('older other-tab sources remain recoverable after newest has been adopted',()=>{
+ const local=new FakeStorage();
+ const oldest=store(local,new FakeStorage(),ids[0]);
+ const newer=store(local,new FakeStorage(),ids[1]);
+ const current=store(local,new FakeStorage(),ids[2]);
+ oldest.persist({'CCON-41':record('oldest unsaved')});
+ clock.time += 60000;
+ newer.persist({'CCON-42':record('newer unsaved')});
+ const sources=current.others();
+ assert.deepEqual(sources.map(x=>x.id),[ids[1],ids[0]]);
+ const latest=current.adopt(sources[0].id,current.load());
+ assert.deepEqual(Object.keys(latest.added),['CCON-42']);
+ const next=current.adopt(sources[1].id,current.load());
+ assert.deepEqual(Object.keys(next.added),['CCON-41']);
+ assert.equal(current.load()['CCON-41'].note,'oldest unsaved');
+ assert.equal(oldest.load()['CCON-41'].note,'oldest unsaved');
+ assert.equal(newer.load()['CCON-42'].note,'newer unsaved');
+ clock.time -= 60000;
+});
