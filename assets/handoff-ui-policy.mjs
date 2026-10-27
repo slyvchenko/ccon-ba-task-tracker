@@ -14,6 +14,17 @@ export function handoffCopyPolicy({description='',readyForCopy=false,qualityStat
       'Чернетка не підтверджена Quality Gate. Перевір зміст перед будь-якою передачею.'
   };
 }
+// The quick-copy button can outlive a background snapshot while a form is in
+// use. Revalidate against the task currently selected AND the latest revision.
+export function readyToCopyCurrentHandoff({selectedKey,displayedKey,taskKey,
+  renderedVersion,latestVersion,shown,latest}={}) {
+  return typeof taskKey==='string' && selectedKey===taskKey &&
+    displayedKey===taskKey && Boolean(renderedVersion) &&
+    renderedVersion===latestVersion && shown?.readyForCopy===true &&
+    latest?.readyForCopy===true && Boolean(latest.description) &&
+    latest.description===shown.description;
+}
+
 export function mailActionLabels(cloudMode=false) {
   return {
     copy:'Скопіювати текст листа',
