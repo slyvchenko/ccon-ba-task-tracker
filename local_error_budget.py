@@ -66,7 +66,7 @@ class LocalErrorBudget:
                 "errorBudgetAllowed": round(allowed, 2),
                 "errorBudgetUsed": errors,
                 "errorBudgetRemaining": round(max(0, allowed - errors), 2),
-                "responseLatencyP95Ms": p95,
+                "serverTimeToStatusP95Ms": p95,
                 "insufficientSamples": count < 100,
                 "sampleTruncated": self._last_eviction is not None,
                 "noFullAvailabilityClaim": True,
