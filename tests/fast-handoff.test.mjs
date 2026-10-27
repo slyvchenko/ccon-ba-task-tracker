@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {quickHandoff, priorityExplanation, priorityDimensions, completionPrompt}
+import {quickHandoff, priorityExplanation, priorityDimensions, completionPrompt, mayCopyDisplayedQuickDraft}
   from '../assets/fast-handoff.mjs';
 import {rankTasks} from '../assets/task-rules.mjs';
 
@@ -129,4 +129,20 @@ test('impact, urgency, dependencies, effort and unblocking are independent of sp
   stale.analysis.contextFingerprint='stale';
   assert.equal(priorityDimensions(stale,null).impact,'не підтверджено');
   assert.equal(priorityDimensions(stale,null).urgency,'не підтверджено');
+});
+
+test('quick-copy revalidates live quality gate, fingerprint and exact visible text',()=>{
+ const original=task('CCON-999');
+ const displayed=quickHandoff(original).description;
+ assert.equal(mayCopyDisplayedQuickDraft(original,displayed),true);
+ assert.equal(mayCopyDisplayedQuickDraft({...original,active:false},displayed),false);
+ const stale=structuredClone(original);
+ stale.analysis.contextFingerprint='new-stale';
+ assert.equal(mayCopyDisplayedQuickDraft(stale,displayed),false);
+ const downgraded=structuredClone(original);
+ downgraded.analysis.qualityGate.state='BLOCKED';
+ assert.equal(mayCopyDisplayedQuickDraft(downgraded,displayed),false);
+ const changed=structuredClone(original);
+ changed.analysis.standardDescription='Changed after render';
+ assert.equal(mayCopyDisplayedQuickDraft(changed,displayed),false);
 });
