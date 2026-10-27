@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {effectiveSignal, hasAnalysis, priorityEmail, actionRank, rankTasks, filterTasks, defaultRecipients, signalInfo} from '../assets/task-rules.mjs';
+import {effectiveSignal, hasAnalysis, priorityEmail, actionRank, queueScore, rankTasks, filterTasks, defaultRecipients, signalInfo} from '../assets/task-rules.mjs';
 
 function task(key, signal = 'WRITE', score = 50, extra = {}) {
   return {key, summary: key, active: true, manualStatus: 'AUTO', contextFingerprint: 'current',
@@ -133,4 +133,16 @@ test('P0: stale needsEmail never creates a WRITE priority', () => {
   assert.equal(priorityEmail(stale),false);
   assert.equal(actionRank(stale),2);
   assert.deepEqual(rankTasks([stale,ready]).map(x=>x.key),['CCON-904','CCON-903']);
+});
+
+test('P0: malformed 0–100 scores cannot silently outrank valid tasks', () => {
+  const valid=task('CCON-920','READY',70);
+  for(const raw of [101,-1,1000,'99','',null,NaN,Infinity]) {
+    const bad=task('CCON-921','READY',raw);
+    assert.equal(queueScore(bad),0,String(raw));
+    assert.deepEqual(rankTasks([bad,valid]).map(x=>x.key),
+      ['CCON-920','CCON-921'],String(raw));
+  }
+  assert.equal(queueScore(task('CCON-922','READY',100)),100);
+  assert.equal(queueScore(task('CCON-923','READY',0)),0);
 });
