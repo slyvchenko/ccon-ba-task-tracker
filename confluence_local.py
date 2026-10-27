@@ -50,7 +50,7 @@ def linked_pages(issue):
         elif isinstance(node, dict):
             for name, value in list(node.items())[:200]:
                 if name in ("description", "descriptionAdf", "comments", "content", "attrs",
-                            "href", "url", "marks", "text", "body"):
+                            "href", "url", "marks", "text", "body", "bodyAdf"):
                     walk(value, depth+1)
         elif isinstance(node, list):
             for value in node[:250]:
@@ -100,6 +100,10 @@ def extract_html(raw):
     text = " ".join(" ".join(parser.tokens).split())[:MAX_TEXT]
     if not text:
         raise ValueError("WIKI_EMPTY_TEXT")
+    # Branded navigation before the login form cannot count as wiki evidence.
+    if (re.search(r"(?is)<form\b", decoded) and
+            re.search(r"""(?is)<input\b[^>]{0,1000}\btype\s*=\s*['"]?password\b""", decoded)):
+        raise ValueError("WIKI_SIGN_IN")
     if re.search(r"(?i)^(?:sign in|log in|you need to log in)", text[:100]):
         raise ValueError("WIKI_SIGN_IN")
     return text
