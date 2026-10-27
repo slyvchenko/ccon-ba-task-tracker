@@ -99,3 +99,12 @@ test('stale supplier ZIP warnings retain an emphasized amber helper',()=>{
  assert.match(rule,/font-weight:\s*700/);
  assert.ok(js.includes("text-amber"));
 });
+
+test('recovery source and narrow-view sticky action preserve accessible controls',()=>{
+ assert.match(html,/<select id="recoverySource"[^>]+disabled/);
+ assert.match(js,/others\.find\(item=>item\.id===\$\('recoverySource'\)\.value\)/);
+ assert.match(css,/@media \(max-width:750px\)\s*\{\s*\/\*[^]*?\.sticky-next-action\s*\{top:var\(--task-toolbar-height/);
+ assert.match(js,/toolbar\?\.getBoundingClientRect\(\)\.height/);
+ assert.match(js,/sticky\.style\.setProperty\('--task-toolbar-height'/);
+ assert.match(js,/restoreInsertedDisclosureStates\(changes,disclosureState\)/);
+});
