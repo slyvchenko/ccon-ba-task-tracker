@@ -42,8 +42,11 @@ function statusTone(status) { return STATUS_TONES[status] || 'gray'; }
 
 function queueScore(task) {
   if (!hasAnalysis(task)) return 0;
-  const score = Number(analysisOf(task).queueScore);
-  return Number.isFinite(score) ? score : 0;
+  // Never let malformed/generated 0–100 scores secretly outrank valid tasks.
+  // The UI explanation applies the same strict numeric/range contract.
+  const score = analysisOf(task).queueScore;
+  return typeof score === 'number' && Number.isFinite(score) &&
+    score >= 0 && score <= 100 ? score : 0;
 }
 
 function queueTier(task) {
