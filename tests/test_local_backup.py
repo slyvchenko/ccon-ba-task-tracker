@@ -223,6 +223,28 @@ class OfflineRecoveryTests(unittest.TestCase):
         self.assertTrue(verify_backup(self.root,name)["verified"])
         self.assertTrue(_recent_backup(self.root,24))
 
+    def test_clock_rollback_retention_never_removes_just_created_backup(self):
+        from unittest.mock import patch
+        from datetime import datetime as RealDatetime, timedelta, timezone
+        created = create_backup(self.root, force=True, keep=1)
+        base = RealDatetime.now(timezone.utc)
+        class EarlierClock:
+            @staticmethod
+            def now(tz=None):
+                return base - timedelta(hours=3)
+            @staticmethod
+            def fromisoformat(value):
+                return RealDatetime.fromisoformat(value)
+            @staticmethod
+            def strptime(value, fmt):
+                return RealDatetime.strptime(value, fmt)
+        with patch("local_backup.datetime", EarlierClock):
+            newest = create_backup(self.root, force=True, keep=1)
+        self.assertNotEqual(created["filename"], newest["filename"])
+        self.assertTrue(verify_backup(self.root, newest["filename"])["verified"])
+        self.assertTrue((self.root / "backups" / newest["filename"]).exists())
+        self.assertEqual(len(list((self.root / "backups").glob("backup-*.sqlite3.json"))), 1)
+
     def test_clock_skew_does_not_prevent_future_snapshot_backup(self):
         from unittest.mock import patch
         from local_backup import _recent_backup
