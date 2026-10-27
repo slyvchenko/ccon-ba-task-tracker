@@ -14,7 +14,7 @@ ATTACHMENT_CLAIM = re.compile(
     r"\battached\b.{0,65}\b(?:logs?|zip|files?)\b"
     r")")
 NEGATED_CLAIM = re.compile(
-    r"(?i)\b(?:not|aren't|isn't|weren't|without|no)\b.{0,20}\battached\b|"
+    r"(?i)\b(?:no|not|aren't|isn't|weren't|without|no)\b.{0,20}\battached\b|"
     r"\b(?:will|can|could|may)\s+be\s+attached\b|"
     r"\bnot\s+yet\s+attached\b")
 METHOD_ASSERTION = re.compile(r"(?i)\bduring\s+(do[A-Z][A-Za-z0-9_]*)\b")
