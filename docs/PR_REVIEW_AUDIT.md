@@ -4,8 +4,8 @@
 
 ## Status after merged PR #102 and reviewed current-main findings
 
-- **134 resolved / 14 open** of the original 148 findings, remaining all P2; historical P1 open = 0. **2** of the 14 open are marked outdated but still require source-level verification.
-- The baseline before follow-up was 78 resolved / 70 open. **56 original findings** have been individually reviewed, replied to at their original comment and resolved during follow-up.
+- **136 resolved / 12 open** of the original 148 findings, remaining all P2; historical P1 open = 0. **2** of the 12 open are marked outdated but still require source-level verification.
+- The baseline before follow-up was 78 resolved / 70 open. **58 original findings** have been individually reviewed, replied to at their original comment and resolved during follow-up.
 - PRs #94 through #103 (excluding no review-safe claims) have merged with all four synthetic GitHub Actions jobs successful. PR #104 is a standalone register reconciliation change.
 - New AI-review threads in subsequent PRs are **not** members of the original 148 historical findings; original counts are unchanged.
 
