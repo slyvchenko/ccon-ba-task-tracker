@@ -12,15 +12,15 @@
     "pr_conversation_comments": 187,
     "issue50_conversation_comments": 19,
     "github_threads_assessed": 148,
-    "open_review_threads": 42,
-    "resolved_review_threads": 106,
+    "open_review_threads": 12,
+    "resolved_review_threads": 136,
     "outdated_open_threads": 2,
     "original_severity": {
       "P2": 119,
       "P1": 29
     },
     "open_severity": {
-      "P2": 42
+      "P2": 12
     },
     "verified_main_fixes": 37,
     "verified_preexisting": 52,
