@@ -62,9 +62,28 @@ def handler(desk, cloud=None, error_budget=None):
     # Explicit opt-in is local-only, never enabled in trusted cloud mode.
     budget = error_budget if not cloud else None
     class Handler(BaseHTTPRequestHandler):
-        def handle_one_request(self):
+        def parse_request(self):
+            # The raw request line is already received. Idle TCP connection
+            # time must not inflate the observed HTTP response latency.
             self._request_started = time.monotonic()
-            return super().handle_one_request()
+            self._observed_response_code = None
+            return super().parse_request()
+
+        def send_response(self, code, message=None):
+            # Covers both app self.send() and BaseHTTPRequestHandler.send_error()
+            # (e.g. unsupported PUT => 501). Sampling happens only once below.
+            self._observed_response_code = int(code)
+            return super().send_response(code, message)
+
+        def handle_one_request(self):
+            try:
+                return super().handle_one_request()
+            finally:
+                if (budget is not None and
+                        getattr(self, '_observed_response_code', None) is not None):
+                    budget.record(getattr(self, 'path', ''),
+                                  self._observed_response_code,
+                                  (time.monotonic() - self._request_started) * 1000)
 
         def send(self, code, value, content_type='application/json; charset=utf-8', filename=None):
             body = value if isinstance(value, bytes) else json.dumps(value, ensure_ascii=False).encode()
@@ -82,10 +101,6 @@ def handler(desk, cloud=None, error_budget=None):
                 self.send_header('Content-Disposition', "attachment; filename*=UTF-8''" + quote(filename, safe=''))
             self.end_headers()
             self.wfile.write(body)
-            if budget is not None:
-                budget.record(self.path, code,
-                              (time.monotonic() - getattr(self, '_request_started',
-                                                         time.monotonic())) * 1000)
 
         def valid_host(self):
             if cloud:
