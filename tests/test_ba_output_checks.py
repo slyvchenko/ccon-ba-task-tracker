@@ -106,6 +106,15 @@ class BAOutputChecksTests(unittest.TestCase):
                                  {x["code"] for x in email_checks(
                                      {"body": body}, attachment_ready=False)})
 
+    def test_positive_attachment_claim_not_hidden_by_later_negative_sentence(self):
+        for body in (
+            "Please find the request logs attached. The response is not attached.",
+            "Please find the request logs attached, but response is not attached."
+        ):
+            warnings=email_checks({"body":body},attachment_ready=False)
+            self.assertIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
+                          {w["code"] for w in warnings})
+
     def test_supplier_method_mismatch_is_flagged_without_guessing_rest_method(self):
         draft = {"body": "We have recently received an error during doVerifyFare:"}
         findings = email_checks(draft, verified_supplier_method="doByLocatorPullPnr")

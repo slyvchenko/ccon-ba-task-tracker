@@ -24,14 +24,14 @@ def compact_generated(description):
             in_fence = not in_fence
         ordinary = bool(stripped and len(stripped) >= 25
                         and not stripped.startswith(("#", "```", "~~~")))
-        if not in_fence and ordinary and stripped == previous:
+        if not in_fence and ordinary and line == previous:
             seen += 1
             continue
         # One empty spacer is sufficient and does not change paragraph content.
         if not in_fence and not stripped and output and not output[-1].strip():
             continue
         output.append(line)
-        previous = stripped if ordinary and not in_fence else None
+        previous = line if ordinary and not in_fence else None
     return "\n".join(output), {"exactAdjacentLinesRemoved": seen, "state": "NO_SEMANTIC_REWRITE"}
 
 
