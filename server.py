@@ -66,24 +66,17 @@ def handler(desk, cloud=None, error_budget=None):
             # The raw request line is already received. Idle TCP connection
             # time must not inflate the observed HTTP response latency.
             self._request_started = time.monotonic()
-            self._observed_response_code = None
             return super().parse_request()
 
         def send_response(self, code, message=None):
-            # Covers both app self.send() and BaseHTTPRequestHandler.send_error()
-            # (e.g. unsupported PUT => 501). Sampling happens only once below.
-            self._observed_response_code = int(code)
+            # A common response hook covers app responses and built-in 501
+            # errors. Record before publishing headers, avoiding race with
+            # a concurrent dashboard read after the HTTP client returns.
+            # Latency is server time to response status, not body download.
+            if budget is not None and hasattr(self, '_request_started'):
+                budget.record(getattr(self, 'path', ''), code,
+                              (time.monotonic() - self._request_started) * 1000)
             return super().send_response(code, message)
-
-        def handle_one_request(self):
-            try:
-                return super().handle_one_request()
-            finally:
-                if (budget is not None and
-                        getattr(self, '_observed_response_code', None) is not None):
-                    budget.record(getattr(self, 'path', ''),
-                                  self._observed_response_code,
-                                  (time.monotonic() - self._request_started) * 1000)
 
         def send(self, code, value, content_type='application/json; charset=utf-8', filename=None):
             body = value if isinstance(value, bytes) else json.dumps(value, ensure_ascii=False).encode()
