@@ -14,7 +14,7 @@ ATTACHMENT_CLAIM = re.compile(
     r"\battached\b.{0,65}\b(?:logs?|zip|files?)\b"
     r")")
 NEGATED_CLAIM = re.compile(
-    r"(?i)\b(?:no|not|aren't|isn't|weren't|without|no)\b.{0,20}\battached\b|"
+    r"(?i)\b(?:not|aren't|isn't|weren't|without|no)\b.{0,20}\battached\b|"
     r"\b(?:will|can|could|may)\s+be\s+attached\b|"
     r"\bnot\s+yet\s+attached\b")
 METHOD_ASSERTION = re.compile(r"(?i)\bduring\s+(do[A-Z][A-Za-z0-9_]*)\b")
@@ -80,7 +80,7 @@ def _negated_attachment_match(clause, match):
     # "will be" is immediately before that match, not within its substring.
     prefix = clause[max(0, match.start() - 40):match.start()]
     return bool(re.search(
-        r"(?i)\b(?:not(?:\s+yet)?|never|haven't|hasn't|didn't|can't|cannot|won't|"
+        r"(?i)\b(?:no|not(?:\s+yet)?|never|haven't|hasn't|didn't|can't|cannot|won't|"
         r"(?:will|can|could|may)\s+be)\s*$", prefix))
 
 
