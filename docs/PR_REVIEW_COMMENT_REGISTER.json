@@ -2,22 +2,29 @@
   "schema_version": 1,
   "scope": "PUBLIC_REVIEW_METADATA_ONLY",
   "as_of": "2026-10-27",
-  "branch_basis": "main after PR #85",
-  "caveat": "Inventory captures original inline review findings and replies, not proof that a finding is valid or fixed. Resolved GitHub threads are discussion state, not code correctness; current-main source verification is separate.",
+  "branch_basis": "main after PR #91",
+  "caveat": "All 148 original inline threads are inventoried. A resolved thread is a sourced review disposition or tested merge, NOT human UAT. Open P2 findings need current-main evidence or a scoped fix.",
   "counts": {
-    "historical_prs": 84,
-    "inline_comments": 177,
+    "historical_prs": 90,
+    "inline_comments": 211,
     "original_review_findings": 148,
-    "inline_replies": 29,
-    "verified_main_fixes": 4,
+    "inline_replies": 63,
+    "pr_conversation_comments": 187,
+    "issue50_conversation_comments": 19,
     "github_threads_assessed": 148,
-    "open_review_threads": 98,
-    "resolved_review_threads": 50,
-    "outdated_open_threads": 29,
-    "severity": {
+    "open_review_threads": 70,
+    "resolved_review_threads": 78,
+    "outdated_open_threads": 26,
+    "original_severity": {
       "P2": 119,
       "P1": 29
-    }
+    },
+    "open_severity": {
+      "P2": 70
+    },
+    "verified_main_fixes": 14,
+    "verified_preexisting": 17,
+    "superseded": 1
   },
   "findings": [
     {
@@ -32,8 +39,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6vuM5y",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367701815,
@@ -47,8 +55,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v5uUX",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367701818,
@@ -62,8 +71,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v5uUa",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367701821,
@@ -77,8 +87,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v5uUc",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367701823,
@@ -92,8 +103,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v5uUd",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367704997,
@@ -107,8 +119,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v5uzM",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367705007,
@@ -122,8 +135,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v5uzU",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367705013,
@@ -137,8 +151,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v5uzZ",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367705016,
@@ -152,8 +167,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v5uzc",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367705021,
@@ -167,8 +183,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v5uzg",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367754883,
@@ -182,8 +199,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v52Y9",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367754889,
@@ -197,8 +215,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v52ZA",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367818446,
@@ -212,8 +231,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v6ASs",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367818452,
@@ -227,8 +247,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v6ASx",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367818454,
@@ -242,8 +263,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v6AS0",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367908014,
@@ -257,8 +279,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v6OHv",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4367908017,
@@ -272,8 +295,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v6OHx",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367943256,
@@ -287,8 +311,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v6Tiu",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367943260,
@@ -302,8 +327,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v6Tiy",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4367943265,
@@ -317,8 +343,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v6Ti1",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4369864979,
@@ -330,10 +357,11 @@
       "summary": "** Include the new priority module in the release manifest**",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6v-5SB",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4369892485,
@@ -345,10 +373,11 @@
       "summary": "** Reject DTDs and entities regardless of XML encoding**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6v-9qU",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "FIXED_IN_MAIN_PR_88",
+      "linked_fix": "#88",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4369892486,
@@ -360,10 +389,11 @@
       "summary": "** Preserve structural names for namespaced XML**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6v-9qV",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "FIXED_IN_MAIN_PR_88",
+      "linked_fix": "#88",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4369892488,
@@ -375,10 +405,11 @@
       "summary": "** Reject symlinked download directories before reading evidence**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6v-9qX",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "FIXED_IN_MAIN_PR_90",
+      "linked_fix": "#90",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4369892490,
@@ -392,8 +423,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v-9qY",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4369892491,
@@ -405,10 +437,11 @@
       "summary": "** Apply the report limit after finding eligible evidence**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6v-9qZ",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "FIXED_IN_MAIN_PR_90",
+      "linked_fix": "#90",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4369914398,
@@ -423,7 +456,8 @@
       "thread_resolved": true,
       "thread_outdated": false,
       "outcome": "FIXED_IN_MAIN_PR_85",
-      "linked_fix": "#85"
+      "linked_fix": "#85",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4369914400,
@@ -437,8 +471,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_A8g",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4369914403,
@@ -452,8 +487,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_A8j",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4369914404,
@@ -467,8 +503,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_A8k",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4369928913,
@@ -482,8 +519,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_DQ-",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4369928919,
@@ -497,8 +535,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_DRC",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4369928920,
@@ -512,8 +551,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_DRD",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4369928922,
@@ -527,8 +567,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_DRF",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4370206926,
@@ -542,8 +583,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_u5e",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4370206928,
@@ -557,8 +599,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_u5f",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4370206930,
@@ -572,8 +615,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_u5g",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4370206932,
@@ -587,8 +631,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_u5i",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4370206935,
@@ -602,8 +647,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6v_u5k",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4370499181,
@@ -617,8 +663,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wAcfR",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4370499184,
@@ -632,8 +679,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wAcfU",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4370952171,
@@ -647,8 +695,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wBiD6",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4370952173,
@@ -662,8 +711,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wBiD8",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371020339,
@@ -677,8 +727,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wBsaq",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371020344,
@@ -692,8 +743,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wBsau",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371340644,
@@ -705,10 +757,11 @@
       "summary": "** Retain the displayed revision when deferring a clean form refresh**",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6wCcRW",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "FIXED_IN_MAIN_PR_87",
+      "linked_fix": "#87",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4371340647,
@@ -722,8 +775,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wCcRZ",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371340650,
@@ -737,8 +791,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wCcRc",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371422315,
@@ -752,8 +807,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wCosB",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4371422318,
@@ -767,8 +823,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wCosD",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371425079,
@@ -782,8 +839,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wCpIj",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4371425085,
@@ -797,8 +855,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wCpIo",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4371544808,
@@ -812,8 +871,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wC7V1",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4371544809,
@@ -827,8 +887,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wC7V2",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371544812,
@@ -842,8 +903,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wC7V4",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371544815,
@@ -857,8 +919,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wC7V6",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4371544816,
@@ -872,8 +935,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wC7V7",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4371554013,
@@ -887,8 +951,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wC8wd",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371557184,
@@ -902,8 +967,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wC9SH",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4371557186,
@@ -917,8 +983,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wC9SJ",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371557190,
@@ -932,8 +999,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wC9SL",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371557192,
@@ -947,8 +1015,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wC9SM",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4371557194,
@@ -962,8 +1031,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wC9SN",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4371606800,
@@ -978,7 +1048,8 @@
       "thread_resolved": true,
       "thread_outdated": false,
       "outcome": "FIXED_IN_MAIN_PR_85",
-      "linked_fix": "#85"
+      "linked_fix": "#85",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4372190233,
@@ -990,10 +1061,11 @@
       "summary": "** Guard storage property access during dashboard initialization**",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6wEe3q",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "FIXED_IN_MAIN_PR_86",
+      "linked_fix": "#86",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4372190236,
@@ -1008,7 +1080,8 @@
       "thread_resolved": true,
       "thread_outdated": false,
       "outcome": "FIXED_IN_MAIN_PR_85",
-      "linked_fix": "#85"
+      "linked_fix": "#85",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4372190242,
@@ -1022,8 +1095,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wEe3w",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4372285498,
@@ -1037,8 +1111,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wEtEi",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4372285501,
@@ -1052,8 +1127,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wEtEj",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4372436185,
@@ -1067,8 +1143,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wFEYK",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4372463531,
@@ -1082,8 +1159,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wFIZ1",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4372548901,
@@ -1097,8 +1175,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wFU2E",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4374351434,
@@ -1112,8 +1191,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wJpE0",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4374351443,
@@ -1127,8 +1207,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wJpE7",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4374393500,
@@ -1142,8 +1223,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wJv5G",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4374437555,
@@ -1157,8 +1239,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wJ2sQ",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4374437559,
@@ -1172,8 +1255,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wJ2sU",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4374437566,
@@ -1187,8 +1271,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wJ2sY",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4374543386,
@@ -1200,10 +1285,11 @@
       "summary": "** Retain fresh backups when recovering from a clock rollback**",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6wKGoV",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "FIXED_IN_MAIN_PR_86",
+      "linked_fix": "#86",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4374543394,
@@ -1217,8 +1303,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wKGoZ",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4374953170,
@@ -1232,8 +1319,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wLF9m",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4375912931,
@@ -1245,10 +1333,11 @@
       "summary": "** Enable UTF-8 mode for the Windows test suite**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wNZeY",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4375932493,
@@ -1262,8 +1351,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wNced",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4377413717,
@@ -1275,10 +1365,11 @@
       "summary": "** Allow the tracked inbox placeholder in the artifact check**",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6wRAnh",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4377413729,
@@ -1290,10 +1381,11 @@
       "summary": "** Package the newly required work-plan checker and its output**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wRAnp",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4377443782,
@@ -1307,8 +1399,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wRFNv",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4377443800,
@@ -1322,8 +1415,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wRFN6",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4377443814,
@@ -1335,10 +1429,11 @@
       "summary": "Functional Correctness",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6wRFOG",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4377443819,
@@ -1350,10 +1445,11 @@
       "summary": "Check every artifact upload against an allowlist.",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6wRFOJ",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4377517366,
@@ -1367,8 +1463,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wRQle",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4377891733,
@@ -1380,10 +1477,11 @@
       "summary": "** Register the new module in the server's static-file allowlist**",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6wSKCy",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4377891743,
@@ -1397,8 +1495,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wSKC6",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4377918561,
@@ -1412,8 +1511,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wSOQi",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4377918582,
@@ -1427,8 +1527,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wSOQu",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4378149653,
@@ -1442,8 +1543,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wSxpU",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4378149658,
@@ -1457,8 +1559,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wSxpX",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4378366915,
@@ -1472,8 +1575,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wTShF",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4378678682,
@@ -1485,10 +1589,11 @@
       "summary": "** Preserve the restored disclosure state before taking the second screenshot**",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6wUBg3",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4378678694,
@@ -1500,10 +1605,11 @@
       "summary": "** Regenerate the ledger and work plan after changing backlog statuses**",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6wUBg_",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4380483375,
@@ -1517,8 +1623,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wYTQb",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4380483389,
@@ -1530,10 +1637,11 @@
       "summary": "** Reject symlinked ancestors before traversing the ZIP handoff**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wYTQo",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "FIXED_IN_MAIN_PR_91",
+      "linked_fix": "#91",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4380483407,
@@ -1547,8 +1655,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wYTQ1",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4380524312,
@@ -1560,10 +1669,11 @@
       "summary": "Reject symlinked ancestors before auditing descendants.",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wYZWY",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "FIXED_IN_MAIN_PR_91",
+      "linked_fix": "#91",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4380674341,
@@ -1575,10 +1685,11 @@
       "summary": "** Open the file with write access before syncing on Windows**",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6wYwGP",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4380814993,
@@ -1592,8 +1703,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wZFnX",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4380815004,
@@ -1607,8 +1719,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wZFnd",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4380815012,
@@ -1622,8 +1735,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wZFni",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4380947055,
@@ -1637,8 +1751,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wZZ6X",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4380947064,
@@ -1652,8 +1767,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wZZ6f",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4380947077,
@@ -1667,8 +1783,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wZZ6l",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4381236989,
@@ -1682,8 +1799,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6waF56",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381237008,
@@ -1697,8 +1815,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6waF6G",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4381489182,
@@ -1710,10 +1829,11 @@
       "summary": "** Check duplicate inventory names using the stored key format**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6warWu",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381489193,
@@ -1727,8 +1847,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6warW1",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4381489197,
@@ -1740,10 +1861,11 @@
       "summary": "** Validate directory entries before accepting the archive**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6warW4",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381498485,
@@ -1757,8 +1879,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6waszJ",
       "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4381498493,
@@ -1770,10 +1893,11 @@
       "summary": "Validate directory entries as part of the ZIP inventory.",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6waszP",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381498503,
@@ -1785,10 +1909,11 @@
       "summary": "Functional Correctness",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6waszW",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381566681,
@@ -1802,8 +1927,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wa3Re",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381566687,
@@ -1817,8 +1943,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wa3Rj",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381566694,
@@ -1830,10 +1957,11 @@
       "summary": "** Regenerate the ledger disposition after changing REL-10 to PARTIAL**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wa3Ro",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381737080,
@@ -1847,8 +1975,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wbQ7Y",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381737091,
@@ -1862,8 +1991,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wbQ7f",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381737097,
@@ -1877,8 +2007,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wbQ7j",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381752810,
@@ -1892,8 +2023,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wbTSp",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381765575,
@@ -1907,8 +2039,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wbVP2",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381765585,
@@ -1922,8 +2055,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wbVP7",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381765591,
@@ -1937,8 +2071,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wbVP_",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381798742,
@@ -1952,8 +2087,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wbaQv",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381835880,
@@ -1967,8 +2103,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wbf18",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381882946,
@@ -1982,8 +2119,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wbm46",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4381950328,
@@ -1997,8 +2135,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wbxCI",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4382031510,
@@ -2012,8 +2151,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wb9Tg",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4385384181,
@@ -2027,8 +2167,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wjxuz",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4385406959,
@@ -2042,8 +2183,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wj1Nd",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4385406967,
@@ -2057,8 +2199,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wj1Nk",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4385427870,
@@ -2072,8 +2215,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wj4cM",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4385427877,
@@ -2087,8 +2231,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wj4cQ",
       "thread_resolved": false,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
     },
     {
       "id": 4385431603,
@@ -2102,8 +2247,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wj5C5",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4385456244,
@@ -2117,8 +2263,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wj8x0",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4385528614,
@@ -2130,10 +2277,11 @@
       "summary": "** Reject prediction snapshots that contain no analyzed output**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wkIEx",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SUPERSEDED_CLOSED_UNMERGED",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385569155,
@@ -2145,10 +2293,11 @@
       "summary": "** Regenerate the ledger to preserve PERF-09's overlap disposition**",
       "severity": "P1",
       "thread_id": "PRRT_kwDOU2bYjc6wkOQQ",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385597973,
@@ -2162,8 +2311,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wkSys",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4385616540,
@@ -2175,10 +2325,11 @@
       "summary": "** Validate the same filesystem path that is opened**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wkVh7",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "VERIFIED_FIXED_BEFORE_AUDIT",
+      "linked_fix": null,
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385625513,
@@ -2192,8 +2343,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wkW9i",
       "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4385634839,
@@ -2207,8 +2359,9 @@
       "thread_id": "PRRT_kwDOU2bYjc6wkYW-",
       "thread_resolved": false,
       "thread_outdated": true,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
+      "linked_fix": null,
+      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
     },
     {
       "id": 4385948273,
@@ -2220,10 +2373,11 @@
       "summary": "Functional Correctness",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wlIxe",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "UNVERIFIED_AGAINST_CURRENT_MAIN",
-      "linked_fix": null
+      "outcome": "FIXED_IN_MAIN_PR_89",
+      "linked_fix": "#89",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4386278998,
@@ -2238,7 +2392,8 @@
       "thread_resolved": true,
       "thread_outdated": false,
       "outcome": "FIXED_IN_MAIN_PR_85",
-      "linked_fix": "#85"
+      "linked_fix": "#85",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     }
   ]
 }
