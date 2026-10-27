@@ -80,13 +80,14 @@ def email_checks(draft, *, attachment_ready=None, verified_supplier_method=None)
     body = draft.get("body") if isinstance(draft.get("body"), str) else ""
     subject = draft.get("subject") if isinstance(draft.get("subject"), str) else ""
     if attachment_ready is not True:
-        # Unknown readiness is NOT permission to assert a verified archive.
-        for line in body.splitlines():
-            # A negative statement about the response cannot excuse a
-            # separate positive assertion that the request logs are attached.
+        # The email subject is also a generated claim. Do not let a negative
+        # statement about one attachment excuse a separate positive claim
+        # about another within the same sentence or subject.
+        for line in [subject, *body.splitlines()]:
             clauses = re.split(r"(?<=[.!?;])\s+|\s*;\s*|\s*,\s*but\s+|\s+but\s+", line, flags=re.I)
-            if any(ATTACHMENT_CLAIM.search(clause) and not NEGATED_CLAIM.search(clause)
-                   for clause in clauses):
+            if any(not NEGATED_CLAIM.search(match.group(0))
+                   for clause in clauses
+                   for match in ATTACHMENT_CLAIM.finditer(clause)):
                 findings.append(issue(
                     "EMAIL_UNVERIFIED_ATTACHMENT_CLAIM", "emailDraft",
                     "Чернетка стверджує наявність вкладення без актуального перевіреного supplier ZIP."))
