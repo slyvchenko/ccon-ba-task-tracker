@@ -11,7 +11,7 @@ import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, priorityDimensions, completionPrompt} from './fast-handoff.mjs';
 import {CANDIDATE_TEMPLATES,candidateTemplateFor} from './candidate-templates.mjs';
-import {handoffCopyPolicy,mailActionLabels} from './handoff-ui-policy.mjs';
+import {handoffCopyPolicy,mailActionLabels,readyToCopyCurrentHandoff} from './handoff-ui-policy.mjs';
 import {advancedFilterSummary,evidenceSectionLabel} from './progressive-layout.mjs';
 import {queueSummary,queueEmptyState,conciseSnapshotInfo,statusPresentation,shouldRenderBriefing,assessmentReason} from './visual-clarity.mjs';
 import {createQueueModel,createSearchDebouncer,selectedAfterFilter} from './queue-performance.mjs';
@@ -662,9 +662,9 @@ function renderDetail() {
     // a user edits a note. Recheck latest quality/state and the display version.
     const liveTask=tasks.find(item=>item.key===task.key);
     const liveQuick=liveTask ? quickHandoff(liveTask) : null;
-    if (selected!==task.key || renderedTaskKey!==task.key ||
-        taskVersion(liveTask)!==renderedTaskVersion ||
-        !liveQuick?.readyForCopy || liveQuick.description!==quick.description) {
+    if (!readyToCopyCurrentHandoff({selectedKey:selected,displayedKey:renderedTaskKey,
+      taskKey:task.key,renderedVersion:renderedTaskVersion,
+      latestVersion:taskVersion(liveTask),shown:quick,latest:liveQuick})) {
       message('Чернетка змінилася або Quality Gate вже не підтверджений. Онови панель перед копіюванням.',true);
       return;
     }
