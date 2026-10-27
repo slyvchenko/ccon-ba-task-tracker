@@ -53,7 +53,7 @@ def leaf_values(data, suffix, *, warnings=None, ambiguous_values=None, ambiguous
             if path in repeated_paths:
                 ambiguity.add(value)
                 if last_field(path) in ID_FIELDS and ambiguous_ids is not None:
-                    ambiguous_ids.add(value)
+                    ambiguous_ids.add(value.casefold())
                 return
             if path in result:
                 # A suppressed XML path can still make another same-valued
@@ -67,7 +67,7 @@ def leaf_values(data, suffix, *, warnings=None, ambiguous_values=None, ambiguous
                 if terminal in ID_FIELDS:
                     ambiguous_identity = True
                     if ambiguous_ids is not None:
-                        ambiguous_ids.update((original, value))
+                        ambiguous_ids.update((original.casefold(), value.casefold()))
                 return
             if len(result) >= MAX_FIELDS:
                 field_limit_hit = True
