@@ -28,7 +28,7 @@ def issue(code, ref, explanation):
     return {"code": code, "ref": ref, "messageUk": explanation}
 
 
-def dossier_checks(analysis):
+def dossier_checks(analysis, *, persisted_questions=None):
     findings = []
     briefing = analysis.get("briefing") or {}
     if not isinstance(briefing, dict):
@@ -44,6 +44,11 @@ def dossier_checks(analysis):
         findings.append(issue(
             "OPEN_REQUIREMENTS_PENDING", "briefing",
             "Заявлено готовність до рев'ю, але залишилися матеріальні відкриті питання."))
+    if any(isinstance(q, dict) and q.get("status") == "OPEN"
+           for q in (persisted_questions or [])) and not any(
+           v["code"] == "OPEN_REQUIREMENTS_PENDING" for v in findings):
+        findings.append(issue("OPEN_REQUIREMENTS_PENDING", "briefing",
+                              "Збережені BA-питання залишаються відкритими."))
     if open_rules:
         findings.append(issue(
             "OPEN_RULES_PENDING", "briefing",
