@@ -202,6 +202,7 @@ def compare_zip_bytes(raw, aliases):
     samples = []
     issues = []
     omitted = defaultdict(int)  # (layer, direction kind) excluded from proof
+    excluded_ids = defaultdict(set)  # Ephemeral, never exported as output
     with ZipFile(io.BytesIO(raw)) as archive:
         entries = archive.infolist()
         if len(entries) > 10000 or sum(x.file_size for x in entries) > 512 * 1024 * 1024:
@@ -223,13 +224,17 @@ def compare_zip_bytes(raw, aliases):
                 omitted[(layer, kind)] += 1
                 continue
             rawfile = archive.read(item)
-            ambiguous_values = set()
+            ambiguous_values, ambiguous_names, ambiguous_ids = set(), set(), set()
             values, problem = leaf_values(
                 rawfile, path.suffix.casefold(), warnings=issues,
-                ambiguous_values=ambiguous_values)
+                ambiguous_values=ambiguous_values,
+                ambiguous_names=ambiguous_names,
+                ambiguous_ids=ambiguous_ids)
             if problem:
                 issues.append(problem)
                 omitted[(layer, kind)] += 1
+                if problem == "AMBIGUOUS_CORRELATION_ID":
+                    excluded_ids[(layer, kind)].update(ambiguous_ids)
                 continue
             if len(samples) >= MAX_CASES * 3:
                 issues.append("CASE_LIMIT_REACHED")
@@ -237,7 +242,8 @@ def compare_zip_bytes(raw, aliases):
                 continue
             samples.append({"layer": layer, "kind": kind, "path": str(path)[:300],
                             "values": values, "ids": correlation_tokens(values),
-                            "ambiguous_values": ambiguous_values})
+                            "ambiguous_values": ambiguous_values,
+                            "ambiguous_names": ambiguous_names})
     result, coverage = [], []
     for rest_kind, supplier_kind, direction in (
         ("request", "request", "REST_REQUEST_TO_SUPPLIER_REQUEST"),
@@ -257,11 +263,21 @@ def compare_zip_bytes(raw, aliases):
             # Candidate edges are by explicit correlation identifiers only.
             # An unrelated unique RQ/RS must never be paired when both sides
             # explicitly disagree about its identity.
+            # Rejected XML with repeated explicit IDs is still evidence that
+            # those IDs are not unique. Do not pair another apparently unique
+            # REST/supplier exchange sharing any excluded identifier.
+            excluded = (excluded_ids[("rest", rest_kind)] |
+                        excluded_ids[("supplier", supplier_kind)])
             edges = {}
             for i, r in enumerate(rests):
                 edges[i] = [j for j, supplier in enumerate(suppliers)
                             if r["ids"] and supplier["ids"] and
-                            r["ids"] & supplier["ids"]]
+                            r["ids"] & supplier["ids"] and
+                            not ((r["ids"] | supplier["ids"]) & excluded)]
+                if r["ids"] & excluded:
+                    issues.append("AMBIGUOUS_PAIRING")
+            if any(supplier["ids"] & excluded for supplier in suppliers):
+                issues.append("AMBIGUOUS_PAIRING")
             for i, rest in enumerate(rests):
                 if len(result) >= MAX_PAIRS:
                     issues.append("COMPARISON_PAIR_LIMIT_REACHED")
