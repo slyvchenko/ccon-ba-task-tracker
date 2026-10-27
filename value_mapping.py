@@ -69,6 +69,7 @@ def leaf_values(data, suffix, *, warnings=None, ambiguous_values=None):
         def walk(element, path, depth):
             nonlocal field_limit_hit
             if depth > 12:
+                field_limit_hit = True
                 return
             if len(result) >= MAX_FIELDS:
                 # Do not assert uniqueness when later XML siblings could
@@ -78,9 +79,14 @@ def leaf_values(data, suffix, *, warnings=None, ambiguous_values=None):
             tag = element.tag.rsplit("}", 1)[-1]
             next_path = (path + "." if path else "") + tag[:80]
             children = list(element)
+            attributes = list(element.attrib.items())
+            # Child/attribute bounds also truncate inspected evidence;
+            # never return uniqueness candidates from an incomplete sample.
+            if len(children) > 150 or len(attributes) > 20:
+                field_limit_hit = True
             if not children and element.text and element.text.strip():
                 put(next_path, element.text.strip())
-            for k, v in list(element.attrib.items())[:20]:
+            for k, v in attributes[:20]:
                 attr_name = k.rsplit("}", 1)[-1]  # XML namespace local name.
                 put(next_path + ".@" + attr_name[:60], v)
             for child in children[:150]:
