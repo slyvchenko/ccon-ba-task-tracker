@@ -253,11 +253,14 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
         analysis, persisted_questions=persisted_questions) + email_checks(
         analysis.get("emailDraft"), attachment_ready=attachment_ready,
         verified_supplier_method=supplier_method)
-    # Normalization may hide a mismatch from the original generated text.
-    for finding in email_checks(original_email_draft, attachment_ready=True,
+    # Normalization can erase a fabricated claim about an attachment or
+    # silently correct a supplier method. Audit the original generated draft
+    # against the SAME evidence readiness as the final draft, before trusting
+    # the normalized output. Never leak raw email text into diagnostics.
+    for finding in email_checks(original_email_draft, attachment_ready=attachment_ready,
                                 verified_supplier_method=supplier_method):
-        if finding["code"] == "EMAIL_METHOD_CONFLICT" and not any(
-                existing["code"] == "EMAIL_METHOD_CONFLICT"
+        if finding["code"] in ("EMAIL_METHOD_CONFLICT", "EMAIL_UNVERIFIED_ATTACHMENT_CLAIM") and not any(
+                existing["code"] == finding["code"]
                 for existing in output_findings):
             output_findings.append(finding)
     # Reserve space for generated-output warnings, even when source review has many findings.
