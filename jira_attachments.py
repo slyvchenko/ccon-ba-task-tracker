@@ -63,6 +63,16 @@ def attachment_path(root, key, ident, suffix):
     return Path(root) / "downloads/jira" / key / (ident + suffix)
 
 
+def _unsafe_download_directory(root, key):
+    """Never trust a local evidence path whose parent can redirect IO."""
+    base = Path(root)
+    for path in (base, base / "downloads", base / "downloads/jira",
+                 base / "downloads/jira" / key):
+        if path.is_symlink() or (getattr(path, "is_junction", lambda: False)()):
+            return True
+    return False
+
+
 def _download_url(item):
     url = item.get("content")
     if not isinstance(url, str) or len(url) > 2048:
@@ -90,6 +100,8 @@ def prepare(root=ROOT, key=None):
     jobs = []
     for issue_key in keys:
         issue = _metadata(root, issue_key)
+        if _unsafe_download_directory(root, issue_key):
+            raise ValueError("Unsafe Jira attachment download directory")
         for item in issue.get("attachments") or []:
             if not isinstance(item, dict):
                 continue
@@ -247,6 +259,10 @@ def process(root=ROOT, key=None):
             rows.append({"issueKey": issue_key, "attachmentId": ident, "state": "STALE"})
             continue
         target = attachment_path(root, issue_key, ident, suffix)
+        if _unsafe_download_directory(root, issue_key):
+            rows.append({"issueKey": issue_key, "attachmentId": ident,
+                         "state": "FAILED", "reasonCode": "UNSAFE_ATTACHMENT_PATH"})
+            continue
         if not target.is_file() or target.is_symlink():
             rows.append({"issueKey": issue_key, "attachmentId": ident, "state": "PENDING"})
             continue
@@ -285,13 +301,15 @@ def process(root=ROOT, key=None):
 
 def evidence_for_model(root, key, issue):
     """Only current Jira-bound local structural metadata; never raw contents."""
-    if not KEY_RE.fullmatch(str(key)):
+    if not KEY_RE.fullmatch(str(key)) or _unsafe_download_directory(root, key):
         return []
     allowed = {str(x["id"]): _attachment_spec(x) for x in issue.get("attachments") or []
                if isinstance(x, dict) and ID_RE.fullmatch(str(x.get("id", "")))
                and _attachment_spec(x) is not None}
     reports = []
-    for ident in sorted(allowed)[:30]:
+    for ident in sorted(allowed):
+        if len(reports) >= 30:
+            break
         item = read_json(Path(root) / "data/attachment_evidence" / key / (ident + ".json"), None)
         if (not isinstance(item, dict) or item.get("issueKey") != key
                 or item.get("attachmentId") != ident
