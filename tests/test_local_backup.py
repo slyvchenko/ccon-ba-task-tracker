@@ -118,6 +118,18 @@ class OfflineRecoveryTests(unittest.TestCase):
         self.assertFalse(self.desk.db.exists())
         self.assertEqual(sidecar.read_bytes(),b"synthetic orphan WAL")
 
+    def test_rollback_journal_blocks_restore_without_touching_current_data(self):
+        good = create_backup(self.root, force=True)
+        self.saved("Keep this unsaved state", 0)
+        journal = self.root / "ba_state.db-journal"
+        journal.write_bytes(b"synthetic hot rollback journal")
+        before = self.desk.db.read_bytes()
+        with self.assertRaisesRegex(ValueError, "rollback journal"):
+            restore_backup(self.root, good["filename"], CONFIRM)
+        self.assertEqual(journal.read_bytes(), b"synthetic hot rollback journal")
+        self.assertEqual(self.desk.db.read_bytes(), before)
+        journal.unlink()
+
     def test_corrupted_database_with_sidecar_requires_offline_operator_review(self):
         good = create_backup(self.root, force=True)
         broken = b"broken sqlite database"
