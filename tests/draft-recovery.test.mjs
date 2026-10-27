@@ -93,6 +93,30 @@ test('quota and denied storage must never claim durable recovery',()=>{
   assert.equal(x.error,'STORAGE_DENIED');
 });
 
+test('over-100 draft maps fail rather than silently dropping the last task',()=>{
+  const local=new FakeStorage(),a=store(local,new FakeStorage(),ids[0]);
+  assert.equal(a.persist({'CCON-1':record('original durable draft')}),true);
+  const before=local.getItem(a.ownKey());
+  const oversized=Object.fromEntries(
+    Array.from({length:101},(_,i)=>['CCON-'+(i+1),record('draft '+i)]));
+  assert.equal(a.persist(oversized),false);
+  assert.equal(a.error,'CAPACITY_EXCEEDED');
+  assert.equal(local.getItem(a.ownKey()),before);
+});
+
+test('legacy migration never deletes a record exceeding the task limit',()=>{
+  const local=new FakeStorage();
+  const oversized=Object.fromEntries(
+    Array.from({length:101},(_,i)=>['CCON-'+(i+1),record('legacy '+i)]));
+  const original=JSON.stringify(oversized);
+  local.setItem(LEGACY_DRAFT_KEY,original);
+  const a=store(local,new FakeStorage(),ids[0]);
+  assert.deepEqual(a.load(),{});
+  assert.equal(a.error,'CAPACITY_EXCEEDED');
+  assert.equal(local.getItem(LEGACY_DRAFT_KEY),original);
+  assert.equal(local.getItem(a.ownKey()),null);
+});
+
 test('manually recovering another tab skips existing/dirty task keys without deleting source',()=>{
   const local=new FakeStorage(),a=store(local,new FakeStorage(),ids[0]);
   const b=store(local,new FakeStorage(),ids[1]);

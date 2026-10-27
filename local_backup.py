@@ -330,6 +330,12 @@ def restore_backup(root, filename, confirmation):
         verified = verify_backup(root, filename)
         database = root / "ba_state.db"
         sidecars = (root / "ba_state.db-wal", root / "ba_state.db-shm")
+        # An unfinished SQLite rollback transaction uses a separate journal
+        # rather than WAL. Opening DB before checking it could replay changes;
+        # fail closed and ask an operator to preserve it (review #32).
+        journal = root / "ba_state.db-journal"
+        if journal.exists() or journal.is_symlink():
+            raise ValueError("SQLite rollback journal present. Preserve it offline before restore.")
         # Orphaned WAL can replay AFTER the validated replacement even if
         # no main DB exists: refuse rather than silently alter recovered data.
         if not database.exists() and any(path.exists() or path.is_symlink() for path in sidecars):

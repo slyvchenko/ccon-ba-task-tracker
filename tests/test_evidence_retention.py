@@ -118,6 +118,32 @@ class EvidenceRetentionTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "External log root"):
                 maintenance(self.root, now=self.at)
 
+    def test_symlinked_log_root_within_workspace_is_not_resolved_away(self):
+        pinned = self.version(A)
+        self.pins(pinned)
+        actual = self.root / "saved-evidence"
+        self.logs.rename(actual)
+        try:
+            self.logs.symlink_to(actual, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("Symlinks unsupported")
+        with self.assertRaisesRegex(ValueError, "Symlink log root"):
+            maintenance(self.root, now=self.at, apply=True, confirm=CONFIRMATION)
+        self.assertTrue((actual / "CCON-1" / FLOW / A).exists())
+
+    def test_symlinked_custom_log_root_inside_workspace_is_rejected(self):
+        pinned = self.version(A)
+        self.pins(pinned)
+        link = self.root / "link-to-evidence"
+        try:
+            link.symlink_to(self.logs, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("Symlinks unsupported")
+        write_json(self.root / "log_config.json", {"logsDir": str(link)})
+        with self.assertRaisesRegex(ValueError, "Symlink log root"):
+            maintenance(self.root, now=self.at)
+        self.assertTrue(pinned.exists())
+
     def test_does_not_touch_current_downloads_or_jira_state(self):
         recent = self.version(A, age_days=1)
         self.pins(recent)
