@@ -71,7 +71,7 @@ def weekly_report(root=ROOT, week=None, *, today=None):
     # open that unverified state rather than silently writing into a workspace.
     with db.open("rb") as header_file:
         header = header_file.read(20)
-    if len(header) < 20 or header[:16] != b"SQLite format 3\\x00":
+    if len(header) < 20 or header[:16] != b"SQLite format 3\x00":
         raise ValueError("Invalid SQLite database header")
     if header[18] == 2:
         for suffix in ("-wal", "-shm"):
