@@ -141,6 +141,14 @@ class BAOutputChecksTests(unittest.TestCase):
         self.assertIn("EMAIL_METHOD_CONFLICT",
                       {f["code"] for f in gate["findings"]})
 
+    def test_plain_word_double_is_not_a_supplier_method(self):
+        from ba_output_checks import email_checks
+        draft={"subject":"AER. Double booking detected [123]",
+               "body":"Dear Team, booking problem"}
+        self.assertNotIn("EMAIL_METHOD_CONFLICT",
+                         {x["code"] for x in email_checks(
+                             draft, verified_supplier_method="doBooking")})
+
     def test_persisted_open_question_still_blocks_ready(self):
         data=analysis()
         data["missingInfo"]=[]
