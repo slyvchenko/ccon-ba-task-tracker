@@ -2,30 +2,30 @@
   "schema_version": 1,
   "scope": "PUBLIC_REVIEW_METADATA_ONLY",
   "as_of": "2026-10-27",
-  "branch_basis": "main after merged PR #103; historical review follow-up October 27 batch 2",
+  "branch_basis": "main after merged PR #103 and #102; 2026-10-27 follow-up",
   "caveat": "Tracks 148 original historical review findings. Additional newer PR review threads are not part of this original cohort. Review resolution is code/source evidence, not BA or Windows human UAT; 129 canonical requirements remain independent.",
   "counts": {
     "historical_prs": 90,
-    "inline_comments": 257,
+    "inline_comments": 267,
     "original_review_findings": 148,
-    "inline_replies": 109,
+    "inline_replies": 119,
     "pr_conversation_comments": 187,
     "issue50_conversation_comments": 19,
     "github_threads_assessed": 148,
-    "open_review_threads": 24,
-    "resolved_review_threads": 124,
-    "outdated_open_threads": 5,
+    "open_review_threads": 14,
+    "resolved_review_threads": 134,
+    "outdated_open_threads": 2,
     "original_severity": {
       "P2": 119,
       "P1": 29
     },
     "open_severity": {
-      "P2": 24
+      "P2": 14
     },
-    "verified_main_fixes": 34,
-    "verified_preexisting": 43,
+    "verified_main_fixes": 37,
+    "verified_preexisting": 50,
     "superseded": 1,
-    "newly_source_verified_in_followup": 46
+    "newly_source_verified_in_followup": 56
   },
   "findings": [
     {
@@ -1238,11 +1238,11 @@
       "summary": "** Refresh the cached editor form after undoing completion**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wJ2sQ",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "FIXED_IN_MAIN_PR_102",
+      "linked_fix": "#102",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4374437559,
@@ -1254,11 +1254,11 @@
       "summary": "** Allow status undo while preserving unsaved note and draft edits**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wJ2sU",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "FIXED_IN_MAIN_PR_102",
+      "linked_fix": "#102",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4374437566,
@@ -1270,11 +1270,11 @@
       "summary": "** Enforce task activity atomically when applying Undo**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wJ2sY",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "FIXED_IN_MAIN_PR_102",
+      "linked_fix": "#102",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4374543386,
@@ -1398,11 +1398,11 @@
       "summary": "Functional Correctness",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wRFNv",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main source + targeted synthetic regression",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4377443800,
@@ -1414,11 +1414,11 @@
       "summary": "Functional Correctness",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wRFN6",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main source + targeted synthetic regression",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4377443814,
@@ -1494,11 +1494,11 @@
       "summary": "** Use a selector lookup for the detail import timestamp**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wSKC6",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main source + targeted synthetic regression",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4377918561,
@@ -1510,11 +1510,11 @@
       "summary": "Functional Correctness",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wSOQi",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main source + targeted synthetic regression",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4377918582,
@@ -1574,11 +1574,11 @@
       "summary": "** Exercise incomplete briefings without importing invalid snapshots**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wTShF",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main source + targeted synthetic regression",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4378678682,
@@ -1798,11 +1798,11 @@
       "summary": "** Restore focus to an available action after saving**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6waF56",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main source + targeted synthetic regression",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381237008,
@@ -1814,11 +1814,11 @@
       "summary": "** Block pin-triggered rerenders while a save is pending**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6waF6G",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main source + targeted synthetic regression",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381489182,
