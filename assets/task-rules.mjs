@@ -60,9 +60,20 @@ function priorityLane(task) {
   return task.activeSprintStatus === 'VERIFIED' && task.activeSprint === true ? 0 : 1;
 }
 
+// An explicit human WAIT/DONE/NEEDS DECISION decision must not be reclassified
+// as WRITE by a retained generated needsEmail flag. A current, unoverridden
+// needsEmail signal still leads its action group inside the same sprint lane.
+function priorityEmail(task) {
+  const signal = effectiveSignal(task);
+  if (signal === 'WAIT' || signal === 'DONE' ||
+      task.manualStatus === 'NEEDS DECISION') return false;
+  return signal === 'WRITE' ||
+    (hasAnalysis(task) && analysisOf(task).needsEmail === true);
+}
+
 function actionRank(task) {
   const signal = effectiveSignal(task);
-  if (signal === 'WRITE' || (hasAnalysis(task) && analysisOf(task).needsEmail === true)) return 0;
+  if (priorityEmail(task)) return 0;
   if (signal === 'READY' || signal === 'DECIDE') return 1;
   if (signal === 'REVIEW') return 2;
   if (signal === 'WAIT') return 3;
@@ -122,4 +133,4 @@ function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprin
   });
 }
 
-export {STATUS_LABELS, STATUS_TONES, MANUAL_SIGNALS, SIGNALS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueScore, queueTier, actionRank, priorityLane, rankTasks, filterTasks};
+export {STATUS_LABELS, STATUS_TONES, MANUAL_SIGNALS, SIGNALS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueScore, queueTier, priorityEmail, actionRank, priorityLane, rankTasks, filterTasks};
