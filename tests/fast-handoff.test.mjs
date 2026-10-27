@@ -130,3 +130,15 @@ test('impact, urgency, dependencies, effort and unblocking are independent of sp
   assert.equal(priorityDimensions(stale,null).impact,'не підтверджено');
   assert.equal(priorityDimensions(stale,null).urgency,'не підтверджено');
 });
+
+test('P0: human WAIT/DONE/DECIDE suppresses obsolete write explanations', () => {
+  for (const manualStatus of ['WAITING INPUT','WAITING DEPENDENCY','NEEDS DECISION','DONE']) {
+    const item=task('CCON-230','WRITE',{manualStatus});
+    assert.equal(priorityExplanation(item).write,false,manualStatus);
+    assert.equal(priorityExplanation(item).sourceOrder[1],
+      'Лист: без пріоритету листа',manualStatus);
+  }
+  // Human IN PROGRESS does not itself suppress a current genuine needsEmail.
+  const working=task('CCON-231','WRITE',{manualStatus:'IN PROGRESS'});
+  assert.equal(priorityExplanation(working).write,true);
+});

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {rankTasks, priorityLane, actionRank} from '../assets/task-rules.mjs';
+import {rankTasks, priorityLane, actionRank, priorityEmail} from '../assets/task-rules.mjs';
 
 // PRIOR-03: deterministic property-style synthetic queue invariants, no real Jira.
 function seeded(seed=0x5f3759df) {
@@ -67,4 +67,39 @@ test('verified sprint, WRITE, Done, archive are ordered for 300 seeded randomize
       'subjective effort must never silently reorder the primary queue');
   }
   assert.deepEqual([...lanes].sort(),[0,1,2,3]);
+});
+
+test('P0 exhaustive manual status × source freshness × email × sprint invariants',()=>{
+  const statuses=['AUTO','IN PROGRESS','WAITING INPUT','WAITING DEPENDENCY','NEEDS DECISION','DONE'];
+  const signals=['WRITE','READY','WAIT','REVIEW','DECIDE','DONE'];
+  let checked=0;
+  for(const manualStatus of statuses) for(const signal of signals)
+    for(const needsEmail of [false,true]) for(const stale of [false,true])
+      for(const confirmedSprint of [false,true]) {
+        const item={
+          key:'CCON-501',active:true,manualStatus,activeSprint:confirmedSprint,
+          activeSprintStatus:'VERIFIED',contextFingerprint:'present',
+          analysis:{signal,needsEmail,queueScore:100,
+            contextFingerprint:stale?'previous':'present',reasonUk:'Synthetic',
+            nextActionUk:'Review safely'}
+        };
+        const actualSignal={
+          'IN PROGRESS':'READY','WAITING INPUT':'WAIT',
+          'WAITING DEPENDENCY':'WAIT','NEEDS DECISION':'DECIDE','DONE':'DONE'
+        }[manualStatus] || (stale?'REVIEW':signal);
+        const shouldPrioritizeEmail=
+          !['WAIT','DONE'].includes(actualSignal) &&
+          manualStatus!=='NEEDS DECISION' &&
+          (actualSignal==='WRITE' || (!stale && needsEmail));
+        assert.equal(priorityEmail(item),shouldPrioritizeEmail,
+          JSON.stringify({manualStatus,signal,needsEmail,stale,confirmedSprint}));
+        const expectedRank=shouldPrioritizeEmail?0:
+          ['READY','DECIDE'].includes(actualSignal)?1:
+          actualSignal==='REVIEW'?2:actualSignal==='WAIT'?3:4;
+        assert.equal(actionRank(item),expectedRank);
+        assert.equal(priorityLane(item),
+          manualStatus==='DONE'||actualSignal==='DONE' ? 2 : confirmedSprint?0:1);
+        checked++;
+      }
+  assert.equal(checked,288);
 });

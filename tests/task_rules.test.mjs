@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {effectiveSignal, hasAnalysis, rankTasks, filterTasks, defaultRecipients, signalInfo} from '../assets/task-rules.mjs';
+import {effectiveSignal, hasAnalysis, priorityEmail, actionRank, queueScore, rankTasks, filterTasks, defaultRecipients, signalInfo} from '../assets/task-rules.mjs';
 
 function task(key, signal = 'WRITE', score = 50, extra = {}) {
   return {key, summary: key, active: true, manualStatus: 'AUTO', contextFingerprint: 'current',
@@ -102,4 +102,47 @@ test('punctuation-only query must not match all tasks via empty folded text', ()
   assert.deepEqual(filterTasks(list,{search:'%'}).map(x=>x.key),['CCON-103']);
   assert.deepEqual(filterTasks(list,{search:'method !!!'}).map(x=>x.key),[]);
   assert.deepEqual(filterTasks(list,{search:'method:'}).map(x=>x.key),['CCON-102']);
+});
+
+test('P0: manual WAIT and NEEDS DECISION cannot inherit stale WRITE ranking', () => {
+  const ready=task('CCON-900','READY',0);
+  for (const manualStatus of ['WAITING INPUT','WAITING DEPENDENCY','NEEDS DECISION','DONE']) {
+    const overridden=task('CCON-901','WRITE',100,{manualStatus});
+    overridden.analysis.needsEmail=true;
+    assert.equal(priorityEmail(overridden),false,manualStatus);
+    assert.ok(actionRank(overridden)>0,manualStatus);
+    // Manual NEEDS DECISION shares READY's action tier; score remains its
+    // legitimate tie-breaker. WAIT and DONE must stay below READY.
+    const expected=manualStatus === 'NEEDS DECISION'
+      ? ['CCON-901','CCON-900'] : ['CCON-900','CCON-901'];
+    assert.deepEqual(rankTasks([overridden,ready]).map(x=>x.key),expected,manualStatus);
+  }
+
+  // Explicit current email work remains first among otherwise active tasks.
+  const email=task('CCON-902','REVIEW',0);
+  email.analysis.needsEmail=true;
+  assert.equal(priorityEmail(email),true);
+  assert.deepEqual(rankTasks([ready,email]).map(x=>x.key),['CCON-902','CCON-900']);
+});
+
+test('P0: stale needsEmail never creates a WRITE priority', () => {
+  const stale=task('CCON-903','WRITE',100);
+  stale.analysis.needsEmail=true;
+  stale.analysis.contextFingerprint='old';
+  const ready=task('CCON-904','READY',0);
+  assert.equal(priorityEmail(stale),false);
+  assert.equal(actionRank(stale),2);
+  assert.deepEqual(rankTasks([stale,ready]).map(x=>x.key),['CCON-904','CCON-903']);
+});
+
+test('P0: malformed 0–100 scores cannot silently outrank valid tasks', () => {
+  const valid=task('CCON-920','READY',70);
+  for(const raw of [101,-1,1000,'99','',null,NaN,Infinity]) {
+    const bad=task('CCON-921','READY',raw);
+    assert.equal(queueScore(bad),0,String(raw));
+    assert.deepEqual(rankTasks([bad,valid]).map(x=>x.key),
+      ['CCON-920','CCON-921'],String(raw));
+  }
+  assert.equal(queueScore(task('CCON-922','READY',100)),100);
+  assert.equal(queueScore(task('CCON-923','READY',0)),0);
 });
