@@ -174,7 +174,10 @@ export async function loadTaskQuestions(key, api, escape, notify, current, getAc
       '<label>Джерело (URL)<input class="question-url" maxlength="2000" value="' + escape(q.evidenceUrl || '') + '"></label>' +
       '<div class="actions"><button class="save-question quiet" data-question="' + escape(q.id) +
         '">Зберегти</button><span class="muted">' +
-        (q.status === 'ANSWERED' && !q.answerVerified ? 'Відповідь без підтвердженого джерела' :
+        (q.status === 'ANSWERED' ?
+          (q.sourceLinkProvided || q.evidenceUrl ?
+            'Посилання на джерело є, але зміст відповіді не перевірено незалежно' :
+            'Немає посилання на джерело; зміст відповіді не перевірено незалежно') :
         q.presentInLatestAnalysis === false ? 'Немає в аналізі, але не закрито автоматично' : '') +
       '</span></div></section>').join('');
     // Fill fields for review, never update OPEN status or persist without
