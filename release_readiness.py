@@ -126,6 +126,28 @@ def closeout_matrix(ledger):
         })
     order = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
     results.sort(key=lambda row: (order[row["priority"]],row["id"]))
+    pointer_coverage = {
+        "codeAndTest": sum(row["sourcePointerExists"] and row["testPointerExists"]
+                           for row in results),
+        "codeOnly": sum(row["sourcePointerExists"] and not row["testPointerExists"]
+                        for row in results),
+        "testOnly": sum(not row["sourcePointerExists"] and row["testPointerExists"]
+                        for row in results),
+        "neither": sum(not row["sourcePointerExists"] and not row["testPointerExists"]
+                       for row in results),
+    }
+    # Fixed public requirement IDs only. This is a list of evidence-pointers
+    # to investigate, NOT source-code absence or failed BA acceptance.
+    p0_pointer_gaps = [
+        {"id": row["id"], "missingCodePointer": not row["sourcePointerExists"],
+         "missingTestPointer": not row["testPointerExists"],
+         "reportedCategory": row["reportedCategory"]}
+        for row in results
+        if row["priority"] == "P0" and
+        not (row["sourcePointerExists"] and row["testPointerExists"])
+    ]
+    if sum(pointer_coverage.values()) != len(results):
+        raise ValueError("Source/test pointer counts inconsistent")
     return {
         "schemaVersion": 1,
         "scope": "LOCAL_SINGLE_BA_DESK",
@@ -133,8 +155,9 @@ def closeout_matrix(ledger):
         "releaseApproved": False,
         "totalRequirements": len(results),
         "nextActionCounts": dict(sorted(actions.items())),
-        "sourceTestPointerCoverage": readiness["totalRequirements"] -
-                                     sum(not row["testPointerExists"] for row in results),
+        "sourceTestPointerCoverage": pointer_coverage["codeAndTest"],
+        "pointerCoverageBreakdown": pointer_coverage,
+        "p0PointerGaps": p0_pointer_gaps,
         "privateAcceptanceVerified": 0,
         "externalRequiredChecks": [
             {"id": ident, "state": "NOT_VERIFIED_IN_PUBLIC_REPO"}
