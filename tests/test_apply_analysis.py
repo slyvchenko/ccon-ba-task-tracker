@@ -101,6 +101,29 @@ class AnalysisIntegrity(unittest.TestCase):
         self.assertFalse(saved['qualityGate']['isReadyForReview'])
         self.assertEqual(saved['briefing']['readiness'], 'NEEDS_CONFIRMATION')
 
+    def test_import_checks_method_before_draft_normalization(self):
+        self.analysis["emailDraft"]={
+            "to":"","subject":"AER. verify-fare [1]",
+            "body":"We have recently received an error during doVerifyFare:"}
+        with patch("apply_analysis.verified_method",return_value="doByLocatorPullPnr"):
+            self.run_apply({"CCON-1":self.analysis})
+        check=self.desk.view()["tasks"][0]["analysis"]["qualityGate"]
+        self.assertIn("EMAIL_METHOD_CONFLICT",{x["code"] for x in check["findings"]})
+
+    def test_import_uses_persisted_open_questions(self):
+        from storage import write_json
+        from test_ba_quality_gate import analysis as good_analysis
+        self.analysis["briefing"]=good_analysis()["briefing"]
+        self.analysis["briefing"]["readiness"]="READY_FOR_REVIEW"
+        self.analysis["missingInfo"]=[]
+        write_json(self.root/"data/questions/CCON-1.json",{
+            "key":"CCON-1","questions":[{
+                "id":"Q-synthetic","text":"Open decision","status":"OPEN",
+                "presentInLatestAnalysis":False}]})
+        self.run_apply({"CCON-1":self.analysis})
+        check=self.desk.view()["tasks"][0]["analysis"]["qualityGate"]
+        self.assertIn("OPEN_REQUIREMENTS_PENDING",{x["code"] for x in check["findings"]})
+
     def test_quality_gate_never_overwrites_manual_draft_or_note(self):
         self.desk.save('CCON-1', {'manualStatus': 'IN PROGRESS',
                                  'note': 'Keep user note',
