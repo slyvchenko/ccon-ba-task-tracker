@@ -26,7 +26,7 @@ def pending_questions_for_gate(root, key, analysis):
                  and isinstance(row.get("id"), str)}
         pending = list(existing)
         for suggestion in proposed_questions(analysis, all_evidence(root, key)):
-            ident = question_id(key, suggestion["text"])
+            ident = question_id(key, suggestion["text"][:3000])
             if ident not in by_id:
                 pending.append({"id":ident, "status":"OPEN"})
         return pending
