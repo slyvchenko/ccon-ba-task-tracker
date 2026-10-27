@@ -197,3 +197,11 @@ class ReviewFeedbackRegressions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_compact_generated_preserves_distinct_python_indentation(self):
+        from ba_compactness import compact_generated
+        source=("        send_supplier_request_with_retry()\\n"
+                "    send_supplier_request_with_retry()")
+        normalized, metadata=compact_generated(source)
+        self.assertEqual(normalized,source)
+        self.assertEqual(metadata["exactAdjacentLinesRemoved"],0)
