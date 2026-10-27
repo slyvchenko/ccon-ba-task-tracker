@@ -32,13 +32,15 @@ def _origin(raw, *, configuration=False):
             return None
         if parsed.username or parsed.password:
             return None
-        port = parsed.port  # Explicitly validate nonnumeric or out-of-range ports.
+        port = parsed.port  # Reject nonnumeric and out-of-range ports.
+        if port == 0:
+            return None
         if configuration and (parsed.path not in ("", "/") or
                               parsed.params or parsed.query or parsed.fragment):
             return None
         return "{}://{}:{}".format(
             parsed.scheme, parsed.hostname.lower(),
-            port or (443 if parsed.scheme == "https" else 80))
+            port if port is not None else (443 if parsed.scheme == "https" else 80))
     except ValueError:
         return None
 
