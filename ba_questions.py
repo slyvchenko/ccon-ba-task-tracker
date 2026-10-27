@@ -5,6 +5,7 @@ missingInfo does NOT mean an answer was found. No Jira/Confluence write API.
 """
 import argparse
 import hashlib
+import ipaddress
 import json
 import re
 from pathlib import Path
@@ -24,13 +25,25 @@ def normalize(text):
 
 def valid_source_url(value):
     """HTTP(S) source pointer only. Does not verify semantic correctness."""
-    if not isinstance(value, str) or not value or len(value) > 2000:
+    if (not isinstance(value, str) or not value or len(value) > 2000 or
+            any(char.isspace() or ord(char) < 32 for char in value)):
         return False
     try:
         url = urlparse(value)
-        return (url.scheme in ("http", "https") and bool(url.hostname)
-                and url.username is None and url.password is None
-                and (url.port is None or url.port > 0))
+        host = url.hostname
+        if (url.scheme not in ("http", "https") or not host or
+                url.username is not None or url.password is not None or
+                (url.port is not None and url.port <= 0)):
+            return False
+        # urlparse is a splitter, not hostname validation. Accept ordinary
+        # ASCII DNS labels and properly formed IPv6 literals, never spaces or
+        # encoded-host masquerades from imported legacy question files.
+        if ":" in host:
+            ipaddress.IPv6Address(host)
+            return True
+        return (len(host) <= 253 and all(
+            re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", part)
+            for part in host.split(".")))
     except ValueError:
         return False
 
