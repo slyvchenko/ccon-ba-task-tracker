@@ -10,11 +10,30 @@ from draft_output import make_ready_draft, supplier_zip_ready
 from supplier_logs import verified_method
 from review_report import build_report, write_report
 from prompt_calibration import update_daily
-from ba_questions import sync_questions, all_evidence, read_questions
+from ba_questions import (sync_questions, all_evidence, read_questions,
+                          proposed_questions, question_id)
 from ba_decisions import sync_decision_proposals
 from ba_quality_gate import quality_gate
 from ba_compactness import compact_generated
 from local_source_audit import local_sources
+
+
+def pending_questions_for_gate(root, key, analysis):
+    """Read human question states and pending evidence proposals without writes."""
+    try:
+        existing = read_questions(root, key)["questions"]
+        by_id = {row["id"]: row for row in existing if isinstance(row, dict)
+                 and isinstance(row.get("id"), str)}
+        pending = list(existing)
+        for suggestion in proposed_questions(analysis, all_evidence(root, key)):
+            ident = question_id(key, suggestion["text"])
+            if ident not in by_id:
+                pending.append({"id":ident, "status":"OPEN"})
+        return pending
+    except (ValueError, OSError, TypeError, KeyError):
+        # Never declare a dossier ready when private question state is unreadable.
+        # The optional sync stage later records its own failure in questionErrors.
+        return [{"status":"OPEN", "source":"UNVERIFIED_QUESTION_STATE"}]
 
 
 def apply(path,root=ROOT,focus_issue=None):
@@ -90,7 +109,7 @@ def _apply(path,root,focus_issue=None):
                             supplier_method=verified_supplier_method,
                             local_sources=doc_sources,
                              original_email_draft=original_email_draft,
-                             persisted_questions=read_questions(root, task['key'])['questions'])
+                             persisted_questions=pending_questions_for_gate(root, task['key'], analysis))
         gate['sourceAudit'] = doc_audit
         analysis['qualityGate'] = gate
         # A machine-verified link/excerpt is not semantic correctness.
