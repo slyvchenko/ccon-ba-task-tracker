@@ -64,6 +64,19 @@ class ErrorBudgetUnitTests(unittest.TestCase):
             budget.record("/api/tasks",200,1)
         self.assertFalse(budget.snapshot()["sampleTruncated"])
 
+    def test_parametrized_health_path_is_excluded_like_server_routing(self):
+        b=LocalErrorBudget(clock=lambda:1000)
+        for path in ("/api/health;probe", "/api/error-budget;probe",
+                     "/api/health?verbose=1"):
+            b.record(path, 200, 100)
+        self.assertEqual(b.snapshot()["sampledApiResponses"],0)
+
+    def test_p95_uses_same_nearest_rank_as_other_benchmarks(self):
+        b=LocalErrorBudget(clock=lambda:1000,max_samples=200)
+        for elapsed in range(102):
+            b.record("/api/tasks",200,elapsed)
+        self.assertEqual(b.snapshot()["serverTimeToStatusP95Ms"],96)
+
     def test_status_is_an_observation_not_an_availability_guarantee(self):
         b=LocalErrorBudget()
         self.assertIsNone(b.snapshot()["serverTimeToStatusP95Ms"])

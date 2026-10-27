@@ -5,6 +5,7 @@ network failures, browser errors, upstream Jira/Kibana, and process crashes
 are outside this mechanism. Never store URLs, issue keys, clients or payloads.
 """
 from collections import deque
+from urllib.parse import urlparse
 from threading import Lock
 import time
 
@@ -33,7 +34,7 @@ class LocalErrorBudget:
         # Do not store or export path. Health/metrics are intentionally
         # excluded so checking the dashboard does not improve the SLO.
         if (not isinstance(path, str) or not path.startswith("/api/") or
-                path.split("?", 1)[0] in ("/api/error-budget", "/api/health")):
+                urlparse(path).path in ("/api/error-budget", "/api/health")):
             return
         code = int(status_code)
         if not 100 <= code <= 599:
@@ -55,7 +56,7 @@ class LocalErrorBudget:
             errors = sum(x[1] for x in self._events)
             client = sum(x[2] for x in self._events)
             latencies = sorted(x[3] for x in self._events)
-            p95 = latencies[min(count - 1, int((count - 1) * .95))] if count else None
+            p95 = latencies[min(count - 1, round((count - 1) * .95))] if count else None
             allowed = count * .01
             return {
                 "enabled": True, "localOnly": True, "inMemoryOnly": True,
