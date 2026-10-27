@@ -1,6 +1,8 @@
 """Synthetic SQLite study and history retention preview regression."""
 import hashlib
 import json
+import os
+import sqlite3
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -82,6 +84,31 @@ class RetentionPreviewTests(unittest.TestCase):
             self.assertNotIn(secret,text)
         with self.desk.connect() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM task_history").fetchone()[0],4)
+
+    def test_relative_root_accepted_and_read_counts_use_single_snapshot(self):
+        from unittest.mock import patch
+        from history_retention_preview import preview
+        actual_connect=sqlite3.connect
+        observed=[]
+        class ProbeConnection(sqlite3.Connection):
+            def execute(self, sql, parameters=()):
+                if sql.strip().upper().startswith("SELECT"):
+                    observed.append(("SELECT",self.in_transaction))
+                elif sql.strip().upper()=="BEGIN":
+                    observed.append(("BEGIN",self.in_transaction))
+                return super().execute(sql,parameters)
+        def connection(*args,**kwargs):
+            return actual_connect(*args,**{**kwargs,"factory":ProbeConnection})
+        prior=Path.cwd()
+        try:
+            os.chdir(self.root.parent)
+            with patch("history_retention_preview.sqlite3.connect",side_effect=connection):
+                result=preview(self.root.name,365,now=datetime(2026,10,26,tzinfo=timezone.utc))
+        finally:
+            os.chdir(prior)
+        self.assertEqual(result["totalHistoryRevisions"],4)
+        self.assertTrue(observed and observed[0][0]=="BEGIN")
+        self.assertTrue(all(inside for operation,inside in observed if operation=="SELECT"))
 
     def test_preview_does_not_write_or_create_db(self):
         with tempfile.TemporaryDirectory(prefix="ccon-empty-preview-") as folder:
