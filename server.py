@@ -311,6 +311,12 @@ def handler(desk, cloud=None, error_budget=None):
                                              evidence_url=data.get('evidenceUrl', ''))
                     return self.send(200, {'question': answer})
                 if re.fullmatch(r'/api/tasks/CCON-\d+', path):
+                    # Fail closed for legacy unversioned HTTP clients; otherwise
+                    # a stale tab can overwrite another analyst's manual edits.
+                    if 'expectedManualRevision' not in data:
+                        return self.send(428, {
+                            'code': 'TASK_REVISION_REQUIRED',
+                            'error': 'Reload this task and retry using its current manual revision.'})
                     result = desk.save(unquote(path.rsplit('/', 1)[-1]), data)
                     return self.send(200, {'message': 'Saved locally.', **result})
                 return self.send(404, {'error': 'Not found.'})
