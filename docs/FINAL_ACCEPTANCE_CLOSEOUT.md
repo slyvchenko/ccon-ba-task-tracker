@@ -17,7 +17,7 @@ python release_readiness.py --closeout --require-ready
 ## Що вже готово
 
 - Усі 13 початкових `PLANNED` мають технічні реалізації та стали `PARTIAL`, а не автоматично `DONE`. В інвентарі **0 PLANNED**, **0 NEXT**.
-- Усього 129 вимог: **40 IMPLEMENTED за кодом**, **82 PARTIAL**, **3 GATE**, **4 DEFERRED**. Для **94** є прямі посилання на код + тест; для **29** немає прямого code locator. Покриття вказівниками не означає, що функція пройшла business UAT. Відсутність посилання не доводить відсутності реалізації.
+- Усього 129 вимог: **40 IMPLEMENTED за кодом**, **82 PARTIAL**, **3 GATE**, **4 DEFERRED**. Для **106** є прямі посилання на код + тест; для **17** немає прямого code locator. Покриття вказівниками не означає, що функція пройшла business UAT. Відсутність посилання не доводить відсутності реалізації.
 - Чотири `INF-01..INF-04` відкладені як окремий хмарний продукт. Вони не є дозволом потай запускати cloud/SSO.
 - Головне джерело рішень: `docs/PRODUCT_BACKLOG.md`. Детальний незакритий work plan: `docs/REMAINING_WORK_PLAN.md`, автоматичний ledger: `docs/BACKLOG_ACCEPTANCE_LEDGER.json`.
 
@@ -38,3 +38,7 @@ python release_readiness.py --closeout --require-ready
 ## Уточнення: пріоритет P1 (код і тести, не бізнес-приймання)
 
 Після перевірки 16 P1-вимог додано навігаційні code+test locator у детермінований реєстр. Вони фіксують, **де саме шукати** вже наявні алгоритми та синтетичні регресії. Не означають виконання всіх DoD або зняття відповідних Windows/BA-гейтів. Див. `docs/P1_EVIDENCE_POINTER_AUDIT.md`.
+
+## Додаткові 12 code/test прив’язок
+
+Наявні synthetic tests для 12 P1/P2-функцій прив’язано до `backlog_audit.py`. Це лише audit/navigation mapping, а не нові реалізації чи бізнес-приймання. Див. `docs/P2_EVIDENCE_POINTER_AUDIT.md`. `releaseApproved=false` залишається незмінним.
