@@ -107,6 +107,10 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIsNotNone(row["code_locator"])
         self.assertIsNotNone(row["test_locator"])
         row["code_locator"]=None
+        with self.assertRaisesRegex(ValueError,"pointer totals"):
+            release_report(forged)
+        forged["counts"]["code_plus_test_locators"]-=1
+        forged["counts"]["no_direct_locator"]+=1
         result=closeout_matrix(forged)
         self.assertEqual(result["sourceTestPointerCoverage"],105)
         self.assertEqual(result["pointerCoverageBreakdown"],
@@ -120,6 +124,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         row["requirement"]="PRIVATE_PNR_SYNTHETIC_999"
         row["code_locator"]="private-person-identifying-path/SECRET"
         row["test_locator"]="PRIVATE_PNR_SYNTHETIC_999"
+        forged["counts"]["code_plus_test_locators"]+=1
         result=closeout_matrix(forged)
         encoded=json.dumps(result)
         self.assertNotIn("PRIVATE_PNR_SYNTHETIC_999",encoded)
@@ -129,6 +134,13 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual(result["pointerCoverageBreakdown"]["codeOnly"],5)
         self.assertEqual(result["privateAcceptanceVerified"],0)
         self.assertFalse(result["releaseApproved"])
+
+    def test_malformed_evidence_locators_fail_before_readiness_report(self):
+        for value in ("  ",False,0,[],{"file":"test"}):
+            forged=copy.deepcopy(self.ledger)
+            next(x for x in forged["items"] if x.get("code_locator"))["code_locator"]=value
+            with self.subTest(value=value),self.assertRaisesRegex(ValueError,"pointer"):
+                release_report(forged)
 
     def test_fake_human_pass_claims_do_not_influence_closeout(self):
         data=copy.deepcopy(self.ledger)
