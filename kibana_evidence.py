@@ -64,6 +64,10 @@ KIBANA_VIEW_PATHS = frozenset({"/app/kibana", "/app/discover"})
 def _is_discover_view(raw):
     try:
         parsed = urlparse(raw)
+        # urlparse treats ;params separately from path. Do not allow
+        # /app/discover;api or /app/kibana;management through route checks.
+        if parsed.params:
+            return False
         path = parsed.path.rstrip("/")
         if path == "/app/discover":
             return True
