@@ -17,6 +17,18 @@ ID_PATTERN = re.compile(r"^(CORE|BA|EVD|OUT|UX|QA|INF|QUICK|FOCUS|PRIOR|UI|PERF|
 ALLOWED = {"IMPLEMENTED", "PARTIAL", "GATE", "PLANNED", "NEXT", "DEFERRED"}
 # Evidence pointers are verified to exist, not asserted to demonstrate a PASS.
 POINTERS = {
+    "CORE-04": ("priority_score.py", "tests/test_priority_score.py"),
+    "BA-03": ("ba_briefing.py", "tests/test_ba_briefing.py"),
+    "UX-01": ("assets/dashboard.mjs", "browser_e2e.py"),
+    "QUICK-01": ("assets/fast-handoff.mjs", "tests/fast-handoff.test.mjs"),
+    "FOCUS-01": ("assets/queue-performance.mjs", "tests/queue-performance.test.mjs"),
+    "PRIOR-01": ("assets/effort-planning.mjs", "tests/effort-planning.test.mjs"),
+    "PRIOR-02": ("assets/task-rules.mjs", "tests/priority-hard-lanes.test.mjs"),
+    "PERF-01": ("desk_store.py", "tests/test_json_response_cache.py"),
+    "PERF-02": ("assets/revision-policy.mjs", "browser_e2e.py"),
+    "PERF-03": ("assets/queue-performance.mjs", "tests/queue-performance.test.mjs"),
+    "REL-01": ("desk_store.py", "tests/test_manual_edit_cas.py"),
+    "QA-11": ("desk_store.py", "tests/test_manual_edit_cas.py"),
     "CORE-01": ("jira_sync.py", "tests/test_jira_sync.py"),
     "CORE-02": ("sprint_priority.py", "tests/test_sprint_priority.py"),
     "CORE-03": ("priority_score.py", "tests/test_priority_score.py"),
