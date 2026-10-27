@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {valueMappingMarkup, investigationMarkup, flowDiagnosticsMarkup, evidenceHealthMarkup} from '../assets/evidence-ui.mjs';
+import {valueMappingMarkup, investigationMarkup, flowDiagnosticsMarkup, evidenceHealthMarkup, questionProvenanceNotice} from '../assets/evidence-ui.mjs';
 
 const escape = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -107,4 +107,20 @@ test('taxonomy HTML escapes arbitrary codes and does not fabricate coverage', ()
   assert.match(html, /Немає підтвердженого списку/);
   assert.doesNotMatch(html, /<script>/);
   assert.match(html, /&lt;script&gt;/);
+});
+
+test('ANSWERED with only a source URL must never imply verified semantics', () => {
+  const withLink = questionProvenanceNotice({
+    status: 'ANSWERED', evidenceUrl: 'https://unverified.example.invalid/any',
+    answerVerified: true, sourceLinkProvided: true
+  });
+  assert.match(withLink, /Посилання на джерело є/);
+  assert.match(withLink, /не перевірено незалежно/);
+  const noLink = questionProvenanceNotice({
+    status: 'ANSWERED', answerVerified: true, evidenceUrl: ''
+  });
+  assert.match(noLink, /Немає посилання на джерело/);
+  assert.match(noLink, /не перевірено незалежно/);
+  const open = questionProvenanceNotice({status: 'OPEN', presentInLatestAnalysis: false});
+  assert.match(open, /не закрито автоматично/);
 });
