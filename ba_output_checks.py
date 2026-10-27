@@ -72,6 +72,18 @@ def technical_literals(when, then):
     return tokens
 
 
+def _negated_attachment_match(clause, match):
+    """Scope an attachment's negation/future tense to its own assertion."""
+    if NEGATED_CLAIM.search(match.group(0)):
+        return True
+    # Patterns like "attached logs" begin at "attached"; the safe "not" or
+    # "will be" is immediately before that match, not within its substring.
+    prefix = clause[max(0, match.start() - 40):match.start()]
+    return bool(re.search(
+        r"(?i)\b(?:not(?:\s+yet)?|never|haven't|hasn't|didn't|can't|cannot|won't|"
+        r"(?:will|can|could|may)\s+be)\s*$", prefix))
+
+
 def email_checks(draft, *, attachment_ready=None, verified_supplier_method=None):
     """Only generated draft, never a human-saved email. No mutation."""
     if not isinstance(draft, dict):
@@ -85,7 +97,7 @@ def email_checks(draft, *, attachment_ready=None, verified_supplier_method=None)
         # about another within the same sentence or subject.
         for line in [subject, *body.splitlines()]:
             clauses = re.split(r"(?<=[.!?;])\s+|\s*;\s*|\s*,\s*but\s+|\s+but\s+", line, flags=re.I)
-            if any(not NEGATED_CLAIM.search(match.group(0))
+            if any(not _negated_attachment_match(clause, match)
                    for clause in clauses
                    for match in ATTACHMENT_CLAIM.finditer(clause)):
                 findings.append(issue(
