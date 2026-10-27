@@ -21,11 +21,13 @@ class LocalErrorBudget:
         self._limit = max_samples
         self._lock = Lock()
         self._events = deque()
-        self._truncated = False
+        self._last_eviction = None
 
     def _prune(self, now):
         while self._events and now - self._events[0][0] >= self._window:
             self._events.popleft()
+        if self._last_eviction is not None and now - self._last_eviction >= self._window:
+            self._last_eviction = None
 
     def record(self, path, status_code, duration_ms):
         # Do not store or export path. Health/metrics are intentionally
@@ -42,7 +44,7 @@ class LocalErrorBudget:
             self._prune(now)
             if len(self._events) >= self._limit:
                 self._events.popleft()
-                self._truncated = True
+                self._last_eviction = now
             # Only timestamp, numeric response group and coarse latency.
             self._events.append((now, code >= 500, 400 <= code < 500, elapsed))
 
@@ -66,7 +68,7 @@ class LocalErrorBudget:
                 "errorBudgetRemaining": round(max(0, allowed - errors), 2),
                 "responseLatencyP95Ms": p95,
                 "insufficientSamples": count < 100,
-                "sampleTruncated": self._truncated,
+                "sampleTruncated": self._last_eviction is not None,
                 "noFullAvailabilityClaim": True,
                 "scope": "Observed local API HTTP statuses only, excluding health and metric requests.",
             }
