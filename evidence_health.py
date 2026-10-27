@@ -13,7 +13,7 @@ from pathlib import Path
 from app_config import ROOT, utc_now
 from storage import read_json
 from supplier_logs import flow_references, supplier_hint
-from evidence_trends import event_window, recurrence_window
+from evidence_trends import event_window, observed_event_days, recurrence_window
 
 UUID = re.compile(r"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$")
 CODE = re.compile(r"^[A-Za-z0-9_.:-]{2,90}$")
@@ -58,6 +58,7 @@ def analyze_health(issue, manifests):
                              if isinstance(v, dict) and CODE.fullmatch(str(v.get("code") or ""))}),
             "pairedCandidates": len(((record.get("valueReview") or {}).get("comparisons") or [])[:30]),
             "eventWindow": event_window(record),
+            "observedEventDaysUtc": observed_event_days(record),
         }
         # Replacement exported same flow should not inflate frequency.
         prior = cases.get(flow)

@@ -35,6 +35,20 @@ def event_window(manifest):
         return None
     return min(times), max(times)
 
+def observed_event_days(manifest):
+    """Distinct UTC dates observed in the bounded timeline, without interpolation."""
+    diagnostics = manifest.get("flowDiagnostics") or {}
+    entries = diagnostics.get("timeline") or []
+    observed = set()
+    for row in entries[:200]:
+        if not isinstance(row, dict):
+            continue
+        dt = parse_utc(row.get("eventTimeUtc"))
+        if dt is not None:
+            observed.add(dt.date().isoformat())
+    return sorted(observed)[:60]
+
+
 
 def recurrence_window(cases, *, max_groups=30):
     """Cases must already be unique validated per-flow selected-supplier rows.
@@ -51,7 +65,10 @@ def recurrence_window(cases, *, max_groups=30):
         if len(records) < 2:
             continue
         windows = [x["eventWindow"] for x in records if x.get("eventWindow")]
-        days = sorted({dt.date().isoformat() for window in windows for dt in window})
+        days = sorted({day for item in records for day in (
+            item["observedEventDaysUtc"] if "observedEventDaysUtc" in item
+            else [dt.date().isoformat() for dt in item.get("eventWindow") or ()]
+        )})[:60]
         first = min((window[0] for window in windows), default=None)
         last = max((window[1] for window in windows), default=None)
         result[code] = {

@@ -64,10 +64,12 @@ class EvidenceTrendsTests(unittest.TestCase):
         b = row(FLOW2, "24")
         a["flowDiagnostics"]["timeline"].append(
             {"eventTimeUtc": "2026-10-22T22:55:00Z"})
+        a["flowDiagnostics"]["timeline"].append(
+            {"eventTimeUtc": "2026-10-23T12:00:00Z"})
         result = analyze_health(ISSUE, [a, b])
         evidence = result["recurrence"][0]["temporalEvidence"]
         self.assertEqual(evidence["observedFlowEventDaysUtc"],
-                         ["2026-10-22", "2026-10-24"])
+                         ["2026-10-22", "2026-10-23", "2026-10-24"])
         self.assertEqual(evidence["timeBasis"],
                          "EXPLICIT_PAYLOAD_FLOW_EVENTS_NOT_ERROR_TIMESTAMPS")
         self.assertTrue(all(key not in evidence for key in ("errorStartedAt", "cause")))
