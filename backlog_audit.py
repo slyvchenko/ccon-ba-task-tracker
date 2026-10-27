@@ -74,6 +74,7 @@ POINTERS = {
     "SEC-01": ("desk_store.py", "tests/test_manual_edit_cas.py"),
     "A11Y-02": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
     "UI-07": ("assets/visual-clarity.mjs", "tests/visual-clarity.test.mjs"),
+    "QA-13": ("private_gold_review.py", "tests/test_private_gold_review.py"),
     "QA-14": (".github/workflows/quality.yml", None),
     "QUICK-04": ("email_rules.py", "tests/test_email_rules.py"),
     "QUICK-06": ("assets/manual-done-undo.mjs", "tests/manual-done-undo.test.mjs"),
@@ -215,7 +216,8 @@ def produce(root=ROOT, backlog_text=None):
     }
 
 def serialized(result):
-    return json.dumps(result, ensure_ascii=False, indent=2) + "\n"
+    return json.dumps(result, ensure_ascii=False, indent=2) + "
+"
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
