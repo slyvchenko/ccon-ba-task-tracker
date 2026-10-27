@@ -244,7 +244,7 @@ def create_backup(root, *, force=False, interval_hours=24, keep=7):
         _publish(temporary_meta, manifest)
         verify_backup(root, filename)
         if keep > 0:
-            _trim(folder, keep)
+            _trim(folder, keep, preserve=filename)
         return {"created": True, "filename": filename,
                 "revision": checks["revision"], "tasks": checks["tasks"]}
     finally:
@@ -253,7 +253,7 @@ def create_backup(root, *, force=False, interval_hours=24, keep=7):
                 orphan.unlink()
 
 
-def _trim(folder, count):
+def _trim(folder, count, *, preserve=None):
     # Invalid/corrupted files are NEVER counted as successful backup points.
     valid = []
     for manifest in _ordered_manifests(folder):
@@ -263,6 +263,13 @@ def _trim(folder, count):
             valid.append(manifest)
         except (OSError, ValueError, sqlite3.Error, TypeError):
             continue
+    # After a clock rollback, this newly verified backup may sort before
+    # older future-dated copies. Never immediately delete the copy just made.
+    if preserve is not None:
+        name = preserve + ".json"
+        preserved = next((item for item in valid if item.name == name), None)
+        if preserved is not None:
+            valid = [preserved] + [item for item in valid if item != preserved]
     for manifest in valid[count:]:
         name = manifest.name[:-5]
         path = folder / name

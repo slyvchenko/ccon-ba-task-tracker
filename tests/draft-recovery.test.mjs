@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createDraftRecoveryStore,sanitizeDraftMap,TAB_ID_KEY,RECORD_PREFIX,
-  LEGACY_DRAFT_KEY,RETENTION_DAYS} from '../assets/draft-recovery.mjs';
+  LEGACY_DRAFT_KEY,RETENTION_DAYS,safeBrowserStorage} from '../assets/draft-recovery.mjs';
 
 class FakeStorage {
   constructor() {this.items=new Map();this.failWrites=false;}
@@ -24,6 +24,20 @@ const record=(value='important text',revision=3)=>({
 const clock={time:Date.parse('2026-10-25T13:00:00Z')};
 const store=(local,session,id)=>createDraftRecoveryStore({
   local,session,newId:()=>id,now:()=>clock.time
+});
+
+test('storage property getter throwing SecurityError does not crash setup',()=>{
+  const denied=safeBrowserStorage(()=>{throw Error('SecurityError');});
+  const local=new FakeStorage(),session=new FakeStorage();
+  const sessionDenied=createDraftRecoveryStore({local,session:denied,newId:()=>ids[0]});
+  assert.equal(sessionDenied.id,null);
+  assert.equal(sessionDenied.error,'STORAGE_DENIED');
+  assert.equal(sessionDenied.persist({'CCON-1':record()}),false);
+  const localDenied=createDraftRecoveryStore({
+    local:denied,session,newId:()=>ids[1]});
+  assert.equal(localDenied.id,ids[1]);
+  assert.equal(localDenied.persist({'CCON-1':record()}),false);
+  assert.equal(localDenied.error,'WRITE_FAILED');
 });
 
 test('two independent tabs cannot overwrite one shared unsaved forms key',()=>{

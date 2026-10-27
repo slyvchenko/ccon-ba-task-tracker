@@ -5,6 +5,17 @@ export const LEGACY_DRAFT_KEY = 'ccon-ba-desk.unsaved-forms.v2';
 export const TAB_ID_KEY = 'ccon-ba-desk.recovery-tab.v3';
 export const RECORD_PREFIX = 'ccon-ba-desk.unsaved-tab.v3.';
 export const RETENTION_DAYS = 30;
+
+// Reading window.localStorage/sessionStorage can itself throw SecurityError,
+// before any .getItem() guard in createDraftRecoveryStore can run.
+export function safeBrowserStorage(readStorage) {
+  try { return readStorage(); }
+  catch {
+    const denied=()=>{throw Error('Browser storage denied');};
+    return {getItem:denied,setItem:denied,removeItem:denied,
+      key:denied,get length(){return 0;}};
+  }
+}
 const ISSUE = /^CCON-\d+$/;
 const TAB = /^[a-f0-9-]{20,64}$/;
 const VALID_STATUS = new Set(['AUTO','IN PROGRESS','WAITING INPUT','WAITING DEPENDENCY','NEEDS DECISION','DONE']);
