@@ -85,7 +85,14 @@ def flow_references(issue):
             break
         try:
             parsed = urlparse(url)
-            allowed = parsed.hostname == '192.168.197.246' and parsed.port == 5601 and parsed.path == '/app/kibana'
+            # A Jira-authored URL must not smuggle basic-auth credentials,
+            # arbitrary schemes or non-Kibana routes into a flow download plan.
+            allowed = (
+                len(url) <= 8000 and parsed.scheme in ('http', 'https')
+                and parsed.hostname == '192.168.197.246'
+                and parsed.port == 5601 and parsed.path == '/app/kibana'
+                and parsed.username is None and parsed.password is None
+            )
         except ValueError:
             continue
         if not allowed:
