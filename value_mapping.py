@@ -25,8 +25,12 @@ ALLOWED_SUFFIX = {".xml", ".json", ".soap"}
 UNINFORMATIVE = {"", "true", "false", "null", "none", "ok", "0", "1"}
 
 
-def leaf_values(data, suffix):
-    """Bounded scalar leaves from safe JSON/XML, ephemeral in memory."""
+def leaf_values(data, suffix, *, warnings=None):
+    """Bounded scalar leaves from safe JSON/XML, ephemeral in memory.
+
+    Repeated XML paths are not unique field identities, even when values
+    happen to be equal. Suppress them before suggesting REST↔supplier mappings.
+    """
     if len(data) > MAX_SAMPLE:
         return {}, "PAYLOAD_TOO_LARGE"
     text = data.decode("utf-8-sig", errors="replace")
@@ -38,6 +42,24 @@ def leaf_values(data, suffix):
         except ET.ParseError:
             return {}, "INVALID_XML"
         result = {}
+        repeated_paths = set()
+        ambiguous_identity = False
+
+        def put(path, value):
+            nonlocal ambiguous_identity
+            if path in repeated_paths:
+                return
+            if path in result:
+                # Flattening multiple XML siblings to one path used to keep
+                # the last value, fabricating a unique mapping candidate.
+                del result[path]
+                repeated_paths.add(path)
+                if last_field(path) in ID_FIELDS:
+                    ambiguous_identity = True
+                return
+            if len(result) < MAX_FIELDS:
+                result[path] = value[:8000]
+
         def walk(element, path, depth):
             if depth > 12 or len(result) >= MAX_FIELDS:
                 return
@@ -45,13 +67,18 @@ def leaf_values(data, suffix):
             next_path = (path + "." if path else "") + tag[:80]
             children = list(element)
             if not children and element.text and element.text.strip():
-                result[next_path] = element.text.strip()[:8000]
+                put(next_path, element.text.strip())
             for k, v in list(element.attrib.items())[:20]:
-                if len(result) < MAX_FIELDS:
-                    result[next_path + ".@" + k[:60]] = v[:8000]
+                put(next_path + ".@" + k[:60], v)
             for child in children[:150]:
                 walk(child, next_path, depth + 1)
         walk(root, "", 0)
+        if repeated_paths and warnings is not None:
+            warnings.append("REPEATED_XML_PATH_SKIPPED")
+        # An overwritten request/correlation ID must never disappear and
+        # accidentally enable UNIQUE_SINGLE_EXCHANGE fallback pairing.
+        if ambiguous_identity:
+            return {}, "AMBIGUOUS_CORRELATION_ID"
         return result, None
     if suffix == ".json" or text.lstrip().startswith(("{", "[")):
         try:
@@ -160,7 +187,7 @@ def compare_zip_bytes(raw, aliases):
                 issues.append("LARGE_PAYLOAD_NOT_COMPARED")
                 continue
             rawfile = archive.read(item)
-            values, problem = leaf_values(rawfile, path.suffix.casefold())
+            values, problem = leaf_values(rawfile, path.suffix.casefold(), warnings=issues)
             if problem:
                 issues.append(problem)
                 continue
