@@ -216,8 +216,7 @@ def produce(root=ROOT, backlog_text=None):
     }
 
 def serialized(result):
-    return json.dumps(result, ensure_ascii=False, indent=2) + "
-"
+    return json.dumps(result, ensure_ascii=False, indent=2) + "\n"
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
