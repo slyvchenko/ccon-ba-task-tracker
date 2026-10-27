@@ -25,8 +25,12 @@ ALLOWED_SUFFIX = {".xml", ".json", ".soap"}
 UNINFORMATIVE = {"", "true", "false", "null", "none", "ok", "0", "1"}
 
 
-def leaf_values(data, suffix):
-    """Bounded scalar leaves from safe JSON/XML, ephemeral in memory."""
+def leaf_values(data, suffix, *, warnings=None, ambiguous_values=None, ambiguous_names=None, ambiguous_ids=None):
+    """Bounded scalar leaves from safe JSON/XML, ephemeral in memory.
+
+    Repeated XML paths are not unique field identities, even when values
+    happen to be equal. Suppress them before suggesting REST↔supplier mappings.
+    """
     if len(data) > MAX_SAMPLE:
         return {}, "PAYLOAD_TOO_LARGE"
     text = data.decode("utf-8-sig", errors="replace")
@@ -38,20 +42,72 @@ def leaf_values(data, suffix):
         except ET.ParseError:
             return {}, "INVALID_XML"
         result = {}
+        repeated_paths = set()
+        ambiguity = set()
+        ambiguous_identity = False
+        field_limit_hit = False
+
+        def put(path, value):
+            nonlocal ambiguous_identity, field_limit_hit
+            value = value[:8000]
+            if path in repeated_paths:
+                ambiguity.add(value)
+                if last_field(path) in ID_FIELDS and ambiguous_ids is not None:
+                    ambiguous_ids.add(value.casefold())
+                return
+            if path in result:
+                # A suppressed XML path can still make another same-valued
+                # field OR same-terminal-name checkpoint ambiguous.
+                original = result.pop(path)
+                ambiguity.update((original, value))
+                repeated_paths.add(path)
+                terminal = last_field(path)
+                if ambiguous_names is not None:
+                    ambiguous_names.add(terminal)
+                if terminal in ID_FIELDS:
+                    ambiguous_identity = True
+                    if ambiguous_ids is not None:
+                        ambiguous_ids.update((original.casefold(), value.casefold()))
+                return
+            if len(result) >= MAX_FIELDS:
+                field_limit_hit = True
+                return
+            result[path] = value
+
         def walk(element, path, depth):
-            if depth > 12 or len(result) >= MAX_FIELDS:
+            nonlocal field_limit_hit
+            if depth > 12:
+                field_limit_hit = True
+                return
+            if len(result) >= MAX_FIELDS:
+                # Do not assert uniqueness when later XML siblings could
+                # repeat any admitted field beyond the inspection budget.
+                field_limit_hit = True
                 return
             tag = element.tag.rsplit("}", 1)[-1]
             next_path = (path + "." if path else "") + tag[:80]
             children = list(element)
+            attributes = list(element.attrib.items())
+            # Child/attribute bounds also truncate inspected evidence;
+            # never return uniqueness candidates from an incomplete sample.
+            if len(children) > 150 or len(attributes) > 20:
+                field_limit_hit = True
             if not children and element.text and element.text.strip():
-                result[next_path] = element.text.strip()[:8000]
-            for k, v in list(element.attrib.items())[:20]:
-                if len(result) < MAX_FIELDS:
-                    result[next_path + ".@" + k[:60]] = v[:8000]
+                put(next_path, element.text.strip())
+            for k, v in attributes[:20]:
+                attr_name = k.rsplit("}", 1)[-1]  # XML namespace local name.
+                put(next_path + ".@" + attr_name[:60], v)
             for child in children[:150]:
                 walk(child, next_path, depth + 1)
         walk(root, "", 0)
+        if repeated_paths and warnings is not None:
+            warnings.append("REPEATED_XML_PATH_SKIPPED")
+        if ambiguous_values is not None:
+            ambiguous_values.update(ambiguity)
+        if ambiguous_identity:
+            return {}, "AMBIGUOUS_CORRELATION_ID"
+        if field_limit_hit:
+            return {}, "XML_FIELD_LIMIT_INCOMPLETE"
         return result, None
     if suffix == ".json" or text.lstrip().startswith(("{", "[")):
         try:
@@ -78,7 +134,7 @@ def leaf_values(data, suffix):
 
 
 def last_field(path):
-    return path.rsplit(".", 1)[-1].lstrip("@").casefold().replace("_", "").replace("-", "")
+    return path.rsplit(".", 1)[-1].lstrip("@").rsplit("}", 1)[-1].casefold().replace("_", "").replace("-", "")
 
 
 def correlation_tokens(values):
@@ -95,6 +151,10 @@ def _compare_fields(rest, supplier):
     """Opaque in-memory equality. Never return scalar field values."""
     left = rest["values"]
     right = supplier["values"]
+    # Values from suppressed repeated paths remain in memory solely to
+    # disqualify false unique-equality candidates; never return these values.
+    ambiguous = rest.get("ambiguous_values", set()) | supplier.get("ambiguous_values", set())
+    ambiguous_names = rest.get("ambiguous_names", set()) | supplier.get("ambiguous_names", set())
     left_index, right_index = defaultdict(list), defaultdict(list)
     for path, value in left.items():
         if _useful(value):
@@ -104,7 +164,7 @@ def _compare_fields(rest, supplier):
             right_index[value].append(path)
     matches = []
     for value, paths in left_index.items():
-        if len(paths) != 1 or len(right_index.get(value, [])) != 1:
+        if value in ambiguous or len(paths) != 1 or len(right_index.get(value, [])) != 1:
             continue
         lkey, rkey = paths[0], right_index[value][0]
         if last_field(lkey) in ID_FIELDS or last_field(rkey) in ID_FIELDS:
@@ -120,7 +180,8 @@ def _compare_fields(rest, supplier):
         right_by_name[last_field(key)].append(key)
     different = []
     for name in left_by_name.keys() & right_by_name.keys():
-        if name in ID_FIELDS or len(left_by_name[name]) != 1 or len(right_by_name[name]) != 1:
+        if (name in ID_FIELDS or name in ambiguous_names or
+                len(left_by_name[name]) != 1 or len(right_by_name[name]) != 1):
             continue
         lp, rp = left_by_name[name][0], right_by_name[name][0]
         if left[lp] != right[rp]:
@@ -140,6 +201,8 @@ def compare_zip_bytes(raw, aliases):
     """Structural alignment plus actual ephemeral field equality comparisons."""
     samples = []
     issues = []
+    omitted = defaultdict(int)  # (layer, direction kind) excluded from proof
+    excluded_ids = defaultdict(set)  # Ephemeral, never exported as output
     with ZipFile(io.BytesIO(raw)) as archive:
         entries = archive.infolist()
         if len(entries) > 10000 or sum(x.file_size for x in entries) > 512 * 1024 * 1024:
@@ -158,17 +221,29 @@ def compare_zip_bytes(raw, aliases):
                 continue
             if item.file_size > MAX_SAMPLE:
                 issues.append("LARGE_PAYLOAD_NOT_COMPARED")
+                omitted[(layer, kind)] += 1
                 continue
             rawfile = archive.read(item)
-            values, problem = leaf_values(rawfile, path.suffix.casefold())
+            ambiguous_values, ambiguous_names, ambiguous_ids = set(), set(), set()
+            values, problem = leaf_values(
+                rawfile, path.suffix.casefold(), warnings=issues,
+                ambiguous_values=ambiguous_values,
+                ambiguous_names=ambiguous_names,
+                ambiguous_ids=ambiguous_ids)
             if problem:
                 issues.append(problem)
+                omitted[(layer, kind)] += 1
+                if problem == "AMBIGUOUS_CORRELATION_ID":
+                    excluded_ids[(layer, kind)].update(ambiguous_ids)
                 continue
             if len(samples) >= MAX_CASES * 3:
                 issues.append("CASE_LIMIT_REACHED")
+                omitted[(layer, kind)] += 1
                 continue
             samples.append({"layer": layer, "kind": kind, "path": str(path)[:300],
-                            "values": values, "ids": correlation_tokens(values)})
+                            "values": values, "ids": correlation_tokens(values),
+                            "ambiguous_values": ambiguous_values,
+                            "ambiguous_names": ambiguous_names})
     result, coverage = [], []
     for rest_kind, supplier_kind, direction in (
         ("request", "request", "REST_REQUEST_TO_SUPPLIER_REQUEST"),
@@ -177,6 +252,10 @@ def compare_zip_bytes(raw, aliases):
         rests = [x for x in samples if x["layer"] == "rest" and x["kind"] == rest_kind]
         suppliers = [x for x in samples if x["layer"] == "supplier" and x["kind"] == supplier_kind]
         matched_rest, matched_supplier = set(), set()
+        missing_rest = omitted[("rest", rest_kind)]
+        missing_supplier = omitted[("supplier", supplier_kind)]
+        total_rest = len(rests) + missing_rest
+        total_supplier = len(suppliers) + missing_supplier
         if not rests or not suppliers:
             if rests or suppliers:
                 issues.append("INCOMPLETE_EXCHANGE")
@@ -184,11 +263,21 @@ def compare_zip_bytes(raw, aliases):
             # Candidate edges are by explicit correlation identifiers only.
             # An unrelated unique RQ/RS must never be paired when both sides
             # explicitly disagree about its identity.
+            # Rejected XML with repeated explicit IDs is still evidence that
+            # those IDs are not unique. Do not pair another apparently unique
+            # REST/supplier exchange sharing any excluded identifier.
+            excluded = (excluded_ids[("rest", rest_kind)] |
+                        excluded_ids[("supplier", supplier_kind)])
             edges = {}
             for i, r in enumerate(rests):
                 edges[i] = [j for j, supplier in enumerate(suppliers)
                             if r["ids"] and supplier["ids"] and
-                            r["ids"] & supplier["ids"]]
+                            r["ids"] & supplier["ids"] and
+                            not ((r["ids"] | supplier["ids"]) & excluded)]
+                if r["ids"] & excluded:
+                    issues.append("AMBIGUOUS_PAIRING")
+            if any(supplier["ids"] & excluded for supplier in suppliers):
+                issues.append("AMBIGUOUS_PAIRING")
             for i, rest in enumerate(rests):
                 if len(result) >= MAX_PAIRS:
                     issues.append("COMPARISON_PAIR_LIMIT_REACHED")
@@ -205,7 +294,8 @@ def compare_zip_bytes(raw, aliases):
                 elif len(candidates) > 1:
                     issues.append("AMBIGUOUS_PAIRING")
                     continue
-                elif len(rests) == len(suppliers) == 1 and not rest["ids"] and not suppliers[0]["ids"]:
+                elif (total_rest == total_supplier == 1 and
+                      not rest["ids"] and not suppliers[0]["ids"]):
                     j, basis = 0, "UNIQUE_SINGLE_EXCHANGE"
                 else:
                     # Multiple uncorrelated exchanges without any identifiers
@@ -229,12 +319,12 @@ def compare_zip_bytes(raw, aliases):
                 })
         coverage.append({
             "direction": direction,
-            "restExchanges": len(rests), "supplierExchanges": len(suppliers),
+            "restExchanges": total_rest, "supplierExchanges": total_supplier,
             "candidatePairs": len(matched_rest),
-            "unpairedRest": len(rests) - len(matched_rest),
-            "unpairedSupplier": len(suppliers) - len(matched_supplier),
+            "unpairedRest": total_rest - len(matched_rest),
+            "unpairedSupplier": total_supplier - len(matched_supplier),
             "state": "CANDIDATE_ONLY" if matched_rest and
-                     len(matched_rest) == len(rests) == len(suppliers) else "INCOMPLETE_OR_AMBIGUOUS",
+                     len(matched_rest) == total_rest == total_supplier else "INCOMPLETE_OR_AMBIGUOUS",
         })
     return {"comparisons": result, "coverage": coverage,
             "issues": sorted(set(issues)),
