@@ -80,6 +80,35 @@ class ReleaseReadinessTests(unittest.TestCase):
                               if x["reportedCategory"] in ("PLANNED","NEXT")]),0)
         self.assertEqual([x["priority"] for x in result["items"]][:44],["P0"]*44)
 
+    def test_source_and_test_coverage_requires_both_locators(self):
+        original=closeout_matrix(self.ledger)
+        self.assertEqual(original["sourceTestPointerCoverage"],106)
+        both=next(x for x in self.ledger["items"]
+                  if x["code_locator"] and x["test_locator"])
+        updated=copy.deepcopy(self.ledger)
+        changed=next(x for x in updated["items"] if x["id"]==both["id"])
+        changed["code_locator"]=None
+        # Without reconciled aggregate counts the report must fail closed.
+        with self.assertRaisesRegex(ValueError,"pointer totals"):
+            release_report(updated)
+        updated["counts"]["code_plus_test_locators"]-=1
+        updated["counts"]["no_direct_locator"]+=1
+        report=closeout_matrix(updated)
+        self.assertEqual(report["sourceTestPointerCoverage"],105)
+        item=next(x for x in report["items"] if x["id"]==both["id"])
+        self.assertFalse(item["sourcePointerExists"])
+        self.assertTrue(item["testPointerExists"])
+        self.assertFalse(item["verifiedHumanAcceptance"])
+        self.assertFalse(report["releaseApproved"])
+
+    def test_bad_locator_types_fail_closed_even_when_claimed_counts_match(self):
+        for bad in ("  ",0,False,[],{"file":"source"}):
+            mutated=copy.deepcopy(self.ledger)
+            entry=next(x for x in mutated["items"] if x["code_locator"])
+            entry["code_locator"]=bad
+            with self.subTest(bad=bad),self.assertRaisesRegex(ValueError,"pointer"):
+                release_report(mutated)
+
     def test_closeout_uses_only_public_ids_and_status_codes(self):
         data=copy.deepcopy(self.ledger)
         secret="SYNTHETIC-SUPPLIER-PNR-EXAMPLE"
