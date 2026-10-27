@@ -181,8 +181,9 @@ class JiraAttachmentIntakeTests(unittest.TestCase):
         write_json(self.root / "data/jira_context.json",
                    {"complete": True, "issues": {"CCON-5": original, "CCON-6": other}})
         prepare(self.root)
-        self.issue = other
-        self.save_context()  # CCON-5 is no longer in current personal scope
+        # Preserve the remaining issue under its own key after CCON-5 departs.
+        write_json(self.root / "data/jira_context.json",
+                   {"complete": True, "issues": {"CCON-6": other}})
         other_file = attachment_path(self.root, "CCON-6", "2001", ".json")
         other_file.parent.mkdir(parents=True, exist_ok=True)
         other_file.write_bytes(b'{"synthetic":1}')
