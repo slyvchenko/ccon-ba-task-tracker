@@ -14,7 +14,7 @@ class AuditTest(unittest.TestCase):
         self.assertEqual(report["counts"]["total"], 129)
         self.assertEqual(report["counts"]["reported_statuses"], {
             "DEFERRED": 4, "GATE": 3, "IMPLEMENTED": 40,
-            "PARTIAL": 80, "PLANNED": 2})
+            "PARTIAL": 82})
         items = report["items"]
         self.assertEqual(len(items), len({x["id"] for x in items}))
         self.assertTrue(all(x["suggested_batch"] and x["acceptance_criteria"] for x in items))
@@ -32,8 +32,8 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
                             for key in rows))
         self.assertEqual(len(rows), 129)
-        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 65)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 58)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 66)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 57)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
@@ -73,6 +73,18 @@ class AuditTest(unittest.TestCase):
             self.assertEqual(rows[item_id]["category"],"PARTIAL")
             self.assertEqual(rows[item_id]["human_acceptance"],"NOT_RECORDED")
         self.assertEqual(rows["REL-05"]["test_locator"],"tests/test_crash_consistency.py")
+
+    def test_original_thirteen_requirements_remain_partial_not_human_accepted(self):
+        ids={"PERF-09","PERF-10","REL-09","REL-10","PRIOR-05",
+             "PRIOR-07","PRIOR-08","PRIOR-09","QA-13","OPS-04",
+             "QUICK-08","FOCUS-07","FOCUS-08"}
+        rows={entry["id"]:entry for entry in audit.produce()["items"]}
+        self.assertEqual(len(ids),13)
+        for key in ids:
+            self.assertEqual(rows[key]["category"],"PARTIAL")
+            self.assertEqual(rows[key]["human_acceptance"],"NOT_RECORDED")
+        self.assertEqual(rows["QA-13"]["test_locator"],"tests/test_private_gold_review.py")
+        self.assertEqual(rows["PERF-09"]["test_locator"],"tests/css-cleanup.test.mjs")
 
     def test_p0_business_gates_cannot_become_done_by_code_only(self):
         rows = {x["id"]: x for x in audit.produce()["items"]}
