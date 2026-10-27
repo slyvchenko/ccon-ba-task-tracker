@@ -14,7 +14,7 @@ class AuditTest(unittest.TestCase):
         self.assertEqual(report["counts"]["total"], 129)
         self.assertEqual(report["counts"]["reported_statuses"], {
             "DEFERRED": 4, "GATE": 3, "IMPLEMENTED": 40,
-            "PARTIAL": 80, "PLANNED": 2})
+            "PARTIAL": 82})
         items = report["items"]
         self.assertEqual(len(items), len({x["id"] for x in items}))
         self.assertTrue(all(x["suggested_batch"] and x["acceptance_criteria"] for x in items))
@@ -32,8 +32,8 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
                             for key in rows))
         self.assertEqual(len(rows), 129)
-        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 65)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 58)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 66)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 57)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
@@ -73,6 +73,15 @@ class AuditTest(unittest.TestCase):
             self.assertEqual(rows[item_id]["category"],"PARTIAL")
             self.assertEqual(rows[item_id]["human_acceptance"],"NOT_RECORDED")
         self.assertEqual(rows["REL-05"]["test_locator"],"tests/test_crash_consistency.py")
+
+    def test_last_planned_items_have_code_but_still_require_real_qa(self):
+        rows={x["id"]:x for x in audit.produce()["items"]}
+        for ident in ("PERF-09","QA-13","OPS-04"):
+            self.assertEqual(rows[ident]["category"],"PARTIAL")
+            self.assertEqual(rows[ident]["human_acceptance"],"NOT_RECORDED")
+        self.assertEqual(rows["QA-13"]["code_locator"],"private_gold_review.py")
+        self.assertEqual(rows["QA-13"]["test_locator"],"tests/test_private_gold_review.py")
+        self.assertNotIn("PLANNED",audit.produce()["counts"]["reported_statuses"])
 
     def test_p0_business_gates_cannot_become_done_by_code_only(self):
         rows = {x["id"]: x for x in audit.produce()["items"]}
