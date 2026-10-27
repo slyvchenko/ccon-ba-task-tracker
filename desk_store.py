@@ -198,6 +198,8 @@ class Desk:
         expected = data.get('expectedManualRevision')
         if 'expectedManualRevision' in data and (type(expected) is not int or expected < 0):
             raise ValueError('expectedManualRevision must be a nonnegative integer.')
+        if 'requireActiveTask' in data and data['requireActiveTask'] is not True:
+            raise ValueError('requireActiveTask must be true when specified.')
         if status not in STATUSES or not isinstance(note, str) or len(note) > 20000:
             raise ValueError('Invalid manual status or note (maximum 20,000 characters).')
         if 'emailDraft' in data and data['emailDraft'] is not None:
@@ -222,6 +224,10 @@ class Desk:
             if 'expectedManualRevision' in data:
                 query += ' AND manual_revision=?'
                 values.append(expected)
+            # Undo must never revive a task that left Jira scope between polls.
+            # Keep the active condition inside the same atomic CAS update.
+            if data.get('requireActiveTask') is True:
+                query += ' AND active=1'
             if not c.execute(query, values).rowcount:
                 current = c.execute('SELECT manual_revision FROM tasks WHERE key=?', (key,)).fetchone()
                 if current is None:
