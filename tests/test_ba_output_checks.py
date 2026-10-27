@@ -157,6 +157,18 @@ class BAOutputChecksTests(unittest.TestCase):
                 "body": "Logs are not attached. Could you provide the XML?"}
         self.assertNotIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
                          {f["code"] for f in email_checks(safe, attachment_ready=False)})
+        for body in (
+            "We have not attached logs.",
+            "We haven't attached the logs.",
+            "The ZIP will be attached with the logs after review.",
+            "We can attach the logs later.",
+            "The XML response is not attached but the ZIP will be attached.",
+        ):
+            with self.subTest(safe_body=body):
+                self.assertNotIn("EMAIL_UNVERIFIED_ATTACHMENT_CLAIM",
+                                 {f["code"] for f in email_checks(
+                                     {"body": body}, attachment_ready=None)})
+
 
     def test_original_method_conflict_is_not_erased_by_normalization(self):
         data=analysis()
