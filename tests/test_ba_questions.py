@@ -78,7 +78,9 @@ class QuestionsAndKibanaTests(unittest.TestCase):
         path = self.root / "data/questions/CCON-123.json"
         for url in ("javascript:alert(1)", "https://user:pass@example.invalid",
                     "https://example.invalid:bad/path", "https://[broken",
-                    "https://example.invalid:0/path"):
+                    "https://example.invalid:0/path", "https://bad host/path",
+                    "https://bad..host/path", "https://bad%20host/path",
+                    "https://host.example/path with spaces"):
             with self.subTest(url=url):
                 value = json.loads(path.read_text(encoding="utf-8"))
                 value["questions"][0].update({
@@ -90,6 +92,19 @@ class QuestionsAndKibanaTests(unittest.TestCase):
                 self.assertFalse(result["sourceLinkProvided"])
                 self.assertEqual(result["answer"], "Human text")
                 self.assertEqual(result["evidenceUrl"], url)
+
+    def test_valid_http_hostnames_remain_source_pointers_only(self):
+        first = sync_questions(self.root, "CCON-123", {"missingInfo": ["Check"]})
+        identifier = first["questions"][0]["id"]
+        for valid in ("https://jira.example.invalid/browse/CCON-123",
+                      "http://127.0.0.1:5601/app/discover",
+                      "http://[::1]:5601/app/discover"):
+            with self.subTest(valid=valid):
+                result = update_question(self.root, "CCON-123", identifier,
+                    status="ANSWERED", answer="Human statement",
+                    evidence_url=valid)
+                self.assertTrue(result["sourceLinkProvided"])
+                self.assertFalse(result["answerVerified"])
 
     def test_answer_without_source_stays_unverified_and_source_flag_clears(self):
         first = sync_questions(self.root, "CCON-123", {
