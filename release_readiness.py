@@ -99,7 +99,7 @@ def closeout_matrix(ledger):
     actions = Counter()
     for row in rows:
         code = row["id"]
-        if not re.fullmatch(r"(?:CORE|BA|EVD|OUT|UX|QA|INF|QUICK|FOCUS|PRIOR|UI|PERF|REL|A11Y|OPS|SEC)-\\d{2}",code):
+        if not re.fullmatch(r"(?:CORE|BA|EVD|OUT|UX|QA|INF|QUICK|FOCUS|PRIOR|UI|PERF|REL|A11Y|OPS|SEC)-[0-9]{2}",code):
             raise ValueError("Invalid public requirement identifier")
         category = row["category"]
         if category == "DEFERRED":
