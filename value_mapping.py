@@ -25,7 +25,7 @@ ALLOWED_SUFFIX = {".xml", ".json", ".soap"}
 UNINFORMATIVE = {"", "true", "false", "null", "none", "ok", "0", "1"}
 
 
-def leaf_values(data, suffix, *, warnings=None):
+def leaf_values(data, suffix, *, warnings=None, ambiguous_values=None):
     """Bounded scalar leaves from safe JSON/XML, ephemeral in memory.
 
     Repeated XML paths are not unique field identities, even when values
@@ -43,25 +43,37 @@ def leaf_values(data, suffix, *, warnings=None):
             return {}, "INVALID_XML"
         result = {}
         repeated_paths = set()
+        ambiguity = set()
         ambiguous_identity = False
+        field_limit_hit = False
 
         def put(path, value):
-            nonlocal ambiguous_identity
+            nonlocal ambiguous_identity, field_limit_hit
+            value = value[:8000]
             if path in repeated_paths:
+                ambiguity.add(value)
                 return
             if path in result:
-                # Flattening multiple XML siblings to one path used to keep
-                # the last value, fabricating a unique mapping candidate.
-                del result[path]
+                # Keep values in an ephemeral ambiguity set: deleting the
+                # repeated path must not make another equal value look unique.
+                ambiguity.update((result.pop(path), value))
                 repeated_paths.add(path)
                 if last_field(path) in ID_FIELDS:
                     ambiguous_identity = True
                 return
-            if len(result) < MAX_FIELDS:
-                result[path] = value[:8000]
+            if len(result) >= MAX_FIELDS:
+                field_limit_hit = True
+                return
+            result[path] = value
 
         def walk(element, path, depth):
-            if depth > 12 or len(result) >= MAX_FIELDS:
+            nonlocal field_limit_hit
+            if depth > 12:
+                return
+            if len(result) >= MAX_FIELDS:
+                # Do not assert uniqueness when later XML siblings could
+                # repeat any admitted field beyond the inspection budget.
+                field_limit_hit = True
                 return
             tag = element.tag.rsplit("}", 1)[-1]
             next_path = (path + "." if path else "") + tag[:80]
@@ -69,16 +81,19 @@ def leaf_values(data, suffix, *, warnings=None):
             if not children and element.text and element.text.strip():
                 put(next_path, element.text.strip())
             for k, v in list(element.attrib.items())[:20]:
-                put(next_path + ".@" + k[:60], v)
+                attr_name = k.rsplit("}", 1)[-1]  # XML namespace local name.
+                put(next_path + ".@" + attr_name[:60], v)
             for child in children[:150]:
                 walk(child, next_path, depth + 1)
         walk(root, "", 0)
         if repeated_paths and warnings is not None:
             warnings.append("REPEATED_XML_PATH_SKIPPED")
-        # An overwritten request/correlation ID must never disappear and
-        # accidentally enable UNIQUE_SINGLE_EXCHANGE fallback pairing.
+        if ambiguous_values is not None:
+            ambiguous_values.update(ambiguity)
         if ambiguous_identity:
             return {}, "AMBIGUOUS_CORRELATION_ID"
+        if field_limit_hit:
+            return {}, "XML_FIELD_LIMIT_INCOMPLETE"
         return result, None
     if suffix == ".json" or text.lstrip().startswith(("{", "[")):
         try:
@@ -105,7 +120,7 @@ def leaf_values(data, suffix, *, warnings=None):
 
 
 def last_field(path):
-    return path.rsplit(".", 1)[-1].lstrip("@").casefold().replace("_", "").replace("-", "")
+    return path.rsplit(".", 1)[-1].lstrip("@").rsplit("}", 1)[-1].casefold().replace("_", "").replace("-", "")
 
 
 def correlation_tokens(values):
@@ -122,6 +137,9 @@ def _compare_fields(rest, supplier):
     """Opaque in-memory equality. Never return scalar field values."""
     left = rest["values"]
     right = supplier["values"]
+    # Values from suppressed repeated paths remain in memory solely to
+    # disqualify false unique-equality candidates; never return these values.
+    ambiguous = rest.get("ambiguous_values", set()) | supplier.get("ambiguous_values", set())
     left_index, right_index = defaultdict(list), defaultdict(list)
     for path, value in left.items():
         if _useful(value):
@@ -131,7 +149,7 @@ def _compare_fields(rest, supplier):
             right_index[value].append(path)
     matches = []
     for value, paths in left_index.items():
-        if len(paths) != 1 or len(right_index.get(value, [])) != 1:
+        if value in ambiguous or len(paths) != 1 or len(right_index.get(value, [])) != 1:
             continue
         lkey, rkey = paths[0], right_index[value][0]
         if last_field(lkey) in ID_FIELDS or last_field(rkey) in ID_FIELDS:
