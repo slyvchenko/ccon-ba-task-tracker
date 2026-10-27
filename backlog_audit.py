@@ -253,7 +253,7 @@ def produce(root=ROOT, backlog_text=None):
         "evidence_caveat": "Source/test file existence is a navigation aid, not successful business UAT or verified code coverage.",
         "acceptance_policy": "No row automatically becomes DONE; signed human evidence must be recorded separately.",
         "counts": {"total": len(output), "reported_statuses": counts, "suggested_batches": batched,
-                   "code_plus_test_locators": sum(x["test_locator"] is not None for x in output),
+                   "code_plus_test_locators": sum(bool(x["code_locator"]) and bool(x["test_locator"]) for x in output),
                    "no_direct_locator": sum(x["code_locator"] is None for x in output)},
         "items": output,
     }
