@@ -130,9 +130,9 @@ class LocalEndpointTests(unittest.TestCase):
                                       timeout=5) as sock:
             # Idle before sending request line must not count as app latency.
             time.sleep(.65)
-            raw=(f"GET /api/tasks/revision HTTP/1.1\\r\\n"
-                 f"Host: 127.0.0.1:{self.http.server_port}\\r\\n"
-                 "Connection: close\\r\\n\\r\\n")
+            raw=(f"GET /api/tasks/revision HTTP/1.1\r\n"
+                 f"Host: 127.0.0.1:{self.http.server_port}\r\n"
+                 "Connection: close\r\n\r\n")
             sock.sendall(raw.encode("ascii"))
             sock.settimeout(5)
             received=b""
