@@ -4,6 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import backlog_audit as audit
 
@@ -147,6 +148,24 @@ class AuditTest(unittest.TestCase):
                 self.assertTrue((audit.ROOT / test).is_file())
                 self.assertEqual(row["category"], "PARTIAL")
                 self.assertEqual(row["human_acceptance"], "NOT_RECORDED")
+
+    def test_test_only_locator_never_claims_a_complete_pair(self):
+        # Historical review #80: producer and release validator must agree
+        # even for an unusual but structurally valid test-only pointer.
+        from release_readiness import release_report, closeout_matrix
+        before = audit.produce()
+        with patch.dict(audit.POINTERS, {"CORE-01": (None, "tests/test_jira_sync.py")}):
+            changed = audit.produce()
+        self.assertEqual(changed["counts"]["code_plus_test_locators"],
+                         before["counts"]["code_plus_test_locators"] - 1)
+        self.assertEqual(changed["counts"]["no_direct_locator"],
+                         before["counts"]["no_direct_locator"] + 1)
+        target = next(x for x in changed["items"] if x["id"] == "CORE-01")
+        self.assertIsNone(target["code_locator"])
+        self.assertEqual(target["test_locator"], "tests/test_jira_sync.py")
+        self.assertEqual(release_report(changed)["readiness"],
+                         "BLOCKED_INDEPENDENT_UAT")
+        self.assertEqual(closeout_matrix(changed)["pointerCoverageBreakdown"]["testOnly"], 1)
 
     def test_perf_08_is_source_backed_but_device_acceptance_is_open(self):
         row = next(r for r in audit.produce()["items"] if r["id"] == "PERF-08")
