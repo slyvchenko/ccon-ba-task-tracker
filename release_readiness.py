@@ -72,12 +72,12 @@ def release_report(ledger):
             p0_pending += 1
     if dict(category_counts) != totals.get("reported_statuses"):
         raise ValueError("Backlog category counts have drifted from ledger.")
-    if (totals.get("code_plus_test_locators") != linked_code_and_test
-            or totals.get("no_direct_locator") != missing_code_locator):
-        raise ValueError("Source/test evidence pointer totals have drifted.")
     missing = [ident for ident in HUMAN_GATES if ident not in ids]
     if missing:
         raise ValueError("Required human acceptance gate missing from inventory.")
+    if (totals.get("code_plus_test_locators") != linked_code_and_test
+            or totals.get("no_direct_locator") != missing_code_locator):
+        raise ValueError("Source/test evidence pointer totals have drifted.")
     # Real signoff cannot be validated from GitHub-local synthetic fixtures.
     # Thus even 129 manually edited PASSED strings cannot return READY.
     external = [{"id":ident, "state":"NOT_VERIFIED_IN_PUBLIC_REPO"}
