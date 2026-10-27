@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {effectiveSignal, hasAnalysis, rankTasks, filterTasks, defaultRecipients, signalInfo} from '../assets/task-rules.mjs';
+import {effectiveSignal, hasAnalysis, priorityEmail, actionRank, rankTasks, filterTasks, defaultRecipients, signalInfo} from '../assets/task-rules.mjs';
 
 function task(key, signal = 'WRITE', score = 50, extra = {}) {
   return {key, summary: key, active: true, manualStatus: 'AUTO', contextFingerprint: 'current',
@@ -102,4 +102,32 @@ test('punctuation-only query must not match all tasks via empty folded text', ()
   assert.deepEqual(filterTasks(list,{search:'%'}).map(x=>x.key),['CCON-103']);
   assert.deepEqual(filterTasks(list,{search:'method !!!'}).map(x=>x.key),[]);
   assert.deepEqual(filterTasks(list,{search:'method:'}).map(x=>x.key),['CCON-102']);
+});
+
+test('P0: manual WAIT and NEEDS DECISION cannot inherit stale WRITE ranking', () => {
+  const ready=task('CCON-900','READY',0);
+  for (const manualStatus of ['WAITING INPUT','WAITING DEPENDENCY','NEEDS DECISION','DONE']) {
+    const overridden=task('CCON-901','WRITE',100,{manualStatus});
+    overridden.analysis.needsEmail=true;
+    assert.equal(priorityEmail(overridden),false,manualStatus);
+    assert.ok(actionRank(overridden)>0,manualStatus);
+    assert.deepEqual(rankTasks([overridden,ready]).map(x=>x.key),
+      ['CCON-900','CCON-901'],manualStatus);
+  }
+
+  // Explicit current email work remains first among otherwise active tasks.
+  const email=task('CCON-902','REVIEW',0);
+  email.analysis.needsEmail=true;
+  assert.equal(priorityEmail(email),true);
+  assert.deepEqual(rankTasks([ready,email]).map(x=>x.key),['CCON-902','CCON-900']);
+});
+
+test('P0: stale needsEmail never creates a WRITE priority', () => {
+  const stale=task('CCON-903','WRITE',100);
+  stale.analysis.needsEmail=true;
+  stale.analysis.contextFingerprint='old';
+  const ready=task('CCON-904','READY',0);
+  assert.equal(priorityEmail(stale),false);
+  assert.equal(actionRank(stale),2);
+  assert.deepEqual(rankTasks([stale,ready]).map(x=>x.key),['CCON-904','CCON-903']);
 });
