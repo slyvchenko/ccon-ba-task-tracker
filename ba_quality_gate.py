@@ -202,15 +202,36 @@ def description_review(description, briefing):
         # prose or another rule must not validate a wrong AND/OR condition.
         conditions = [match.group(1) for match in re.finditer(
             r"(?is)\bIF\b(.{0,1500}?)\bTHEN\b", desc)]
+        # IF matching must belong to this rule's predicate, not merely share
+        # technical field names with an unrelated rule (e.g. ACTIVE/OR versus
+        # CANCELLED/AND over the same StatusCode and DeliveryStatusCode).
+        predicate_fields = set(TECHNICAL.findall(when))
+        predicate_literals = technical_literals(when, "")
         relevant = [condition for condition in conditions if
+                    (predicate_fields or predicate_literals) and
                     all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(field) +
-                                  r"(?![A-Za-z0-9_])", condition) for field in tokens)]
-        for operator in ("AND", "OR"):
-            if re.search(r"\b" + operator + r"\b", when, re.I) and not any(
-                    re.search(r"\b" + operator + r"\b", condition, re.I)
-                    for condition in relevant):
+                                  r"(?![A-Za-z0-9_])", condition)
+                        for field in predicate_fields) and
+                    all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(literal) +
+                                  r"(?![A-Za-z0-9_])", condition)
+                        for literal in predicate_literals)]
+        declared_operators = [operator for operator in ("AND", "OR")
+                              if re.search(r"\b" + operator + r"\b", when, re.I)]
+        for operator in declared_operators:
+            if not any(re.search(r"\b" + operator + r"\b", condition, re.I)
+                       for condition in relevant):
                 findings.append({"code": "COMPOUND_OPERATOR_OMITTED", "ref": rule.get("id") or "rule",
                                  "messageUk": "Можливо втрачено AND/OR у складеній підтвердженій умові; перевір логіку."})
+        # Matching field names and retaining the required operator does not
+        # validate a clause that adds an opposite operator (AND vs OR).
+        # Only inspect IF clauses matching this rule's fields.
+        if len(declared_operators) == 1:
+            opposite = "OR" if "AND" in declared_operators else "AND"
+            if any(re.search(r"\b" + opposite + r"\b", condition, re.I)
+                   for condition in relevant):
+                findings.append({"code": "COMPOUND_OPERATOR_CONFLICT",
+                                 "ref": rule.get("id") or "rule",
+                                 "messageUk": "У відповідній IF-умові є додатковий AND/OR, якого немає в підтвердженому правилі; потрібна перевірка логіки."})
     return findings
 
 
@@ -253,7 +274,7 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
                 "CLAIM_EXCERPT_MISSING", "RULE_QA_GAP", "QA_UNKNOWN_RULE_ID",
                 "RULE_ID_DUPLICATED", "CONFIRMED_FIELD_OMITTED",
                 "CONFIRMED_LITERAL_OMITTED", "COMPOUND_OPERATOR_OMITTED",
-                "EMAIL_UNVERIFIED_ATTACHMENT_CLAIM", "EMAIL_METHOD_CONFLICT",
+                "COMPOUND_OPERATOR_CONFLICT", "EMAIL_UNVERIFIED_ATTACHMENT_CLAIM", "EMAIL_METHOD_CONFLICT",
                 "OPEN_REQUIREMENTS_PENDING", "OPEN_RULES_PENDING"}
     state = ("BLOCKED" if any(x["code"] in critical for x in blocking_candidates)
              else "NEEDS_REVIEW" if blocking_candidates else "STRUCTURALLY_VERIFIED")

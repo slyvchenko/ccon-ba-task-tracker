@@ -143,6 +143,52 @@ class QualityGateTests(unittest.TestCase):
                       {item["code"] for item in gate["findings"]})
         self.assertEqual(gate["state"], "BLOCKED")
 
+    def test_added_opposite_operator_in_same_confirmed_if_is_blocked(self):
+        data = analysis()
+        data["standardDescription"] = data["standardDescription"].replace(
+            "IF StatusCode=CANCELLED AND DeliveryStatusCode=REMOVED THEN",
+            "IF StatusCode=CANCELLED AND DeliveryStatusCode=REMOVED "
+            "OR SegmentRefID=EXTRA THEN")
+        result = quality_gate(data, issue())
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT",
+                      {f["code"] for f in result["findings"]})
+        self.assertEqual(result["state"], "BLOCKED")
+        # Contradictory operator also blocks a declared OR with extra AND.
+        data["briefing"]["rules"][0]["whenUk"] = (
+            "StatusCode=CANCELLED OR DeliveryStatusCode=REMOVED")
+        data["standardDescription"] = data["standardDescription"].replace(
+            "StatusCode=CANCELLED AND DeliveryStatusCode=REMOVED OR",
+            "StatusCode=CANCELLED OR DeliveryStatusCode=REMOVED AND")
+        result = quality_gate(data, issue())
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT",
+                      {f["code"] for f in result["findings"]})
+
+    def test_distinct_rules_sharing_fields_do_not_cross_match(self):
+        data = analysis()
+        second = copy.deepcopy(data["briefing"]["rules"][0])
+        second["id"] = "R2"
+        second["whenUk"] = "StatusCode=ACTIVE OR DeliveryStatusCode=PENDING"
+        second["thenUk"] = "Preserve the segment"
+        data["briefing"]["rules"].append(second)
+        data["standardDescription"] += (
+            "\nIF StatusCode=ACTIVE OR DeliveryStatusCode=PENDING "
+            "THEN preserve the segment.")
+        findings = description_review(data["standardDescription"], data["briefing"])
+        codes = {finding["code"] for finding in findings}
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
+        self.assertNotIn("COMPOUND_OPERATOR_OMITTED", codes)
+
+    def test_unrelated_if_or_qa_operator_does_not_conflict(self):
+        data = analysis()
+        data["standardDescription"] += (
+            "\nIF AnotherCode=OTHER OR UnknownFlag=TRUE "
+            "THEN keep unrelated flow.\n"
+            "- Check another condition with OR in QA prose.")
+        result = quality_gate(data, issue())
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT",
+                         {f["code"] for f in result["findings"]})
+        self.assertEqual(result["state"], "STRUCTURALLY_VERIFIED")
+
     def test_verified_local_excerpts_normalize_source_whitespace(self):
         data=analysis()
         link="https://aerticket.atlassian.net/wiki/spaces/SUP/pages/12345/a"
