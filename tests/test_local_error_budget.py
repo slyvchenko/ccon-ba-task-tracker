@@ -66,7 +66,7 @@ class ErrorBudgetUnitTests(unittest.TestCase):
 
     def test_status_is_an_observation_not_an_availability_guarantee(self):
         b=LocalErrorBudget()
-        self.assertIsNone(b.snapshot()["responseLatencyP95Ms"])
+        self.assertIsNone(b.snapshot()["serverTimeToStatusP95Ms"])
         self.assertIn("HTTP statuses", b.snapshot()["scope"])
         with self.assertRaises(ValueError):
             LocalErrorBudget(max_samples=1)
@@ -144,7 +144,7 @@ class LocalEndpointTests(unittest.TestCase):
         self.assertIn(b" 200 OK",received)
         observed=self.budget.snapshot()
         self.assertEqual(observed["sampledApiResponses"],1)
-        self.assertLess(observed["responseLatencyP95Ms"],450)
+        self.assertLess(observed["serverTimeToStatusP95Ms"],450)
 
     def test_disabled_and_cloud_mode_never_expose_diagnostics(self):
         server=ThreadingHTTPServer(("127.0.0.1",0),handler(self.desk))
