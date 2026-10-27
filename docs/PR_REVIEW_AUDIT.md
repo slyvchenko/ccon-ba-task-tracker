@@ -14,7 +14,6 @@
 | Source file | Open findings |
 |---|---:|
 | `assets/dashboard.mjs` | 8 |
-| `history_retention_preview.py` | 2 |
 | `assets/dashboard.css` | 1 |
 | `assets/queue-dom.mjs` | 1 |
 | `docs/SQLITE_RETENTION_EVALUATION.md` | 1 |
