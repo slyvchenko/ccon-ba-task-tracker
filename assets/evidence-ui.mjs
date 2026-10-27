@@ -2,6 +2,15 @@
 const stateLabels = {OPEN:'Відкрите', ANSWERED:'Отримано відповідь',
   SUPERSEDED:'Замінене', NOT_APPLICABLE:'Не стосується'};
 
+export function questionProvenanceNotice(q) {
+  if (q.status === 'ANSWERED')
+    return q.sourceLinkProvided || q.evidenceUrl ?
+      'Посилання на джерело є, але зміст відповіді не перевірено незалежно' :
+      'Немає посилання на джерело; зміст відповіді не перевірено незалежно';
+  return q.presentInLatestAnalysis === false ?
+    'Немає в аналізі, але не закрито автоматично' : '';
+}
+
 export function valueMappingMarkup(report, escape) {
   const comparisons = (report.valueReview?.comparisons || []).slice(0, 20);
   const rows = [];
@@ -174,11 +183,7 @@ export async function loadTaskQuestions(key, api, escape, notify, current, getAc
       '<label>Джерело (URL)<input class="question-url" maxlength="2000" value="' + escape(q.evidenceUrl || '') + '"></label>' +
       '<div class="actions"><button class="save-question quiet" data-question="' + escape(q.id) +
         '">Зберегти</button><span class="muted">' +
-        (q.status === 'ANSWERED' ?
-          (q.sourceLinkProvided || q.evidenceUrl ?
-            'Посилання на джерело є, але зміст відповіді не перевірено незалежно' :
-            'Немає посилання на джерело; зміст відповіді не перевірено незалежно') :
-        q.presentInLatestAnalysis === false ? 'Немає в аналізі, але не закрито автоматично' : '') +
+        questionProvenanceNotice(q) +
       '</span></div></section>').join('');
     // Fill fields for review, never update OPEN status or persist without
     // the analyst explicitly choosing a status and clicking Save.
