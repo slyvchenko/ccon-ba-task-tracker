@@ -1,5 +1,7 @@
 """Synthetic, local HTTP only. No real Jira/network telemetry or task identifiers."""
 import json
+import socket
+import time
 import tempfile
 import threading
 import unittest
@@ -111,6 +113,38 @@ class LocalEndpointTests(unittest.TestCase):
         self.assertEqual(result["server5xx"],0)
         self.assertNotIn("CCON-456",json.dumps(result))
         self.assertEqual(self.desk.revision()["revision"],0)
+
+    def test_base_handler_unsupported_method_is_counted_once(self):
+        from urllib.request import Request
+        with self.assertRaises(HTTPError) as error:
+            self.opener.open(Request(self.base+"/api/tasks/CCON-123",
+                                     data=b"{}",method="PUT"),timeout=5)
+        self.assertEqual(error.exception.code,501)
+        report=self.budget.snapshot()
+        self.assertEqual(report["sampledApiResponses"],1)
+        self.assertEqual(report["server5xx"],1)
+        self.assertEqual(report["client4xx"],0)
+
+    def test_idle_tcp_connection_does_not_inflate_server_latency(self):
+        with socket.create_connection(("127.0.0.1",self.http.server_port),
+                                      timeout=5) as sock:
+            # Idle before sending request line must not count as app latency.
+            time.sleep(.65)
+            raw=(f"GET /api/tasks/revision HTTP/1.1\\r\\n"
+                 f"Host: 127.0.0.1:{self.http.server_port}\\r\\n"
+                 "Connection: close\\r\\n\\r\\n")
+            sock.sendall(raw.encode("ascii"))
+            sock.settimeout(5)
+            received=b""
+            while True:
+                chunk=sock.recv(4096)
+                if not chunk:
+                    break
+                received+=chunk
+        self.assertIn(b"HTTP/1.1 200",received)
+        observed=self.budget.snapshot()
+        self.assertEqual(observed["sampledApiResponses"],1)
+        self.assertLess(observed["responseLatencyP95Ms"],450)
 
     def test_disabled_and_cloud_mode_never_expose_diagnostics(self):
         server=ThreadingHTTPServer(("127.0.0.1",0),handler(self.desk))
