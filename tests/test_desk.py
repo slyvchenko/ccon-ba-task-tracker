@@ -87,6 +87,25 @@ class EndToEnd(unittest.TestCase):
             self.request('/api/import', {})
         self.assertEqual(self.desk.view()['tasks'], original)
 
+    def test_view_is_in_single_read_transaction(self):
+        self.snapshot()
+        # A second connection may write; object-based view must never expose
+        # task rows from one SQLite revision with metadata from another.
+        other = Desk(self.root)
+        seen = []
+        original = self.desk._view_on_connection
+        def intercept(connection, revision=None):
+            self.assertTrue(connection.in_transaction)
+            result = original(connection, revision)
+            seen.append(result)
+            return result
+        self.desk._view_on_connection = intercept
+        try:
+            self.assertEqual(self.desk.view()["revision"], other.revision()["revision"])
+        finally:
+            self.desk._view_on_connection = original
+        self.assertEqual(len(seen), 1)
+
     def test_foreign_site_rejected(self):
         with self.assertRaises(HTTPError) as ctx:
             self.request('/api/import', {}, origin='https://example.com')

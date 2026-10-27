@@ -243,13 +243,22 @@ def process(root=ROOT, key=None):
     plan = read_json(root / "data/jira_attachment_handoff.json", {})
     if not isinstance(plan, dict) or not isinstance(plan.get("jobs"), list):
         raise ValueError("Run jira_attachments.py prepare first.")
+    # An incomplete Jira sync must never make stale downloads authoritative.
+    context = read_json(root / "data/jira_context.json", {})
+    if not isinstance(context, dict) or context.get("complete") is not True:
+        raise ValueError("Complete Jira sync required.")
     rows = []
     for job in plan["jobs"]:
         issue_key = job["issueKey"]
         if key and issue_key != key:
             continue
         ident, suffix = job["attachmentId"], job["extension"]
-        issue = _metadata(root, issue_key)
+        # A task may leave the current personal scope between prepare/process.
+        # Do not abort the entire batch or read a former owner's attachment.
+        issue = (context.get("issues") or {}).get(issue_key)
+        if not isinstance(issue, dict) or not issue.get("fingerprint"):
+            rows.append({"issueKey": issue_key, "attachmentId": ident, "state": "STALE"})
+            continue
         if issue["fingerprint"] != job["contextFingerprint"]:
             rows.append({"issueKey": issue_key, "attachmentId": ident, "state": "STALE"})
             continue

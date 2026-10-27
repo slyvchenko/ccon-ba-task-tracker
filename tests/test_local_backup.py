@@ -164,6 +164,19 @@ class OfflineRecoveryTests(unittest.TestCase):
         self.assertTrue(newer["created"])
         self.assertTrue(verify_backup(self.root,newer["filename"])["verified"])
 
+    def test_timezone_underflow_manifest_is_rejected_without_stopping_backup(self):
+        first = create_backup(self.root, force=True)
+        manifest = self.root / "backups" / (first["filename"] + ".json")
+        item = json.loads(manifest.read_text(encoding="utf-8"))
+        item["createdAt"] = "0001-01-01T00:00:00+01:00"
+        manifest.write_text(json.dumps(item), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "Invalid backup creation timestamp"):
+            verify_backup(self.root, first["filename"])
+        self.assertFalse(backup_status(self.root)["available"])
+        created = create_backup(self.root, force=False)
+        self.assertTrue(created["created"])
+        self.assertTrue(verify_backup(self.root, created["filename"])["verified"])
+
     def test_aged_pending_files_are_removed_but_fresh_in_progress_not_touched(self):
         folder=self.root/"backups"
         folder.mkdir(exist_ok=True)
