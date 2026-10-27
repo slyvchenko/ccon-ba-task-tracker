@@ -10,6 +10,7 @@ import io
 import json
 import re
 import xml.etree.ElementTree as ET
+from xml.parsers import expat
 from collections import Counter
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
@@ -112,6 +113,40 @@ def prepare(root=ROOT, key=None):
     return result
 
 
+def _safe_xml_tag(value):
+    """Keep safe namespace-local structural identity, never raw namespace URLs."""
+    if not isinstance(value, str):
+        return None
+    if value.startswith("{") and "}" in value:
+        namespace, local = value[1:].split("}", 1)
+        safe_local = _safe_field(local)
+        if not safe_local:
+            return None
+        return safe_local + ":ns" + hashlib.sha256(namespace.encode("utf-8")).hexdigest()[:8]
+    return _safe_field(value)
+
+
+def _xml_preflight(payload):
+    """Reject all DTD/entity declarations across XML encodings before DOM build."""
+    parser = expat.ParserCreate()
+    def forbidden(*unused):
+        raise ValueError("XML_DTD_OR_ENTITY_FORBIDDEN")
+    parser.StartDoctypeDeclHandler = forbidden
+    parser.EntityDeclHandler = forbidden
+    parser.ExternalEntityRefHandler = forbidden
+    count = 0
+    def count_node(*unused):
+        nonlocal count
+        count += 1
+        if count > 10000:
+            raise ValueError("XML_NODE_LIMIT")
+    parser.StartElementHandler = count_node
+    try:
+        parser.Parse(payload, True)
+    except expat.ExpatError:
+        raise ValueError("INVALID_XML") from None
+
+
 def _shape(payload, suffix):
     if suffix == ".json":
         try:
@@ -123,17 +158,14 @@ def _shape(payload, suffix):
                     _safe_field(k) for k in obj.keys())))[:60] if isinstance(obj, dict) else [],
                 "arrayItems": min(len(obj), 1000000) if isinstance(obj, list) else None}
     if suffix == ".xml":
-        if re.search(br"<!\s*(?:DOCTYPE|ENTITY)\b", payload, re.I):
-            raise ValueError("XML_DTD_OR_ENTITY_FORBIDDEN")
+        _xml_preflight(payload)
         try:
             root = ET.fromstring(payload)
         except ET.ParseError:
             raise ValueError("INVALID_XML") from None
         nodes = list(root.iter())
-        if len(nodes) > 10000:
-            raise ValueError("XML_NODE_LIMIT")
-        tags = Counter(filter(None, (_safe_field(str(x.tag)) for x in nodes)))
-        return {"type": "XML", "rootTag": _safe_field(str(root.tag)),
+        tags = Counter(filter(None, (_safe_xml_tag(x.tag) for x in nodes)))
+        return {"type": "XML", "rootTag": _safe_xml_tag(root.tag),
                 "nodeCount": len(nodes), "tagCounts": dict(tags.most_common(40))}
     raise ValueError("UNSUPPORTED_STRUCTURE")
 

@@ -114,6 +114,23 @@ class JiraAttachmentIntakeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ZIP_UNPACKED_LIMIT"):
             inspect_bytes(zip_bytes({"huge.json": "A" * (9 * 1024 * 1024)}), ".zip")
 
+    def test_xml_rejects_declarations_with_utf16_encoding(self):
+        source = '<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE a [<!ENTITY x "EXPAND">]><a>&x;</a>'
+        for encoding in ("utf-16", "utf-16-le", "utf-16-be"):
+            with self.subTest(encoding=encoding), self.assertRaisesRegex(
+                    ValueError, "XML_DTD_OR_ENTITY_FORBIDDEN"):
+                inspect_bytes(source.encode(encoding), ".xml")
+        self.assertEqual(inspect_bytes('<a>Safe</a>'.encode("utf-16"), ".xml")["shape"]["rootTag"], "a")
+
+    def test_namespaced_xml_reports_both_distinct_structural_local_fields(self):
+        xml = b'<r xmlns:x="urn:synthetic:one" xmlns:y="urn:synthetic:two"><x:SegmentRefID/><y:SegmentRefID/></r>'
+        report = inspect_bytes(xml, ".xml")["shape"]
+        self.assertEqual(report["nodeCount"], 3)
+        keys = [key for key in report["tagCounts"] if key.startswith("SegmentRefID:ns")]
+        self.assertEqual(len(keys), 2)
+        self.assertTrue(all(report["tagCounts"][key] == 1 for key in keys))
+        self.assertNotIn("urn:synthetic", str(report))
+
     def test_stale_source_cannot_reuse_prior_attachment_manifest(self):
         prepare(self.root)
         self.save("1001", ".json", b'{"TypeCode":"TO"}')
