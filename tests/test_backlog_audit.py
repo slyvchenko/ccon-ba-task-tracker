@@ -32,8 +32,8 @@ class AuditTest(unittest.TestCase):
         self.assertTrue(all(rows[key]["human_acceptance"] == "NOT_RECORDED"
                             for key in rows))
         self.assertEqual(len(rows), 129)
-        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 94)
-        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 29)
+        self.assertEqual(audit.produce()["counts"]["code_plus_test_locators"], 106)
+        self.assertEqual(audit.produce()["counts"]["no_direct_locator"], 17)
         for key in ("QA-02", "QA-03", "QA-10", "QA-13"):
             self.assertNotEqual(rows[key]["human_acceptance"], "PASSED")
 
@@ -96,6 +96,34 @@ class AuditTest(unittest.TestCase):
                 self.assertEqual(entry["test_locator"], test_file)
                 self.assertEqual(entry["evidence_level"], "CODE_AND_TEST_LOCATORS_ONLY")
                 self.assertEqual(entry["human_acceptance"], "NOT_RECORDED")
+                self.assertTrue((audit.ROOT / source).is_file())
+                self.assertTrue((audit.ROOT / test_file).is_file())
+
+    def test_secondary_p1_p2_traceable_locators_do_not_grant_human_signoff(self):
+        expected = {
+            "CORE-08": ("ba_actions.py", "tests/test_action_history.py"),
+            "CORE-09": ("assets/queue-performance.mjs", "tests/queue-performance.test.mjs"),
+            "CORE-10": ("priority_consistency.py", "tests/test_priority_consistency.py"),
+            "BA-11": ("approved_draft.py", "tests/test_approved_draft.py"),
+            "EVD-09": ("value_mapping.py", "tests/test_value_mapping.py"),
+            "EVD-14": ("evidence_trends.py", "tests/test_evidence_trends.py"),
+            "UX-03": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
+            "UX-04": ("assets/dashboard.mjs", "browser_e2e.py"),
+            "QA-07": ("supplier_logs.py", "tests/test_evidence_regression_matrix.py"),
+            "PERF-07": ("performance_smoke.py", "tests/test_local_performance.py"),
+            "A11Y-05": ("assets/dashboard.css", "tests/css-cleanup.test.mjs"),
+            "SEC-04": ("assets/draft-recovery.mjs", "tests/draft-recovery.test.mjs"),
+        }
+        rows = {entry["id"]: entry for entry in audit.produce()["items"]}
+        self.assertEqual(len(expected), 12)
+        for key, (source, test_file) in expected.items():
+            with self.subTest(key=key):
+                row = rows[key]
+                self.assertIn(row["priority"], ("P1", "P2"))
+                self.assertEqual(row["code_locator"], source)
+                self.assertEqual(row["test_locator"], test_file)
+                self.assertEqual(row["evidence_level"], "CODE_AND_TEST_LOCATORS_ONLY")
+                self.assertEqual(row["human_acceptance"], "NOT_RECORDED")
                 self.assertTrue((audit.ROOT / source).is_file())
                 self.assertTrue((audit.ROOT / test_file).is_file())
 
