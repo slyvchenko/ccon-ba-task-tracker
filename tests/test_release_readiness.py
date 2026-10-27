@@ -64,7 +64,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual(result["totalRequirements"],129)
         self.assertEqual(len(result["items"]),129)
         self.assertEqual(len(set(x["id"] for x in result["items"])),129)
-        self.assertEqual(result["sourceTestPointerCoverage"],66)
+        self.assertEqual(result["sourceTestPointerCoverage"],78)
         self.assertFalse(result["releaseApproved"])
         self.assertEqual(result["readiness"],"BLOCKED_INDEPENDENT_UAT")
         self.assertEqual(result["privateAcceptanceVerified"],0)
@@ -89,7 +89,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         data["items"][0]["test_locator"]=secret
         result=closeout_matrix(data)
         self.assertNotIn(secret,json.dumps(result))
-        self.assertEqual(result["sourceTestPointerCoverage"],66)
+        self.assertEqual(result["sourceTestPointerCoverage"],78)
         data["items"][0]["id"]="PRIVATE-PNR-12345"
         with self.assertRaisesRegex(ValueError,"identifier"):
             closeout_matrix(data)
