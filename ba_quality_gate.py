@@ -264,7 +264,7 @@ def quality_gate(analysis, issue, related=None, *, attachment_ready=None, suppli
                 "CLAIM_EXCERPT_MISSING", "RULE_QA_GAP", "QA_UNKNOWN_RULE_ID",
                 "RULE_ID_DUPLICATED", "CONFIRMED_FIELD_OMITTED",
                 "CONFIRMED_LITERAL_OMITTED", "COMPOUND_OPERATOR_OMITTED",
-                "EMAIL_UNVERIFIED_ATTACHMENT_CLAIM", "EMAIL_METHOD_CONFLICT",
+                "COMPOUND_OPERATOR_CONFLICT", "EMAIL_UNVERIFIED_ATTACHMENT_CLAIM", "EMAIL_METHOD_CONFLICT",
                 "OPEN_REQUIREMENTS_PENDING", "OPEN_RULES_PENDING"}
     state = ("BLOCKED" if any(x["code"] in critical for x in blocking_candidates)
              else "NEEDS_REVIEW" if blocking_candidates else "STRUCTURALLY_VERIFIED")
