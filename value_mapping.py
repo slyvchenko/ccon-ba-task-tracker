@@ -185,6 +185,7 @@ def compare_zip_bytes(raw, aliases):
     """Structural alignment plus actual ephemeral field equality comparisons."""
     samples = []
     issues = []
+    omitted = defaultdict(int)  # (layer, direction kind) excluded from proof
     with ZipFile(io.BytesIO(raw)) as archive:
         entries = archive.infolist()
         if len(entries) > 10000 or sum(x.file_size for x in entries) > 512 * 1024 * 1024:
@@ -203,17 +204,24 @@ def compare_zip_bytes(raw, aliases):
                 continue
             if item.file_size > MAX_SAMPLE:
                 issues.append("LARGE_PAYLOAD_NOT_COMPARED")
+                omitted[(layer, kind)] += 1
                 continue
             rawfile = archive.read(item)
-            values, problem = leaf_values(rawfile, path.suffix.casefold(), warnings=issues)
+            ambiguous_values = set()
+            values, problem = leaf_values(
+                rawfile, path.suffix.casefold(), warnings=issues,
+                ambiguous_values=ambiguous_values)
             if problem:
                 issues.append(problem)
+                omitted[(layer, kind)] += 1
                 continue
             if len(samples) >= MAX_CASES * 3:
                 issues.append("CASE_LIMIT_REACHED")
+                omitted[(layer, kind)] += 1
                 continue
             samples.append({"layer": layer, "kind": kind, "path": str(path)[:300],
-                            "values": values, "ids": correlation_tokens(values)})
+                            "values": values, "ids": correlation_tokens(values),
+                            "ambiguous_values": ambiguous_values})
     result, coverage = [], []
     for rest_kind, supplier_kind, direction in (
         ("request", "request", "REST_REQUEST_TO_SUPPLIER_REQUEST"),
@@ -222,6 +230,10 @@ def compare_zip_bytes(raw, aliases):
         rests = [x for x in samples if x["layer"] == "rest" and x["kind"] == rest_kind]
         suppliers = [x for x in samples if x["layer"] == "supplier" and x["kind"] == supplier_kind]
         matched_rest, matched_supplier = set(), set()
+        missing_rest = omitted[("rest", rest_kind)]
+        missing_supplier = omitted[("supplier", supplier_kind)]
+        total_rest = len(rests) + missing_rest
+        total_supplier = len(suppliers) + missing_supplier
         if not rests or not suppliers:
             if rests or suppliers:
                 issues.append("INCOMPLETE_EXCHANGE")
@@ -250,7 +262,8 @@ def compare_zip_bytes(raw, aliases):
                 elif len(candidates) > 1:
                     issues.append("AMBIGUOUS_PAIRING")
                     continue
-                elif len(rests) == len(suppliers) == 1 and not rest["ids"] and not suppliers[0]["ids"]:
+                elif (total_rest == total_supplier == 1 and
+                      not rest["ids"] and not suppliers[0]["ids"]):
                     j, basis = 0, "UNIQUE_SINGLE_EXCHANGE"
                 else:
                     # Multiple uncorrelated exchanges without any identifiers
@@ -274,12 +287,12 @@ def compare_zip_bytes(raw, aliases):
                 })
         coverage.append({
             "direction": direction,
-            "restExchanges": len(rests), "supplierExchanges": len(suppliers),
+            "restExchanges": total_rest, "supplierExchanges": total_supplier,
             "candidatePairs": len(matched_rest),
-            "unpairedRest": len(rests) - len(matched_rest),
-            "unpairedSupplier": len(suppliers) - len(matched_supplier),
+            "unpairedRest": total_rest - len(matched_rest),
+            "unpairedSupplier": total_supplier - len(matched_supplier),
             "state": "CANDIDATE_ONLY" if matched_rest and
-                     len(matched_rest) == len(rests) == len(suppliers) else "INCOMPLETE_OR_AMBIGUOUS",
+                     len(matched_rest) == total_rest == total_supplier else "INCOMPLETE_OR_AMBIGUOUS",
         })
     return {"comparisons": result, "coverage": coverage,
             "issues": sorted(set(issues)),
