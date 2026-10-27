@@ -79,6 +79,14 @@ def read_questions(root, key):
     source = read_json(question_file(root, key), {"key": key, "questions": []})
     if not isinstance(source, dict) or not isinstance(source.get("questions"), list):
         raise ValueError("Invalid local question state.")
+    # Historical versions set answerVerified=True on any HTTP(S) URL.
+    # Downgrade that unsound claim even before the next write. A link is a
+    # source pointer, never machine-confirmed semantic support for an answer.
+    for item in source["questions"]:
+        if isinstance(item, dict):
+            item["answerVerified"] = False
+            item["sourceLinkProvided"] = bool(
+                item.get("status") == "ANSWERED" and item.get("evidenceUrl"))
     return source
 
 
@@ -131,10 +139,13 @@ def update_question(root, key, identifier, *, status, owner="", answer="", evide
         match = next((item for item in source["questions"] if item.get("id") == identifier), None)
         if not match:
             raise ValueError("Unknown question ID.")
-        # Even a human-entered answer without a source is flagged, not called verified.
+        # The analyst controls ANSWERED, but neither an HTTP(S) URL nor the
+        # answer text verifies its truth. Preserve source-link availability
+        # separately; semantic verification requires independent private UAT.
         match.update({"status": status, "owner": owner, "answer": answer,
                       "evidenceUrl": evidence_url, "updatedAt": utc_now(),
-                      "answerVerified": status == "ANSWERED" and bool(evidence_url)})
+                      "sourceLinkProvided": status == "ANSWERED" and bool(evidence_url),
+                      "answerVerified": False})
         source["updatedAt"] = utc_now()
         write_json(question_file(root, key), source, 1 * 1024 * 1024)
         return match
