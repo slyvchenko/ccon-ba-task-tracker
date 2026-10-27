@@ -1,4 +1,4 @@
-import {analysisOf, hasAnalysis, effectiveSignal, actionRank, priorityLane, queueTier} from './task-rules.mjs';
+import {analysisOf, hasAnalysis, effectiveSignal, priorityEmail, actionRank, priorityLane, queueTier} from './task-rules.mjs';
 
 // A structurally checked draft remains a DRAFT: the analyst must verify the
 // source and perform any Jira/email action manually before marking Done.
@@ -32,8 +32,7 @@ export function priorityExplanation(task) {
     lane === 1 ? task.activeSprintStatus === 'VERIFIED'
       ? 'Поза активним спринтом' : 'Спринт не підтверджено' :
     lane === 2 ? 'Завершена вручну' : 'Задача поза поточним snapshot';
-  const write = lane <= 1 && (signal === 'WRITE' ||
-    (hasAnalysis(task) && analysis.needsEmail === true));
+  const write = lane <= 1 && priorityEmail(task);
   const score = hasAnalysis(task) && typeof analysis.queueScore === 'number' &&
     Number.isFinite(analysis.queueScore) && analysis.queueScore >= 0 && analysis.queueScore <= 100
     ? analysis.queueScore : null;
