@@ -1,56 +1,35 @@
-# CCON BA: historical GitHub review audit (2026-10-27)
+# CCON BA review audit: 2026-10-27
 
-[Source-of-truth JSON register](PR_REVIEW_COMMENT_REGISTER.json): exact GitHub comment URL, PR, source path, review-thread ID, severity, disposition and next action for the original 148 findings.
+[Canonical historical review register](PR_REVIEW_COMMENT_REGISTER.json): 148 original findings, each with its original GitHub comment URL, review thread, source file, priority, outcome and proof.
 
-## Verified result after PR #97
+## Current verified historical review counts
 
-- **148 historical findings:** **104 resolved, 44 open**. All 44 remaining open findings are **P2**, no unresolved historical P1; **11** of these open threads are outdated, which does not by itself prove a fix.
-- **26 additional original findings** source-reviewed and their original GitHub threads resolved on 2026-10-27: **8 addressed by new merged PR #94-97**; **18 already addressed by current-main code/tests**. The prior baseline was 78 resolved / 70 open.
-- The historical cohort comprised 90 PR, 148 original comments. Newer PR review threads from #94-97 are not counted as original findings. The historical comment replies now include 26 verified follow-up replies.
-- **44 open** remain `SOURCE_LEVEL_TRIAGE_REQUIRED`; code-level review, reproducer or explicit proof is still needed. Do not mark them DONE solely because a PR was merged or the thread is outdated.
-- No release or BA signoff: **129 canonical requirements = 40 code-IMPLEMENTED / 82 PARTIAL / 3 GATE / 4 DEFERRED**. All 129 human acceptance fields remain NOT_RECORDED. Release remains `BLOCKED_INDEPENDENT_UAT` ([#50](https://github.com/slyvchenko/ccon-ba-task-tracker/issues/50)).
+- Original findings: **148**. Resolved: **124**. Still open: **24**, all **P2**; unresolved historical P1: **0**.
+- **5** open threads are outdated in GitHub; outdated is not automatically fixed.
+- Original opening snapshot: 78 resolved / 70 open. Subsequent follow-up has source-reviewed and closed **46** original threads, including **20** in this batch: 12 fixed in new PR #99, #100, #101 and #103, 8 already addressed by current-main code/tests.
+- Exact proof is posted as replies to each original GitHub review thread; new PR-specific comments are not added to the 148 historical-original cohort.
+- **All merged engineering PR #94 through #101 and #103 passed 4/4 synthetic CI jobs. PR #102 remains separately in CI and is not counted as a historical closure yet.** No independent UAT or production approval is claimed.
 
-## Reviewed fixes (all listed PRs passed 4/4 synthetic quality jobs)
-
-| PR | Original findings closed | Scope |
-|---|---:|---|
-| [#85](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/85) | 4 | Pointers, symlinks, SQLite journal, draft overflow |
-| [#86](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/86) | 2 | Browser storage, clock rollback |
-| [#87](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/87) | 1 | Cross-tab CAS on focused refresh |
-| [#88](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/88) | 2 | UTF-16 DTD, XML namespace shapes |
-| [#89](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/89) | 1 | QA-13 mandatory UAT routing |
-| [#90](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/90) | 2 | Jira attachment parent links and report cap |
-| [#91](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/91) | 2 | Symlink ancestors in diagnostics |
-| [#94](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/94) | 3 | Departed Jira jobs, consistent SQLite views, backup timestamp underflow |
-| [#95](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/95) | 1 | Stale supplier ZIP warning styling |
-| [#96](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/96) | 2 | Rovo standalone description rules and observed event dates |
-| [#97](https://github.com/slyvchenko/ccon-ba-task-tracker/pull/97) | 2 | Error-budget route normalization and p95 rank |
-
-The other 18 source-verification closures link original GitHub threads to current-main files and tests: two evidence fixture cases in #22, backlog counts in #64-65, regex coverage #74, NTFS junction detection #75, seven historical workload findings #67 and five HTTP-budget findings #68. Review replies document the exact evidence; the WAL read-only guarantee from #67 remains **open**.
-
-## Remaining historical P2 findings by file
+## Remaining reviews grouped by current source file
 
 | File | Open findings |
 |---|---:|
 | `assets/dashboard.mjs` | 14 |
-| `ba_quality_gate.py` | 3 |
-| `browser_e2e.py` | 3 |
-| `confluence_local.py` | 3 |
-| `assets/visual-clarity.mjs` | 2 |
-| `ba_output_checks.py` | 2 |
 | `history_retention_preview.py` | 2 |
-| `local_diagnostics.py` | 2 |
-| `sqlite_mode_study.py` | 2 |
-| `apply_analysis.py` | 1 |
 | `assets/dashboard.css` | 1 |
 | `assets/manual-done-undo.mjs` | 1 |
 | `assets/queue-dom.mjs` | 1 |
-| `ba_compactness.py` | 1 |
+| `assets/visual-clarity.mjs` | 1 |
+| `browser_e2e.py` | 1 |
+| `docs/SQLITE_RETENTION_EVALUATION.md` | 1 |
+| `tests/priority-property.test.mjs` | 1 |
+| `weekly_workload.py` | 1 |
 
-Other files: `docs/SQLITE_RETENTION_EVALUATION.md` (1), `model_analysis.py` (1), `release_integrity.py` (1), `tests/priority-property.test.mjs` (1), `tests/test_sqlite_retention_study.py` (1), `weekly_workload.py` (1).
+## Scope and acceptance boundary
 
-## Triage and release boundary
+- Canonical product backlog: **129 requirements** (40 code-IMPLEMENTED, 82 PARTIAL, 3 human GATE, 4 DEFERRED). All 129 human_acceptance entries remain NOT_RECORDED.
+- [Review debt Issue #93](https://github.com/slyvchenko/ccon-ba-task-tracker/issues/93) stays open until 24 remaining original P2 findings are individually triaged and fixed/proved. Historical review resolution is not the same as user acceptance.
+- [Release/UAT Issue #50](https://github.com/slyvchenko/ccon-ba-task-tracker/issues/50) remains `BLOCKED_INDEPENDENT_UAT` until authorized live BA-source gold cases, independent review and native Windows/Edge/NVDA/crash/8h acceptance. No real corporate payload, PNR, credentials or private records may enter this public repository.
+- Merges update the repository, **not** an installed local Windows client.
 
-Prioritize security/privacy and lost writes, false BA/source facts, then user-action correctness, followed by performance, tests and documentation. Each verified defect needs a small scoped fix PR, regression and passing CI; already-fixed findings require exact source/test proof and an original-thread reply.
-
-**Do not claim release-ready from CI:** complete private 26-case independent BA gold review with live authorized Jira/Kibana/CCON access, then native Windows/Edge/NVDA/crash/8h acceptance and owner signoff. No real payloads, tokens, PNRs, or private test files belong in this public repository. Merging to main does not update a local Windows installation.
+Prioritize remaining issues with potential silent writes, false-ready status, missing warnings, recovery, evidence provenance, then noncritical UI/layout/test cases. Create focused PRs and regressions for reproducible bugs; resolve original threads only with merged proof.
