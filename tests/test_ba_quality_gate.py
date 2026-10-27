@@ -132,6 +132,37 @@ class QualityGateTests(unittest.TestCase):
         self.assertNotIn("CANCELLED", str(result["claims"]))
         self.assertNotIn("passenger", str(result["findings"]))
 
+    def test_operator_must_be_in_the_relevant_if_condition_not_qa_prose(self):
+        data=analysis()
+        data["briefing"]["rules"][0]["whenUk"] = (
+            "StatusCode=CANCELLED OR DeliveryStatusCode=REMOVED")
+        data["standardDescription"] += (
+            "\\n- Check that missing or invalid inputs preserve the segment.")
+        gate=quality_gate(data, issue())
+        self.assertIn("COMPOUND_OPERATOR_OMITTED",
+                      {item["code"] for item in gate["findings"]})
+        self.assertEqual(gate["state"], "BLOCKED")
+
+    def test_verified_local_excerpts_normalize_source_whitespace(self):
+        data=analysis()
+        link="https://aerticket.atlassian.net/wiki/spaces/SUP/pages/12345/a"
+        data["briefing"]["confirmedFacts"][0]["sourceUrl"]=link
+        data["briefing"]["confirmedFacts"][0]["sourceExcerpt"]="Supplier says TypeCode=TO"
+        result=quality_gate(data, issue(), local_sources={
+            link: "Supplier says\\n\\tTypeCode=TO"})
+        self.assertNotIn("CLAIM_EXCERPT_NOT_FOUND",
+                         {item["code"] for item in result["findings"]})
+
+    def test_compactness_advice_does_not_downgrade_valid_ready_review(self):
+        data=analysis()
+        data["standardDescription"] += (
+            "\\nContext a: " + "a" * 420 +
+            "\\nContext b: " + "b" * 420)
+        result=quality_gate(data, issue())
+        self.assertEqual(result["state"], "STRUCTURALLY_VERIFIED", result["findings"])
+        self.assertIn("DESCRIPTION_LONG_PARAGRAPHS",
+                      {item["code"] for item in result["findings"]})
+
     def test_legacy_brief_does_not_raise_or_fake_readiness(self):
         old = {"briefing": briefing(), "standardDescription": ""}
         out = quality_gate(old, issue())
