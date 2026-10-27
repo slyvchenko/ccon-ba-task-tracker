@@ -25,7 +25,7 @@ ALLOWED_SUFFIX = {".xml", ".json", ".soap"}
 UNINFORMATIVE = {"", "true", "false", "null", "none", "ok", "0", "1"}
 
 
-def leaf_values(data, suffix, *, warnings=None, ambiguous_values=None):
+def leaf_values(data, suffix, *, warnings=None, ambiguous_values=None, ambiguous_names=None, ambiguous_ids=None):
     """Bounded scalar leaves from safe JSON/XML, ephemeral in memory.
 
     Repeated XML paths are not unique field identities, even when values
@@ -52,14 +52,22 @@ def leaf_values(data, suffix, *, warnings=None, ambiguous_values=None):
             value = value[:8000]
             if path in repeated_paths:
                 ambiguity.add(value)
+                if last_field(path) in ID_FIELDS and ambiguous_ids is not None:
+                    ambiguous_ids.add(value)
                 return
             if path in result:
-                # Keep values in an ephemeral ambiguity set: deleting the
-                # repeated path must not make another equal value look unique.
-                ambiguity.update((result.pop(path), value))
+                # A suppressed XML path can still make another same-valued
+                # field OR same-terminal-name checkpoint ambiguous.
+                original = result.pop(path)
+                ambiguity.update((original, value))
                 repeated_paths.add(path)
-                if last_field(path) in ID_FIELDS:
+                terminal = last_field(path)
+                if ambiguous_names is not None:
+                    ambiguous_names.add(terminal)
+                if terminal in ID_FIELDS:
                     ambiguous_identity = True
+                    if ambiguous_ids is not None:
+                        ambiguous_ids.update((original, value))
                 return
             if len(result) >= MAX_FIELDS:
                 field_limit_hit = True
@@ -146,6 +154,7 @@ def _compare_fields(rest, supplier):
     # Values from suppressed repeated paths remain in memory solely to
     # disqualify false unique-equality candidates; never return these values.
     ambiguous = rest.get("ambiguous_values", set()) | supplier.get("ambiguous_values", set())
+    ambiguous_names = rest.get("ambiguous_names", set()) | supplier.get("ambiguous_names", set())
     left_index, right_index = defaultdict(list), defaultdict(list)
     for path, value in left.items():
         if _useful(value):
@@ -171,7 +180,8 @@ def _compare_fields(rest, supplier):
         right_by_name[last_field(key)].append(key)
     different = []
     for name in left_by_name.keys() & right_by_name.keys():
-        if name in ID_FIELDS or len(left_by_name[name]) != 1 or len(right_by_name[name]) != 1:
+        if (name in ID_FIELDS or name in ambiguous_names or
+                len(left_by_name[name]) != 1 or len(right_by_name[name]) != 1):
             continue
         lp, rp = left_by_name[name][0], right_by_name[name][0]
         if left[lp] != right[rp]:
