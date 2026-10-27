@@ -91,6 +91,7 @@ def flow_references(issue):
                 len(url) <= 8000 and parsed.scheme in ('http', 'https')
                 and parsed.hostname == '192.168.197.246'
                 and parsed.port == 5601 and parsed.path == '/app/kibana'
+                and not parsed.params
                 and parsed.username is None and parsed.password is None
             )
         except ValueError:
