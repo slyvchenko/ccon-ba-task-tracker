@@ -3,7 +3,7 @@ import {createLogsController} from './logs.mjs';
 import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {detailContentFingerprint,createDetailRequestScope} from './detail-refresh-policy.mjs';
 import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './manual-edit-policy.mjs';
-import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload} from './manual-done-undo.mjs';
+import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload,rebaseUndoForm} from './manual-done-undo.mjs';
 import {createDraftRecoveryStore,RETENTION_DAYS,safeBrowserStorage} from './draft-recovery.mjs';
 import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
@@ -959,7 +959,7 @@ async function undoLastDone() {
   if(busy || !lastDoneToken) return;
   const token=lastDoneToken;
   const task=tasks.find(item=>item.key===token.key);
-  if(!canUndoLocalDone(token,task) || isDirty(token.key)) {
+  if(!canUndoLocalDone(token,task)) {
     lastDoneToken=null;
     updateUndoControl();
     message('Не вдалося скасувати: стан задачі вже змінився. Перевір актуальну версію.',true);
@@ -973,6 +973,11 @@ async function undoLastDone() {
     task.manualStatus=token.priorStatus;
     task.manualRevision=response.manualRevision;
     task.modifiedAt=new Date().toISOString();
+    // A prior status-only save may leave user edits unsaved in the form.
+    // Rebase their CAS token and saved status without discarding buffers.
+    const restored=rebaseUndoForm(forms.get(token.key),savedForm(task),response.manualRevision);
+    if(restored) forms.set(token.key,restored);
+    else forms.delete(token.key);
     lastDoneToken=null;
     selected=task.key;
     queueModel.invalidate();
