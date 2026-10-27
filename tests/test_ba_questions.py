@@ -72,6 +72,25 @@ class QuestionsAndKibanaTests(unittest.TestCase):
         self.assertEqual(preserved["answer"], "Manually entered")
         self.assertFalse(json.loads(path.read_text())["questions"][0]["answerVerified"])
 
+    def test_legacy_invalid_source_cannot_be_painted_as_linked_evidence(self):
+        first = sync_questions(self.root, "CCON-123", {
+            "missingInfo": ["Confirm source"]})
+        path = self.root / "data/questions/CCON-123.json"
+        for url in ("javascript:alert(1)", "https://user:pass@example.invalid",
+                    "https://example.invalid:bad/path", "https://[broken",
+                    "https://example.invalid:0/path"):
+            with self.subTest(url=url):
+                value = json.loads(path.read_text(encoding="utf-8"))
+                value["questions"][0].update({
+                    "status": "ANSWERED", "answer": "Human text",
+                    "evidenceUrl": url, "answerVerified": True})
+                path.write_text(json.dumps(value), encoding="utf-8")
+                result = read_questions(self.root, "CCON-123")["questions"][0]
+                self.assertFalse(result["answerVerified"])
+                self.assertFalse(result["sourceLinkProvided"])
+                self.assertEqual(result["answer"], "Human text")
+                self.assertEqual(result["evidenceUrl"], url)
+
     def test_answer_without_source_stays_unverified_and_source_flag_clears(self):
         first = sync_questions(self.root, "CCON-123", {
             "missingInfo": ["Confirm mapping rule"]})
