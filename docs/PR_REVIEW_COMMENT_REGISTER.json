@@ -2,29 +2,30 @@
   "schema_version": 1,
   "scope": "PUBLIC_REVIEW_METADATA_ONLY",
   "as_of": "2026-10-27",
-  "branch_basis": "main after PR #91",
-  "caveat": "All 148 original inline threads are inventoried. A resolved thread is a sourced review disposition or tested merge, NOT human UAT. Open P2 findings need current-main evidence or a scoped fix.",
+  "branch_basis": "main after PR #97; current GitHub thread resolution rechecked 2026-10-27",
+  "caveat": "Tracks 148 original historical review findings. Additional newer PR review threads are not part of this original cohort. Review resolution is code/source evidence, not BA or Windows human UAT; 129 canonical requirements remain independent.",
   "counts": {
     "historical_prs": 90,
-    "inline_comments": 211,
+    "inline_comments": 237,
     "original_review_findings": 148,
-    "inline_replies": 63,
+    "inline_replies": 89,
     "pr_conversation_comments": 187,
     "issue50_conversation_comments": 19,
     "github_threads_assessed": 148,
-    "open_review_threads": 70,
-    "resolved_review_threads": 78,
-    "outdated_open_threads": 26,
+    "open_review_threads": 44,
+    "resolved_review_threads": 104,
+    "outdated_open_threads": 11,
     "original_severity": {
       "P2": 119,
       "P1": 29
     },
     "open_severity": {
-      "P2": 70
+      "P2": 44
     },
-    "verified_main_fixes": 14,
-    "verified_preexisting": 17,
-    "superseded": 1
+    "verified_main_fixes": 22,
+    "verified_preexisting": 35,
+    "superseded": 1,
+    "newly_source_verified_in_followup": 26
   },
   "findings": [
     {
@@ -37,11 +38,11 @@
       "summary": "** Include the task-description rules in the Rovo workflow**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6vuM5y",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "FIXED_IN_MAIN_PR_96",
+      "linked_fix": "#96",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4367701815,
@@ -421,11 +422,11 @@
       "summary": "** Mark jobs for departed issues stale instead of aborting the batch**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6v-9qY",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "FIXED_IN_MAIN_PR_94",
+      "linked_fix": "#94",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4369892491,
@@ -469,11 +470,11 @@
       "summary": "** Match the timestamp assertion to the fixture's explicit times**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6v_A8g",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4369914403,
@@ -485,11 +486,11 @@
       "summary": "** Place the external-root test fixture outside the workspace**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6v_A8j",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4369914404,
@@ -501,11 +502,11 @@
       "summary": "** Preserve intermediate observed dates when forming event windows**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6v_A8k",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "FIXED_IN_MAIN_PR_96",
+      "linked_fix": "#96",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4369928913,
@@ -709,11 +710,11 @@
       "summary": "** Read task data and its revision from one SQLite snapshot**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wBiD8",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "FIXED_IN_MAIN_PR_94",
+      "linked_fix": "#94",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4371020339,
@@ -1173,11 +1174,11 @@
       "summary": "** Preserve the amber style used by stale ZIP warnings**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wFU2E",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "FIXED_IN_MAIN_PR_95",
+      "linked_fix": "#95",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4374351434,
@@ -1301,11 +1302,11 @@
       "summary": "** Handle overflow when normalizing invalid manifest timestamps**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wKGoZ",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "FIXED_IN_MAIN_PR_94",
+      "linked_fix": "#94",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4374953170,
@@ -1845,11 +1846,11 @@
       "summary": "** Recompute audit counts from the canonical backlog**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6warW1",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381489197,
@@ -1925,11 +1926,11 @@
       "summary": "** Update the unmapped-locator expectation alongside the mapped count**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wa3Re",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381566687,
@@ -1973,11 +1974,11 @@
       "summary": "** Classify AUTO tasks using their recorded BA signal**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wbQ7Y",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381737091,
@@ -1989,11 +1990,11 @@
       "summary": "** Keep the current week provisional throughout Sunday**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wbQ7f",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381737097,
@@ -2005,11 +2006,11 @@
       "summary": "** Convert relative workspace paths before building the SQLite URI**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wbQ7j",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381752810,
@@ -2021,11 +2022,11 @@
       "summary": "** Count recorded transitions when archived tasks return**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wbTSp",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381765575,
@@ -2085,11 +2086,11 @@
       "summary": "** Preserve analysis freshness before classifying AUTO tasks**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wbaQv",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381835880,
@@ -2117,11 +2118,11 @@
       "summary": "** Exclude freshness-metadata upgrades from completion transitions**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wbm46",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4381950328,
@@ -2149,11 +2150,11 @@
       "summary": "** Sanitize argument-parser errors before writing to stderr**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wb9Tg",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385384181,
@@ -2165,11 +2166,11 @@
       "summary": "** Expire the truncation flag with the rolling window**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wjxuz",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385406959,
@@ -2181,11 +2182,11 @@
       "summary": "** Include HTTP errors emitted by the base request handler**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wj1Nd",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385406967,
@@ -2197,11 +2198,11 @@
       "summary": "** Exclude idle connection time from response latency**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wj1Nk",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385427870,
@@ -2213,11 +2214,11 @@
       "summary": "Functional Correctness",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wj4cM",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "FIXED_IN_MAIN_PR_97",
+      "linked_fix": "#97",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385427877,
@@ -2229,11 +2230,11 @@
       "summary": "Functional Correctness",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wj4cQ",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": false,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_OR_FIX_ON_CURRENT_MAIN"
+      "outcome": "FIXED_IN_MAIN_PR_97",
+      "linked_fix": "#97",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385431603,
@@ -2245,11 +2246,11 @@
       "summary": "** Match the server's HTTP/1.0 response in the latency test**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wj5C5",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385456244,
@@ -2261,11 +2262,11 @@
       "summary": "** Update the latency fixture to use the renamed metric**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wj8x0",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385528614,
@@ -2309,11 +2310,11 @@
       "summary": "** Remove double escaping from the new regex literals**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wkSys",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385616540,
@@ -2357,11 +2358,11 @@
       "summary": "** Reject junction parents on supported older Python versions**",
       "severity": "P2",
       "thread_id": "PRRT_kwDOU2bYjc6wkYW-",
-      "thread_resolved": false,
+      "thread_resolved": true,
       "thread_outdated": true,
-      "outcome": "SOURCE_LEVEL_TRIAGE_REQUIRED",
-      "linked_fix": null,
-      "next_action": "VERIFY_SUPERSESSION_ON_CURRENT_MAIN"
+      "outcome": "VERIFIED_ON_CURRENT_MAIN",
+      "linked_fix": "current main + targeted synthetic tests",
+      "next_action": "NONE_FOR_THIS_HISTORICAL_REVIEW"
     },
     {
       "id": 4385948273,
