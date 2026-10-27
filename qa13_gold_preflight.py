@@ -56,8 +56,9 @@ def _frozen_prediction(pack, data, variant):
 
 
 def check(root=ROOT):
-    directory = Path(root) / "data" / "evaluation"
-    if directory.is_symlink():
+    data_root = Path(root) / "data"
+    directory = data_root / "evaluation"
+    if data_root.is_symlink() or directory.is_symlink():
         raise ValueError("Symlinked private evaluation directory refused.")
     payload = {key: _read_private(directory, name) for key, name in FILES.items()}
     result = {
