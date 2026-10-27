@@ -6,7 +6,7 @@ import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './
 import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload,rebaseUndoForm} from './manual-done-undo.mjs';
 import {createDraftRecoveryStore,RETENTION_DAYS,safeBrowserStorage} from './draft-recovery.mjs';
 import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
-  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
+  restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction, isMainEditorTarget}
   from './focus-navigation.mjs';
 import {quickHandoff, priorityExplanation, priorityDimensions, completionPrompt} from './fast-handoff.mjs';
 import {CANDIDATE_TEMPLATES,candidateTemplateFor} from './candidate-templates.mjs';
@@ -1261,7 +1261,7 @@ document.addEventListener('keydown', event => {
     dialogOpen:$('bulkDialog').open,editing:isTextEditingTarget(event.target)
   });
   if (!action || busy) return;
-  if (action === 'SAVE' && !$('detail').contains(event.target)) return;
+  if (action === 'SAVE' && (!$('detail').contains(event.target) || !isMainEditorTarget(event.target))) return;
   event.preventDefault();
   if (action === 'SEARCH') {
     $('search').focus({preventScroll:true});
