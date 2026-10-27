@@ -42,3 +42,18 @@ test('legacy overridden row density rules stay consolidated',()=>{
  assert.ok(css.includes('margin:3px 0 4px;'));
  assert.ok(!css.includes('font-size:11px;\n  font-weight:400;\n  padding:3px 6px;'));
 });
+
+test('identical mobile textarea and menu alignment declarations remain consolidated',()=>{
+ const textarea=[...css.matchAll(/\.email-panel textarea\s*\{([^}]*)\}/g)].map(x=>x[1]);
+ assert.equal(textarea.filter(x=>/min-height\s*:\s*140px/.test(x)).length,1);
+ assert.equal(textarea.filter(x=>/height\s*:\s*140px/.test(x)).length,1);
+ // Keep the 11pt editor font explicit; removing the duplicate sizing does
+ // not remove the editor-specific typography.
+ assert.ok(textarea.some(x=>/font-size\s*:\s*11pt/.test(x)));
+ const menu=[...css.matchAll(/\.data-menu-items button\s*\{([^}]*)\}/g)].map(x=>x[1]);
+ assert.equal(menu.filter(x=>/text-align\s*:\s*left/.test(x)).length,1);
+ assert.ok(menu.some(x=>/overflow-wrap\s*:\s*anywhere/.test(x)));
+ for(const token of ['max-width:750px','max-width:380px','forced-colors:active',
+                      'prefers-reduced-motion:reduce',':focus-visible'])
+   assert.ok(css.includes(token));
+});
