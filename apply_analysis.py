@@ -10,7 +10,7 @@ from draft_output import make_ready_draft, supplier_zip_ready
 from supplier_logs import verified_method
 from review_report import build_report, write_report
 from prompt_calibration import update_daily
-from ba_questions import sync_questions, all_evidence
+from ba_questions import sync_questions, all_evidence, read_questions
 from ba_decisions import sync_decision_proposals
 from ba_quality_gate import quality_gate
 from ba_compactness import compact_generated
@@ -74,6 +74,7 @@ def _apply(path,root,focus_issue=None):
         analysis['descriptionCompactness'] = compactness
         verified_supplier_method = verified_method(root, task['key'], current['fingerprint'])
         attachment_ready = supplier_zip_ready(root, task['key'])
+        original_email_draft = analysis.get('emailDraft')
         analysis['emailDraft']=make_ready_draft(
             task['key'], analysis, method=verified_supplier_method,
             attachment_ready=attachment_ready)
@@ -87,7 +88,9 @@ def _apply(path,root,focus_issue=None):
         gate = quality_gate(analysis, current, related,
                             attachment_ready=attachment_ready,
                             supplier_method=verified_supplier_method,
-                            local_sources=doc_sources)
+                            local_sources=doc_sources,
+                             original_email_draft=original_email_draft,
+                             persisted_questions=read_questions(root, task['key'])['questions'])
         gate['sourceAudit'] = doc_audit
         analysis['qualityGate'] = gate
         # A machine-verified link/excerpt is not semantic correctness.
