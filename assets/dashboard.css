@@ -213,7 +213,8 @@ textarea {
   font-size:13px;
   font-weight:400;
   margin:3px 0 4px;
-  line-height:1.35
+  line-height:1.35;
+  overflow-wrap:anywhere
 }
 .rank {
   font-weight:400;
@@ -381,7 +382,10 @@ label {
 }
 .email-panel textarea {
   min-height:140px;
-  height:140px
+  height:140px;
+  font-family:Aptos,Arial,sans-serif;
+  font-size:11pt;
+  color:#000
 }
 .email-intro {
   margin:0 0 12px!important;
@@ -557,24 +561,10 @@ label {
     height:140px
   }
 }
-.row {
-  min-width:0
-}
-.row-title {
-  overflow-wrap:anywhere
-}
-.row .badge {
-  font-weight:400
-}
 .right-column {
   display:flex;
   flex-direction:column;
   min-width:0
-}
-.email-panel textarea {
-  font-family:Aptos,Arial,sans-serif;
-  font-size:11pt;
-  color:#000
 }
 /* Requested density refinements; retain the existing dashboard layout. */
 body,button,input,select,textarea,option {
@@ -582,6 +572,7 @@ body,button,input,select,textarea,option {
 }
 .row {
   display:grid;
+  min-width:0;
   grid-template-columns:24px minmax(0,1fr);
   column-gap:8px;
   padding:8px 10px
@@ -605,6 +596,7 @@ body,button,input,select,textarea,option {
   gap:4px
 }
 .row .badge {
+  font-weight:400;
   font-size:10px;
   line-height:1.25;
   padding:2px 5px;
@@ -1417,7 +1409,7 @@ a:focus-visible {
 
 /* v2.33: restrained and keyboard-accessible controls inside the original page. */
 .data-menu-items {min-width:min(350px,calc(100vw - 24px));max-width:calc(100vw - 24px)}
-.data-menu-items button {white-space:normal;text-align:left;overflow-wrap:anywhere}
+.data-menu-items button {white-space:normal;overflow-wrap:anywhere}
 #recoveryState {margin:3px 0;line-height:1.45;overflow-wrap:anywhere}
 #queueAnnouncer {white-space:nowrap}
 .row:focus-visible {outline:3px solid #2258a9;outline-offset:-3px}

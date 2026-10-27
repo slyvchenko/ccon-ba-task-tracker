@@ -42,3 +42,24 @@ test('legacy overridden row density rules stay consolidated',()=>{
  assert.ok(css.includes('margin:3px 0 4px;'));
  assert.ok(!css.includes('font-size:11px;\n  font-weight:400;\n  padding:3px 6px;'));
 });
+
+test('global row/badge and technical wrapping cascade is consolidated',()=>{
+ assert.equal((css.match(/\.row-title\s*\{/g)||[]).length,1);
+ assert.equal((css.match(/\.row \.badge\s*\{/g)||[]).length,1);
+ const title=css.match(/\.row-title\s*\{([^}]+)\}/)?.[1]||'';
+ const badge=css.match(/\.row \.badge\s*\{([^}]+)\}/)?.[1]||'';
+ const row=css.match(/\.row\s*\{[^}]*display:grid;([^}]+)\}/)?.[1]||'';
+ assert.match(title,/overflow-wrap:anywhere/);
+ assert.match(title,/-webkit-line-clamp:2/);
+ assert.match(badge,/font-weight:400/);
+ assert.match(badge,/font-size:10px/);
+ assert.match(row,/min-width:0/);
+ assert.ok(!css.includes('.row {\n  min-width:0\n}'));
+});
+test('email legibility and adaptive accessibility styles survive consolidation',()=>{
+ const value=css.match(/\.email-panel textarea\s*\{[^}]*font-family:Aptos,Arial,sans-serif;[^}]*font-size:11pt;[^}]*color:#000[^}]*\}/);
+ assert.ok(value,'full independent email readability contract');
+ for(const fragment of ['@media(max-width:750px)','@media(max-width:380px)',
+   '@media (forced-colors:active)','@media (prefers-reduced-motion:reduce)',
+   'summary:focus-visible']) assert.ok(css.includes(fragment),'lost '+fragment);
+});
