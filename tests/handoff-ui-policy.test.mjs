@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {handoffCopyPolicy,mailActionLabels} from '../assets/handoff-ui-policy.mjs';
+import {handoffCopyPolicy,mailActionLabels,readyToCopyCurrentHandoff} from '../assets/handoff-ui-policy.mjs';
 test('one primary copy when structural QA passes, local approval remains separate',()=>{
  const info=handoffCopyPolicy({description:'Synthetic document',readyForCopy:true,
   qualityState:'STRUCTURALLY_VERIFIED'});
@@ -31,4 +31,16 @@ test('mail verbs distinguish copy and open, never imply sent',()=>{
  assert.ok(!local.open.includes('Надіслати'));
  assert.match(mailActionLabels(true).open,/Зберегти й скопіювати/);
  assert.match(local.batch,/Пакет/);
+});
+
+test('deferred refresh cannot copy stale description or bypass current quality gate',()=>{
+ const shown={readyForCopy:true,description:'Synthetic approved outline'};
+ const valid={selectedKey:'CCON-4',displayedKey:'CCON-4',taskKey:'CCON-4',
+  renderedVersion:'v1',latestVersion:'v1',shown,latest:{...shown}};
+ assert.equal(readyToCopyCurrentHandoff(valid),true);
+ assert.equal(readyToCopyCurrentHandoff({...valid,latestVersion:'v2'}),false);
+ assert.equal(readyToCopyCurrentHandoff({...valid,latest:{readyForCopy:false,description:shown.description}}),false);
+ assert.equal(readyToCopyCurrentHandoff({...valid,latest:{...shown,description:'Changed by import'}}),false);
+ assert.equal(readyToCopyCurrentHandoff({...valid,selectedKey:'CCON-5'}),false);
+ assert.equal(readyToCopyCurrentHandoff({...valid,renderedVersion:''}),false);
 });
