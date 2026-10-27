@@ -114,7 +114,7 @@
 | A11Y-05 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | A-05/A-10 |
 | A11Y-06 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. Перевірити перетин: VIS-14. | A-09 and touch accuracy |
 | QA-15 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | OS, Python version, locale, browser, power mode |
-| OPS-04 | P2 | PLANNED | Спершу usage/overlap review; потім build або явно defer. | No remote telemetry or background transfer |
+| OPS-04 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | No remote telemetry or background transfer |
 | OPS-05 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | Speed and accurate stale flags |
 | SEC-04 | P2 | PARTIAL | Спершу usage/overlap review; потім build або явно defer. | No stale PII in unsafe storage without retention policy |
 
