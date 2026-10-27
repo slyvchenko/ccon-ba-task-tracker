@@ -61,10 +61,10 @@ class QuestionsAndKibanaTests(unittest.TestCase):
             "missingInfo": ["Clarify supplier behavior"]})
         identifier = first["questions"][0]["id"]
         with question_write_lock(self.root, "CCON-123"):
-            with self.assertRaisesRegex(ValueError, "Another Jira sync"):
+            with self.assertRaisesRegex(ValueError, "Another question update"):
                 sync_questions(self.root, "CCON-123", {
                     "missingInfo": ["AI-added conflicting question"]})
-            with self.assertRaisesRegex(ValueError, "Another Jira sync"):
+            with self.assertRaisesRegex(ValueError, "Another question update"):
                 update_question(self.root, "CCON-123", identifier,
                                 status="ANSWERED", answer="Confirmed by analyst",
                                 evidence_url="https://jira.example/CCON-123")
