@@ -4,7 +4,7 @@ import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {detailContentFingerprint,createDetailRequestScope} from './detail-refresh-policy.mjs';
 import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './manual-edit-policy.mjs';
 import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload,rebaseUndoForm} from './manual-done-undo.mjs';
-import {createDraftRecoveryStore,RETENTION_DAYS,safeBrowserStorage} from './draft-recovery.mjs';
+import {createDraftRecoveryStore,RETENTION_DAYS,safeBrowserStorage,nextRecoverySource} from './draft-recovery.mjs';
 import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
   from './focus-navigation.mjs';
@@ -47,6 +47,7 @@ const manualConflicts = new Map();
 const taskViews = new Map(Object.entries(restoredFocusView.views));
 const saveFailures = new Map();
 let lastDoneToken = null;
+let lastRecoveredOtherTab = null;
 const expandedEmails = new Set();
 const recoveredForms = recoveryStore.load();
 const {loadLogs} = createLogsController({api, escapeHtml, message, getSelected: () => selected});
@@ -1296,7 +1297,9 @@ $('dataMenu').addEventListener('toggle',()=>{
 $('recoverOther').addEventListener('click',()=>{
   const others=recoveryStore.others();
   if(!others.length){updateRecoveryStatus();return;}
-  const newest=others[0];
+  // Each click advances to the next available source. Never repeatedly
+  // privilege the newest source while older private drafts remain available.
+  const newest=nextRecoverySource(others,lastRecoveredOtherTab);
   const own=pendingFormRecords();
   const occupied=[...forms.keys()].filter(key=>isDirty(key));
   const ready = Object.keys(own).length;
@@ -1306,6 +1309,7 @@ $('recoverOther').addEventListener('click',()=>{
       'Якщо інша вкладка ще відкрита, вона збереже власний запис.')) return;
   const result=recoveryStore.adopt(newest.id,own,occupied);
   if(result.failed){message('Не вдалося зберегти відновлені чернетки у браузері.',true);return;}
+  lastRecoveredOtherTab=newest.id;
   Object.assign(recoveredForms,result.added);
   // Clean in-memory forms can be re-created from explicit recovered drafts;
   // dirty forms are protected by 'occupied' and never overwritten.
