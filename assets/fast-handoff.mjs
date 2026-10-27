@@ -73,3 +73,9 @@ export function completionPrompt(task) {
     warning + 'Якщо дія ще не виконана в Jira/пошті або рішення не зафіксоване, вибери Скасувати.\n\n' +
     'Позначити локальний статус DONE і перейти до наступної задачі?';
 }
+
+export function mayCopyDisplayedQuickDraft(task, displayedText) {
+  if (!task || typeof displayedText !== 'string') return false;
+  const current=quickHandoff(task);
+  return current.readyForCopy && current.description === displayedText;
+}
