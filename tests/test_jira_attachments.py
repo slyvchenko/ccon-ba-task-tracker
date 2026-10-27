@@ -1,5 +1,6 @@
 """EVD-13 synthetic tests. No corporate Jira attachments are committed."""
 import io
+import hashlib
 import json
 import tempfile
 import unittest
@@ -94,6 +95,47 @@ class JiraAttachmentIntakeTests(unittest.TestCase):
                              "", root=self.root)
         self.assertEqual(len(source["attachmentEvidence"]), 3)
         self.assertNotIn("SYNTHETIC_PERSON", json.dumps(source))
+
+    def test_download_parent_symlink_is_blocked_before_evidence_read(self):
+        plan = prepare(self.root)
+        issue_dir = self.root / "downloads/jira/CCON-5"
+        issue_dir.parent.mkdir(parents=True, exist_ok=True)
+        outside = self.root / "synthetic-unrelated-folder"
+        outside.mkdir()
+        try:
+            issue_dir.symlink_to(outside, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("Symlinks unsupported on runner")
+        (outside / "1001.json").write_bytes(b'{"hidden":"DO_NOT_READ"}')
+        with self.assertRaisesRegex(ValueError, "Unsafe Jira attachment download directory"):
+            prepare(self.root)
+        processed = process(self.root)
+        self.assertEqual(processed["processed"], len(plan["jobs"]))
+        self.assertTrue(all(x["state"] == "FAILED" and
+                            x["reasonCode"] == "UNSAFE_ATTACHMENT_PATH"
+                            for x in processed["results"]))
+        self.assertEqual(evidence_for_model(self.root, "CCON-5", self.issue), [])
+        self.assertTrue((outside / "1001.json").is_file())
+
+    def test_report_limit_applies_only_after_eligible_evidence(self):
+        self.issue["attachments"] = [
+            {"id": str(n), "filename": "synthetic.json"}
+            for n in range(1, 31)
+        ] + [{"id": "9999", "filename": "valid.json"}]
+        self.save_context()
+        payload = b'{"source":"synthetic"}'
+        self.save("9999", ".json", payload)
+        write_json(self.root / "data/attachment_evidence/CCON-5/9999.json", {
+            "issueKey": "CCON-5", "attachmentId": "9999",
+            "contextFingerprint": self.issue["fingerprint"],
+            "sourceSha256": hashlib.sha256(payload).hexdigest(),
+            "status": "STRUCTURE_ONLY", "format": "JSON",
+            "shape": {"rootType": "dict"},
+            "limitations": ["STRUCTURE_IS_NOT_VALUE_MAPPING_OR_BUSINESS_PROOF"]
+        })
+        reports = evidence_for_model(self.root, "CCON-5", self.issue)
+        self.assertEqual(len(reports), 1)
+        self.assertEqual(reports[0]["attachmentId"], "9999")
 
     def test_pdf_is_explicitly_unread_and_never_proof(self):
         prepare(self.root)
