@@ -86,6 +86,7 @@ class QuestionsAndKibanaTests(unittest.TestCase):
                      "https://kibana-victim.evil.test/app/discover "
                      "https://kibana.example.com.evil.test/app/discover "
                      "https://evil.test/kibana/app/discover "
+                     "https://kibana.example.com:0/app/discover "
                      "https://kibana.example.com:invalid/app/discover "
                      "https://user:secret@kibana.example.com/app/discover "
                      "https://kibana.example.com/app/discover")}
