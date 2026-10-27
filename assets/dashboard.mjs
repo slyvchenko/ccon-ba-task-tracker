@@ -978,6 +978,8 @@ async function undoLastDone() {
     const restored=rebaseUndoForm(forms.get(token.key),savedForm(task),response.manualRevision);
     if(restored) forms.set(token.key,restored);
     else forms.delete(token.key);
+    // Keep crash/reload recovery consistent with the restored CAS revision.
+    rememberEdits();
     lastDoneToken=null;
     selected=task.key;
     queueModel.invalidate();
