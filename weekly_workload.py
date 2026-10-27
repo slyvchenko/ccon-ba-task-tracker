@@ -67,6 +67,17 @@ def weekly_report(root=ROOT, week=None, *, today=None):
     latest = {}
     completed, reopened, touched = set(), set(), set()
     total_events = 0
+    # A read-only WAL open may CREATE missing -wal/-shm sidecars; refuse to
+    # open that unverified state rather than silently writing into a workspace.
+    with db.open("rb") as header_file:
+        header = header_file.read(20)
+    if len(header) < 20 or header[:16] != b"SQLite format 3\\x00":
+        raise ValueError("Invalid SQLite database header")
+    if header[18] == 2:
+        for suffix in ("-wal", "-shm"):
+            sidecar = Path(str(db) + suffix)
+            if not sidecar.is_file() or sidecar.is_symlink():
+                raise ValueError("Read-only WAL sidecars unavailable")
     with closing(sqlite3.connect(db.as_uri() + "?mode=ro", uri=True)) as conn:
         # Historical revisions are append-only. Do not expose keys or content.
         for key, stamp, raw in conn.execute(
