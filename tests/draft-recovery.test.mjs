@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createDraftRecoveryStore,sanitizeDraftMap,TAB_ID_KEY,RECORD_PREFIX,
-  LEGACY_DRAFT_KEY,RETENTION_DAYS,safeBrowserStorage} from '../assets/draft-recovery.mjs';
+  LEGACY_DRAFT_KEY,RETENTION_DAYS,safeBrowserStorage,nextRecoverySource} from '../assets/draft-recovery.mjs';
 
 class FakeStorage {
   constructor() {this.items=new Map();this.failWrites=false;}
@@ -198,4 +198,14 @@ test('a failure writing merged recovery cannot claim restored items',()=>{
   local.failWrites=false;
   assert.equal(b.load()['CCON-1'],undefined);
   assert.equal(a.load()['CCON-1'].note,'source');
+});
+
+test('recovery cycling reaches every older tab without deleting protected drafts',()=>{
+ const sources=[{id:ids[1],count:2},{id:ids[2],count:1},{id:ids[0],count:3}];
+ assert.equal(nextRecoverySource(sources).id,ids[1]);
+ assert.equal(nextRecoverySource(sources,ids[1]).id,ids[2]);
+ assert.equal(nextRecoverySource(sources,ids[2]).id,ids[0]);
+ assert.equal(nextRecoverySource(sources,ids[0]).id,ids[1]);
+ assert.equal(nextRecoverySource([],ids[1]),null);
+ assert.equal(nextRecoverySource([sources[2]],ids[1]).id,ids[0]);
 });
