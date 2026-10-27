@@ -4,7 +4,7 @@ const stateLabels = {OPEN:'Відкрите', ANSWERED:'Отримано від�
 
 export function questionProvenanceNotice(q) {
   if (q.status === 'ANSWERED')
-    return q.sourceLinkProvided || q.evidenceUrl ?
+    return q.sourceLinkProvided ?
       'Посилання на джерело є, але зміст відповіді не перевірено незалежно' :
       'Немає посилання на джерело; зміст відповіді не перевірено незалежно';
   return q.presentInLatestAnalysis === false ?
