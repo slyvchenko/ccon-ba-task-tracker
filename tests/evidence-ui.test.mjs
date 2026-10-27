@@ -116,6 +116,11 @@ test('ANSWERED with only a source URL must never imply verified semantics', () =
   });
   assert.match(withLink, /Посилання на джерело є/);
   assert.match(withLink, /не перевірено незалежно/);
+  const untrustedLegacy = questionProvenanceNotice({
+    status: 'ANSWERED', answerVerified: true,
+    evidenceUrl: 'javascript:alert(1)', sourceLinkProvided: false
+  });
+  assert.match(untrustedLegacy, /Немає посилання на джерело/);
   const noLink = questionProvenanceNotice({
     status: 'ANSWERED', answerVerified: true, evidenceUrl: ''
   });
