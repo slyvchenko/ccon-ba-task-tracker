@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload} from '../assets/manual-done-undo.mjs';
+import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload,rebaseUndoForm} from '../assets/manual-done-undo.mjs';
 
 test('a local successful DONE creates one CAS protected reversible action',()=>{
   const t={key:'CCON-101',manualStatus:'DONE',manualRevision:18,active:true,
