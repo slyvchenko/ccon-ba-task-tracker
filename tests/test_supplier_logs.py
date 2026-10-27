@@ -42,6 +42,19 @@ class SupplierLogsTests(unittest.TestCase):
         self.assertEqual(flow_references({'description': KIBANA.replace('key:cconFlowId', 'key:otherId')}), [])
         self.assertEqual(flow_references({'description': KIBANA.replace('192.168.197.246', 'example.com')}), [])
 
+    def test_flow_filter_rejects_credentials_schemes_and_non_kibana_routes(self):
+        for bad in (
+            KIBANA.replace('http://', 'http://viewer:secret@', 1),
+            KIBANA.replace('http://', 'http://@', 1),
+            KIBANA.replace('http://', 'ftp://', 1),
+            KIBANA.replace('/app/kibana', '/api/security/session', 1),
+            KIBANA.replace('192.168.197.246:5601', '192.168.197.246:9999', 1),
+        ):
+            with self.subTest(bad_kind=bad.split('#', 1)[0].split('/', 3)[-1]):
+                self.assertEqual(flow_references({'description': bad}), [])
+        self.assertEqual(flow_references({'description': KIBANA}),
+                         [{'flowId': FLOW, 'sourceUrl': KIBANA}])
+
     def test_numeric_order_pairs_native_method_and_exact_bytes(self):
         result = inspect_bundle(bundle(), ['Airtuerk'], 'Airtuerk. retrievePNR. TOURCONEX_INVALID_RECORD_LOCATOR')
         self.assertEqual([item['output'] for item in result['files']], ['01-doVerifyAvailableFareRQ.xml', '01-doVerifyAvailableFareRS.xml', '02-doByLocatorPullPnrRQ.xml', '02-doByLocatorPullPnrRS.xml'])
