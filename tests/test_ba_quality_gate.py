@@ -163,6 +163,21 @@ class QualityGateTests(unittest.TestCase):
         self.assertIn("COMPOUND_OPERATOR_CONFLICT",
                       {f["code"] for f in result["findings"]})
 
+    def test_distinct_rules_sharing_fields_do_not_cross_match(self):
+        data = analysis()
+        second = copy.deepcopy(data["briefing"]["rules"][0])
+        second["id"] = "R2"
+        second["whenUk"] = "StatusCode=ACTIVE OR DeliveryStatusCode=PENDING"
+        second["thenUk"] = "Preserve the segment"
+        data["briefing"]["rules"].append(second)
+        data["standardDescription"] += (
+            "\nIF StatusCode=ACTIVE OR DeliveryStatusCode=PENDING "
+            "THEN preserve the segment.")
+        findings = description_review(data["standardDescription"], data["briefing"])
+        codes = {finding["code"] for finding in findings}
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
+        self.assertNotIn("COMPOUND_OPERATOR_OMITTED", codes)
+
     def test_unrelated_if_or_qa_operator_does_not_conflict(self):
         data = analysis()
         data["standardDescription"] += (
