@@ -161,6 +161,9 @@ class Desk:
     def view(self):
         # Keep the object-based API independent of cache mutation by clients.
         with self.lock, self.connect() as c:
+            # sqlite3's context manager does not BEGIN for SELECT. Without an
+            # explicit read snapshot, tasks and revision can be from two imports.
+            c.execute('BEGIN')
             return self._view_on_connection(c)
 
     def view_json_bytes(self):
