@@ -552,10 +552,6 @@ label {
   h2 {
     font-size:21px
   }
-  .email-panel textarea {
-    min-height:140px;
-    height:140px
-  }
 }
 .row {
   min-width:0
@@ -1417,7 +1413,7 @@ a:focus-visible {
 
 /* v2.33: restrained and keyboard-accessible controls inside the original page. */
 .data-menu-items {min-width:min(350px,calc(100vw - 24px));max-width:calc(100vw - 24px)}
-.data-menu-items button {white-space:normal;text-align:left;overflow-wrap:anywhere}
+.data-menu-items button {white-space:normal;overflow-wrap:anywhere}
 #recoveryState {margin:3px 0;line-height:1.45;overflow-wrap:anywhere}
 #queueAnnouncer {white-space:nowrap}
 .row:focus-visible {outline:3px solid #2258a9;outline-offset:-3px}
