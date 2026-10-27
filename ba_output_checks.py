@@ -19,8 +19,8 @@ NEGATED_CLAIM = re.compile(
     r"\bnot\s+yet\s+attached\b")
 METHOD_ASSERTION = re.compile(r"(?i)\bduring\s+(do[A-Z][A-Za-z0-9_]*)\b")
 SUBJECT_METHOD_ASSERTION = re.compile(
-    r"(?i)^\s*(?:AER\.\s*)?"
-    r"(?:(?:CCON-\d+\s*(?:/\s*)?)+\s*[:—–-]?\s*)?"
+    r"(?i:^\s*(?:AER\.\s*)?"
+    r"(?:(?:CCON-\d+\s*(?:/\s*)?)+\s*[:—–-]?\s*)?)"
     r"(do[A-Z][A-Za-z0-9_]*)\b"
 )
 TECH_LITERAL = re.compile(
