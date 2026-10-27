@@ -22,6 +22,19 @@ def normalize(text):
     return " ".join(text.split()).casefold()
 
 
+def valid_source_url(value):
+    """HTTP(S) source pointer only. Does not verify semantic correctness."""
+    if not isinstance(value, str) or not value or len(value) > 2000:
+        return False
+    try:
+        url = urlparse(value)
+        return (url.scheme in ("http", "https") and bool(url.hostname)
+                and url.username is None and url.password is None
+                and (url.port is None or url.port > 0))
+    except ValueError:
+        return False
+
+
 def question_id(key, text):
     return "Q-" + hashlib.sha256((key + ":" + normalize(text)).encode()).hexdigest()[:14]
 
@@ -86,7 +99,8 @@ def read_questions(root, key):
         if isinstance(item, dict):
             item["answerVerified"] = False
             item["sourceLinkProvided"] = bool(
-                item.get("status") == "ANSWERED" and item.get("evidenceUrl"))
+                item.get("status") == "ANSWERED" and
+                valid_source_url(item.get("evidenceUrl")))
     return source
 
 
@@ -129,10 +143,8 @@ def update_question(root, key, identifier, *, status, owner="", answer="", evide
                                    ("evidenceUrl", evidence_url, 2000)):
             if not isinstance(value, str) or len(value) > limit:
                 raise ValueError(name + " must be bounded text.")
-        if evidence_url:
-            url = urlparse(evidence_url)
-            if url.scheme not in ("http", "https") or not url.hostname or url.username or url.password:
-                raise ValueError("Evidence must be an HTTP(S) URL.")
+        if evidence_url and not valid_source_url(evidence_url):
+            raise ValueError("Evidence must be a valid HTTP(S) URL.")
         if status == "ANSWERED" and not answer.strip():
             raise ValueError("ANSWERED requires a written answer.")
         source = read_questions(root, key)
