@@ -28,7 +28,7 @@
 
 ### Звірка коду після v2.48.1 (26.10.2026)
 
-- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **80 PARTIAL**, **2 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
+- **129 вимог**; актуальні code-reported стани: **40 IMPLEMENTED**, **82 PARTIAL**, **0 PLANNED**, **0 NEXT**, **3 GATE**, **4 DEFERRED**.
 - Зіставлено й перекласифіковано **15 окремих ID** за конкретним source/test evidence (13 у #53, ще UI-07 і QA-14 у #54). Решта **114** статусів не змінювалась, а відсутній direct locator не є доказом відсутності коду.
 - `IMPLEMENTED` означає лише підтверджений механізм (synthetic/code), `PARTIAL` - лише частину критеріїв, `PLANNED` - критерії не закрито. Оригінальні 37/52/32/1 у розділі v2.39 нижче - **історичний baseline**, а не поточні числа.
 - Незмінні external gates: реальні Jira/Kibana/CCON, 26 gold cases, людський UX, native Edge/NVDA/8h, Windows backup/restore та локальне оновлення. CI не доводить business signoff.
@@ -147,7 +147,7 @@
 | PERF-06 | P1 | IMPLEMENTED (v2.31 immutable full-JSON bytes cache by transactional SQLite revision + error; external writer tests) | Cache full server serialized task read by committed revision | Atomic invalidation on import/save; concurrent tests |
 | PERF-07 | P1 | PARTIAL (v2.31 reproducible Python/Node 100/500/1000 synthetic timings in CI; real browser/8h UAT open) | Benchmark browser cold/warm, DOM scripting/paint, 8h session | Named Windows machine p50/p95, memory trend |
 | PERF-08 | P1 | PARTIAL (PR #55 task-specific detail fingerprint plus stale same-key request guards; native Windows perf/UAT open) | Avoid repeated heavyweight detail fetch on list refresh | Fetch selected only on selection/revision, compare versions |
-| PERF-09 | P2 | PLANNED | Simplify 1374-line CSS cascade after visual/a11y regression | No unexpected fonts/spacing/contrast changes |
+| PERF-09 | P2 | PARTIAL (v2.50.9 small source-audited CSS consolidation, Node/Chromium responsive contracts; approved native Windows pixel baseline still open) | Simplify 1374-line CSS cascade after visual/a11y regression | No unexpected fonts/spacing/contrast changes |
 | PERF-10 | P2 | PARTIAL (v2.50.2 synthetic WAL/index/backup/busy-timeout comparison; no live PRAGMA switch, real Windows traces open) | Evaluate SQLite WAL, busy timeouts and JSON index with empirical trace | Do not enable blindly; Windows/backup compatibility |
 | REL-01 | P0 | IMPLEMENTED (v2.27 per-task SQLite CAS, 409 and human resolution; live browser UAT open) | Per-task optimistic concurrency token and stale edit conflict UX | Two tabs cannot silently overwrite each other's note/draft |
 | REL-02 | P0 | PARTIAL (v2.50.1 subprocess crash before/after SQLite commit validates rollback/acknowledged save with revision/history; hardware outage and UI UAT open) | Atomic user-draft recovery and edit revision validation | Forced close/reopen/reload leaves acknowledged edits intact |
@@ -169,7 +169,7 @@
 | QA-10 | P0 | GATE (v2.29 synthetic archetype cases; observed BA handoff times and semantic review not performed) | Human observation of 5 BA task archetypes, repeated runs | TTNA/TTSH/MRI with 0 critical false-ready decisions |
 | QA-11 | P0 | PARTIAL (v2.27 synthetic concurrent instances/restarts/conflicts; real browser crash drill open) | Cross-tab edits, stale conflict and crash recovery integration | P-15/P-17/P-18, 0 silent overwrite |
 | QA-12 | P1 | PARTIAL (v2.34 dedicated Chromium Playwright synthetic DOM E2E CI; Windows/Edge/NVDA still open) | DOM behavior tests with approved Playwright/browser runner | Focus, click, screenreader, history, network reconnect |
-| QA-13 | P1 | PLANNED | Local-only 20–30 real-case semantic BA handoff study | Actual independent gold scores, not CI counts |
+| QA-13 | P1 | PARTIAL (v2.50.9 local anonymous 20-30 gold review preflight plus synthetic tests; independent real-case scores and human signoff still open) | Local-only 20–30 real-case semantic BA handoff study | Actual independent gold scores, not CI counts |
 | QA-14 | P1 | PARTIAL (Python branch coverage in synthetic CI; critical-path gaps and coverage threshold review open) | Quantified code/branch coverage baseline, gaps by critical path | No invented 100%; dev-only tooling approval |
 | QA-15 | P2 | PARTIAL (v2.34 90-transition synthetic Chromium short-soak; real 8h/diverse OS scheduled drill open) | Scheduled offline regression drill on diverse machine profiles | OS, Python version, locale, browser, power mode |
 | OPS-01 | P1 | IMPLEMENTED (repeatable 100/500/1000 synthetic Python/Node smoke; actual-device UAT pending) | Standard synthetic performance smoke + fixed cohort sizes | Repeatable local script and measurement doc |
