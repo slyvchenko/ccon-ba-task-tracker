@@ -61,6 +61,23 @@ response is paired merely because filenames look similar.
 existing verified `supplier_logs.py ingest` pipeline. Unlike analysis, this
 archive intentionally excludes REST and error layers.
 
+## Approved Kibana origins (EVD-06)
+
+Jira descriptions and comments are untrusted URL sources. Discovery proposes
+Kibana browser actions **only** for the built-in local origin
+`http://192.168.197.246:5601` or additional **exact origins explicitly
+approved in the analyst's own environment**.
+
+For approved corporate Kibana domains, configure
+`CCON_KIBANA_ALLOWED_ORIGINS` locally as a comma-separated list of full
+`scheme://hostname[:port]` origins, for example
+`https://kibana.company.example,https://kibana2.company.example:5601`.
+Never put tokens, credentials, URL paths, wildcards, or this configuration
+into GitHub. Hostnames are examples, not actual endpoints. An unapproved
+Kibana URL remains an unresolved evidence gap, not an invitation to
+open a lookalike host. Changing configuration does not establish live
+access, authenticity, or human acceptance.
+
 ## Local Codex procedure (before BA interpretation)
 
 1. `python jira_sync.py` refreshes your assigned tasks, descriptions, dates,
