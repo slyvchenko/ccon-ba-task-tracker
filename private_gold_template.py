@@ -55,11 +55,16 @@ def create_template(destination, confirm):
     parent = target.parent
     if not parent.is_dir() or parent.is_symlink():
         raise ValueError("Use a private existing nonsymlink directory")
-    actual_parent = parent.resolve(strict=True)
-    # Reject symlinked ancestors as well as the direct parent. This protects
-    # against accidentally writing via a redirected folder.
-    if os.path.normcase(os.path.abspath(parent)) != os.path.normcase(str(actual_parent)):
-        raise ValueError("Private template destination has a redirected parent")
+    # Windows Path.resolve() may change drive/path spelling on an ordinary
+    # folder. Do not equate string inequality with symlink traversal.
+    # Inspect actual filesystem entries (including NTFS junctions) instead.
+    lexical_parent = Path(os.path.abspath(parent))
+    for component in (lexical_parent, *lexical_parent.parents):
+        if component.is_symlink() or (
+            hasattr(component, "is_junction") and component.is_junction()
+        ):
+            raise ValueError("Private template destination has a redirected parent")
+    actual_parent = lexical_parent.resolve(strict=True)
     if actual_parent == ROOT or ROOT in actual_parent.parents:
         raise ValueError("Do not write private UAT artifacts inside the repository")
     if target.exists() or target.is_symlink():
