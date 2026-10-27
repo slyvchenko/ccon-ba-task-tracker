@@ -4,7 +4,7 @@ import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {detailContentFingerprint,createDetailRequestScope} from './detail-refresh-policy.mjs';
 import {baseManualRevision, manualVersionChanged, withExpectedRevision} from './manual-edit-policy.mjs';
 import {makeUndoToken,canUndoLocalDone,undoLocalDonePayload} from './manual-done-undo.mjs';
-import {createDraftRecoveryStore,RETENTION_DAYS} from './draft-recovery.mjs';
+import {createDraftRecoveryStore,RETENTION_DAYS,safeBrowserStorage} from './draft-recovery.mjs';
 import {isTextEditingTarget, shortcutAction, adjacentTaskKey, captureTaskView,
   restoreTaskView, captureEditorFocus, restoreEditorFocus, sanitizeSessionFocus, focusAfterAction}
   from './focus-navigation.mjs';
@@ -25,7 +25,8 @@ import {loadTaskActions, loadTaskHistory} from './action-history.mjs';
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const recoveryStore=createDraftRecoveryStore({
-  local:window.localStorage,session:window.sessionStorage,
+  local:safeBrowserStorage(()=>window.localStorage),
+  session:safeBrowserStorage(()=>window.sessionStorage),
   newId:()=>window.crypto.randomUUID()
 });
 const LOCAL_VIEW_KEY = 'ccon-ba-desk.view-context.v1';
