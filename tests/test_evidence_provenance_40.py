@@ -1,8 +1,10 @@
 """Synthetic privacy-bounded evidence provenance and source cache tests."""
 import io
 import json
+import os
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -58,9 +60,15 @@ class EvidenceProvenanceTests(unittest.TestCase):
                "description":("See https://evil.test/app/discover "
                               "and https://kibana.example.org/app/discover#_a=errorlog"),
                "comments":[]}
-        links=discover_links(issue)
+        with patch.dict(os.environ, {"CCON_KIBANA_ALLOWED_ORIGINS": ""}):
+            self.assertEqual(discover_links(issue), [])
+        # Synthetic external test origin is explicitly allowed for this test
+        # only; production must authorize each exact origin locally.
+        with patch.dict(os.environ, {"CCON_KIBANA_ALLOWED_ORIGINS":
+                                      "https://kibana.example.org"}):
+            links=discover_links(issue)
+            plan=plan_for_issue(issue)
         self.assertTrue(all("evil.test" not in x["url"] for x in links))
-        plan=plan_for_issue(issue)
         self.assertTrue(plan["kibana"])
         self.assertTrue(all(x["readOnly"] is True for x in plan["kibana"]))
         self.assertTrue(all(x["kind"] in ("SEARCH","ERROR_SEARCH") for x in plan["kibana"]))
