@@ -255,6 +255,8 @@ textarea {
   background:#fbe9e7;
   color:var(--red)
 }
+/* Inline warning remains visible beside stale/needs-review ZIP previews. */
+.text-amber { color:var(--amber);font-weight:700 }
 .tone-amber {
   background:#fbf1da;
   color:var(--amber)
