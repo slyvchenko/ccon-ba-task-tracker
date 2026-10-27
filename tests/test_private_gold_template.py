@@ -7,9 +7,10 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout, redirect_stderr
 from pathlib import Path
+from types import SimpleNamespace
 
 from private_gold_review import summarize
-from private_gold_template import CONFIRM, DISTRIBUTION, blank_cohort, create_template, main
+from private_gold_template import CONFIRM, DISTRIBUTION, blank_cohort, create_template, main, _has_reparse_attribute
 
 
 class GoldTemplateTests(unittest.TestCase):
@@ -38,6 +39,16 @@ class GoldTemplateTests(unittest.TestCase):
             self.assertEqual(row["result"], "BLOCKED")
             self.assertIsNone(row["ttnaSeconds"])
             self.assertFalse(row["independentReview"])
+
+    def test_windows_legacy_reparse_attribute_detected_without_path_is_junction(self):
+        # Python 3.10/3.11 lack Path.is_junction(), but NTFS lstat reports
+        # FILE_ATTRIBUTE_REPARSE_POINT (0x400) for a real junction.
+        self.assertTrue(_has_reparse_attribute(
+            SimpleNamespace(st_file_attributes=0x400)))
+        self.assertFalse(_has_reparse_attribute(
+            SimpleNamespace(st_file_attributes=0x20)))
+        self.assertFalse(_has_reparse_attribute(
+            SimpleNamespace(st_mode=0o700)))
 
     def test_output_is_private_and_compatible_with_existing_validator(self):
         state = create_template(self.output, CONFIRM)
