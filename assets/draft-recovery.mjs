@@ -2,6 +2,12 @@
 // No cross-tab last-writer-wins and no silent deletion of private drafts.
 // The backend's manualRevision CAS remains the final write protection.
 export const LEGACY_DRAFT_KEY = 'ccon-ba-desk.unsaved-forms.v2';
+export function nextRecoverySource(others,previousId=null) {
+  if (!Array.isArray(others) || !others.length) return null;
+  const index=others.findIndex(source=>source.id===previousId);
+  return others[(index+1)%others.length];
+}
+
 export const TAB_ID_KEY = 'ccon-ba-desk.recovery-tab.v3';
 export const RECORD_PREFIX = 'ccon-ba-desk.unsaved-tab.v3.';
 export const RETENTION_DAYS = 30;
