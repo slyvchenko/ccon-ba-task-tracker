@@ -11,6 +11,24 @@ export function questionProvenanceNotice(q) {
     'Немає в аналізі, але не закрито автоматично' : '';
 }
 
+export function evidenceReportViewKey(report, index=0) {
+  // Stable under report ordering changes when a source fingerprint exists.
+  // The resulting DOM/state identity never exposes a supplier, PNR, flow ID,
+  // ZIP source hash, or evidence text.
+  const sha = typeof report?.sourceSha256 === 'string' &&
+    /^[0-9a-f]{64}$/i.test(report.sourceSha256) ?
+    report.sourceSha256.toLowerCase() : null;
+  const flow = typeof report?.flowId === 'string' &&
+    report.flowId.length > 0 && report.flowId.length <= 150 ?
+    report.flowId : null;
+  const source = sha ? 'sha:' + sha : flow ? 'flow:' + flow :
+    'position:' + (Number.isSafeInteger(index) && index >= 0 ? index : 0);
+  let hash = 2166136261;
+  for (let i=0; i<source.length; i++)
+    hash = Math.imul(hash ^ source.charCodeAt(i), 16777619);
+  return 'evidence-' + (hash>>>0).toString(16).padStart(8,'0');
+}
+
 export function valueMappingMarkup(report, escape) {
   const comparisons = (report.valueReview?.comparisons || []).slice(0, 20);
   const rows = [];
@@ -125,7 +143,8 @@ export async function loadTaskEvidence(key, api, escape, current) {
         evidenceHealthMarkup(data.health, escape);
       return;
     }
-    destination.innerHTML = reports.map(report => {
+    destination.innerHTML = reports.map((report, index) => {
+      const viewKey = evidenceReportViewKey(report, index);
       const counts = report.counts || {};
       const codes = (report.errorCodes || []).slice(0, 20)
         .map(x => escape(x.code) + ' (' + escape(x.count) + ')').join(', ');
@@ -135,7 +154,7 @@ export async function loadTaskEvidence(key, api, escape, current) {
         escape((item.fields || []).slice(0, 8).join(', ')) + '</td></tr>').join('');
       const questions = (report.questionsUk || []).slice(0, 12)
         .map(x => '<li>' + escape(x) + '</li>').join('');
-      return '<div class="evidence-report"><b>' + escape(report.supplier) +
+      return '<div class="evidence-report" data-view-key="' + viewKey + '"><b>' + escape(report.supplier) +
         ' · ' + escape(report.status || 'PARTIAL') + '</b><p>REST: ' + escape(counts.rest || 0) +
         ' · Supplier: ' + escape(counts.supplier || 0) + ' · Errors: ' + escape(counts.errors || 0) +
         '</p><p><b>Коди помилок:</b> ' + (codes || 'Не знайдено') + '</p>' +
