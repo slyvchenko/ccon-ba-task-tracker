@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Статистика · CCON BA Desk</title>
+  <link rel="stylesheet" href="/assets/stats.css">
+  <script type="module" src="/assets/stats.mjs"></script>
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <div class="identity"><div class="brand">CCON <b>BA</b></div><div>
+        <p class="eyebrow">BA Desk / одна сторінка</p>
+        <h1>Статистика</h1>
+        <p class="hint">Мій локальний беклог і технічна готовність продукту. Жодних приватних текстів.</p>
+      </div></div>
+      <nav aria-label="Дії"><a class="btn ghost" href="/">До задач</a><button class="btn" id="refresh" type="button">Оновити</button></nav>
+    </header>
+
+    <div class="source-line"><span id="loadState" role="status" aria-live="polite">Завантаження локальної статистики…</span><span id="snapshotAge"></span></div>
+
+    <section class="section" aria-labelledby="currentHeading">
+      <div class="section-head"><h2 id="currentHeading">Робочі задачі</h2><small>Поточний імпорт у локальній базі, без історичних трендів</small></div>
+      <div class="metrics">
+        <article class="metric"><div class="metric-label">Активні</div><strong id="taskActive">—</strong><small>У поточному snapshot</small></article>
+        <article class="metric"><div class="metric-label">У роботі</div><strong id="taskOpen">—</strong><small>Активні, ще не DONE</small></article>
+        <article class="metric"><div class="metric-label">Завершені локально</div><strong id="taskDone">—</strong><small>Не дорівнює Jira Done</small></article>
+        <article class="metric"><div class="metric-label">Активний спринт</div><strong id="taskSprint">—</strong><small>Лише VERIFIED + active</small></article>
+      </div>
+      <div class="two-cols">
+        <article class="panel"><h3>Що потрібно зробити</h3><p class="hint">Взаємовиключні групи незавершених задач</p><div id="taskSignals" class="bars"><p class="placeholder">Немає даних.</p></div></article>
+        <article class="panel"><h3>Ручні статуси</h3><p class="hint">Активні задачі; статус не змінює Jira</p><div id="manualStatuses" class="bars"><p class="placeholder">Немає даних.</p></div></article>
+      </div>
+      <p class="footnote" id="taskFootnote">Snapshot не перевірено.</p>
+    </section>
+
+    <section class="section" aria-labelledby="releaseHeading">
+      <div class="section-head"><h2 id="releaseHeading">Стан розробки</h2><span class="state-blocked" id="releaseState">BLOCKED · незалежний UAT</span></div>
+      <div class="metrics">
+        <article class="metric"><div class="metric-label">Вимоги в реєстрі</div><strong id="requirements">—</strong><small>За джерелом у GitHub</small></article>
+        <article class="metric"><div class="metric-label">Реалізовано в коді</div><strong id="implemented">—</strong><small>Не означає human PASS</small></article>
+        <article class="metric"><div class="metric-label">Code + test прив'язки</div><strong id="pointers">—</strong><small>Навігаційне покриття</small></article>
+        <article class="metric"><div class="metric-label">Реальні gold-кейси</div><strong id="goldProgress">0/26</strong><small>Ця сторінка не може їх підтвердити</small></article>
+      </div>
+      <div class="two-cols">
+        <article class="panel"><h3>Весь продуктовий беклог</h3><div id="backlogBars" class="bars"><p class="placeholder">Немає даних.</p></div></article>
+        <article class="panel"><h3>Критичні P0</h3><div id="p0Bars" class="bars"><p class="placeholder">Немає даних.</p></div></article>
+      </div>
+      <p class="footnote">Стани IMPLEMENTED / PARTIAL / GATE / DEFERRED стосуються лише технічного обліку. Вони не замінюють перевірки реальних Jira, CCON, Kibana чи Windows.</p>
+    </section>
+
+    <section class="bottom" aria-label="Що ще блокує випуск">
+      <div><h3>Що блокує реліз?</h3><p>26 незалежних BA-кейсів, перевірка джерел, native Windows crash/restore, Edge/NVDA/zoom, 8-годинний сеанс і людський signoff.</p></div>
+      <div class="links"><a href="https://github.com/slyvchenko/ccon-ba-task-tracker/issues/50" target="_blank" rel="noopener noreferrer">Release issue #50</a><a href="https://github.com/slyvchenko/ccon-ba-task-tracker/actions" target="_blank" rel="noopener noreferrer">Перевірити актуальний CI</a></div>
+    </section>
+    <footer>Показники рахуються локально після натискання «Оновити». Немає автоматичного оновлення Jira або відправки листів. CI та PR потрібно перевіряти за посиланням GitHub.</footer>
+  </div>
+</body>
+</html>
