@@ -118,6 +118,62 @@ class BrowserRegression(unittest.TestCase):
         page.locator("#note").wait_for()
         self.assertIn(key, page.locator("#detail .task-key").inner_text())
 
+    def test_statistics_page_is_live_aggregate_without_jira_text(self):
+        stats = self.context.new_page()
+        stats.goto(self.url + "/stats", wait_until="domcontentloaded")
+        stats.locator("#taskActive").get_by_text("3").wait_for(timeout=15000)
+        self.assertEqual(stats.locator("#taskOpen").inner_text(), "3")
+        self.assertEqual(stats.locator("#taskDone").inner_text(), "0")
+        self.assertEqual(stats.locator("#taskSprint").inner_text(), "2")
+        self.assertEqual(stats.locator("#requirements").inner_text(), "129")
+        self.assertIn("BLOCKED", stats.locator("#releaseState").inner_text())
+        document = stats.locator("body").inner_text()
+        self.assertNotIn("CCON-1", document)
+        self.assertNotIn("Synthetic deep investigation", document)
+        self.assertNotIn("synthetic@example.invalid", document)
+        stats.close()
+
+    def test_question_two_tab_conflict_keeps_stale_answer_in_form(self):
+        from ba_questions import read_questions, sync_questions
+        data_dir = self.root / "data"
+        data_dir.mkdir(exist_ok=True)
+        (data_dir / "jira_context.json").write_text(json.dumps({
+            "complete": True,
+            "issues": {"CCON-1": {"key":"CCON-1",
+                                   "summary":"Synthetic only", "comments":[]}}
+        }), encoding="utf-8")
+        sync_questions(self.root, "CCON-1", {
+            "missingInfo": ["Synthetic contract rule?"]})
+        second = self.context.new_page()
+        second.goto(self.url, wait_until="domcontentloaded")
+        second.locator('#list button[data-key="CCON-1"]').wait_for()
+        self.choose("CCON-1")
+        self.choose("CCON-1", second)
+        for page in (self.page, second):
+            page.locator("#questionTracker .question-record").first.wait_for(
+                state="attached", timeout=15000)
+            page.locator("#questionTracker").evaluate(
+                "(el) => el.closest('details').open = true")
+        first_record = self.page.locator("#questionTracker .question-record").first
+        second_record = second.locator("#questionTracker .question-record").first
+        first_record.locator(".question-state").select_option("ANSWERED")
+        first_record.locator(".question-answer").fill("First reviewer answer")
+        first_record.locator(".save-question").click()
+        self.page.wait_for_function("""() =>
+          document.querySelector('#questionTracker .question-record .question-answer')?.value
+          === 'First reviewer answer'""")
+        second_record.locator(".question-state").select_option("ANSWERED")
+        second_record.locator(".question-answer").fill("Stale second tab answer")
+        second_record.locator(".save-question").click()
+        second.locator("#message").get_by_text("Питання змінилося", exact=False).wait_for(
+            timeout=15000)
+        self.assertEqual(second_record.locator(".question-answer").input_value(),
+                         "Stale second tab answer")
+        saved = read_questions(self.root, "CCON-1")["questions"][0]
+        self.assertEqual(saved["answer"], "First reviewer answer")
+        self.assertEqual(saved["manualRevision"], 1)
+        second.close()
+
     def test_keyboard_navigation_save_and_priority(self):
         self.assertEqual(self.page.locator("#list button[data-key]").count(), 3)
         self.assertEqual(self.page.locator("#list button[data-key]").first.get_attribute("data-key"),
