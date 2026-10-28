@@ -14,17 +14,34 @@ STATUS_LABELS = ("AUTO", "IN PROGRESS", "WAITING INPUT",
                  "WAITING DEPENDENCY", "NEEDS DECISION", "DONE")
 
 
-def task_signal(task):
-    """Classify each active, unfinished task into exactly one next-action lane."""
-    if task.get("manualStatus") in ("WAITING INPUT", "WAITING DEPENDENCY"):
-        return "WAIT"
+def analysis_is_stale(task):
     analysis = task.get("analysis")
-    signal = analysis.get("signal") if isinstance(analysis, dict) else None
-    if signal is None:
-        signal = task.get("aiStatus")
-    if signal in SIGNALS[:-1]:
-        return signal
-    return "OTHER"
+    if not isinstance(analysis, dict):
+        return False
+    return (analysis.get("stale") is True or
+            bool(analysis.get("contextFingerprint") and
+                 task.get("contextFingerprint") and
+                 analysis["contextFingerprint"] != task["contextFingerprint"]))
+
+
+def task_signal(task):
+    """Match the UI queue's effectiveSignal: never count stale AI as READY."""
+    manual = task.get("manualStatus")
+    if manual in ("WAITING INPUT", "WAITING DEPENDENCY"):
+        return "WAIT"
+    if manual == "IN PROGRESS":
+        return "READY"  # Explicit human status, not an AI recommendation.
+    if manual == "NEEDS DECISION":
+        return "DECIDE"
+    if manual not in ("AUTO", None, ""):
+        return "REVIEW"
+    analysis = task.get("analysis")
+    if (isinstance(analysis, dict) and not analysis_is_stale(task) and
+            analysis.get("reasonUk") and analysis.get("nextActionUk") and
+            analysis.get("signal") in SIGNALS[:-1]):
+        return analysis["signal"]
+    # aiStatus alone is not sufficient proof that a recommendation is current.
+    return "REVIEW"
 
 
 def statistics_report(desk):
@@ -42,8 +59,7 @@ def statistics_report(desk):
                  if row["priority"] == "P0")
     unanalyzed = sum(not isinstance(row.get("analysis"), dict)
                      for row in unfinished)
-    stale = sum(isinstance(row.get("analysis"), dict)
-                and row["analysis"].get("stale") is True for row in unfinished)
+    stale = sum(analysis_is_stale(row) for row in unfinished)
     sprint = sum(row.get("activeSprintStatus") == "VERIFIED"
                  and row.get("activeSprint") is True for row in unfinished)
     latest = view.get("latest")
