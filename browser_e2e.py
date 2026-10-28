@@ -161,9 +161,11 @@ class BrowserRegression(unittest.TestCase):
         first_record.locator(".question-state").select_option("ANSWERED")
         first_record.locator(".question-answer").fill("First reviewer answer")
         first_record.locator(".save-question").click()
+        # The filled textarea already contains this text before Save starts.
+        # Wait for the HTTP acknowledgement, otherwise TAB B can win the race.
         self.page.wait_for_function("""() =>
-          document.querySelector('#questionTracker .question-record .question-answer')?.value
-          === 'First reviewer answer'""")
+          document.querySelector('#message')?.textContent.includes('Питання збережено локально')""",
+          timeout=15000)
         second_record.locator(".question-state").select_option("ANSWERED")
         second_record.locator(".question-answer").fill("Stale second tab answer")
         second_record.locator(".save-question").click()
