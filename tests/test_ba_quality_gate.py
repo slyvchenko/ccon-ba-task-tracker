@@ -189,6 +189,53 @@ class QualityGateTests(unittest.TestCase):
                          {f["code"] for f in result["findings"]})
         self.assertEqual(result["state"], "STRUCTURALLY_VERIFIED")
 
+    def test_free_text_confirmed_and_predicate_is_not_false_blocked(self):
+        data = analysis()
+        data["briefing"]["rules"][0]["whenUk"] = (
+            "the booking is cancelled AND the ticket is unused")
+        data["standardDescription"] = (
+            "#### To Do\n"
+            "IF the booking is cancelled AND the ticket is unused "
+            "THEN omit the segment.\n"
+            "#### QA\n"
+            "- Check when both flags hold, segment is omitted.\n"
+            "- Check when the ticket is used, segment is preserved.")
+        findings = description_review(data["standardDescription"], data["briefing"])
+        codes = {entry["code"] for entry in findings}
+        self.assertNotIn("COMPOUND_OPERATOR_OMITTED", codes)
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
+        # Even free-text rules cannot silently swap AND for OR.
+        data["standardDescription"] = data["standardDescription"].replace(
+            "cancelled AND the ticket", "cancelled OR the ticket")
+        codes = {entry["code"] for entry in
+                 description_review(data["standardDescription"], data["briefing"])}
+        self.assertIn("COMPOUND_OPERATOR_OMITTED", codes)
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT", codes)
+
+    def test_negative_if_in_qa_does_not_contradict_positive_rule(self):
+        data = analysis()
+        data["standardDescription"] += (
+            "\n- Check IF StatusCode != CANCELLED OR "
+            "DeliveryStatusCode != REMOVED THEN preserve the segment.")
+        result = quality_gate(data, issue())
+        codes = {entry["code"] for entry in result["findings"]}
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
+        self.assertNotIn("COMPOUND_OPERATOR_OMITTED", codes)
+        self.assertEqual(result["state"], "STRUCTURALLY_VERIFIED", result["findings"])
+
+    def test_negative_qa_does_not_hide_wrong_to_do_operator(self):
+        data = analysis()
+        data["standardDescription"] = (
+            data["standardDescription"].replace(
+                "StatusCode=CANCELLED AND DeliveryStatusCode=REMOVED",
+                "StatusCode=CANCELLED OR DeliveryStatusCode=REMOVED") +
+            "\n- Check IF StatusCode != CANCELLED AND "
+            "DeliveryStatusCode != REMOVED THEN preserve the segment.")
+        codes = {entry["code"] for entry in
+                 description_review(data["standardDescription"], data["briefing"])}
+        self.assertIn("COMPOUND_OPERATOR_OMITTED", codes)
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT", codes)
+
     def test_verified_local_excerpts_normalize_source_whitespace(self):
         data=analysis()
         link="https://aerticket.atlassian.net/wiki/spaces/SUP/pages/12345/a"
