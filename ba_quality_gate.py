@@ -156,6 +156,25 @@ def rule_coverage(briefing):
     return report, findings
 
 
+def declared_if_conditions(description):
+    """Only implementation IF/THEN declarations, never QA counterexamples.
+
+    QA must contain negative and edge predicates. Treating these as
+    implementation rules can reject a correct complementary OR/AND test.
+    """
+    implementation = re.sub(
+        r"(?ims)^[ \t]*####[ \t]+QA[ \t]*$.*?(?=^[ \t]*####[ \t]+|\Z)",
+        "", description)
+    return [match.group(1) for match in re.finditer(
+        r"(?is)\bIF\b(.{0,1500}?)\bTHEN\b", implementation)]
+
+
+def unstructured_predicate_signature(value):
+    """Match a full free-text predicate without treating other rules as proof."""
+    text = re.sub(r"(?i)\b(?:AND|OR)\b", " ", str(value))
+    return " ".join(re.findall(r"[^\W_]+", text, re.UNICODE)).casefold()
+
+
 def description_review(description, briefing):
     desc = str(description or "")
     findings = []
@@ -200,21 +219,30 @@ def description_review(description, briefing):
                                  "messageUk": "У Jira описі відсутнє точне значення enum/code із підтвердженого правила."})
         # Check only the IF branch for this rule. An unrelated "or" in QA
         # prose or another rule must not validate a wrong AND/OR condition.
-        conditions = [match.group(1) for match in re.finditer(
-            r"(?is)\bIF\b(.{0,1500}?)\bTHEN\b", desc)]
+        conditions = declared_if_conditions(desc)
         # IF matching must belong to this rule's predicate, not merely share
         # technical field names with an unrelated rule (e.g. ACTIVE/OR versus
         # CANCELLED/AND over the same StatusCode and DeliveryStatusCode).
         predicate_fields = set(TECHNICAL.findall(when))
         predicate_literals = technical_literals(when, "")
-        relevant = [condition for condition in conditions if
+        # Free-text predicates may not contain API fields or enum literals.
+        # An exact, operator-neutral clause signature is a conservative
+        # fallback. This still rejects a wrong AND/OR, but never matches an
+        # unrelated IF solely because it contains the word "booking".
+        predicate_signature = (
+            unstructured_predicate_signature(when)
+            if not (predicate_fields or predicate_literals) else "")
+        relevant = [condition for condition in conditions if (
                     (predicate_fields or predicate_literals) and
                     all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(field) +
                                   r"(?![A-Za-z0-9_])", condition)
                         for field in predicate_fields) and
                     all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(literal) +
                                   r"(?![A-Za-z0-9_])", condition)
-                        for literal in predicate_literals)]
+                        for literal in predicate_literals)
+                    ) or (predicate_signature and
+                          unstructured_predicate_signature(condition)
+                          == predicate_signature)]
         declared_operators = [operator for operator in ("AND", "OR")
                               if re.search(r"\b" + operator + r"\b", when, re.I)]
         for operator in declared_operators:
