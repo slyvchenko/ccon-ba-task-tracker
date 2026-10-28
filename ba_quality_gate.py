@@ -254,16 +254,17 @@ def description_review(description, briefing):
                        for condition in relevant):
                 findings.append({"code": "COMPOUND_OPERATOR_OMITTED", "ref": rule.get("id") or "rule",
                                  "messageUk": "Можливо втрачено AND/OR у складеній підтвердженій умові; перевір логіку."})
-        # Matching field names and retaining the required operator does not
-        # validate a clause that adds an opposite operator (AND vs OR).
-        # Only inspect IF clauses matching this rule's fields.
-        if len(declared_operators) == 1:
-            opposite = "OR" if "AND" in declared_operators else "AND"
-            if any(re.search(r"\b" + opposite + r"\b", condition, re.I)
-                   for condition in relevant):
-                findings.append({"code": "COMPOUND_OPERATOR_CONFLICT",
-                                 "ref": rule.get("id") or "rule",
-                                 "messageUk": "У відповідній IF-умові є додатковий AND/OR, якого немає в підтвердженому правилі; потрібна перевірка логіки."})
+        # Require the ordered operator sequence. Presence of both AND and OR
+        # is insufficient: A AND B OR C differs from A OR B AND C. The
+        # relevance match above is operator-neutral, this check is not.
+        declared_sequence = re.findall(r"\b(?:AND|OR)\b", when, re.I)
+        declared_sequence = [item.upper() for item in declared_sequence]
+        if declared_sequence and any(
+                [item.upper() for item in re.findall(r"\b(?:AND|OR)\b", condition, re.I)]
+                != declared_sequence for condition in relevant):
+            findings.append({"code": "COMPOUND_OPERATOR_CONFLICT",
+                             "ref": rule.get("id") or "rule",
+                             "messageUk": "Порядок AND/OR у відповідній IF-умові не збігається з підтвердженим правилом; перевір логіку."})
     return findings
 
 
