@@ -54,8 +54,8 @@ function viewSectionKey(node) {
   // report title/flow ID or the shared evidence region.
   const reportKey = node.parentElement?.closest?.('[data-view-key]')
     ?.getAttribute?.('data-view-key') || '';
-  const source = String((reportKey ? reportKey + '::' : '') ||
-                        '') + String(explicit || (region + '::' + title));
+  const source = (reportKey ? reportKey + '::' : '') +
+    String(explicit || (region + '::' + title));
   let hash = 2166136261;
   for (let index=0; index<source.length; index++)
     hash = Math.imul(hash ^ source.charCodeAt(index), 16777619);
