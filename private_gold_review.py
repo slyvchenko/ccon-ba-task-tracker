@@ -6,6 +6,8 @@ The tool can prove that a review form is complete, not that it is truthful.
 """
 import argparse
 import json
+import math
+import statistics
 import re
 import sys
 from collections import Counter
@@ -34,8 +36,18 @@ def _duration(value):
     return round(float(value), 2)
 
 
+def timing_distribution(values):
+    """Anonymous self-reported timing statistics, not a Windows measurement."""
+    if not values:
+        return {"p50": None, "p95": None}
+    ordered = sorted(values)
+    return {"p50": round(statistics.median(ordered), 2),
+            "p95": round(ordered[math.ceil(0.95 * len(ordered)) - 1], 2)}
+
+
 def summarize(pack):
-    if not isinstance(pack, dict) or set(pack) != {"schemaVersion", "cases"} or pack["schemaVersion"] != 1:
+    if (not isinstance(pack, dict) or set(pack) != {"schemaVersion", "cases"} or
+            type(pack["schemaVersion"]) is not int or pack["schemaVersion"] != 1):
         raise ValueError("Use the anonymous gold review schemaVersion 1")
     rows = pack["cases"]
     if not isinstance(rows, list) or not 20 <= len(rows) <= 30:
@@ -81,6 +93,15 @@ def summarize(pack):
         verified += int(_boolean(row["sourceAccessVerified"]))
         a = _duration(row["ttnaSeconds"])
         b = _duration(row["ttshSeconds"])
+        # A PASSED result without verified input, passing grades, safe conduct
+        # and timings is a contradictory record, not an acceptance result.
+        if result == "PASSED" and (
+                any(row[flag] is not True for flag in (
+                    "referenceFrozenBeforeAI", "independentReview", "sourceAccessVerified")) or
+                any(row[field] != "PASS" for field in grades) or
+                any(row[field] for field in unsafe) or
+                a is None or b is None):
+            raise ValueError("PASSED case has missing or failing review fields")
         if a is not None:
             ttnas.append(a)
         if b is not None:
@@ -109,6 +130,10 @@ def summarize(pack):
         "timedCases": {"ttna": len(ttnas), "ttsh": len(ttshs)},
         "ttnaSecondsMean": round(sum(ttnas)/len(ttnas), 2) if ttnas else None,
         "ttshSecondsMean": round(sum(ttshs)/len(ttshs), 2) if ttshs else None,
+        "ttnaSecondsP50": timing_distribution(ttnas)["p50"],
+        "ttnaSecondsP95": timing_distribution(ttnas)["p95"],
+        "ttshSecondsP50": timing_distribution(ttshs)["p50"],
+        "ttshSecondsP95": timing_distribution(ttshs)["p95"],
         "criteriaReadyForHumanDecision": complete,
         "humanAcceptance": "NOT_RECORDED",
         "releaseApproved": False,
