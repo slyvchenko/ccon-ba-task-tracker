@@ -121,7 +121,9 @@ class BrowserRegression(unittest.TestCase):
     def test_statistics_page_is_live_aggregate_without_jira_text(self):
         stats = self.context.new_page()
         stats.goto(self.url + "/stats", wait_until="domcontentloaded")
-        stats.locator("#taskActive").get_by_text("3").wait_for(timeout=15000)
+        stats.wait_for_function(
+            "() => document.querySelector('#taskActive')?.textContent.trim() === '3'",
+            timeout=15000)
         self.assertEqual(stats.locator("#taskOpen").inner_text(), "3")
         self.assertEqual(stats.locator("#taskDone").inner_text(), "0")
         self.assertEqual(stats.locator("#taskSprint").inner_text(), "2")
@@ -165,7 +167,8 @@ class BrowserRegression(unittest.TestCase):
         second_record.locator(".question-state").select_option("ANSWERED")
         second_record.locator(".question-answer").fill("Stale second tab answer")
         second_record.locator(".save-question").click()
-        second.locator("#message").get_by_text("Питання змінилося", exact=False).wait_for(
+        second.wait_for_function(
+            "() => document.querySelector('#message')?.textContent.includes('Питання змінилося')",
             timeout=15000)
         self.assertEqual(second_record.locator(".question-answer").input_value(),
                          "Stale second tab answer")
