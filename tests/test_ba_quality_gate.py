@@ -170,9 +170,10 @@ class QualityGateTests(unittest.TestCase):
         second["whenUk"] = "StatusCode=ACTIVE OR DeliveryStatusCode=PENDING"
         second["thenUk"] = "Preserve the segment"
         data["briefing"]["rules"].append(second)
-        data["standardDescription"] += (
-            "\nIF StatusCode=ACTIVE OR DeliveryStatusCode=PENDING "
-            "THEN preserve the segment.")
+        data["standardDescription"] = data["standardDescription"].replace(
+            "#### QA\n",
+            "IF StatusCode=ACTIVE OR DeliveryStatusCode=PENDING "
+            "THEN preserve the segment.\n#### QA\n")
         findings = description_review(data["standardDescription"], data["briefing"])
         codes = {finding["code"] for finding in findings}
         self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
@@ -211,6 +212,26 @@ class QualityGateTests(unittest.TestCase):
                  description_review(data["standardDescription"], data["briefing"])}
         self.assertIn("COMPOUND_OPERATOR_OMITTED", codes)
         self.assertIn("COMPOUND_OPERATOR_CONFLICT", codes)
+
+    def test_free_text_predicate_comparison_polarity_is_not_lost(self):
+        data = analysis()
+        data["briefing"]["rules"][0]["whenUk"] = "fare > 100 AND seats > 0"
+        description = (
+            "#### To Do\n"
+            "IF fare > 100 AND seats > 0 THEN apply the approved rule.\n"
+            "#### QA\n"
+            "- Check when fare <= 100, rule does not apply.")
+        codes = {entry["code"] for entry in
+                 description_review(description, data["briefing"])}
+        self.assertNotIn("COMPOUND_OPERATOR_OMITTED", codes)
+        # An operator-neutral signature must still preserve comparisons.
+        wrong = description.replace("fare > 100 AND seats > 0",
+                                    "fare < 100 AND seats < 0")
+        codes = {entry["code"] for entry in
+                 description_review(wrong, data["briefing"])}
+        self.assertIn("COMPOUND_OPERATOR_OMITTED", codes)
+        # QA polarity is not a replacement for the real declaration.
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
 
     def test_negative_if_in_qa_does_not_contradict_positive_rule(self):
         data = analysis()
