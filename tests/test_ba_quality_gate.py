@@ -233,6 +233,26 @@ class QualityGateTests(unittest.TestCase):
         # QA polarity is not a replacement for the real declaration.
         self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
 
+    def test_mixed_boolean_operator_order_cannot_be_swapped(self):
+        data = analysis()
+        data["briefing"]["rules"][0]["whenUk"] = "A AND B OR C"
+        data["standardDescription"] = (
+            "#### To Do\nIF A AND B OR C THEN deliver the segment.\n"
+            "#### QA\n- Check negative variants remain independent.")
+        valid = description_review(data["standardDescription"], data["briefing"])
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT",
+                         {x["code"] for x in valid})
+        swapped = data["standardDescription"].replace(
+            "A AND B OR C", "A OR B AND C")
+        findings = description_review(swapped, data["briefing"])
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT",
+                      {x["code"] for x in findings})
+        # An unrelated QA example cannot make the invalid rule look valid.
+        swapped += "\n- Check IF A AND B OR C THEN preserve a nonmatching case."
+        findings = description_review(swapped, data["briefing"])
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT",
+                      {x["code"] for x in findings})
+
     def test_negative_if_in_qa_does_not_contradict_positive_rule(self):
         data = analysis()
         data["standardDescription"] += (
