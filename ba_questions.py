@@ -17,6 +17,15 @@ from pipeline_lock import pipeline_lock
 
 STATES = {"OPEN", "ANSWERED", "SUPERSEDED", "NOT_APPLICABLE"}
 MAX_QUESTIONS = 200
+_NO_REVISION = object()
+
+
+class QuestionConflict(ValueError):
+    """Stale manual question edit; never return another analyst's answer."""
+
+    def __init__(self, current_revision):
+        super().__init__("Question changed elsewhere. Review the latest saved answer first.")
+        self.current_revision = current_revision
 
 
 def normalize(text):
@@ -110,6 +119,10 @@ def read_questions(root, key):
     # source pointer, never machine-confirmed semantic support for an answer.
     for item in source["questions"]:
         if isinstance(item, dict):
+            revision = item.get("manualRevision", 0)
+            if type(revision) is not int or revision < 0:
+                raise ValueError("Invalid local question revision.")
+            item["manualRevision"] = revision
             item["answerVerified"] = False
             item["sourceLinkProvided"] = bool(
                 item.get("status") == "ANSWERED" and
@@ -137,7 +150,8 @@ def sync_questions(root, key, analysis=None, evidence=None):
                     "origin": proposal["origin"], "firstSeenAt": date,
                     "lastSeenAt": date, "presentInLatestAnalysis": True,
                     "owner": "", "answer": "", "evidenceUrl": "",
-                    "updatedAt": date,
+                    "manualRevision": 0, "answerVerified": False,
+                    "sourceLinkProvided": False, "updatedAt": date,
                 }
         for q in prior.values():
             q["presentInLatestAnalysis"] = q["id"] in seen
@@ -147,11 +161,15 @@ def sync_questions(root, key, analysis=None, evidence=None):
         return source
 
 
-def update_question(root, key, identifier, *, status, owner="", answer="", evidence_url=""):
+def update_question(root, key, identifier, *, status, owner="", answer="",
+                    evidence_url="", expected_manual_revision=_NO_REVISION):
     with question_write_lock(root, key):
         task_in_scope(root, key)
         if status not in STATES:
             raise ValueError("Invalid question state.")
+        if expected_manual_revision is not _NO_REVISION and (
+                type(expected_manual_revision) is not int or expected_manual_revision < 0):
+            raise ValueError("expectedManualRevision must be a nonnegative integer.")
         for name, value, limit in (("owner", owner, 180), ("answer", answer, 8000),
                                    ("evidenceUrl", evidence_url, 2000)):
             if not isinstance(value, str) or len(value) > limit:
@@ -164,13 +182,17 @@ def update_question(root, key, identifier, *, status, owner="", answer="", evide
         match = next((item for item in source["questions"] if item.get("id") == identifier), None)
         if not match:
             raise ValueError("Unknown question ID.")
+        current_revision = match["manualRevision"]
+        if (expected_manual_revision is not _NO_REVISION and
+                expected_manual_revision != current_revision):
+            raise QuestionConflict(current_revision)
         # The analyst controls ANSWERED, but neither an HTTP(S) URL nor the
         # answer text verifies its truth. Preserve source-link availability
         # separately; semantic verification requires independent private UAT.
         match.update({"status": status, "owner": owner, "answer": answer,
                       "evidenceUrl": evidence_url, "updatedAt": utc_now(),
                       "sourceLinkProvided": status == "ANSWERED" and bool(evidence_url),
-                      "answerVerified": False})
+                      "answerVerified": False, "manualRevision": current_revision + 1})
         source["updatedAt"] = utc_now()
         write_json(question_file(root, key), source, 1 * 1024 * 1024)
         return match
