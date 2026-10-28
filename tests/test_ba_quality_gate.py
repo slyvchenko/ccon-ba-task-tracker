@@ -170,9 +170,10 @@ class QualityGateTests(unittest.TestCase):
         second["whenUk"] = "StatusCode=ACTIVE OR DeliveryStatusCode=PENDING"
         second["thenUk"] = "Preserve the segment"
         data["briefing"]["rules"].append(second)
-        data["standardDescription"] += (
-            "\nIF StatusCode=ACTIVE OR DeliveryStatusCode=PENDING "
-            "THEN preserve the segment.")
+        data["standardDescription"] = data["standardDescription"].replace(
+            "#### QA\n",
+            "IF StatusCode=ACTIVE OR DeliveryStatusCode=PENDING "
+            "THEN preserve the segment.\n#### QA\n")
         findings = description_review(data["standardDescription"], data["briefing"])
         codes = {finding["code"] for finding in findings}
         self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
@@ -188,6 +189,115 @@ class QualityGateTests(unittest.TestCase):
         self.assertNotIn("COMPOUND_OPERATOR_CONFLICT",
                          {f["code"] for f in result["findings"]})
         self.assertEqual(result["state"], "STRUCTURALLY_VERIFIED")
+
+    def test_nested_confirmed_rule_does_not_conflict_with_shorter_prefix(self):
+        data = analysis()
+        second = copy.deepcopy(data["briefing"]["rules"][0])
+        second["id"] = "R2"
+        second["whenUk"] = (
+            "StatusCode=CANCELLED AND DeliveryStatusCode=REMOVED AND TypeCode=TICKET")
+        second["thenUk"] = "Record the audit event"
+        data["briefing"]["rules"].append(second)
+        data["standardDescription"] = data["standardDescription"].replace(
+            "#### QA\n",
+            "IF StatusCode=CANCELLED AND DeliveryStatusCode=REMOVED "
+            "AND TypeCode=TICKET THEN record the audit event.\n#### QA\n")
+        findings = description_review(data["standardDescription"], data["briefing"])
+        codes = {entry["code"] for entry in findings}
+        self.assertNotIn("COMPOUND_OPERATOR_OMITTED", codes)
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
+        # An *unapproved* third condition in the R1 clause must still block.
+        data["briefing"]["rules"].pop()
+        codes = {entry["code"] for entry in
+                 description_review(data["standardDescription"], data["briefing"])}
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT", codes)
+
+    def test_free_text_confirmed_and_predicate_is_not_false_blocked(self):
+        data = analysis()
+        data["briefing"]["rules"][0]["whenUk"] = (
+            "the booking is cancelled AND the ticket is unused")
+        data["standardDescription"] = (
+            "#### To Do\n"
+            "IF the booking is cancelled AND the ticket is unused "
+            "THEN omit the segment.\n"
+            "#### QA\n"
+            "- Check when both flags hold, segment is omitted.\n"
+            "- Check when the ticket is used, segment is preserved.")
+        findings = description_review(data["standardDescription"], data["briefing"])
+        codes = {entry["code"] for entry in findings}
+        self.assertNotIn("COMPOUND_OPERATOR_OMITTED", codes)
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
+        # Even free-text rules cannot silently swap AND for OR.
+        data["standardDescription"] = data["standardDescription"].replace(
+            "cancelled AND the ticket", "cancelled OR the ticket")
+        codes = {entry["code"] for entry in
+                 description_review(data["standardDescription"], data["briefing"])}
+        self.assertIn("COMPOUND_OPERATOR_OMITTED", codes)
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT", codes)
+
+    def test_free_text_predicate_comparison_polarity_is_not_lost(self):
+        data = analysis()
+        data["briefing"]["rules"][0]["whenUk"] = "fare > 100 AND seats > 0"
+        description = (
+            "#### To Do\n"
+            "IF fare > 100 AND seats > 0 THEN apply the approved rule.\n"
+            "#### QA\n"
+            "- Check when fare <= 100, rule does not apply.")
+        codes = {entry["code"] for entry in
+                 description_review(description, data["briefing"])}
+        self.assertNotIn("COMPOUND_OPERATOR_OMITTED", codes)
+        # An operator-neutral signature must still preserve comparisons.
+        wrong = description.replace("fare > 100 AND seats > 0",
+                                    "fare < 100 AND seats < 0")
+        codes = {entry["code"] for entry in
+                 description_review(wrong, data["briefing"])}
+        self.assertIn("COMPOUND_OPERATOR_OMITTED", codes)
+        # QA polarity is not a replacement for the real declaration.
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
+
+    def test_mixed_boolean_operator_order_cannot_be_swapped(self):
+        data = analysis()
+        data["briefing"]["rules"][0]["whenUk"] = "A AND B OR C"
+        data["standardDescription"] = (
+            "#### To Do\nIF A AND B OR C THEN deliver the segment.\n"
+            "#### QA\n- Check negative variants remain independent.")
+        valid = description_review(data["standardDescription"], data["briefing"])
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT",
+                         {x["code"] for x in valid})
+        swapped = data["standardDescription"].replace(
+            "A AND B OR C", "A OR B AND C")
+        findings = description_review(swapped, data["briefing"])
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT",
+                      {x["code"] for x in findings})
+        # An unrelated QA example cannot make the invalid rule look valid.
+        swapped += "\n- Check IF A AND B OR C THEN preserve a nonmatching case."
+        findings = description_review(swapped, data["briefing"])
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT",
+                      {x["code"] for x in findings})
+
+    def test_negative_if_in_qa_does_not_contradict_positive_rule(self):
+        data = analysis()
+        data["standardDescription"] += (
+            "\n- Check IF StatusCode != CANCELLED OR "
+            "DeliveryStatusCode != REMOVED THEN preserve the segment.")
+        result = quality_gate(data, issue())
+        codes = {entry["code"] for entry in result["findings"]}
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
+        self.assertNotIn("COMPOUND_OPERATOR_OMITTED", codes)
+        self.assertEqual(result["state"], "STRUCTURALLY_VERIFIED", result["findings"])
+
+    def test_negative_qa_does_not_hide_wrong_to_do_operator(self):
+        data = analysis()
+        data["standardDescription"] = (
+            data["standardDescription"].replace(
+                "StatusCode=CANCELLED AND DeliveryStatusCode=REMOVED",
+                "StatusCode=CANCELLED OR DeliveryStatusCode=REMOVED") +
+            "\n- Check IF StatusCode != CANCELLED AND "
+            "DeliveryStatusCode != REMOVED THEN preserve the segment.")
+        codes = {entry["code"] for entry in
+                 description_review(data["standardDescription"], data["briefing"])}
+        self.assertIn("COMPOUND_OPERATOR_OMITTED", codes)
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT", codes)
 
     def test_verified_local_excerpts_normalize_source_whitespace(self):
         data=analysis()

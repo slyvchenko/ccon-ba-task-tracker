@@ -156,6 +156,54 @@ def rule_coverage(briefing):
     return report, findings
 
 
+def declared_if_conditions(description):
+    """Only implementation IF/THEN declarations, never QA counterexamples.
+
+    QA must contain negative and edge predicates. Treating these as
+    implementation rules can reject a correct complementary OR/AND test.
+    """
+    implementation = re.sub(
+        r"(?ims)^[ \t]*####[ \t]+QA[ \t]*$.*?(?=^[ \t]*####[ \t]+|\Z)",
+        "", description)
+    return [match.group(1) for match in re.finditer(
+        r"(?is)\bIF\b(.{0,1500}?)\bTHEN\b", implementation)]
+
+
+def unstructured_predicate_signature(value):
+    """Match a full free-text predicate without treating other rules as proof."""
+    # Remove ONLY the logical joiner being checked separately. Comparison
+    # polarity and thresholds are part of the predicate: fare > 100 and
+    # fare < 100 must never share a signature.
+    text = re.sub(r"(?i)\b(?:AND|OR)\b", " ", str(value))
+    text = re.sub(r"\s*([<>!=]=?|==)\s*", r"\1", text)
+    return " ".join(text.casefold().split())
+
+
+def _more_specific_confirmed_rule_matches(condition, rule, confirmed_rules,
+                                          fields, literals):
+    """Do not evaluate a longer confirmed rule's IF as an edit of a shorter one."""
+    if not (fields or literals):
+        return False
+    for other in confirmed_rules:
+        if other is rule:
+            continue
+        when = str(other.get("whenUk") or "")
+        other_fields = set(TECHNICAL.findall(when))
+        other_literals = technical_literals(when, "")
+        if (not fields.issubset(other_fields) or
+                not literals.issubset(other_literals) or
+                (fields == other_fields and literals == other_literals)):
+            continue
+        if all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(name) +
+                         r"(?![A-Za-z0-9_])", condition)
+               for name in other_fields) and all(
+                   re.search(r"(?<![A-Za-z0-9_])" + re.escape(value) +
+                             r"(?![A-Za-z0-9_])", condition)
+                   for value in other_literals):
+            return True
+    return False
+
+
 def description_review(description, briefing):
     desc = str(description or "")
     findings = []
@@ -185,7 +233,9 @@ def description_review(description, briefing):
                          "messageUk": "Є дослівне повторення змісту в описі."})
     # Technical field spelling must survive in description, without treating
     # approximate "same-named" mapping candidates as business requirements.
-    for rule in (briefing.get("rules") or [])[:30]:
+    confirmed_rules = [item for item in (briefing.get("rules") or [])[:30]
+                       if isinstance(item, dict) and item.get("certainty") == "CONFIRMED"]
+    for rule in confirmed_rules:
         if not isinstance(rule, dict) or rule.get("certainty") != "CONFIRMED":
             continue
         when, then = str(rule.get("whenUk") or ""), str(rule.get("thenUk") or "")
@@ -200,21 +250,38 @@ def description_review(description, briefing):
                                  "messageUk": "У Jira описі відсутнє точне значення enum/code із підтвердженого правила."})
         # Check only the IF branch for this rule. An unrelated "or" in QA
         # prose or another rule must not validate a wrong AND/OR condition.
-        conditions = [match.group(1) for match in re.finditer(
-            r"(?is)\bIF\b(.{0,1500}?)\bTHEN\b", desc)]
+        conditions = declared_if_conditions(desc)
         # IF matching must belong to this rule's predicate, not merely share
         # technical field names with an unrelated rule (e.g. ACTIVE/OR versus
         # CANCELLED/AND over the same StatusCode and DeliveryStatusCode).
         predicate_fields = set(TECHNICAL.findall(when))
         predicate_literals = technical_literals(when, "")
-        relevant = [condition for condition in conditions if
+        # Free-text predicates may not contain API fields or enum literals.
+        # An exact, operator-neutral clause signature is a conservative
+        # fallback. This still rejects a wrong AND/OR, but never matches an
+        # unrelated IF solely because it contains the word "booking".
+        predicate_signature = (
+            unstructured_predicate_signature(when)
+            if not (predicate_fields or predicate_literals) else "")
+        relevant = [condition for condition in conditions if (
                     (predicate_fields or predicate_literals) and
                     all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(field) +
                                   r"(?![A-Za-z0-9_])", condition)
                         for field in predicate_fields) and
                     all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(literal) +
                                   r"(?![A-Za-z0-9_])", condition)
-                        for literal in predicate_literals)]
+                        for literal in predicate_literals)
+                    ) or (predicate_signature and
+                          unstructured_predicate_signature(condition)
+                          == predicate_signature)]
+        # A more specific confirmed rule can share an entire technical
+        # predicate prefix. Its longer IF is not evidence that the shorter
+        # rule gained an unapproved AND/OR. Without another confirmed
+        # matching rule, extra operators remain a blocking conflict.
+        relevant = [condition for condition in relevant if not
+                    _more_specific_confirmed_rule_matches(
+                        condition, rule, confirmed_rules,
+                        predicate_fields, predicate_literals)]
         declared_operators = [operator for operator in ("AND", "OR")
                               if re.search(r"\b" + operator + r"\b", when, re.I)]
         for operator in declared_operators:
@@ -222,16 +289,17 @@ def description_review(description, briefing):
                        for condition in relevant):
                 findings.append({"code": "COMPOUND_OPERATOR_OMITTED", "ref": rule.get("id") or "rule",
                                  "messageUk": "Можливо втрачено AND/OR у складеній підтвердженій умові; перевір логіку."})
-        # Matching field names and retaining the required operator does not
-        # validate a clause that adds an opposite operator (AND vs OR).
-        # Only inspect IF clauses matching this rule's fields.
-        if len(declared_operators) == 1:
-            opposite = "OR" if "AND" in declared_operators else "AND"
-            if any(re.search(r"\b" + opposite + r"\b", condition, re.I)
-                   for condition in relevant):
-                findings.append({"code": "COMPOUND_OPERATOR_CONFLICT",
-                                 "ref": rule.get("id") or "rule",
-                                 "messageUk": "У відповідній IF-умові є додатковий AND/OR, якого немає в підтвердженому правилі; потрібна перевірка логіки."})
+        # Require the ordered operator sequence. Presence of both AND and OR
+        # is insufficient: A AND B OR C differs from A OR B AND C. The
+        # relevance match above is operator-neutral, this check is not.
+        declared_sequence = re.findall(r"\b(?:AND|OR)\b", when, re.I)
+        declared_sequence = [item.upper() for item in declared_sequence]
+        if declared_sequence and any(
+                [item.upper() for item in re.findall(r"\b(?:AND|OR)\b", condition, re.I)]
+                != declared_sequence for condition in relevant):
+            findings.append({"code": "COMPOUND_OPERATOR_CONFLICT",
+                             "ref": rule.get("id") or "rule",
+                             "messageUk": "Порядок AND/OR у відповідній IF-умові не збігається з підтвердженим правилом; перевір логіку."})
     return findings
 
 
