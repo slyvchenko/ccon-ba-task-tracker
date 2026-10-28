@@ -190,6 +190,28 @@ class QualityGateTests(unittest.TestCase):
                          {f["code"] for f in result["findings"]})
         self.assertEqual(result["state"], "STRUCTURALLY_VERIFIED")
 
+    def test_nested_confirmed_rule_does_not_conflict_with_shorter_prefix(self):
+        data = analysis()
+        second = copy.deepcopy(data["briefing"]["rules"][0])
+        second["id"] = "R2"
+        second["whenUk"] = (
+            "StatusCode=CANCELLED AND DeliveryStatusCode=REMOVED AND TypeCode=TICKET")
+        second["thenUk"] = "Record the audit event"
+        data["briefing"]["rules"].append(second)
+        data["standardDescription"] = data["standardDescription"].replace(
+            "#### QA\n",
+            "IF StatusCode=CANCELLED AND DeliveryStatusCode=REMOVED "
+            "AND TypeCode=TICKET THEN record the audit event.\n#### QA\n")
+        findings = description_review(data["standardDescription"], data["briefing"])
+        codes = {entry["code"] for entry in findings}
+        self.assertNotIn("COMPOUND_OPERATOR_OMITTED", codes)
+        self.assertNotIn("COMPOUND_OPERATOR_CONFLICT", codes)
+        # An *unapproved* third condition in the R1 clause must still block.
+        data["briefing"]["rules"].pop()
+        codes = {entry["code"] for entry in
+                 description_review(data["standardDescription"], data["briefing"])}
+        self.assertIn("COMPOUND_OPERATOR_CONFLICT", codes)
+
     def test_free_text_confirmed_and_predicate_is_not_false_blocked(self):
         data = analysis()
         data["briefing"]["rules"][0]["whenUk"] = (
