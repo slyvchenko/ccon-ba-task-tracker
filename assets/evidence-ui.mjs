@@ -205,13 +205,22 @@ export async function loadTaskQuestions(key, api, escape, notify, current, getAc
           status: box.querySelector('.question-state').value,
           owner: box.querySelector('.question-owner').value,
           answer: box.querySelector('.question-answer').value,
-          evidenceUrl: box.querySelector('.question-url').value
+          evidenceUrl: box.querySelector('.question-url').value,
+          expectedManualRevision: data.questions.find(q => q.id === button.dataset.question)?.manualRevision
         });
         notify('Питання збережено локально. Jira не змінена.');
         const live = getActiveScope();
         if (live() === key) loadTaskQuestions(key, api, escape, notify, live, getActiveScope);
       } catch (error) {
-        notify('Питання не збережено: ' + error.message, true);
+        if (error.code === 'QUESTION_REVISION_CONFLICT' ||
+            error.code === 'QUESTION_REVISION_REQUIRED') {
+          // Never reload the form on conflict: the analyst's typed answer
+          // remains visible until they deliberately copy/compare it.
+          notify('Питання змінилося в іншій вкладці. Ваш текст залишився у формі. ' +
+            'Скопіюйте його та перевірте актуальну відповідь перед повторним збереженням.', true);
+        } else {
+          notify('Питання не збережено: ' + error.message, true);
+        }
         button.disabled = false;
       }
     }));
