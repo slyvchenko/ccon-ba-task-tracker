@@ -110,6 +110,20 @@ class ProjectStatsTests(unittest.TestCase):
             http.server_close()
             thread.join()
 
+    def test_verified_sprint_membership_includes_locally_done_tasks(self):
+        self.import_tasks("2026-10-28T09:00:00Z", [
+            {"key": "CCON-1", "summary": "Synthetic sprint one",
+             "activeSprint": True, "activeSprintStatus": "VERIFIED"},
+            {"key": "CCON-2", "summary": "Synthetic sprint two",
+             "activeSprint": True, "activeSprintStatus": "VERIFIED"}])
+        self.desk.save("CCON-1", {"manualStatus":"DONE", "note":"",
+                                   "expectedManualRevision":0})
+        result = statistics_report(self.desk)["tasks"]
+        self.assertEqual(result["activeVerifiedSprint"], 2)
+        self.assertEqual(result["done"], 1)
+        self.assertEqual(result["unfinished"], 1)
+        self.assertEqual(sum(result["signalCounts"].values()), 1)
+
     def test_stale_ai_recommendation_never_appears_as_actionable(self):
         task = {"manualStatus": "AUTO", "aiStatus": "NOT ANALYZED",
                 "contextFingerprint": "new",
