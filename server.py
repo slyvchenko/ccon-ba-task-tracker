@@ -26,6 +26,10 @@ from local_backup import create_backup, backup_status
 
 STATIC_FILES = {
     '/': ('dashboard.html', 'text/html; charset=utf-8'),
+    '/stats': ('stats.html', 'text/html; charset=utf-8'),
+    '/stats.html': ('stats.html', 'text/html; charset=utf-8'),
+    '/assets/stats.css': ('assets/stats.css', 'text/css; charset=utf-8'),
+    '/assets/stats.mjs': ('assets/stats.mjs', 'text/javascript; charset=utf-8'),
     '/assets/dashboard.css': ('assets/dashboard.css', 'text/css; charset=utf-8'),
     '/assets/dashboard.mjs': ('assets/dashboard.mjs', 'text/javascript; charset=utf-8'),
     '/assets/task-rules.mjs': ('assets/task-rules.mjs', 'text/javascript; charset=utf-8'),
@@ -113,6 +117,12 @@ def handler(desk, cloud=None, error_budget=None):
             if path in STATIC_FILES:
                 filename, content_type = STATIC_FILES[path]
                 return self.send(200, (ROOT / filename).read_bytes(), content_type)
+            if path == '/api/stats':
+                from project_stats import statistics_report
+                try:
+                    return self.send(200, statistics_report(desk))
+                except (OSError, ValueError, KeyError, TypeError):
+                    return self.send(503, {'error': 'Local statistics unavailable; check source files.'})
             if path == '/api/tasks/revision':
                 return self.send(200, desk.revision())
             if path == '/api/tasks':
