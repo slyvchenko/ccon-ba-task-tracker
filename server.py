@@ -15,6 +15,7 @@ from urllib.request import build_opener, ProxyHandler
 
 from app_config import ROOT, STATUSES, LIMIT, CONTEXT_LIMIT, VERSION, SIGNALS, utc_now as now
 from desk_store import Desk, SaveConflict
+from ba_questions import QuestionConflict
 from mail_service import open_email_batch
 from schema import text_field, validate_draft, validate_analysis
 from review_report import render_markdown, validate_report, REPORT_LIMIT
@@ -303,12 +304,17 @@ def handler(desk, cloud=None, error_budget=None):
                     return self.send(200, approve(desk.root, key))
                 if re.fullmatch(r'/api/questions/CCON-\d+/Q-[a-f0-9]{14}', path):
                     from ba_questions import update_question
+                    if 'expectedManualRevision' not in data:
+                        return self.send(428, {
+                            'code': 'QUESTION_REVISION_REQUIRED',
+                            'error': 'Reload the saved question and retry with its manual revision.'})
                     parts = path.split('/')
                     answer = update_question(desk.root, parts[3], parts[4],
                                              status=data.get('status'),
                                              owner=data.get('owner', ''),
                                              answer=data.get('answer', ''),
-                                             evidence_url=data.get('evidenceUrl', ''))
+                                             evidence_url=data.get('evidenceUrl', ''),
+                                             expected_manual_revision=data['expectedManualRevision'])
                     return self.send(200, {'question': answer})
                 if re.fullmatch(r'/api/tasks/CCON-\d+', path):
                     # Fail closed for legacy unversioned HTTP clients; otherwise
@@ -320,6 +326,9 @@ def handler(desk, cloud=None, error_budget=None):
                     result = desk.save(unquote(path.rsplit('/', 1)[-1]), data)
                     return self.send(200, {'message': 'Saved locally.', **result})
                 return self.send(404, {'error': 'Not found.'})
+            except QuestionConflict as e:
+                return self.send(409, {'error': str(e), 'code': 'QUESTION_REVISION_CONFLICT',
+                                       'currentManualRevision': e.current_revision})
             except SaveConflict as e:
                 return self.send(409, {'error': str(e), 'code': 'TASK_REVISION_CONFLICT',
                                        'currentManualRevision': e.current_revision})
