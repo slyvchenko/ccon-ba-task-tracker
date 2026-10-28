@@ -171,8 +171,12 @@ def declared_if_conditions(description):
 
 def unstructured_predicate_signature(value):
     """Match a full free-text predicate without treating other rules as proof."""
+    # Remove ONLY the logical joiner being checked separately. Comparison
+    # polarity and thresholds are part of the predicate: fare > 100 and
+    # fare < 100 must never share a signature.
     text = re.sub(r"(?i)\b(?:AND|OR)\b", " ", str(value))
-    return " ".join(re.findall(r"[^\W_]+", text, re.UNICODE)).casefold()
+    text = re.sub(r"\s*([<>!=]=?|==)\s*", r"\1", text)
+    return " ".join(text.casefold().split())
 
 
 def description_review(description, briefing):
