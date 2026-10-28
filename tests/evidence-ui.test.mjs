@@ -142,6 +142,18 @@ test('evidence report IDs are opaque, per report and stable after reordering',()
   assert.doesNotMatch(first + second, /SENSITIVE|provider|a{10}|b{10}/);
   assert.notEqual(evidenceReportViewKey({supplier:'same provider'},0),
                   evidenceReportViewKey({supplier:'same provider'},1));
+  // Multiple manifests can have the same ZIP SHA but distinct flow identities.
+  assert.notEqual(evidenceReportViewKey({
+                    sourceSha256:'a'.repeat(64),flowId:'FLOW-ONE'},0),
+                  evidenceReportViewKey({
+                    sourceSha256:'a'.repeat(64),flowId:'FLOW-TWO'},1));
+  assert.equal(evidenceReportViewKey({
+                    sourceSha256:'a'.repeat(64),flowId:'FLOW-ONE'},0),
+               evidenceReportViewKey({
+                    sourceSha256:'a'.repeat(64),flowId:'FLOW-ONE'},20));
+  // A source hash without a flow discriminator must not collide by position.
+  assert.notEqual(evidenceReportViewKey({sourceSha256:'b'.repeat(64)},0),
+                  evidenceReportViewKey({sourceSha256:'b'.repeat(64)},1));
   assert.equal(evidenceReportViewKey({flowId:'SENSITIVE-A'},0),
                evidenceReportViewKey({flowId:'SENSITIVE-A'},9));
 });
