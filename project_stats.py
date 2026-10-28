@@ -60,8 +60,9 @@ def statistics_report(desk):
     unanalyzed = sum(not isinstance(row.get("analysis"), dict)
                      for row in unfinished)
     stale = sum(analysis_is_stale(row) for row in unfinished)
+    # Sprint membership is independent of the local manual DONE state.
     sprint = sum(row.get("activeSprintStatus") == "VERIFIED"
-                 and row.get("activeSprint") is True for row in unfinished)
+                 and row.get("activeSprint") is True for row in active)
     latest = view.get("latest")
     return {
         "schemaVersion": 1,
