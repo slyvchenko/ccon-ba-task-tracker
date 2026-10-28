@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {valueMappingMarkup, investigationMarkup, flowDiagnosticsMarkup, evidenceHealthMarkup, questionProvenanceNotice} from '../assets/evidence-ui.mjs';
+import {valueMappingMarkup, investigationMarkup, flowDiagnosticsMarkup, evidenceHealthMarkup, questionProvenanceNotice, evidenceReportViewKey} from '../assets/evidence-ui.mjs';
 
 const escape = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -128,4 +128,20 @@ test('ANSWERED with only a source URL must never imply verified semantics', () =
   assert.match(noLink, /не перевірено незалежно/);
   const open = questionProvenanceNotice({status: 'OPEN', presentInLatestAnalysis: false});
   assert.match(open, /не закрито автоматично/);
+});
+
+test('evidence report IDs are opaque, per report and stable after reordering',()=>{
+  const a={supplier:'same provider',sourceSha256:'a'.repeat(64),flowId:'SENSITIVE-A'};
+  const b={supplier:'same provider',sourceSha256:'b'.repeat(64),flowId:'SENSITIVE-B'};
+  const first=evidenceReportViewKey(a,0);
+  const second=evidenceReportViewKey(b,1);
+  assert.match(first,/^evidence-[a-f0-9]{8}$/);
+  assert.notEqual(first,second);
+  assert.equal(first,evidenceReportViewKey(a,1));
+  assert.equal(second,evidenceReportViewKey(b,0));
+  assert.doesNotMatch(first + second, /SENSITIVE|provider|a{10}|b{10}/);
+  assert.notEqual(evidenceReportViewKey({supplier:'same provider'},0),
+                  evidenceReportViewKey({supplier:'same provider'},1));
+  assert.equal(evidenceReportViewKey({flowId:'SENSITIVE-A'},0),
+               evidenceReportViewKey({flowId:'SENSITIVE-A'},9));
 });
