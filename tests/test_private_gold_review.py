@@ -54,9 +54,42 @@ class PrivateGoldReviewTests(unittest.TestCase):
             pack=cohort()
             pack["cases"][0][column]=value
             with self.subTest(column=column):
-                result=summarize(pack)
-                self.assertFalse(result["criteriaReadyForHumanDecision"])
-                self.assertFalse(result["releaseApproved"])
+                if column == "result":
+                    result = summarize(pack)
+                    self.assertFalse(result["criteriaReadyForHumanDecision"])
+                    self.assertFalse(result["releaseApproved"])
+                else:
+                    with self.assertRaisesRegex(ValueError, "PASSED case"):
+                        summarize(pack)
+
+    def test_anonymous_ux_median_p95_do_not_claim_human_signoff(self):
+        report = summarize(cohort())
+        self.assertEqual(report["ttnaSecondsP50"], 17.5)
+        self.assertEqual(report["ttnaSecondsP95"], 29)
+        self.assertEqual(report["ttshSecondsP50"], 22.5)
+        self.assertEqual(report["ttshSecondsP95"], 34)
+        self.assertEqual(report["humanAcceptance"], "NOT_RECORDED")
+        self.assertFalse(report["releaseApproved"])
+
+    def test_blocked_cohort_does_not_fabricate_timings(self):
+        pack = cohort()
+        for row in pack["cases"]:
+            row["result"] = "BLOCKED"
+            row["facts"] = row["rules"] = row["handoff"] = "INCONCLUSIVE"
+            row["referenceFrozenBeforeAI"] = False
+            row["independentReview"] = False
+            row["sourceAccessVerified"] = False
+            row["ttnaSeconds"] = row["ttshSeconds"] = None
+        report = summarize(pack)
+        self.assertIsNone(report["ttnaSecondsP50"])
+        self.assertIsNone(report["ttnaSecondsP95"])
+        self.assertFalse(report["criteriaReadyForHumanDecision"])
+
+    def test_boolean_schema_version_is_not_accepted_as_v1(self):
+        pack = cohort()
+        pack["schemaVersion"] = True
+        with self.assertRaisesRegex(ValueError, "schemaVersion"):
+            summarize(pack)
 
     def test_id_validation_rejects_real_jira_pnr_and_unknown_private_fields(self):
         for bad in ("CCON-12345","ZX97YJ","GOLD-31","GOLD-00"):
