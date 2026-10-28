@@ -21,8 +21,13 @@ export function evidenceReportViewKey(report, index=0) {
   const flow = typeof report?.flowId === 'string' &&
     report.flowId.length > 0 && report.flowId.length <= 150 ?
     report.flowId : null;
-  const source = sha ? 'sha:' + sha : flow ? 'flow:' + flow :
-    'position:' + (Number.isSafeInteger(index) && index >= 0 ? index : 0);
+  const position = Number.isSafeInteger(index) && index >= 0 ? index : 0;
+  // Several evidence manifests may share one source ZIP SHA but represent
+  // different supplier flows. Hash both stable identities when available;
+  // use position only when no flow discriminator exists.
+  const source = sha ?
+    'sha:' + sha + '|flow:' + (flow || 'position:' + position) :
+    flow ? 'flow:' + flow : 'position:' + position;
   let hash = 2166136261;
   for (let i=0; i<source.length; i++)
     hash = Math.imul(hash ^ source.charCodeAt(i), 16777619);
