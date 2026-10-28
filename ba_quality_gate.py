@@ -179,6 +179,31 @@ def unstructured_predicate_signature(value):
     return " ".join(text.casefold().split())
 
 
+def _more_specific_confirmed_rule_matches(condition, rule, confirmed_rules,
+                                          fields, literals):
+    """Do not evaluate a longer confirmed rule's IF as an edit of a shorter one."""
+    if not (fields or literals):
+        return False
+    for other in confirmed_rules:
+        if other is rule:
+            continue
+        when = str(other.get("whenUk") or "")
+        other_fields = set(TECHNICAL.findall(when))
+        other_literals = technical_literals(when, "")
+        if (not fields.issubset(other_fields) or
+                not literals.issubset(other_literals) or
+                (fields == other_fields and literals == other_literals)):
+            continue
+        if all(re.search(r"(?<![A-Za-z0-9_])" + re.escape(name) +
+                         r"(?![A-Za-z0-9_])", condition)
+               for name in other_fields) and all(
+                   re.search(r"(?<![A-Za-z0-9_])" + re.escape(value) +
+                             r"(?![A-Za-z0-9_])", condition)
+                   for value in other_literals):
+            return True
+    return False
+
+
 def description_review(description, briefing):
     desc = str(description or "")
     findings = []
@@ -208,7 +233,9 @@ def description_review(description, briefing):
                          "messageUk": "Є дослівне повторення змісту в описі."})
     # Technical field spelling must survive in description, without treating
     # approximate "same-named" mapping candidates as business requirements.
-    for rule in (briefing.get("rules") or [])[:30]:
+    confirmed_rules = [item for item in (briefing.get("rules") or [])[:30]
+                       if isinstance(item, dict) and item.get("certainty") == "CONFIRMED"]
+    for rule in confirmed_rules:
         if not isinstance(rule, dict) or rule.get("certainty") != "CONFIRMED":
             continue
         when, then = str(rule.get("whenUk") or ""), str(rule.get("thenUk") or "")
@@ -247,6 +274,14 @@ def description_review(description, briefing):
                     ) or (predicate_signature and
                           unstructured_predicate_signature(condition)
                           == predicate_signature)]
+        # A more specific confirmed rule can share an entire technical
+        # predicate prefix. Its longer IF is not evidence that the shorter
+        # rule gained an unapproved AND/OR. Without another confirmed
+        # matching rule, extra operators remain a blocking conflict.
+        relevant = [condition for condition in relevant if not
+                    _more_specific_confirmed_rule_matches(
+                        condition, rule, confirmed_rules,
+                        predicate_fields, predicate_literals)]
         declared_operators = [operator for operator in ("AND", "OR")
                               if re.search(r"\b" + operator + r"\b", when, re.I)]
         for operator in declared_operators:
