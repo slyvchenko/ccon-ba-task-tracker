@@ -67,6 +67,36 @@ test('expanded state restored by semantic heading even if sections shift order',
   assert.deepEqual(changed.nodes.map(x=>x.open),[true,true,false,true]);
 });
 
+test('repeated evidence disclosure titles stay independent across reorder and async restoration',()=>{
+  const reportNode=(reportKey,open)=>({
+    nodeType:1, id:'', open,
+    getAttribute:()=>null,
+    closest:()=>({getAttribute:()=> 'Контекст'}),
+    parentElement:{closest: selector=> selector==='[data-view-key]' ?
+      {getAttribute:()=>reportKey} : null},
+    querySelector:()=>({textContent:'Приклади обмінів (до 30)'}),
+    matches: name=>name==='details',
+    querySelectorAll:()=>[]
+  });
+  const root=nodes=>({scrollTop:40,querySelectorAll:()=>nodes});
+  const a=reportNode('evidence-aaaa1111',true);
+  const b=reportNode('evidence-bbbb2222',false);
+  const captured=captureTaskView(root([a,b]));
+  assert.equal(new Set(captured.sections.map(x=>x[0])).size,2);
+  const aFresh=reportNode('evidence-aaaa1111',false);
+  const bFresh=reportNode('evidence-bbbb2222',true);
+  restoreTaskView(root([bFresh,aFresh]),captured);
+  assert.equal(aFresh.open,true);
+  assert.equal(bFresh.open,false);
+  const aAsync=reportNode('evidence-aaaa1111',false);
+  const bAsync=reportNode('evidence-bbbb2222',true);
+  const restored=restoreInsertedDisclosureStates(
+    [{addedNodes:[bAsync,aAsync]}],new Map(captured.sections));
+  assert.equal(restored,2);
+  assert.equal(aAsync.open,true);
+  assert.equal(bAsync.open,false);
+});
+
 test('caret restoration does not overwrite text, tracks textarea only',()=>{
   const old={id:'note',tagName:'TEXTAREA',selectionStart:6,selectionEnd:11,
     selectionDirection:'forward',scrollTop:24};
