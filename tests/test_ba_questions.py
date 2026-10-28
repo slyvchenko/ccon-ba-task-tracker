@@ -6,7 +6,8 @@ from unittest.mock import patch
 from pathlib import Path
 
 from ba_questions import (sync_questions, read_questions, update_question,
-                          question_id, proposed_questions, question_write_lock, STATES)
+                          question_id, proposed_questions, question_write_lock,
+                          QuestionConflict, STATES)
 from kibana_evidence import plan_for_issue, discover_links
 from supplier_logs import flow_references
 
@@ -123,6 +124,49 @@ class QuestionsAndKibanaTests(unittest.TestCase):
             status="OPEN", answer="", evidence_url="")
         self.assertFalse(reopened["answerVerified"])
         self.assertFalse(reopened["sourceLinkProvided"])
+
+    def test_two_question_editors_cannot_silently_overwrite_a_manual_answer(self):
+        source = sync_questions(self.root, "CCON-123", {
+            "missingInfo": ["Which supplier rule applies?"]})
+        identifier = source["questions"][0]["id"]
+        self.assertEqual(source["questions"][0]["manualRevision"], 0)
+        first = update_question(self.root, "CCON-123", identifier,
+            status="ANSWERED", answer="First analyst decision",
+            expected_manual_revision=0)
+        self.assertEqual(first["manualRevision"], 1)
+        with self.assertRaises(QuestionConflict) as caught:
+            update_question(self.root, "CCON-123", identifier,
+                status="ANSWERED", answer="Stale second tab",
+                expected_manual_revision=0)
+        self.assertEqual(caught.exception.current_revision, 1)
+        saved = read_questions(self.root, "CCON-123")["questions"][0]
+        self.assertEqual(saved["answer"], "First analyst decision")
+        self.assertEqual(saved["manualRevision"], 1)
+        # AI refreshes only metadata; they must never invalidate a human CAS
+        # token or overwrite the analyst's answer.
+        synced = sync_questions(self.root, "CCON-123", {
+            "missingInfo": ["Which supplier rule applies?"]})["questions"][0]
+        self.assertEqual(synced["manualRevision"], 1)
+        self.assertEqual(synced["answer"], "First analyst decision")
+        second = update_question(self.root, "CCON-123", identifier,
+            status="ANSWERED", answer="Explicitly reviewed second decision",
+            expected_manual_revision=1)
+        self.assertEqual(second["manualRevision"], 2)
+
+    def test_question_revision_validation_and_legacy_normalization(self):
+        source = sync_questions(self.root, "CCON-123", {
+            "missingInfo": ["One missing rule"]})
+        identifier = source["questions"][0]["id"]
+        path = self.root / "data/questions/CCON-123.json"
+        old = json.loads(path.read_text(encoding="utf-8"))
+        old["questions"][0].pop("manualRevision")
+        path.write_text(json.dumps(old), encoding="utf-8")
+        self.assertEqual(read_questions(self.root, "CCON-123")["questions"][0]["manualRevision"], 0)
+        for invalid in (None, True, -1, "0", 1.5):
+            with self.subTest(value=invalid), self.assertRaisesRegex(ValueError, "expectedManualRevision"):
+                update_question(self.root, "CCON-123", identifier, status="OPEN",
+                                expected_manual_revision=invalid)
+        self.assertEqual(read_questions(self.root, "CCON-123")["questions"][0]["manualRevision"], 0)
 
     def test_question_updates_are_restricted_to_personal_scope(self):
         with self.assertRaisesRegex(ValueError, "personal"):
