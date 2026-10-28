@@ -39,11 +39,14 @@ class ProjectStatsTests(unittest.TestCase):
         self.import_tasks("2026-10-27T12:00:00Z", [
             {"key":"CCON-1","summary":"PRIVATE TEST ONLY one",
              "activeSprintStatus":"VERIFIED","activeSprint":True,
-             "analysis":{"signal":"WRITE"}},
+             "analysis":{"signal":"WRITE","reasonUk":"Synthetic reason",
+                         "nextActionUk":"Synthetic next action"}},
             {"key":"CCON-2","summary":"PRIVATE TEST ONLY two",
-             "analysis":{"signal":"READY"}},
+             "analysis":{"signal":"READY","reasonUk":"Synthetic reason",
+                         "nextActionUk":"Synthetic next action"}},
             {"key":"CCON-3","summary":"PRIVATE TEST ONLY three",
-             "analysis":{"signal":"DECIDE"}},
+             "analysis":{"signal":"DECIDE","reasonUk":"Synthetic reason",
+                         "nextActionUk":"Synthetic next action"}},
             {"key":"CCON-4","summary":"PRIVATE TEST ONLY four"},
             {"key":"CCON-5","summary":"PRIVATE TEST ONLY archive later"}
         ])
@@ -54,11 +57,14 @@ class ProjectStatsTests(unittest.TestCase):
         self.import_tasks("2026-10-28T12:00:00Z", [
             {"key":"CCON-1","summary":"PRIVATE TEST ONLY one",
              "activeSprintStatus":"VERIFIED","activeSprint":True,
-             "analysis":{"signal":"WRITE"}},
+             "analysis":{"signal":"WRITE","reasonUk":"Synthetic reason",
+                         "nextActionUk":"Synthetic next action"}},
             {"key":"CCON-2","summary":"PRIVATE TEST ONLY two",
-             "analysis":{"signal":"READY"}},
+             "analysis":{"signal":"READY","reasonUk":"Synthetic reason",
+                         "nextActionUk":"Synthetic next action"}},
             {"key":"CCON-3","summary":"PRIVATE TEST ONLY three",
-             "analysis":{"signal":"DECIDE"}},
+             "analysis":{"signal":"DECIDE","reasonUk":"Synthetic reason",
+                         "nextActionUk":"Synthetic next action"}},
             {"key":"CCON-4","summary":"PRIVATE TEST ONLY four"}
         ])
         result = statistics_report(self.desk)
@@ -67,7 +73,7 @@ class ProjectStatsTests(unittest.TestCase):
         self.assertEqual((tasks["unfinished"], tasks["done"]), (3, 1))
         self.assertEqual(tasks["signalCounts"]["WRITE"], 1)
         self.assertEqual(tasks["signalCounts"]["WAIT"], 1)
-        self.assertEqual(tasks["signalCounts"]["OTHER"], 1)
+        self.assertEqual(tasks["signalCounts"]["REVIEW"], 1)
         self.assertEqual(sum(tasks["signalCounts"].values()), 3)
         self.assertEqual(tasks["activeVerifiedSprint"], 1)
         self.assertEqual(tasks["manualStatusCounts"]["WAITING INPUT"], 1)
@@ -81,7 +87,8 @@ class ProjectStatsTests(unittest.TestCase):
     def test_http_stats_returns_aggregate_and_no_remote_host_access(self):
         self.import_tasks("2026-10-28T09:00:00Z", [
             {"key":"CCON-999","summary":"NEVER RETURN SOURCE NAME",
-             "analysis":{"signal":"READY"}}])
+             "analysis":{"signal":"READY","reasonUk":"Synthetic reason",
+                         "nextActionUk":"Synthetic next action"}}])
         http = ThreadingHTTPServer(("127.0.0.1", 0), handler(self.desk))
         thread = threading.Thread(target=http.serve_forever, daemon=True)
         thread.start()
@@ -102,6 +109,22 @@ class ProjectStatsTests(unittest.TestCase):
             http.shutdown()
             http.server_close()
             thread.join()
+
+    def test_stale_ai_recommendation_never_appears_as_actionable(self):
+        task = {"manualStatus": "AUTO", "aiStatus": "NOT ANALYZED",
+                "contextFingerprint": "new",
+                "analysis": {"signal": "WRITE", "reasonUk": "Old",
+                             "nextActionUk": "Old task", "stale": True,
+                             "contextFingerprint": "old"}}
+        self.assertEqual(task_signal(task), "REVIEW")
+        task["analysis"]["stale"] = False
+        self.assertEqual(task_signal(task), "REVIEW")
+        task["analysis"]["contextFingerprint"] = "new"
+        self.assertEqual(task_signal(task), "WRITE")
+        task["analysis"]["nextActionUk"] = ""
+        self.assertEqual(task_signal(task), "REVIEW")
+        task["manualStatus"] = "IN PROGRESS"
+        self.assertEqual(task_signal(task), "READY")
 
     def test_waiting_manual_status_takes_precedence_over_AI_signal(self):
         self.assertEqual(task_signal({"manualStatus": "WAITING DEPENDENCY",
