@@ -1,4 +1,4 @@
-import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueTier, priorityLane, rankTasks, filterTasks} from './task-rules.mjs';
+import {STATUS_LABELS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueTier, priorityLane, MANUAL_PRIORITY_LABELS, WORK_PRIORITIES, supportPriorityLabel, workPriority, workPriorityRank, rankTasks, filterTasks} from './task-rules.mjs';
 import {createLogsController} from './logs.mjs';
 import {needsFullTaskRefresh} from './revision-policy.mjs';
 import {detailContentFingerprint,createDetailRequestScope} from './detail-refresh-policy.mjs';
@@ -158,6 +158,7 @@ function savedForm(task) {
   const emailDraft = normalizedDraft(task.savedEmailDraft ?? task.analysis?.emailDraft);
   return {manualStatus:STATUS_LABELS[task.manualStatus] ? task.manualStatus : 'AUTO',
     manualEffort:EFFORT_LABELS[task.manualEffort] ? task.manualEffort : 'UNKNOWN',
+    manualPriority:MANUAL_PRIORITY_LABELS[task.manualPriority] ? task.manualPriority : 'NONE',
     note:task.note || '', emailDraft};
 }
 function formFor(task) {
@@ -166,6 +167,7 @@ function formFor(task) {
     const value = recovered && STATUS_LABELS[recovered.manualStatus] && typeof recovered.note === 'string'
       ? {manualStatus:recovered.manualStatus, note:recovered.note,
         manualEffort:EFFORT_LABELS[recovered.manualEffort] ? recovered.manualEffort : base.manualEffort,
+        manualPriority:MANUAL_PRIORITY_LABELS[recovered.manualPriority] ? recovered.manualPriority : base.manualPriority,
         emailDraft:normalizedDraft(recovered.emailDraft)} : base;
     forms.set(task.key, {value, base:JSON.stringify(base),
       baseRevision:baseManualRevision(recovered, task),
@@ -204,6 +206,16 @@ function signalBadge(task) {
   const label = manual ? STATUS_LABELS[task.manualStatus] : hasAnalysis(task) ? info.label : analysisIsStale(task) ? 'Аналіз потребує оновлення' : 'Ще без нового аналізу';
   return `<span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(label)}</span>`;
 }
+function priorityBadge(task) {
+  if (!task.active || effectiveSignal(task) === 'DONE') return '';
+  const kind = workPriority(task);
+  if (kind === 'STANDARD') return '';
+  const config = WORK_PRIORITIES[kind];
+  const source = kind === 'SUPPORT' ?
+    'Автоматично за Jira label: ' + supportPriorityLabel(task) :
+    'Ручний пріоритет BA, лише локально';
+  return `<span class="badge tone-${config.tone}" title="${escapeHtml(source)}">${escapeHtml(config.label)}</span>`;
+}
 function updateUndoControl() {
   const token=lastDoneToken;
   const task=token ? tasks.find(x=>x.key===token.key) : null;
@@ -237,11 +249,14 @@ function renderList() {
   const entries=[];
   items.forEach((task, index) => {
     const scope = ['Активний спринт · головна черга', 'Поза активним спринтом / не підтверджено', 'Завершені', 'Архів'][priorityLane(task)];
-    const group = scope + ' · ' + ['Можна просувати зараз', 'Очікуємо', 'Завершені', 'Відсутні в останньому snapshot'][queueTier(task)];
+    const kind = workPriority(task);
+    const priorityScope = workPriorityRank(task) < 4 && kind !== 'STANDARD' ?
+      WORK_PRIORITIES[kind].label + ' · ' + scope : scope;
+    const group = priorityScope + ' · ' + ['Можна просувати зараз', 'Очікуємо', 'Завершені', 'Відсутні в останньому snapshot'][queueTier(task)];
     if (group !== previousGroup) entries.push({id:'group:'+index+':'+group,
       html:`<div class="queue-group" role="heading" aria-level="3">${escapeHtml(group)}</div>`});
     previousGroup = group;
-    entries.push({id:'task:'+task.key,html:`<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${signalBadge(task)}${quickWinCandidate(task) ? '<span class="effort-hint" role="note" aria-label="Можлива коротка дія: орієнтовний час, не підтверджено. Пріоритет черги незмінний." title="Можлива коротка дія, оцінка орієнтовна. Порядок черги не змінено.">S?</span>' : ''}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${task.key === pinnedKey ? '<span class="effort-hint" aria-label="Мій фокус у межах поточної групи пріоритету">Фокус</span>' : ''}</span></span></button>`});
+    entries.push({id:'task:'+task.key,html:`<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${priorityBadge(task)}${signalBadge(task)}${quickWinCandidate(task) ? '<span class="effort-hint" role="note" aria-label="Можлива коротка дія: орієнтовний час, не підтверджено. Пріоритет черги незмінний." title="Можлива коротка дія, оцінка орієнтовна. Порядок черги не змінено.">S?</span>' : ''}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${task.key === pinnedKey ? '<span class="effort-hint" aria-label="Мій фокус у межах поточної групи пріоритету">Фокус</span>' : ''}</span></span></button>`});
   });
   if (!entries.length) {
     const state=queueEmptyState({visible:items.length,total:tasks.filter(task=>task.active!==false).length,
@@ -482,7 +497,7 @@ function renderDetail() {
   const reason=assessmentReason(analysis.reasonUk);
   $('detail').innerHTML = `
     ${quick.nextAction ? `<div id="stickyAction" class="sticky-next-action" hidden role="region" aria-label="Наступна дія під час прокручування"><div class="sticky-action-inner"><span class="sticky-action-text">${escapeHtml(quick.nextAction)}</span><button id="stickyCopyNext" class="quiet" type="button">Скопіювати дію</button></div></div>` : ''}
-    <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span><span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
+    <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span>${priorityBadge(task)}<span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
     <h2>${escapeHtml(task.summary)}</h2>
     <div class="task-meta-compact" aria-label="Джерело станів задачі">
       <span class="task-status-provenance">${statusView.provenance.map(value=>'<span>'+escapeHtml(value)+'</span>').join('<span aria-hidden="true"> · </span>')}</span>
@@ -567,6 +582,10 @@ function renderDetail() {
         <section class="panel work-state" aria-label="Мій робочий стан">
           <div class="manual-status-label"><label for="manual">Мій статус</label><details class="status-help"><summary aria-label="Як працює мій статус">ⓘ</summary><p>«Автоматично» використовує оцінку щоденного аналізу. Ручний вибір фіксує твій власний статус і має пріоритет. Вибір статусу зберігається автоматично.</p></details></div>
           <select id="manual" class="status-select tone-${statusTone(form.manualStatus, task)}">${['AUTO','IN PROGRESS','NEEDS DECISION','WAITING INPUT','WAITING DEPENDENCY','DONE'].map(value => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(STATUS_LABELS[value])}</option>`).join('')}</select>
+          <label for="manualPriority">Мій пріоритет роботи</label>
+          <select id="manualPriority" aria-describedby="manualPriorityHelp">${Object.entries(MANUAL_PRIORITY_LABELS).map(([key,label]) =>
+            `<option value="${key}" ${form.manualPriority === key ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
+          <p id="manualPriorityHelp" class="muted">P1: щоденний бізнес-фокус · P2: термінові задачі. P3 визначається автоматично за Jira label, якщо немає ручного пріоритету. Вибір зберігається кнопкою «Зберегти все» тільки в BA Desk.${supportPriorityLabel(task) ? ' Jira label: ' + escapeHtml(supportPriorityLabel(task)) : ''}</p>
           <label for="manualEffort">Моя оцінка тривалості</label>
           <select id="manualEffort" aria-describedby="effortHelp">${Object.entries(EFFORT_LABELS).map(([key,label]) =>
             `<option value="${key}" ${form.manualEffort === key ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
@@ -635,6 +654,7 @@ function renderDetail() {
     message('Адресу підставлено для перевірки, не підтверджено і не надіслано.');
   });
   $('manualEffort').addEventListener('change', captureForm);
+  $('manualPriority').addEventListener('change', captureForm);
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
   if ($('candidateTemplate')) {
     const select=$('candidateTemplate');
@@ -717,6 +737,7 @@ function captureForm() {
   if (!task) return;
   const form = formFor(task);
   form.value = {manualStatus:$('manual').value, manualEffort:$('manualEffort').value,
+    manualPriority:$('manualPriority').value,
     note:$('note').value, emailDraft:{to:$('draftTo').value, subject:$('draftSubject').value, body:$('draftBody').value}};
   form.changedAt = new Date().toISOString();
   saveFailures.delete(task.key);
@@ -857,7 +878,8 @@ async function overwriteAfterReview() {
     const own = structuredClone(form.value);
     const response = await api('/api/tasks/' + encodeURIComponent(key),
       withExpectedRevision(own, remote.manualRevision));
-    Object.assign(task, {manualStatus:own.manualStatus, manualEffort:own.manualEffort, note:own.note,
+    Object.assign(task, {manualStatus:own.manualStatus, manualEffort:own.manualEffort,
+      manualPriority:own.manualPriority, note:own.note,
       savedEmailDraft:own.emailDraft, manualRevision:response.manualRevision,
       modifiedAt:new Date().toISOString()});
     queueModel.invalidate();
@@ -889,7 +911,7 @@ function discardForm() {
 }
 function setBusy(value) {
   busy = value;
-  ['manual', 'manualEffort', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard',
+  ['manual', 'manualPriority', 'manualEffort', 'note', 'draftTo', 'draftSubject', 'draftBody', 'save', 'done', 'email', 'discard',
     'conflictOverwrite', 'conflictUseSaved', 'undoLastDone', 'pinDeepWork'].forEach(id => { if ($(id)) $(id).disabled = value; });
   $('import').disabled = value;
   updateFormStatus();
@@ -964,7 +986,8 @@ async function saveTask(done = false) {
     }
     const saved = await api('/api/tasks/' + encodeURIComponent(task.key),
       withExpectedRevision(value, form.baseRevision));
-    Object.assign(task, {manualStatus:value.manualStatus, manualEffort:value.manualEffort, note:value.note,
+    Object.assign(task, {manualStatus:value.manualStatus, manualEffort:value.manualEffort,
+      manualPriority:value.manualPriority, note:value.note,
       savedEmailDraft:value.emailDraft, manualRevision:saved.manualRevision,
       modifiedAt:new Date().toISOString()});
     if (done) lastDoneToken=makeUndoToken(task,previousStatus,saved.manualRevision);
@@ -1325,7 +1348,7 @@ document.addEventListener('keydown', event => {
   }
 });
 $('search').addEventListener('input',()=>searchRefresh.schedule());
-for (const id of ['filter','signalFilter','sprintFilter']) {
+for (const id of ['filter','signalFilter','sprintFilter','priorityFilter']) {
   $(id).addEventListener('change',()=>{
     searchRefresh.cancel();
     applyFilters();
@@ -1497,6 +1520,7 @@ function rankedTasks() { return queueModel.rankedTasks(tasks); }
 function visibleTasks() {
   return queueModel.visibleTasks(tasks, {
     search:$('search').value.trim().toLocaleLowerCase('uk-UA'),
-    filter:$('filter').value, signal:$('signalFilter').value, sprint:$('sprintFilter').value
+    filter:$('filter').value, signal:$('signalFilter').value,
+    sprint:$('sprintFilter').value, priority:$('priorityFilter').value
   });
 }
