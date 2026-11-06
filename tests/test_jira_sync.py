@@ -90,6 +90,15 @@ class JiraSyncTests(unittest.TestCase):
         self.assertIn('Повний опис', snapshot['tasks'][0]['statusReason'])
         self.assertEqual(sum(path.endswith('/search/jql') for path, _ in self.client.calls), 2)
 
+    def test_jira_label_reaches_main_task_queue(self):
+        self.client.first['fields']['labels'] = ['AIS_Prio_Bug']
+        sync(self.root, self.client)
+        self.assertEqual(self.snapshot()['tasks'][0]['labels'], ['AIS_Prio_Bug'])
+        self.assertEqual(self.snapshot()['tasks'][1]['labels'], [])
+        desk = Desk(self.root)
+        desk.import_snapshot()
+        self.assertEqual(desk.view()['tasks'][0]['labels'], ['AIS_Prio_Bug'])
+
     def test_unchanged_analysis_preserved_changed_comment_marks_stale_and_keeps_manual_state(self):
         sync(self.root, self.client)
         doc = self.snapshot()
