@@ -126,3 +126,36 @@ The earlier P0/P1 user stories remain relevant; however, a dense personal backlo
 - `docs/UX_TEST_COVERAGE_MATRIX.md`
 
 The local v2.26 revision transport and no-query search shortcut are implemented in code, with synthetic integration regressions. The speed improvements on a real Windows laptop, ergonomics of fast Jira handoffs and business-correctness of large BA analyses are **not** established until field UAT, real synthetic-browser profiling and independent human gold-case review.
+
+
+## 2026-11-06: explicit BA work priority override (feature branch)
+
+The prior sprint-first contract remains the fallback for **standard** tasks.
+For active, non-DONE work, the new top-level order is:
+
+1. **P1 Business Focus**: `manualPriority = BUSINESS`; assigned by the BA,
+   intended as the daily strategic focus, irrespective of sprint membership.
+2. **P2 Urgent**: `manualPriority = URGENT`; manually designated incident or
+   interrupt work, irrespective of sprint membership.
+3. **P3 Tech Support**: a Jira `labels` entry matching normalized
+   `AIS Prio Bug`, `AIS Prior Bug` or `AIS Priority Bug`, **only when no
+   manual category overrides it**.
+4. **Standard**: original verified sprint -> backlog, WRITE/action grouping,
+   0–100 explainable score, blocking impact, stable ordering.
+
+Within P1/P2/P3, existing sprint/action/score tie-breakers still apply.
+Manual/analytical DONE is below all active work; archived tasks are last.
+Manual priority is an **independent, exclusive choice** NONE/BUSINESS/URGENT
+persisted with SQLite and protected by per-task optimistic concurrency.
+It never writes Jira, alters the Jira native priority, or inflates queueScore.
+The ephemeral personal pin remains a tie-breaker within the same band/lane/group.
+
+**Verification gap:** the real private Jira label spelling has not been
+confirmed from a live task. Match aliases are exact after case and separator
+normalization, not loose substring matching. The original Jira label is shown
+in the task's priority explanation if matched. Verify the exact production
+label against a real CCON issue and amend the alias set if required.
+
+Acceptance includes SQLite migration, reimport survival, stale save conflict,
+malformed input rejection, Jira label propagation, filtering, archive/DONE
+invariants, and old-lane regression for unmarked tasks.
