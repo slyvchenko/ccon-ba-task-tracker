@@ -56,6 +56,8 @@ class Desk:
                 c.execute('ALTER TABLE tasks ADD COLUMN manual_revision INTEGER NOT NULL DEFAULT 0')
             if 'manual_effort' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
                 c.execute("ALTER TABLE tasks ADD COLUMN manual_effort TEXT NOT NULL DEFAULT 'UNKNOWN'")
+            if 'manual_priority' not in [r[1] for r in c.execute('PRAGMA table_info(tasks)')]:
+                c.execute("ALTER TABLE tasks ADD COLUMN manual_priority TEXT NOT NULL DEFAULT 'NONE'")
 
     @contextmanager
     def connect(self):
@@ -104,6 +106,11 @@ class Desk:
                         text_field(task[field], field, 100000)
                 if not task.get('summary', '').strip():
                     raise ValueError('Every task needs a summary.')
+                if 'labels' in task and (not isinstance(task['labels'], list) or
+                        len(task['labels']) > 500 or
+                        any(not isinstance(label, str) or len(label) > 255
+                            for label in task['labels'])):
+                    raise ValueError('labels must be a list of up to 500 Jira strings (255 chars each).')
                 if 'blocking' in task and not isinstance(task['blocking'], bool):
                     raise ValueError('blocking must be true or false.')
                 if 'analysis' in task:
@@ -126,13 +133,15 @@ class Desk:
                     persisted = c.execute('SELECT * FROM tasks WHERE key=?', (task['key'],)).fetchone()
                     draft = json.loads(persisted['email_draft']) if persisted['email_draft'] else None
                     history_append(c, task['key'], view_state(task,
-                        persisted['manual_status'], persisted['note'], draft, True), 'IMPORT')
+                        persisted['manual_status'], persisted['note'], draft, True,
+                         persisted['manual_priority']), 'IMPORT')
                 for previous_key, row in prior.items():
                     if previous_key not in keys and row['active']:
                         old = json.loads(row['snapshot'])
                         draft = json.loads(row['email_draft']) if row['email_draft'] else None
                         history_append(c, previous_key, view_state(
-                            old, row['manual_status'], row['note'], draft, False), 'IMPORT')
+                            old, row['manual_status'], row['note'], draft, False,
+                             row['manual_priority']), 'IMPORT')
                 c.execute('INSERT INTO imports VALUES(?,?,?,?)', (digest, stamp, generated, len(keys)))
                 c.execute('UPDATE state_revision SET revision=revision+1 WHERE id=1')
             self.error = ''
@@ -151,7 +160,7 @@ class Desk:
                         importedAt=row['imported_at'], modifiedAt=row['modified_at'],
                         savedEmailDraft=json.loads(row['email_draft']) if row['email_draft'] else None,
                         manualRevision=row['manual_revision'],
-                        manualEffort=row['manual_effort'])
+                        manualEffort=row['manual_effort'], manualPriority=row['manual_priority'])
             tasks.append(task)
         if revision is None:
             revision = c.execute('SELECT revision FROM state_revision WHERE id=1').fetchone()[0]
@@ -207,6 +216,8 @@ class Desk:
         if 'manualEffort' in data and data['manualEffort'] not in (
                 'UNKNOWN', 'XS', 'S', 'M', 'L', 'XL'):
             raise ValueError('manualEffort must be UNKNOWN, XS, S, M, L or XL.')
+        if 'manualPriority' in data and data['manualPriority'] not in ('NONE', 'BUSINESS', 'URGENT'):
+            raise ValueError('manualPriority must be NONE, BUSINESS, or URGENT.')
         with self.lock, self.connect() as c:
             values = [status, note, now()]
             query = 'UPDATE tasks SET manual_status=?, note=?, modified_at=?, manual_revision=manual_revision+1'
@@ -217,6 +228,9 @@ class Desk:
             if 'manualEffort' in data:
                 query += ', manual_effort=?'
                 values.append(data['manualEffort'])
+            if 'manualPriority' in data:
+                query += ', manual_priority=?'
+                values.append(data['manualPriority'])
             query += ' WHERE key=?'
             values.append(key)
             # Atomic compare-and-swap even across independent server processes.
@@ -236,7 +250,8 @@ class Desk:
             row = c.execute('SELECT * FROM tasks WHERE key=?', (key,)).fetchone()
             saved_draft = json.loads(row['email_draft']) if row['email_draft'] else None
             history_append(c, key, view_state(json.loads(row['snapshot']),
-                row['manual_status'], row['note'], saved_draft, bool(row['active'])), 'MANUAL')
+                row['manual_status'], row['note'], saved_draft, bool(row['active']),
+                 row['manual_priority']), 'MANUAL')
             c.execute('UPDATE state_revision SET revision=revision+1 WHERE id=1')
             return {'manualRevision': row['manual_revision']}
 
