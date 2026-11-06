@@ -20,6 +20,7 @@ const ISSUE = /^CCON-\d+$/;
 const TAB = /^[a-f0-9-]{20,64}$/;
 const VALID_STATUS = new Set(['AUTO','IN PROGRESS','WAITING INPUT','WAITING DEPENDENCY','NEEDS DECISION','DONE']);
 const VALID_EFFORT = new Set(['UNKNOWN','XS','S','M','L','XL']);
+const VALID_PRIORITY = new Set(['NONE','BUSINESS','URGENT']);
 const MAX_NOTE=20000, MAX_BODY=50000, MAX_EMAIL=2000;
 const MAX_TASKS=100;
 const MAX_PAYLOAD_BYTES=3*1024*1024;
@@ -28,6 +29,7 @@ function sanitizeDraft(entry) {
   if (!entry || typeof entry !== 'object' || Array.isArray(entry) ||
       !VALID_STATUS.has(entry.manualStatus) ||
       !VALID_EFFORT.has(entry.manualEffort || 'UNKNOWN') ||
+      (entry.manualPriority !== undefined && !VALID_PRIORITY.has(entry.manualPriority)) ||
       typeof entry.note !== 'string' || entry.note.length > MAX_NOTE) return null;
   const mail = entry.emailDraft;
   if (!mail || typeof mail !== 'object' || Array.isArray(mail) ||
@@ -37,6 +39,7 @@ function sanitizeDraft(entry) {
   const changedAt = typeof entry.changedAt === 'string' &&
     Number.isFinite(Date.parse(entry.changedAt)) ? entry.changedAt : null;
   return {manualStatus:entry.manualStatus,manualEffort:entry.manualEffort || 'UNKNOWN',
+    ...(entry.manualPriority === undefined ? {} : {manualPriority:entry.manualPriority}),
     note:entry.note,emailDraft:{to:mail.to,subject:mail.subject,body:mail.body},
     changedAt,baseRevision:Number.isSafeInteger(entry.baseRevision) && entry.baseRevision>=0 ?
       entry.baseRevision : null};
