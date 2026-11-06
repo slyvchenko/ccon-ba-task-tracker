@@ -26,7 +26,7 @@ def init(conn):
     conn.execute("CREATE INDEX IF NOT EXISTS idx_history_task ON task_history(task_key,id DESC)")
 
 
-def view_state(task, manual_status="AUTO", note="", draft=None, active=True):
+def view_state(task, manual_status="AUTO", note="", draft=None, active=True, manual_priority="NONE"):
     analysis = task.get("analysis") or {}
     email = analysis.get("emailDraft") or {}
     stale = bool(analysis.get("stale")) or bool(
@@ -49,6 +49,7 @@ def view_state(task, manual_status="AUTO", note="", draft=None, active=True):
         "emailSubject": str(email.get("subject") or "")[:1200],
         "emailBody": str(email.get("body") or "")[:MAX_TEXT],
         "manualStatus": manual_status,
+        "manualPriority": manual_priority,
         "note": str(note or "")[:MAX_TEXT],
         "savedEmailDraft": {
             "subject": str((draft or {}).get("subject") or "")[:1200],

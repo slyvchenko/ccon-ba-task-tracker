@@ -83,20 +83,54 @@ function actionRank(task) {
   return 4;
 }
 
+// New work priorities are explicit queue bands, never inflated AI scores.
+// Tech-support candidates are anchored, punctuation-insensitive aliases until
+// a real Jira label spelling can be checked against the private source.
+const MANUAL_PRIORITY_LABELS = Object.freeze({
+  NONE:'Без ручного пріоритету',
+  BUSINESS:'P1 · Бізнес-фокус',
+  URGENT:'P2 · Терміново'
+});
+const WORK_PRIORITIES = Object.freeze({
+  BUSINESS:{rank:0,label:'P1 · Бізнес-фокус',tone:'blue'},
+  URGENT:{rank:1,label:'P2 · Терміново',tone:'red'},
+  SUPPORT:{rank:2,label:'P3 · Техпідтримка',tone:'amber'},
+  STANDARD:{rank:3,label:'Стандартна черга',tone:'gray'}
+});
+const SUPPORT_BUG_ALIASES = new Set(['aispriobug','aispriorbug','aisprioritybug']);
+function supportPriorityLabel(task) {
+  if (!Array.isArray(task.labels)) return '';
+  return task.labels.find(label => typeof label === 'string' &&
+    SUPPORT_BUG_ALIASES.has(label.toLowerCase().replace(/[^a-z0-9]/g,''))) || '';
+}
+function workPriority(task) {
+  if (task.manualPriority === 'BUSINESS') return 'BUSINESS';
+  if (task.manualPriority === 'URGENT') return 'URGENT';
+  return supportPriorityLabel(task) ? 'SUPPORT' : 'STANDARD';
+}
+function workPriorityRank(task) {
+  // A completed or archived task cannot obstruct today's actionable queue.
+  if (!task.active) return 5;
+  if (effectiveSignal(task) === 'DONE') return 4;
+  return WORK_PRIORITIES[workPriority(task)].rank;
+}
+
 // The personal focus pin is a view-only tie-breaker within the SAME hard
-// sprint lane and action group. It never promotes backlog over sprint or
+// sprint lane and action group *within the same explicit priority band*.
+// It never promotes backlog over sprint or
 // non-WRITE over WRITE and never changes Jira/SQLite task priority.
 function rankTasks(tasks, {pinnedKey=null}={}) {
   const pin = /^CCON-\d+$/.test(pinnedKey || '') ? pinnedKey : null;
   return tasks.map((task, index) => ({task, index})).sort((left, right) => {
+    const explicit = workPriorityRank(left.task) - workPriorityRank(right.task);
     const lane = priorityLane(left.task) - priorityLane(right.task);
     const group = actionRank(left.task) - actionRank(right.task);
     const personal = Number(right.task.key === pin) - Number(left.task.key === pin);
-    return lane || group || personal || queueScore(right.task) - queueScore(left.task) || Number(right.task.blocking) - Number(left.task.blocking) || left.index - right.index;
+    return explicit || lane || group || personal || queueScore(right.task) - queueScore(left.task) || Number(right.task.blocking) - Number(left.task.blocking) || left.index - right.index;
   }).map(item => item.task);
 }
 
-function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprint = 'all'} = {}, indexedText = null) {
+function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprint = 'all', priority = 'all'} = {}, indexedText = null) {
   // Avoid rebuilding potentially long Jira descriptions for every task on
   // each no-search render; check cheap predicates before reading full text.
   const queryTerms = String(search).toLocaleLowerCase('uk-UA').trim().split(/\s+/).filter(Boolean);
@@ -110,7 +144,8 @@ function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprin
       (sprint === 'active' && task.activeSprintStatus === 'VERIFIED' && task.activeSprint === true) ||
       (sprint === 'outside' && task.activeSprintStatus === 'VERIFIED' && task.activeSprint === false) ||
       (sprint === 'unverified' && task.activeSprintStatus !== 'VERIFIED');
-    if (!sprintMatch || (signal !== 'all' && effectiveSignal(task) !== signal)) return false;
+    if (!sprintMatch || (signal !== 'all' && effectiveSignal(task) !== signal) ||
+        (priority !== 'all' && workPriority(task) !== priority)) return false;
     if (!queryTerms.length) return true;
     const cached = indexedText?.(task);
     let text, folded;
@@ -120,7 +155,7 @@ function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprin
       const references = (task.links || task.linkedIssues || [])
         .map(item => typeof item === 'string' ? item : (item.linkedKey || item.key || ''));
       text = [
-        task.key, task.summary, task.jiraStatus, task.priority,
+        task.key, task.summary, task.jiraStatus, task.priority, ...(Array.isArray(task.labels) ? task.labels : []),
         analysis.nextActionUk, analysis.standardDescription,
         brief.technicalScopeUk, brief.currentUk, brief.targetUk,
         ...(brief.rules || []).slice(0, 30).flatMap(rule => [rule.whenUk, rule.thenUk]),
@@ -136,4 +171,4 @@ function filterTasks(items, {search = '', filter = 'open', signal = 'all', sprin
   });
 }
 
-export {STATUS_LABELS, STATUS_TONES, MANUAL_SIGNALS, SIGNALS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueScore, queueTier, priorityEmail, actionRank, priorityLane, rankTasks, filterTasks};
+export {STATUS_LABELS, STATUS_TONES, MANUAL_SIGNALS, SIGNALS, defaultRecipients, analysisOf, analysisIsStale, hasAnalysis, effectiveSignal, signalInfo, statusTone, queueScore, queueTier, priorityEmail, actionRank, priorityLane, MANUAL_PRIORITY_LABELS, WORK_PRIORITIES, supportPriorityLabel, workPriority, workPriorityRank, rankTasks, filterTasks};

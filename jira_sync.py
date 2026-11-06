@@ -313,7 +313,7 @@ def make_task(context, prior, sprint=None):
     task = {key: copy.deepcopy(value) for key, value in prior.items() if key not in MANUAL_FIELDS}
     same = prior.get('contextFingerprint') == context['fingerprint']
     has_analysis = bool(prior.get('analysis')) or prior.get('aiStatus') not in (None, '', 'NOT ANALYZED')
-    task.update({key: context[key] for key in ('key', 'summary', 'url', 'jiraStatus', 'priority', 'jiraUpdatedAt')})
+    task.update({key: context[key] for key in ('key', 'summary', 'url', 'jiraStatus', 'priority', 'jiraUpdatedAt', 'labels')})
     task.update(contextFingerprint=context['fingerprint'], contextRetrievedAt=context['retrievedAt'],
                 contextAvailable=True)
     if sprint is not None:

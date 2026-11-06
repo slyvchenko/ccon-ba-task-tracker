@@ -14,7 +14,7 @@ export function createQueueModel() {
     const links = (task.links || task.linkedIssues || []).map(item =>
       typeof item === 'string' ? item : (item.linkedKey || item.key || ''));
     const text = [
-      task.key,task.summary,task.jiraStatus,task.priority,
+      task.key,task.summary,task.jiraStatus,task.priority,...(Array.isArray(task.labels)?task.labels:[]),
       analysis.nextActionUk,analysis.standardDescription,
       brief.technicalScopeUk,brief.currentUk,brief.targetUk,
       ...(brief.rules || []).slice(0,30).flatMap(rule=>[rule.whenUk,rule.thenUk]),
@@ -40,7 +40,7 @@ export function createQueueModel() {
   function visibleTasks(items,filters={}) {
     const sorted=rankedTasks(items);
     const key=JSON.stringify([filters.search||'',filters.filter||'open',
-      filters.signal||'all',filters.sprint||'all',revision]);
+      filters.signal||'all',filters.sprint||'all',filters.priority||'all',revision]);
     if (filteredSource===sorted && filteredKey===key) return filtered;
     filtered=filterTasks(sorted,filters,searchText);
     filteredKey=key;

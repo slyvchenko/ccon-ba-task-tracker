@@ -1,5 +1,5 @@
-export function advancedFilterSummary({signal='all',sprint='all'}={}){
-  const used=[signal!=='all',sprint!=='all'].filter(Boolean).length;
+export function advancedFilterSummary({signal='all',sprint='all',priority='all'}={}){
+  const used=[signal!=='all',sprint!=='all',priority!=='all'].filter(Boolean).length;
   return used ? ' · '+used+' активн'+(used===1?'ий':'і') : '';
 }
 export function evidenceSectionLabel(count=0) {
