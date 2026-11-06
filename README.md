@@ -484,3 +484,20 @@ ZIP review більше не прирівнює єдині RQ/RS із **різн
 Пакети реалізації #39–48 охоплюють рекомендований локальний цикл інженерних покращень. **Це не означає завершення всіх 129 вимог і не є дозволом на production deployment.** Реальний Jira/Kibana/CCON source-review, 20–30 приватних BA gold cases, Windows crash/restore, Edge/NVDA/400% zoom і 8h soak залишаються неперевіреними зовнішніми критеріями.
 
 `python release_readiness.py --check` перевіряє узгодженість обліку й не стверджує release readiness; `python release_readiness.py --require-ready` має завершитися помилкою до незалежної приватної UAT-атестації. Сам факт злиття GitHub PR не оновлює Windows Task Scheduler або локальну інсталяцію. Інструкція з контрольованого випуску: `docs/LOCAL_RELEASE_GATE_v2_48.md`.
+
+## Manual BA work priority (P1 / P2 / P3)
+
+The queue now supports a separate human decision in each task's **Мій
+пріоритет роботи** selector. `P1 · Бізнес-фокус` is for daily business work;
+`P2 · Терміново` for emergent urgent work; `P3 · Техпідтримка`
+is inferred **read-only** from a Jira label matching an `AIS Prio Bug`
+alias. Save the selector through **Зберегти все**; local SQLite preserves
+it across Jira refresh, restart and snapshots. The advanced priority filter
+lets you view each band separately.
+
+For open tasks, the strict order is P1 > P2 > P3 > standard.
+Within each band, the existing sprint/action/score ordering applies.
+Done and archived tasks remain below open work. This local decision **does
+not** update Jira `priority` or `labels`. Real-world AIS label spelling
+requires verification from Jira before treating detection as certified.
+Full acceptance and fallbacks: `docs/BA_PRODUCT_REQUIREMENTS.md`.
