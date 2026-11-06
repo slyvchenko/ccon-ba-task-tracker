@@ -244,7 +244,8 @@ function renderList() {
   $('count').textContent=summary.primary;
   $('countDetails').textContent=summary.diagnostics;
   $('advancedFilterCount').textContent=advancedFilterSummary({
-    signal:$('signalFilter').value,sprint:$('sprintFilter').value});
+    signal:$('signalFilter').value,sprint:$('sprintFilter').value,
+     priority:$('priorityFilter').value});
   let previousGroup = '';
   const entries=[];
   items.forEach((task, index) => {
@@ -800,6 +801,7 @@ function showManualConflict() {
   $('conflictSavedText').textContent =
     'Статус: ' + (STATUS_LABELS[remote.manualStatus] || remote.manualStatus) +
     '\nОцінка часу: ' + (EFFORT_LABELS[remote.manualEffort] || 'Не оцінено') +
+     '\\nМій пріоритет: ' + (MANUAL_PRIORITY_LABELS[remote.manualPriority] || MANUAL_PRIORITY_LABELS.NONE) +
     '\nНотатка:\n' + (remote.note || '(порожньо)') +
     '\n\nЛист кому: ' + draft.to +
     '\nТема: ' + draft.subject + '\nТекст:\n' + draft.body;
@@ -872,7 +874,7 @@ async function overwriteAfterReview() {
       message('Збережена версія ще раз змінилася. Перевір новий текст і повтори дію.', true);
       return;
     }
-    if (!confirm('Після порівняння перезаписати актуальний локальний статус, нотатку й лист МОЄЮ версією? Jira та пошта не змінюються.')) return;
+    if (!confirm('Після порівняння перезаписати актуальний локальний статус, пріоритет, нотатку й лист МОЄЮ версією? Jira та пошта не змінюються.')) return;
     const task = tasks.find(item => item.key === key);
     const form = formFor(task);
     const own = structuredClone(form.value);
@@ -900,7 +902,7 @@ async function overwriteAfterReview() {
 
 function discardForm() {
   if (busy || !isDirty(selected)) return;
-  if (!confirm('Скинути незбережені зміни статусу, нотаток і чернетки цієї задачі?')) return;
+  if (!confirm('Скинути незбережені зміни статусу, пріоритету, нотаток і чернетки цієї задачі?')) return;
   forms.delete(selected);
   manualConflicts.delete(selected);
   saveFailures.delete(selected);
