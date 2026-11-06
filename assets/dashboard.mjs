@@ -644,7 +644,7 @@ function renderDetail() {
     renderList();
     renderDetail();
     focusAfterAction(document,['pinDeepWork']);
-    message(pinnedKey ? 'Мій фокус закріплено лише в цій групі. Jira не змінено.' :
+    message(pinnedKey ? 'Короткочасний фокус закріплено лише в цій групі. Ручний пріоритет і Jira не змінено.' :
       'Мій фокус скинуто. Офіційний порядок відновлено.');
   });
   if ($('useRecipientHint')) $('useRecipientHint').addEventListener('click',()=>{
@@ -801,7 +801,7 @@ function showManualConflict() {
   $('conflictSavedText').textContent =
     'Статус: ' + (STATUS_LABELS[remote.manualStatus] || remote.manualStatus) +
     '\nОцінка часу: ' + (EFFORT_LABELS[remote.manualEffort] || 'Не оцінено') +
-     '\\nМій пріоритет: ' + (MANUAL_PRIORITY_LABELS[remote.manualPriority] || MANUAL_PRIORITY_LABELS.NONE) +
+     '\nМій пріоритет: ' + (MANUAL_PRIORITY_LABELS[remote.manualPriority] || MANUAL_PRIORITY_LABELS.NONE) +
     '\nНотатка:\n' + (remote.note || '(порожньо)') +
     '\n\nЛист кому: ' + draft.to +
     '\nТема: ' + draft.subject + '\nТекст:\n' + draft.body;
