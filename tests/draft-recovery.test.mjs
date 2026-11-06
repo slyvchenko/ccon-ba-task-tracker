@@ -55,6 +55,24 @@ test('two independent tabs cannot overwrite one shared unsaved forms key',()=>{
   assert.equal(local.getItem(LEGACY_DRAFT_KEY),null);
 });
 
+test('unsaved business/urgent priorities survive crash recovery and tab adoption',()=>{
+  const local=new FakeStorage(),session=new FakeStorage();
+  const original=store(local,session,ids[0]);
+  const priorityRecord={...record('urgent interruption',19),manualPriority:'URGENT'};
+  assert.equal(original.persist({'CCON-701':priorityRecord}),true);
+  assert.deepEqual(store(local,session,ids[1]).load()['CCON-701'],priorityRecord);
+  const other=store(local,new FakeStorage(),ids[2]);
+  const imported=other.adopt(original.id);
+  assert.equal(imported.added['CCON-701'].manualPriority,'URGENT');
+  assert.equal(other.load()['CCON-701'].manualPriority,'URGENT');
+  const invalid=sanitizeDraftMap({
+    'CCON-702':{...record(),manualPriority:'SUPPORT'},
+    'CCON-703':{...record(),manualPriority:'BUSINESS'}
+  });
+  assert.deepEqual(Object.keys(invalid),['CCON-703']);
+  assert.equal(invalid['CCON-703'].manualPriority,'BUSINESS');
+});
+
 test('a reload in the same tab preserves its ID, fields and original CAS token',()=>{
   const local=new FakeStorage(),session=new FakeStorage();
   const a=store(local,session,ids[0]);
