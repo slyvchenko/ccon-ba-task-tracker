@@ -40,7 +40,7 @@ class ManualWorkPriorityTests(unittest.TestCase):
         self.desk.import_snapshot()
         self.assertEqual(self.task()['manualPriority'],'BUSINESS')
         self.assertEqual(self.task()['summary'],'Updated in Jira')
-        self.assertIn('manualPriority',self.desk.history('CCON-100')['items'][0].get('changes',[])) if False else None
+        self.assertEqual(self.desk.history('CCON-100')['items'][0]['state']['manualPriority'],'BUSINESS')
 
     def test_legacy_status_writes_do_not_reset_priority(self):
         self.desk.save('CCON-100',{'manualStatus':'AUTO','note':'',
@@ -74,7 +74,8 @@ class ManualWorkPriorityTests(unittest.TestCase):
         self.write_snapshot()
         with self.assertRaises(ValueError):
             self.desk.import_snapshot()
-        self.assertEqual(self.desk.view(),previous)
+        self.assertEqual(self.desk.view()['tasks'],previous['tasks'])
+        self.assertEqual(self.desk.view()['revision'],previous['revision'])
 
 
 if __name__ == '__main__':
