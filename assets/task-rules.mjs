@@ -116,7 +116,8 @@ function workPriorityRank(task) {
 }
 
 // The personal focus pin is a view-only tie-breaker within the SAME hard
-// sprint lane and action group. It never promotes backlog over sprint or
+// sprint lane and action group *within the same explicit priority band*.
+// It never promotes backlog over sprint or
 // non-WRITE over WRITE and never changes Jira/SQLite task priority.
 function rankTasks(tasks, {pinnedKey=null}={}) {
   const pin = /^CCON-\d+$/.test(pinnedKey || '') ? pinnedKey : null;
