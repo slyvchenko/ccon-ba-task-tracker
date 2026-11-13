@@ -18,9 +18,8 @@ import {createQueueModel,createSearchDebouncer,selectedAfterFilter} from './queu
 import {createQueueDomRenderer} from './queue-dom.mjs';
 import {createReconnectPolicy} from './reconnect-policy.mjs';
 import {EFFORT_LABELS, effortInfo, quickWinCandidate, quickWinExplanation} from './effort-planning.mjs';
-import {loadTaskEvidence, loadTaskQuestions} from './evidence-ui.mjs';
+import {loadTaskEvidence} from './evidence-ui.mjs';
 import {loadTaskDecisions} from './decisions-ui.mjs';
-import {loadTaskActions, loadTaskHistory} from './action-history.mjs';
 
 
 const $ = id => document.getElementById(id);
@@ -201,10 +200,11 @@ async function api(path, data) {
   }
   return result;
 }
-function signalBadge(task) {
+function signalTone(task) { return signalInfo(task).tone || 'gray'; }
+function signalLabel(task) {
   const info = signalInfo(task), manual = task.manualStatus && task.manualStatus !== 'AUTO';
-  const label = manual ? STATUS_LABELS[task.manualStatus] : hasAnalysis(task) ? info.label : analysisIsStale(task) ? 'Аналіз потребує оновлення' : 'Ще без нового аналізу';
-  return `<span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(label)}</span>`;
+  const label = manual ? STATUS_LABELS[task.manualStatus] : hasAnalysis(task) ? info.label : analysisIsStale(task) ? 'Потрібне оновлення аналізу' : 'Ще без аналізу';
+  return `<span class="row-signal-label tone-text-${escapeHtml(info.tone || 'gray')}"><i aria-hidden="true"></i>${escapeHtml(label)}</span>`;
 }
 function priorityBadge(task) {
   if (!task.active || effectiveSignal(task) === 'DONE') return '';
@@ -247,17 +247,19 @@ function renderList() {
     signal:$('signalFilter').value,sprint:$('sprintFilter').value,
      priority:$('priorityFilter').value});
   let previousGroup = '';
+  const groupOf = task => {
+    const lane = ['Активний спринт', 'Поза спринтом', 'Завершені', 'Архів'][priorityLane(task)];
+    const kind = workPriority(task);
+    return workPriorityRank(task) < 4 && kind !== 'STANDARD' ? WORK_PRIORITIES[kind].label + ' · ' + lane : lane;
+  };
+  const groupCounts = items.reduce((acc, task) => { const g = groupOf(task); acc[g] = (acc[g] || 0) + 1; return acc; }, {});
   const entries=[];
   items.forEach((task, index) => {
-    const scope = ['Активний спринт · головна черга', 'Поза активним спринтом / не підтверджено', 'Завершені', 'Архів'][priorityLane(task)];
-    const kind = workPriority(task);
-    const priorityScope = workPriorityRank(task) < 4 && kind !== 'STANDARD' ?
-      WORK_PRIORITIES[kind].label + ' · ' + scope : scope;
-    const group = priorityScope + ' · ' + ['Можна просувати зараз', 'Очікуємо', 'Завершені', 'Відсутні в останньому snapshot'][queueTier(task)];
+    const group = groupOf(task);
     if (group !== previousGroup) entries.push({id:'group:'+index+':'+group,
-      html:`<div class="queue-group" role="heading" aria-level="3">${escapeHtml(group)}</div>`});
+      html:`<div class="queue-group" role="heading" aria-level="3"><span>${escapeHtml(group)}</span><span class="queue-group-count">${groupCounts[group] || 0}</span></div>`});
     previousGroup = group;
-    entries.push({id:'task:'+task.key,html:`<button class="row ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-number" aria-label="Позиція ${index + 1}">${index + 1}</span><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-statuses">${task.activeSprintStatus === "VERIFIED" && task.activeSprint === true ? '<span class="badge tone-blue">Спринт</span>' : ''}${priorityBadge(task)}${signalBadge(task)}${quickWinCandidate(task) ? '<span class="effort-hint" role="note" aria-label="Можлива коротка дія: орієнтовний час, не підтверджено. Пріоритет черги незмінний." title="Можлива коротка дія, оцінка орієнтовна. Порядок черги не змінено.">S?</span>' : ''}${task.blocking ? '<span class="badge tone-red">Блокує інших</span>' : ''}${task.key === pinnedKey ? '<span class="effort-hint" aria-label="Мій фокус у межах поточної групи пріоритету">Фокус</span>' : ''}</span></span></button>`});
+    entries.push({id:'task:'+task.key,html:`<button class="row row-tone-${signalTone(task)} ${task.key === selected ? 'selected' : ''}" data-key="${escapeHtml(task.key)}" aria-pressed="${task.key === selected}"><span class="row-content"><span class="row-head"><span class="rank">${escapeHtml(task.key)}</span><span>${isDirty(task.key) ? '<span class="edit-dot" title="Є незбережені зміни">● </span>' : ''}</span></span><span class="row-title" title="${escapeHtml(task.summary)}">${escapeHtml(task.summary)}</span><span class="row-signal">${signalLabel(task)}${task.blocking ? '<span class="row-flag">Блокує інших</span>' : ''}${task.key === pinnedKey ? '<span class="row-flag row-flag-focus">Фокус</span>' : ''}</span></span></button>`});
   });
   if (!entries.length) {
     const state=queueEmptyState({visible:items.length,total:tasks.filter(task=>task.active!==false).length,
@@ -302,14 +304,16 @@ function selectTask(key) {
   renderDetail();
   rememberViewContext();
 }
-function sourceMarkup(analysis) {
-  if (!Array.isArray(analysis.evidence) || !analysis.evidence.length) return '<p class="muted">Джерела оцінки ще не додані.</p>';
-  return '<ul class="source-list">' + analysis.evidence.map(item => {
-    const url = safeUrl(item.url);
-    return `<li class="wordbreak">${escapeHtml(item.text || 'Джерело')}${url ? ` · <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити ↗</a>` : ''}</li>`;
-  }).join('') + '</ul>';
-}
 
+const ATTACHMENT_STATES = {
+  LOCAL_TEXT_VERIFIED: 'Текст прочитано',
+  FORMAT_REQUIRES_MANUAL_REVIEW: 'Формат потребує ручного перегляду',
+  NOT_DOWNLOADED: 'Файл ще не завантажено',
+  DOWNLOAD_UNAVAILABLE: 'Не вдалося отримати файл через Jira API',
+  LOCAL_FILE_MISMATCH: 'Локальна копія не пройшла перевірку',
+  PDF_PARSER_NOT_INSTALLED: 'Потрібен локальний обробник PDF',
+  PDF_TEXT_NOT_EXTRACTED: 'Текст PDF не вдалося прочитати'
+};
 function briefingMarkup(briefing, stale) {
   if (!shouldRenderBriefing(briefing)) return '';
   const readiness = {
@@ -317,95 +321,110 @@ function briefingMarkup(briefing, stale) {
     NEEDS_CONFIRMATION:'Є відкриті рішення',
     INSUFFICIENT_CONTEXT:'Недостатньо підтверджених даних'
   }[briefing.readiness] || 'Рівень готовності не визначено';
-  const source = (url, label='Джерело') => {
-    const safe = safeUrl(url);
-    return safe ? ` <a href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer">${label} ↗</a>` : '<span class="muted"> (не підтверджено джерелом)</span>';
-  };
-  const entries = (items, render) => Array.isArray(items) && items.length
-    ? `<ul class="brief-list">${items.map(item => `<li>${render(item)}</li>`).join('')}</ul>`
-    : '<p class="muted">Не встановлено з доступних джерел.</p>';
-  const field = (heading, value) => `<div class="section-label">${heading}</div><p class="pre">${escapeHtml(value || 'Не встановлено з доступних джерел.')}</p>`;
-  const facts = entries(briefing.confirmedFacts, item => `${escapeHtml(item.textUk)}${source(item.sourceUrl)}`);
-  const history = entries(briefing.timeline, item => `${escapeHtml(item.date || 'Дата невідома')} · ${escapeHtml(item.status)}: ${escapeHtml(item.eventUk)}${source(item.sourceUrl)}`);
-  const sourceAudit = entries(briefing.sourceAudit, item => `${escapeHtml(item.status)}: ${escapeHtml(item.descriptionUk)}${source(item.sourceUrl)}`);
-  const rules = entries(briefing.rules, item => `<b>IF</b> <code class="technical-token">${escapeHtml(item.whenUk)}</code> <b>THEN</b> <code class="technical-token">${escapeHtml(item.thenUk)}</code> · ${escapeHtml(item.certainty)}${source(item.sourceUrl)}`);
-  const tests = entries(briefing.verification, item => `<b>Сценарій:</b> ${escapeHtml(item.scenarioUk)} <b>Очікування:</b> ${escapeHtml(item.expectedUk)}${source(item.sourceUrl)}`);
-  const plain = values => entries(values, item => escapeHtml(item));
+  const row = (label, value, cls = '') => `<span class="brief-label">${label}</span><p class="pre brief-text ${cls}">${escapeHtml(value || 'Не встановлено з доступних джерел.')}</p>`;
   return `<section class="panel ba-brief" aria-label="Розбір ситуації та вимог">
-    <div class="panel-title"><h3>Ситуація за 30 секунд</h3><span class="badge ${briefing.readiness === 'READY_FOR_REVIEW' ? 'tone-green' : 'tone-amber'}">${escapeHtml(readiness)}</span></div>
+    <div class="panel-title brief-head"><h3 class="focus-title">Ситуація за 30 секунд</h3><span class="badge ${briefing.readiness === 'READY_FOR_REVIEW' ? 'tone-green' : 'tone-amber'}">${escapeHtml(readiness)}</span></div>
     ${stale ? '<p class="analysis-missing">Брифінг застарів: використовуй лише після оновлення джерел.</p>' : ''}
-    <p class="pre brief-overview">${escapeHtml(briefing.overviewUk || 'Контекст поки не сформовано.')}</p>
-    ${field('Що відбувається зараз', briefing.currentUk)}
-    ${field('Що має бути в результаті', briefing.targetUk)}
-    <details class="description" open><summary>Підтверджені факти та джерела</summary>${facts}</details>
-    <details class="description"><summary>Перевірені й недоступні джерела</summary>${sourceAudit}</details>
-    <details class="description"><summary>Історія рішень і суперечностей</summary>${history}</details>
-    <details class="description"><summary>Правила IF / THEN</summary>${rules}</details>
-    <details class="description"><summary>QA та перевірки приймання</summary>${tests}</details>
-    <details class="description"><summary>Scope, бізнес-вплив і ризики</summary>
-      ${field('Технічні межі', briefing.technicalScopeUk)}
-      ${field('Бізнес-вплив', briefing.businessImpactUk)}
-      <div class="section-label">Ризики</div>${plain(briefing.risksUk)}
-    </details>
-    <details class="description"><summary>Що не встановлено</summary>${plain(briefing.unknownsUk)}</details>
-    ${field('Чому саме такий рівень готовності', briefing.readinessReasonUk)}
-    <p class="muted">Це підготовлений аналіз, а не гарантія правильності. Перед рішенням перевір першоджерела та непідтверджені припущення.</p>
+    <div class="brief-grid">
+      ${row('Коротко', briefing.overviewUk || 'Контекст поки не сформовано.', 'brief-overview')}
+      ${row('Зараз', briefing.currentUk)}
+      ${row('Має бути', briefing.targetUk)}
+    </div>
   </section>`;
 }
 
-function priorityBreakdown(analysis) {
-  const factors = analysis?.priorityFactors;
-  if (!factors || typeof factors !== 'object') return '';
-  const definitions = [
-    ['businessImpact', 'Бізнес-вплив', 25],
-    ['urgency', 'Терміновість', 25],
-    ['dependencies', 'Залежності', 20],
-    ['baDecision', 'Рішення BA', 20],
-    ['actionability', 'Можливість діяти', 10],
-  ];
-  return `<details class="description">
-    <summary>Пояснювана оцінка: ${escapeHtml(analysis.queueScore)} / 100</summary>
-    <ul class="brief-list">${definitions.map(([name,label,max]) => `<li>${label}: <b>${escapeHtml(factors[name] ?? 'не визначено')} / ${max}</b></li>`).join('')}</ul>
-    <p class="muted">Оцінка визначає порядок у межах групи; активний спринт має окремий вищий пріоритет.</p>
-  </details>`;
+// Simplified UI: briefing details are secondary and live in one collapsed group.
+function briefingSecondaryMarkup(briefing, attachments) {
+  if (!shouldRenderBriefing(briefing)) return '';
+  return [
+    secSection('Підтверджені факти', briefing.confirmedFacts, item => secRow({text:item.textUk, url:item.sourceUrl})),
+    secSection('Джерела: прочитані й недоступні', [...(briefing.sourceAudit || []), ...(attachments || []).map(a => ({attachment:a}))], item => item.attachment
+      ? secRow({tag:item.attachment.state === 'LOCAL_TEXT_VERIFIED' ? secTag('Прочитано', 'tone-green') : secTag('Вкладення', 'tone-amber'),
+          text:`${item.attachment.format || 'Файл'} #${item.attachment.attachmentId} — ${ATTACHMENT_STATES[item.attachment.state] || 'Текст недоступний'}`})
+      : secRow({tag:secTag(...(SOURCE_TAGS[item.status] || [item.status, 'tone-gray'])), text:item.descriptionUk, url:item.sourceUrl})),
+    secSection('Історія рішень', briefing.timeline, item => secRow({
+      tag:secTag(...(DECISION_TAGS[item.status] || [item.status, 'tone-gray'])),
+      meta:item.date || 'Дата невідома', text:item.eventUk, url:item.sourceUrl})),
+    secSection('QA-сценарії', briefing.verification, item => secRow({text:item.scenarioUk, meta:'Очікування: ' + (item.expectedUk || '—'), metaBelow:true, url:item.sourceUrl})),
+    secSection('Scope, вплив і ризики', [
+      {label:'Технічні межі', value:briefing.technicalScopeUk},
+      {label:'Бізнес-вплив', value:briefing.businessImpactUk},
+      ...(briefing.risksUk || []).map((risk, i) => ({label:i ? '' : 'Ризики', value:risk}))
+    ].filter(f => f.value || f.label === 'Технічні межі' || f.label === 'Бізнес-вплив'),
+      f => `<li class="sec-row sec-field"><span class="sec-label">${escapeHtml(f.label)}</span><span class="sec-text">${escapeHtml(f.value || 'Не встановлено')}</span><span></span></li>`,
+      (briefing.risksUk || []).length)
+  ].join('');
 }
 
-function legacyMarkup(task) {
-  const parts = [['Попереднє пояснення', task.statusReason], ['Попередня дія', task.nextAction], ['Попередній підготовлений текст', task.readyOutput]].filter(item => item[1]);
-  if (!parts.length) return '';
-  return `<details class="description"><summary>Вихідний текст попереднього snapshot</summary>${parts.map(([title, text]) => `<div class="section-label">${escapeHtml(title)}</div><p class="pre">${escapeHtml(text)}</p>`).join('')}</details>`;
+// Uniform rows for «Другорядне»: [tag column][text][source link], all aligned.
+const SOURCE_TAGS = {READ:['Прочитано','tone-green'], UNAVAILABLE:['Недоступно','tone-amber'], REFERENCE_ONLY:['Посилання','tone-gray']};
+const DECISION_TAGS = {CONFIRMED:['Підтверджено','tone-green'], PROPOSED:['Пропозиція','tone-amber'], DISPUTED:['Суперечність','tone-red'], SUPERSEDED:['Замінено','tone-gray']};
+function secTag(label, tone) { return `<span class="badge sec-tag ${tone}">${escapeHtml(label)}</span>`; }
+function secRow({tag = '', text, meta = '', metaBelow = false, url}) {
+  const safe = safeUrl(url);
+  const link = safe ? `<a class="sec-link" href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer">Джерело ↗</a>` : '<span class="sec-link muted">—</span>';
+  const metaHtml = meta ? `<span class="sec-meta">${escapeHtml(meta)}</span>` : '';
+  return `<li class="sec-row${tag ? ' has-tag' : ''}">${tag ? `<span class="sec-tagcol">${tag}</span>` : ''}<span class="sec-text">${metaBelow ? '' : metaHtml}${escapeHtml(text || '')}${metaBelow ? metaHtml : ''}</span>${link}</li>`;
 }
-function previousAnalysisMarkup(task) {
-  const previous = analysisOf(task);
-  if (!analysisIsStale(task) || !(previous.reasonUk || previous.nextActionUk)) return '';
-  return `<details class="description"><summary>Попередній аналіз — застарів після зміни контексту</summary><p class="muted">Ці висновки збережені лише як історія; вони не визначають поточну чергу чи сигнали.</p><div class="section-label">Попереднє пояснення</div><p class="pre">${escapeHtml(previous.reasonUk || '')}</p><div class="section-label">Попередня дія</div><p class="pre">${escapeHtml(previous.nextActionUk || '')}</p><div class="section-label">Попередні джерела</div>${sourceMarkup(previous)}</details>`;
+function secSection(title, items, render, count) {
+  const list = Array.isArray(items) ? items : [];
+  const n = count ?? list.length;
+  return `<details class="description sec-section"><summary><span class="sec-title">${escapeHtml(title)}</span><span class="sec-count${n ? '' : ' empty'}">${n}</span></summary>${
+    list.length ? `<ul class="sec-list">${list.map(render).join('')}</ul>` : '<p class="sec-empty">Не встановлено з доступних джерел.</p>'}</details>`;
 }
 function taskVersion(task) { return detailContentFingerprint(task); }
-function qualityGateMarkup(gate) {
-  if (!gate) return '';
-  const names = {BLOCKED:'Потрібне підтвердження', NEEDS_REVIEW:'Перевірити опис',
-    STRUCTURALLY_VERIFIED:'Структура перевірена (не доказ правильності)'};
-  const findings = (gate.findings || []).slice(0, 25).map(f =>
-    '<li><b>' + escapeHtml(f.code) + '</b> · ' + escapeHtml(f.ref) + ': ' + escapeHtml(f.messageUk) + '</li>').join('');
+
+
+
+
+function qualityGateFocusMarkup(gate) {
+  if (!gate) return '<p class="muted">Перевірки ще немає.</p>';
+  const names = {BLOCKED:['Потрібне підтвердження','tone-amber'], NEEDS_REVIEW:['Перевірити опис','tone-amber'],
+    STRUCTURALLY_VERIFIED:['Структура перевірена','tone-green']};
+  const [label, tone] = names[gate.state] || ['Недостатньо даних','tone-gray'];
+  const summary = gate.summary || {};
+  const findings = (gate.findings || []).slice(0, 8).map(f => '<li>' + escapeHtml(f.messageUk) + '</li>').join('');
   const coverage = (gate.qaCoverage || []).slice(0, 25).map(r =>
     '<li>' + escapeHtml(r.ruleId) + ': ' + escapeHtml((r.covered || []).join(', ') || 'Тестів немає') +
     ((r.missing || []).length ? ' · бракує ' + escapeHtml(r.missing.join(', ')) : ' · покрито') + '</li>').join('');
-  const summary = gate.summary || {};
-  const density = summary.descriptionProfile || {};
-  const compactHint = Number.isFinite(density.words) && density.words > 0
-    ? ' Опис: ' + escapeHtml(density.words) + ' слів, ' +
-      escapeHtml(density.qaChecks || 0) + ' QA-перевірок. ' +
-      (summary.compactnessSuggestions ? 'Є підказки щодо стислості. ' : '')
-    : '';
-  return '<details class="description"><summary>Перевірка доказів і QA · ' +
-    escapeHtml(names[gate.state] || 'Недостатньо даних') + '</summary><p class="muted">' +
-    'Цитат у прочитаних джерелах: ' + escapeHtml(summary.sourceExcerptsPresent || 0) + '/' +
-    escapeHtml(summary.claimsChecked || 0) + '. Правил із QA: ' +
-    escapeHtml(summary.rulesFullyCovered || 0) + '/' + escapeHtml(summary.rulesTracked || 0) +
-    '. Зауважень до BA-результату: ' + escapeHtml(summary.outputFindings || 0) + '.' +
-    compactHint + ' Це структурна перевірка, не підтвердження бізнес-правильності.</p>' +
-    (coverage ? '<div class="section-label">Покриття умов</div><ul>' + coverage + '</ul>' : '') +
-    (findings ? '<div class="section-label">Що виправити</div><ul>' + findings + '</ul>' : '') + '</details>';
+  return '<p class="focus-status"><span class="badge ' + tone + '">' + escapeHtml(label) + '</span> <span class="muted">Цитати в джерелах: ' +
+    escapeHtml(summary.sourceExcerptsPresent || 0) + '/' + escapeHtml(summary.claimsChecked || 0) +
+    ' · правил із повним QA: ' + escapeHtml(summary.rulesFullyCovered || 0) + '/' + escapeHtml(summary.rulesTracked || 0) + '</span></p>' +
+    (findings ? '<ul class="focus-items">' + findings + '</ul>' : '') +
+    (coverage ? '<details class="focus-more"><summary>Покриття умов</summary><ul class="focus-list">' + coverage + '</ul>' +
+      '<p class="muted">Структурна перевірка, не підтвердження бізнес-правильності.</p></details>' : '');
+}
+
+// "Важливо для мене": status tiles on top, one detail panel below.
+// Each panel's first status badge is the tile's value and tone.
+const focusTabs = new Map();
+const ATTENTION_TONES = ['tone-red', 'tone-amber'];
+function setupFocusTiles(key) {
+  const root = document.querySelector('.focus-table');
+  if (!root) return;
+  const tiles = [...root.querySelectorAll('.focus-tile')];
+  for (const tile of tiles) {
+    const panel = root.querySelector(`[data-focus-panel="${tile.dataset.focus}"]`);
+    const badge = panel?.querySelector('.focus-status .badge');
+    const tone = badge ? [...badge.classList].find(c => c.startsWith('tone-')) || 'tone-gray' : 'tone-gray';
+    tile.className = 'focus-tile ' + tone;
+    tile.querySelector('.tile-value').textContent = badge ? badge.textContent.trim() : 'Завантаження…';
+    if (!tile.dataset.bound) {
+      tile.dataset.bound = '1';
+      tile.addEventListener('click', () => { focusTabs.set(key, tile.dataset.focus); showFocusPanel(root, tile.dataset.focus); });
+    }
+  }
+  const chosen = focusTabs.get(key) ||
+    tiles.find(tile => ATTENTION_TONES.some(tone => tile.classList.contains(tone)))?.dataset.focus || 'questions';
+  showFocusPanel(root, chosen);
+}
+function showFocusPanel(root, name) {
+  for (const tile of root.querySelectorAll('.focus-tile')) {
+    const active = tile.dataset.focus === name;
+    tile.setAttribute('aria-selected', String(active));
+    tile.classList.toggle('active', active);
+  }
+  for (const panel of root.querySelectorAll('.focus-panel')) panel.hidden = panel.dataset.focusPanel !== name;
 }
 
 async function loadApprovedDescription(key, current=()=>selected) {
@@ -481,11 +500,8 @@ function renderDetail() {
   const manualWaiting = ['WAITING INPUT','WAITING DEPENDENCY'].includes(task.manualStatus);
   const waiting = task.manualStatus !== 'AUTO' ? manualWaiting : analysis.waitingRequired, email = manualWaiting || task.manualStatus === 'DONE' ? false : analysis.needsEmail;
   const missing = Array.isArray(analysis.missingInfo) ? analysis.missingInfo : [];
+  const openPoints = [...new Set([...missing, ...(analyzed && Array.isArray(analysis.briefing?.unknownsUk) ? analysis.briefing.unknownsUk : [])].map(item => String(item).trim()).filter(Boolean))];
   const quick = quickHandoff(task);
-  const ranking = priorityExplanation(task);
-  const effort = effortInfo({...task, manualEffort:form.manualEffort});
-  const dimensions = priorityDimensions(task,effort);
-  const potentialQuick = quickWinCandidate({...task, manualEffort:form.manualEffort});
   const handoff=handoffCopyPolicy({description:quick.description,
     readyForCopy:quick.readyForCopy,qualityState:quick.state});
   const statusView=statusPresentation({jiraStatus:task.jiraStatus,manualStatus:form.manualStatus,
@@ -495,7 +511,6 @@ function renderDetail() {
     waitingLabel:manualWaiting?'Очікуємо за моїм статусом':
       'Очікуємо: '+(analysis.waitingOnUk||'адресат не вказаний'),
     isWrite:effectiveSignal(task)==='WRITE'});
-  const reason=assessmentReason(analysis.reasonUk);
   $('detail').innerHTML = `
     ${quick.nextAction ? `<div id="stickyAction" class="sticky-next-action" hidden role="region" aria-label="Наступна дія під час прокручування"><div class="sticky-action-inner"><span class="sticky-action-text">${escapeHtml(quick.nextAction)}</span><button id="stickyCopyNext" class="quiet" type="button">Скопіювати дію</button></div></div>` : ''}
     <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span>${priorityBadge(task)}<span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
@@ -504,124 +519,90 @@ function renderDetail() {
       <span class="task-status-provenance">${statusView.provenance.map(value=>'<span>'+escapeHtml(value)+'</span>').join('<span aria-hidden="true"> · </span>')}</span>
       ${statusView.alerts.length?'<span class="task-status-alerts">'+statusView.alerts.map(value=>'<span class="badge tone-amber">'+escapeHtml(value)+'</span>').join('')+'</span>':''}
     </div>
-    <section class="panel quick-handoff" aria-label="Найближча дія та швидка передача">
-      <div class="section-label">Що зробити зараз</div>
-      <p class="pre next-action" id="nextText">${escapeHtml(quick.nextAction || (stale ? 'Онови аналіз за актуальним контекстом Jira, перш ніж діяти.' : 'Перевір контекст і сформуй конкретну дію.'))}</p>
-      <div class="actions quick-handoff-actions">
+    <div class="split-row">
+      <div class="split-col">
+        <section class="panel quick-handoff do-now" aria-label="Найближча дія та швидка передача">
+        <div class="card-head"><h3 class="focus-title">Що зробити зараз</h3></div>
+        <p class="pre next-action" id="nextText">${escapeHtml(quick.nextAction || (stale ? 'Онови аналіз за актуальним контекстом Jira, перш ніж діяти.' : 'Перевір контекст і сформуй конкретну дію.'))}</p>
+        <p class="muted quick-proof-note">${escapeHtml(quick.evidenceNote)}</p>
+        <div class="actions quick-handoff-actions card-foot">
         ${quick.nextAction ? '<button id="copyNext" class="quiet">Скопіювати дію</button>' : ''}
         ${handoff.showFastCopy ? `<button id="copyFastDescription" class="quiet" ${handoff.fastEnabled ? '' : 'disabled'}>${escapeHtml(handoff.fastLabel)}</button>` : ''}
+        </div>
+        </section>
       </div>
-      <p class="muted quick-proof-note">${escapeHtml(quick.evidenceNote)}</p>
-      ${task.active && effectiveSignal(task)!=='DONE' ? `<details class="description" id="candidateTemplates"><summary>Шаблони для дрібних BA задач</summary>
+      <div class="split-col">
+        <section class="panel work-state" aria-label="Мій робочий стан">
+        <div class="card-head"><h3 class="focus-title">Мій статус</h3><details class="status-help"><summary aria-label="Як працює мій статус">ⓘ</summary><p>«Автоматично» використовує оцінку щоденного аналізу. Ручний вибір фіксує твій власний статус і має пріоритет. Вибір статусу зберігається автоматично.</p></details></div>
+        <label class="card-label" for="manual">Статус</label><select id="manual" class="status-select tone-${statusTone(form.manualStatus, task)}">${['AUTO','IN PROGRESS','NEEDS DECISION','WAITING INPUT','WAITING DEPENDENCY','DONE'].map(value => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(STATUS_LABELS[value])}</option>`).join('')}</select>
+        <label class="card-label" for="manualPriority">Пріоритет</label><select id="manualPriority" aria-describedby="manualPriorityHelp">${Object.entries(MANUAL_PRIORITY_LABELS).map(([key,label]) =>
+          `<option value="${key}" ${form.manualPriority === key ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
+        <p id="manualPriorityHelp" class="card-help">P1 — щоденний бізнес-фокус · P2 — терміново. P3 ставиться автоматично за Jira label.</p>
+        <label class="card-label" for="note">Нотатки</label><textarea id="note" maxlength="20000" placeholder="Додай домовленість або наступний контакт…">${escapeHtml(form.note)}</textarea>
+        <div class="actions state-actions card-foot"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Виконано → Далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
+        <div id="saved" class="save-state" role="status"></div>
+        <div id="manualConflict" class="analysis-missing" role="alert" hidden>
+        <b>Конфлікт ручних правок</b>
+        <p>Цю задачу збережено в іншій вкладці. Твій текст залишився у формі.
+        Перед перезаписом порівняй його з актуальною версією.</p>
+        <details><summary>Показати актуальний збережений статус, нотатку й лист</summary>
+        <pre class="pre" id="conflictSavedText"></pre>
+        </details>
+        <div class="actions">
+        <button id="conflictOverwrite" class="quiet">Перевірив, зберегти мої правки</button>
+        <button id="conflictUseSaved" class="quiet">Взяти збережену версію</button>
+        </div>
+        </div>
+        </section>
+      </div>
+    </div>
+    <div id="staleNotice" class="saved-note" hidden></div>
+    ${stale ? '<div class="analysis-missing"><b>Контекст Jira змінився — попередній аналіз застарів.</b><br>Черга й сигнали потребують нового аналізу опису, коментарів та залежностей. Твій ручний стан і збережена чернетка залишаються чинними.</div>' : !analyzed ? '<div class="analysis-missing"><b>Для цієї задачі ще немає повного аналізу українською.</b><br>Потрібно прочитати опис, коментарі й залежності. Попередній snapshot не дає достатніх підстав для нової оцінки.</div>' : ''}
+    ${briefingMarkup(analyzed ? analysis.briefing : undefined, stale)}
+    <details id="emailDetails" class="panel email-panel ${email === true || form.emailDraft.body ? 'email-first' : ''}" open>
+    <summary class="email-summary"><span class="email-title">${email === false && !form.emailDraft.body && !form.emailDraft.subject ? 'Лист зараз не потрібен' : 'Чернетка листа'}</span><span class="badge email-badge ${staleGeneratedDraft ? 'tone-amber' : email === true ? 'tone-blue' : 'tone-gray'}">${staleGeneratedDraft ? 'Зі старого аналізу' : savedDraft && stale ? 'Моя збережена чернетка' : email === true ? 'Потрібна' : email === false ? 'За потреби' : 'Потребу ще не визначено'}</span><span class="email-toggle">Підготувати лист</span></summary>
+    <div class="email-fields" role="region" aria-label="Редагована чернетка листа">
+    <p class="email-intro">${stale && form.emailDraft.body ? savedDraft ? 'Твоя збережена чернетка залишилася без змін. Аналіз застарів: перевір лист за новим контекстом перед використанням.' : 'Новий контекст ще не проаналізовано. Ця чернетка збережена зі старого аналізу або твоїх незбережених правок; перевір її актуальність перед використанням.' : form.emailDraft.body ? 'Перевір адресата й текст. Усі поля можна відредагувати.' : email === false && analyzed ? 'За поточним аналізом лист зараз не потрібен. За потреби можеш підготувати власну чернетку.' : email === true ? 'Потрібен лист, але готової чернетки ще немає. Підготуй текст за конкретними відкритими питаннями задачі.' : 'Потребу в листі ще не визначено. Спочатку перевір контекст і наступну дію.'}</p>
+    <div class="email-grid">
+      <label class="email-label" for="draftTo">Кому</label><div class="email-cell"><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата, якщо він відомий" value="${escapeHtml(form.emailDraft.to)}">${suggestedRecipient ? '<div class="email-hint"><span id="recipientHintWarning">Шаблонна адреса постачальника не підтверджена Jira — перевір отримувача.</span><button id="useRecipientHint" class="quiet" aria-describedby="recipientHintWarning">Вставити адресу зі шаблону</button></div>' : ''}</div>
+      <label class="email-label" for="draftSubject">Тема</label><div class="email-cell"><input id="draftSubject" maxlength="2000" placeholder="Тема листа" value="${escapeHtml(form.emailDraft.subject)}"></div>
+      <label class="email-label" for="draftBody">Текст</label><div class="email-cell"><textarea id="draftBody" maxlength="50000" placeholder="Чернетка за описом, коментарями та відкритими питаннями задачі…">${escapeHtml(form.emailDraft.body)}</textarea></div>
+      <span class="email-label">Логи</span><section id="emailLogs" class="email-cell email-logs" aria-label="Логи до листа"><p class="muted" role="status">Перевіряю архіви задачі…</p></section>
+      <span></span><div class="email-cell actions"><button id="copyEmail" class="quiet">${escapeHtml(mailActionLabels().copy)}</button><button id="email" class="primary">${escapeHtml(mailActionLabels().open)}</button></div>
+    </div>
+    </div>
+    </details>
+    <section class="panel focus-table" aria-label="Важливо для мене">
+      <h3 class="focus-title">Важливо для мене</h3>
+      <div class="focus-tiles" role="tablist" aria-label="Що потребує уваги">
+        <button type="button" class="focus-tile" role="tab" data-focus="questions" aria-controls="focus-panel-questions" aria-selected="false"><span class="tile-label">Відкриті питання</span><span class="tile-value">…</span></button>
+        <button type="button" class="focus-tile" role="tab" data-focus="decisions" aria-controls="focus-panel-decisions" aria-selected="false"><span class="tile-label">Рішення</span><span class="tile-value">…</span></button>
+        <button type="button" class="focus-tile" role="tab" data-focus="logs" aria-controls="focus-panel-logs" aria-selected="false"><span class="tile-label">Логи</span><span class="tile-value">…</span></button>
+        <button type="button" class="focus-tile" role="tab" data-focus="qa" aria-controls="focus-panel-qa" aria-selected="false"><span class="tile-label">Перевірка QA</span><span class="tile-value">…</span></button>
+        <button type="button" class="focus-tile" role="tab" data-focus="description" aria-controls="focus-panel-description" aria-selected="false"><span class="tile-label">Опис для Jira</span><span class="tile-value">…</span></button>
+      </div>
+      <div class="focus-panel" role="tabpanel" id="focus-panel-questions" data-focus-panel="questions" hidden><h4 class="sub-heading focus-panel-title">Відкриті питання</h4>${openPoints.length ? '<p class="focus-status"><span class="badge tone-amber">' + openPoints.length + ' ' + (openPoints.length === 1 ? 'питання' : 'питання(нь)') + '</span> Потрібна відповідь, щоб рухатися далі</p><ul class="focus-items">' + openPoints.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>' : `<p class="focus-status"><span class="badge tone-green">Немає</span> ${analyzed ? 'Відкритих питань немає' : 'Аналізу ще немає — питання з’являться після нього'}</p>`}</div>
+      <div class="focus-panel" role="tabpanel" id="focus-panel-decisions" data-focus-panel="decisions" hidden><h4 class="sub-heading focus-panel-title">Рішення</h4><div id="decisionTracker" class="muted">Завантажую рішення…</div></div>
+      <div class="focus-panel" role="tabpanel" id="focus-panel-logs" data-focus-panel="logs" hidden><h4 class="sub-heading focus-panel-title">Логи<span class="focus-sub">REST · Supplier · Errors</span></h4><div id="evidenceSummary" class="muted">Завантажую…</div></div>
+      <div class="focus-panel" role="tabpanel" id="focus-panel-qa" data-focus-panel="qa" hidden><h4 class="sub-heading focus-panel-title">Перевірка QA</h4>${qualityGateFocusMarkup(analysis.qualityGate)}</div>
+      <div class="focus-panel" role="tabpanel" id="focus-panel-description" data-focus-panel="description" hidden><h4 class="sub-heading focus-panel-title">Опис для Jira</h4>${analysis.standardDescription ? '<p class="focus-status"><span class="badge ' + (handoff.fastEnabled ? 'tone-green' : 'tone-amber') + '">' + (handoff.fastEnabled ? 'Готова до передачі' : 'Чернетка') + '</span> ' + (handoff.fastEnabled ? 'Перевір і скопіюй у Jira' : 'Потребує перевірки перед передачею в Jira') + '</p>' : '<p class="focus-status"><span class="badge tone-gray">Немає</span> Чернетку не підготовлено</p>'}${analysis.descriptionTitle ? '<p class="focus-strong">' + escapeHtml(analysis.descriptionTitle) + '</p>' : ''}<details class="focus-more"><summary>${analysis.standardDescription ? 'Показати повний опис' : 'Чернетку не підготовлено'}</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? (handoff.showFallbackCopy ? '<button id="copyDescription" class="quiet" aria-describedby="fallbackCopyWarning">'+escapeHtml(handoff.fallbackLabel)+'</button><p id="fallbackCopyWarning" class="analysis-missing">'+escapeHtml(handoff.warning)+'</p> ' : '') + '<button id="approveDescription" class="quiet">'+escapeHtml(handoff.approvalLabel)+'</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details></div>
+    </section>
+    <details class="panel secondary-details" aria-label="Другорядні деталі аналізу">
+      <summary><span class="secondary-title">Другорядне</span><span class="secondary-sub">факти, джерела, історія рішень, QA-сценарії, scope</span></summary>
+      <div class="accordion">
+      ${briefingSecondaryMarkup(analyzed ? analysis.briefing : undefined, analysis.qualityGate?.sourceAudit?.attachments)}
+      ${secSection('Джерела оцінки', analysis.evidence, item => secRow({text:item.text || 'Джерело', url:item.url}))}
+      ${task.active && effectiveSignal(task)!=='DONE' ? `<details class="description sec-section" id="candidateTemplates"><summary><span class="sec-title">Шаблони для дрібних BA задач</span></summary><div class="sec-body">
         <p class="muted">Лише порожні каркаси. Жодного підтвердження джерела чи виконаної дії.</p>
         <label for="candidateTemplate">Оберіть каркас</label>
         <select id="candidateTemplate" aria-label="Кандидатний BA шаблон"><option value="">Оберіть тип задачі</option>${CANDIDATE_TEMPLATES.map(item=>`<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`).join('')}</select>
         <p id="candidateNotice" class="muted" role="status">Дані задачі не підставляються автоматично.</p>
         <pre id="candidatePreview" class="pre" hidden></pre>
         <button id="copyCandidate" class="quiet" type="button" disabled>Скопіювати порожній каркас</button>
-      </details>` : ''}
-      <details class="description"><summary>Пріоритет і орієнтовний обсяг</summary>
-        <p class="muted effort-summary">${escapeHtml(
-          'Вплив: ' + dimensions.impact + ' · Терміновість: ' + dimensions.urgency +
-          ' · Залежності: ' + dimensions.dependencies + ' · Обсяг: ' + dimensions.effort +
-          ' (' + dimensions.effortSource + ') · Блокування: ' + dimensions.unblocking +
-          '. ' + effort.reason)}
-          ${potentialQuick ? '<span class="effort-hint">Кандидат короткої дії, не новий пріоритет</span>' : ''}
-        </p>
-        ${task.active && effectiveSignal(task) !== 'DONE' ?
-          `<button type="button" class="quiet" id="pinDeepWork" aria-pressed="${task.key === pinnedKey}" ${busy ? 'disabled' : ''}>${task.key === pinnedKey ? 'Скинути мій фокус' : 'Закріпити мій фокус у цій групі'}</button>` : ''}
-        <p class="muted">Фокус лише для цієї вкладки та поточної групи дій. Не обходить активний спринт або WRITE, не змінює Jira.</p>
-        <ol class="brief-list">${ranking.sourceOrder.map(item => '<li>' + escapeHtml(item) + '</li>').join('')}</ol>
-        <p class="muted">Порядок: активний спринт, потреба в листі, тип дії, оцінка та блокування. Копіювання не змінює Jira.</p>
-      </details>
-    </section>
-    <div id="staleNotice" class="saved-note" hidden></div>
-    ${stale ? '<div class="analysis-missing"><b>Контекст Jira змінився — попередній аналіз застарів.</b><br>Черга й сигнали потребують нового аналізу опису, коментарів та залежностей. Твій ручний стан і збережена чернетка залишаються чинними.</div>' : !analyzed ? '<div class="analysis-missing"><b>Для цієї задачі ще немає повного аналізу українською.</b><br>Потрібно прочитати опис, коментарі й залежності. Попередній snapshot не дає достатніх підстав для нової оцінки.</div>' : ''}
-    ${briefingMarkup(analyzed ? analysis.briefing : undefined, stale)}
-    <div class="detail-grid">
-      <div>
-        <section class="panel analysis-lead" aria-label="Пояснення та наступна дія">
-          ${reason?'<div class="section-label">Підстава оцінки</div><p class="pre assessment-reason">'+escapeHtml(reason)+'</p>':''}
-          ${priorityBreakdown(analysis)}
-          <details class="description"><summary>Мій план дій і наступна перевірка</summary>
-            <div id="actionPlan" class="muted">Завантажую план…</div>
-          </details>
-        </section>
-        <section class="panel" aria-label="Відсутні дані та підстави оцінки">
-          <div class="section-label">Відкриті питання BA</div>
-          <details class="description"><summary>Історія питань і відповіді</summary>
-            <div id="questionTracker" class="question-tracker muted">Завантажую…</div>
-          </details>
-          <details class="description"><summary>Рішення та їхня історія</summary>
-            <div id="decisionTracker" class="question-tracker muted">Завантажую рішення…</div>
-          </details>
-          ${missing.length ? '<ol class="missing-info">' + missing.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ol>' : analyzed ? '<p class="muted">Аналіз не виявив додаткових питань. Перевір пояснення та джерела нижче.</p>' : ''}
-          <details class="description"><summary>Підтвердження з REST / Supplier / Errors</summary>
-            <div id="evidenceSummary" class="muted">Завантажую…</div>
-          </details>
-          ${qualityGateMarkup(analysis.qualityGate)}
-          <details class="description" aria-label="Джерела оцінки">
-            <summary>${escapeHtml(evidenceSectionLabel(analysis.evidence?.length||0))}</summary>
-            ${sourceMarkup(analysis)}
-          </details>
-          <details class="description"><summary>Чернетка опису задачі</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? (handoff.showFallbackCopy ? '<button id="copyDescription" class="quiet" aria-describedby="fallbackCopyWarning">'+escapeHtml(handoff.fallbackLabel)+'</button><p id="fallbackCopyWarning" class="analysis-missing">'+escapeHtml(handoff.warning)+'</p> ' : '') + '<button id="approveDescription" class="quiet">'+escapeHtml(handoff.approvalLabel)+'</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details>
-          <details class="description" aria-label="Історія та минулі версії">
-            <summary>Історія й аудит</summary>
-            ${previousAnalysisMarkup(task)}
-            <details class="description"><summary>Історія змін задачі</summary>
-              <div id="taskHistory" class="muted">Завантажую історію…</div>
-            </details>
-            ${legacyMarkup(task)}
-          </details>
-        </section>
-        <section class="panel" aria-label="Контекст Jira">
-          <div class="panel-title"><h3>Контекст Jira</h3><button id="loadContext" class="quiet">Показати опис і коментарі</button></div>
-          <div id="contextPreview" class="muted">Повний вихідний контекст можна відкрити для перевірки аналізу.</div>
-        </section>
+      </div></details>` : ''}
+      ${task.active && effectiveSignal(task) !== 'DONE' ? `<details class="description sec-section"><summary><span class="sec-title">Мій фокус у групі</span></summary><div class="sec-body"><button type="button" class="quiet" id="pinDeepWork" aria-pressed="${task.key === pinnedKey}" ${busy ? 'disabled' : ''}>${task.key === pinnedKey ? 'Скинути мій фокус' : 'Закріпити мій фокус у цій групі'}</button><p class="muted">Фокус лише для цієї вкладки та поточної групи дій. Не обходить активний спринт або WRITE, не змінює Jira.</p></div></details>` : ''}
       </div>
-      <div class="right-column">
-        <section class="panel work-state" aria-label="Мій робочий стан">
-          <div class="manual-status-label"><label for="manual">Мій статус</label><details class="status-help"><summary aria-label="Як працює мій статус">ⓘ</summary><p>«Автоматично» використовує оцінку щоденного аналізу. Ручний вибір фіксує твій власний статус і має пріоритет. Вибір статусу зберігається автоматично.</p></details></div>
-          <select id="manual" class="status-select tone-${statusTone(form.manualStatus, task)}">${['AUTO','IN PROGRESS','NEEDS DECISION','WAITING INPUT','WAITING DEPENDENCY','DONE'].map(value => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(STATUS_LABELS[value])}</option>`).join('')}</select>
-          <label for="manualPriority">Мій пріоритет роботи</label>
-          <select id="manualPriority" aria-describedby="manualPriorityHelp">${Object.entries(MANUAL_PRIORITY_LABELS).map(([key,label]) =>
-            `<option value="${key}" ${form.manualPriority === key ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
-          <p id="manualPriorityHelp" class="muted">P1: щоденний бізнес-фокус · P2: термінові задачі. P3 визначається автоматично за Jira label, якщо немає ручного пріоритету. Вибір зберігається кнопкою «Зберегти все» тільки в BA Desk.${supportPriorityLabel(task) ? ' Jira label: ' + escapeHtml(supportPriorityLabel(task)) : ''}</p>
-          <label for="manualEffort">Моя оцінка тривалості</label>
-          <select id="manualEffort" aria-describedby="effortHelp">${Object.entries(EFFORT_LABELS).map(([key,label]) =>
-            `<option value="${key}" ${form.manualEffort === key ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
-          <p id="effortHelp" class="muted">Збережеться разом із нотатками. Оцінка не змінює порядок задач і не передається в Jira.</p>
-          <label for="note">Мої нотатки</label><textarea id="note" maxlength="20000" placeholder="Додай домовленість або наступний контакт…">${escapeHtml(form.note)}</textarea>
-          <div class="actions state-actions"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Виконано → Далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
-          <div id="saved" class="save-state" role="status"></div>
-          <div id="manualConflict" class="analysis-missing" role="alert" hidden>
-            <b>Конфлікт ручних правок</b>
-            <p>Цю задачу збережено в іншій вкладці. Твій текст залишився у формі.
-            Перед перезаписом порівняй його з актуальною версією.</p>
-            <details><summary>Показати актуальний збережений статус, нотатку й лист</summary>
-              <pre class="pre" id="conflictSavedText"></pre>
-            </details>
-            <div class="actions">
-              <button id="conflictOverwrite" class="quiet">Перевірив, зберегти мої правки</button>
-              <button id="conflictUseSaved" class="quiet">Взяти збережену версію</button>
-            </div>
-          </div>
-        </section>
-        <details id="emailDetails" class="panel email-panel ${email === true || form.emailDraft.body ? 'email-first' : ''}" ${email === true || form.emailDraft.body || form.emailDraft.subject || expandedEmails.has(task.key) ? 'open' : ''}>
-          <summary class="email-summary"><span>${email === false && !form.emailDraft.body && !form.emailDraft.subject ? 'Лист зараз не потрібен' : 'Чернетка листа'}</span><span class="email-toggle">Підготувати лист</span></summary>
-          <div class="email-fields" role="region" aria-label="Редагована чернетка листа">
-          <div class="panel-title email-meta"><span class="badge ${staleGeneratedDraft ? 'tone-amber' : email === true ? 'tone-blue' : 'tone-gray'}">${staleGeneratedDraft ? 'Зі старого аналізу' : savedDraft && stale ? 'Моя збережена чернетка' : email === true ? 'Потрібна' : email === false ? 'За потреби' : 'Потребу ще не визначено'}</span></div>
-          <p class="email-intro">${stale && form.emailDraft.body ? savedDraft ? 'Твоя збережена чернетка залишилася без змін. Аналіз застарів: перевір лист за новим контекстом перед використанням.' : 'Новий контекст ще не проаналізовано. Ця чернетка збережена зі старого аналізу або твоїх незбережених правок; перевір її актуальність перед використанням.' : form.emailDraft.body ? 'Перевір адресата й текст. Усі поля можна відредагувати.' : email === false && analyzed ? 'За поточним аналізом лист зараз не потрібен. За потреби можеш підготувати власну чернетку.' : email === true ? 'Потрібен лист, але готової чернетки ще немає. Підготуй текст за конкретними відкритими питаннями задачі.' : 'Потребу в листі ще не визначено. Спочатку перевір контекст і наступну дію.'}</p>
-          <label for="draftTo">Кому</label><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата, якщо він відомий" value="${escapeHtml(form.emailDraft.to)}">
-          ${suggestedRecipient ? '<p class="muted" id="recipientHintWarning">Шаблонна адреса постачальника не підтверджена поточною Jira-вимогою. Перевір отримувача перед використанням.</p><button id="useRecipientHint" class="quiet" aria-describedby="recipientHintWarning">Вставити адресу зі шаблону</button>' : ''}
-          <label for="draftSubject">Тема</label><input id="draftSubject" maxlength="2000" placeholder="Тема листа" value="${escapeHtml(form.emailDraft.subject)}">
-          <label for="draftBody">Текст листа</label><textarea id="draftBody" maxlength="50000" placeholder="Чернетка за описом, коментарями та відкритими питаннями задачі…">${escapeHtml(form.emailDraft.body)}</textarea>
-          <section id="emailLogs" class="email-logs" aria-label="Логи до листа"><div class="logs-heading"><h4>Логи до листа</h4></div><p class="muted" role="status">Перевіряю архіви задачі…</p></section>
-          <div class="actions"><button id="copyEmail" class="quiet">${escapeHtml(mailActionLabels().copy)}</button><button id="email" class="primary">${escapeHtml(mailActionLabels().open)}</button></div>
-          </div>
-        </details>
-      </div>
-    </div>`;
+    </details>`;
   renderedTaskVersion = taskVersion(task);
   renderedTaskKey = task.key;
   pendingDetail = false;
@@ -654,7 +635,6 @@ function renderDetail() {
     $('draftTo').focus({preventScroll:true});
     message('Адресу підставлено для перевірки, не підтверджено і не надіслано.');
   });
-  $('manualEffort').addEventListener('change', captureForm);
   $('manualPriority').addEventListener('change', captureForm);
   $('manual').addEventListener('change', () => saveStatus($('manual').value));
   if ($('candidateTemplate')) {
@@ -718,17 +698,12 @@ function renderDetail() {
   $('email').addEventListener('click', openEmail);
   if (cloudMode) $('email').textContent = mailActionLabels(true).open;
   $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
-  $('loadContext').addEventListener('click', () => loadContext(task.key,currentDetail));
   updateFormStatus();
   showManualConflict();
-  loadTaskEvidence(task.key, api, escapeHtml, currentDetail);
-  loadTaskQuestions(task.key, api, escapeHtml, message, currentDetail,
-                    ()=>detailRequests.current());
-  loadTaskDecisions(task.key, api, escapeHtml, message, currentDetail,
-                    ()=>detailRequests.current());
-  loadTaskActions(task.key, api, escapeHtml, message, currentDetail,
-                  analysis.nextActionUk || '', ()=>detailRequests.current());
-  loadTaskHistory(task.key, api, escapeHtml, currentDetail);
+  setupFocusTiles(task.key);
+  Promise.allSettled([loadTaskEvidence(task.key, api, escapeHtml, currentDetail),
+    loadTaskDecisions(task.key, api, escapeHtml, message, currentDetail, ()=>detailRequests.current())])
+    .then(() => { if (currentDetail() === task.key) setupFocusTiles(task.key); });
   loadApprovedDescription(task.key,currentDetail);
   loadLogs(task.key);
   updateStickyNextAction();
@@ -737,7 +712,7 @@ function captureForm() {
   const task = tasks.find(item => item.key === selected);
   if (!task) return;
   const form = formFor(task);
-  form.value = {manualStatus:$('manual').value, manualEffort:$('manualEffort').value,
+  form.value = {manualStatus:$('manual').value, manualEffort:$('manualEffort')?.value ?? formFor(task).value.manualEffort,
     manualPriority:$('manualPriority').value,
     note:$('note').value, emailDraft:{to:$('draftTo').value, subject:$('draftSubject').value, body:$('draftBody').value}};
   form.changedAt = new Date().toISOString();

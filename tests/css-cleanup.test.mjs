@@ -31,7 +31,8 @@ test('technical REST/PNR snippets can wrap without ellipsis or text truncation',
  assert.match(rule,/overflow-wrap:\s*anywhere/);
  assert.match(rule,/white-space:\s*pre-wrap/);
  assert.doesNotMatch(rule,/text-overflow:\s*ellipsis|overflow:\s*hidden/);
- assert.match(js,/code class="technical-token"/);
+ // IF/THEN rules (the only technical-token markup) were removed from the detail view by request (2026-11-13);
+ // the CSS contract above still guards any future technical snippet.
  const evidence=css.match(/\.evidence-scroll td,\.evidence-scroll th\s*\{([^}]+)\}/)?.[1] || '';
  assert.match(evidence,/overflow-wrap:anywhere/);
  for(const fragment of ['#contextPreview','#evidenceSummary','#approvedReview'])
@@ -72,11 +73,11 @@ test('PERF-09 brand cascade is single-source without changing final token values
  })();
  const root=one(/:root\s*\{([^}]+)\}/g,':root');
  assert.match(root,/--blue:var\(--brand-blue\)/);
- assert.match(root,/--brand-blue:#0879b6/);
- assert.match(root,/--brand-canvas:#f4f7f9/);
- assert.match(root,/--line:#dbe3e9/);
- assert.match(root,/--muted:#64717b/);
- assert.match(root,/font-family:Aptos,"Segoe UI",Arial,sans-serif/);
+ assert.match(root,/--brand-blue:#5d37a0/);
+ assert.match(root,/--brand-canvas:#f8f6fb/);
+ assert.match(root,/--line:#e6e0ed/);
+ assert.match(root,/--muted:#5e576d/);
+ assert.match(root,/font-family:system-ui,-apple-system,"Segoe UI",sans-serif/);
  const header=css.match(/header\s*\{([^}]+)\}/)?.[1]||'';
  assert.match(header,/border-bottom:2px solid var\(--brand-blue\)/);
  const primary=one(/\.primary\s*\{([^}]+)\}/g,'.primary');

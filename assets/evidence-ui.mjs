@@ -144,11 +144,14 @@ export async function loadTaskEvidence(key, api, escape, current) {
     if (current() !== key) return;
     const reports = data.reports || [];
     if (!reports.length) {
-      destination.innerHTML = '<p class="muted">Потрібні ZIP-логи. Запусти Evidence Flow у локальному Codex.</p>' +
+      destination.innerHTML = '<p class="focus-status"><span class="badge tone-amber">Логів немає</span> Потрібні ZIP-логи — запусти Evidence Flow у локальному Codex</p>' +
         evidenceHealthMarkup(data.health, escape);
       return;
     }
-    destination.innerHTML = reports.map((report, index) => {
+    const partial = reports.some(report => (report.status || 'PARTIAL') === 'PARTIAL');
+    destination.innerHTML = '<p class="focus-status"><span class="badge ' + (partial ? 'tone-amber' : 'tone-green') + '">' +
+      (partial ? 'Логи частково' : 'Логи є') + '</span> ' + escape(reports.length) + ' ' +
+      (reports.length === 1 ? 'звіт' : 'звіти') + ' з REST / Supplier / Errors</p>' + reports.map((report, index) => {
       const viewKey = evidenceReportViewKey(report, index);
       const counts = report.counts || {};
       const codes = (report.errorCodes || []).slice(0, 20)
