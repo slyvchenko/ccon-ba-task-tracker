@@ -233,7 +233,7 @@ function renderList() {
   updateSnapshotInfo();
   const items = visibleTasks(), current = tasks.filter(task => task.active), analyzed = current.filter(hasAnalysis).length;
   const mailCount = tasks.filter(task => task.active && effectiveSignal(task) === 'WRITE').length;
-  $('bulkEmail').textContent = `${mailActionLabels().batch} (${mailCount})`;
+  $('bulkEmail').textContent = `${mailActionLabels().batch} · ${mailCount}`;
   $('bulkEmail').disabled = !mailCount || busy;
   $('bulkEmail').hidden = cloudMode;
   const verified = current.filter(task => task.activeSprintStatus === 'VERIFIED').length;
@@ -529,7 +529,7 @@ function renderDetail() {
     isWrite:effectiveSignal(task)==='WRITE'});
   $('detail').innerHTML = `
     ${quick.nextAction ? `<div id="stickyAction" class="sticky-next-action" hidden role="region" aria-label="Наступна дія під час прокручування"><div class="sticky-action-inner"><span class="sticky-action-text">${escapeHtml(quick.nextAction)}</span><button id="stickyCopyNext" class="quiet" type="button">Скопіювати дію</button></div></div>` : ''}
-    <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Відкрити Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span>${priorityBadge(task)}<span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
+    <div class="task-top task-toolbar"><span class="task-key">${escapeHtml(task.key)}${url ? ` <a class="jira-button" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Jira ↗</a>` : ''}</span><span class="badge tone-${info.tone}"><span class="dot" aria-hidden="true"></span>${escapeHtml(analyzed || task.manualStatus !== 'AUTO' ? info.label : 'Потрібен аналіз')}</span>${priorityBadge(task)}<span class="muted task-date">${task.importedAt ? 'Дані: ' + dateLabel(task.importedAt) : ''}</span></div>
     <h2>${escapeHtml(task.summary)}</h2>
     <div class="task-meta-compact" aria-label="Джерело станів задачі">
       <span class="task-status-provenance">${statusView.provenance.map(value=>'<span>'+escapeHtml(value)+'</span>').join('<span aria-hidden="true"> · </span>')}</span>
@@ -555,7 +555,7 @@ function renderDetail() {
           `<option value="${key}" ${form.manualPriority === key ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
         <p id="manualPriorityHelp" class="card-help">P1 — щоденний бізнес-фокус · P2 — терміново. P3 ставиться автоматично за Jira label.</p>
         <label class="card-label" for="note">Нотатки</label><textarea id="note" maxlength="20000" placeholder="Додай домовленість або наступний контакт…">${escapeHtml(form.note)}</textarea>
-        <div class="actions state-actions card-foot"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Виконано → Далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
+        <div class="actions state-actions card-foot"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Виконано й далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
         <div id="saved" class="save-state" role="status"></div>
         <div id="manualConflict" class="analysis-missing" role="alert" hidden>
         <b>Конфлікт ручних правок</b>
@@ -580,7 +580,7 @@ function renderDetail() {
     <div class="email-fields" role="region" aria-label="Редагована чернетка листа">
     <p class="email-intro">${stale && form.emailDraft.body ? savedDraft ? 'Твоя збережена чернетка залишилася без змін. Аналіз застарів: перевір лист за новим контекстом перед використанням.' : 'Новий контекст ще не проаналізовано. Ця чернетка збережена зі старого аналізу або твоїх незбережених правок; перевір її актуальність перед використанням.' : form.emailDraft.body ? 'Перевір адресата й текст. Усі поля можна відредагувати.' : email === false && analyzed ? 'За поточним аналізом лист зараз не потрібен. За потреби можеш підготувати власну чернетку.' : email === true ? 'Потрібен лист, але готової чернетки ще немає. Підготуй текст за конкретними відкритими питаннями задачі.' : 'Потребу в листі ще не визначено. Спочатку перевір контекст і наступну дію.'}</p>
     <div class="email-grid">
-      <label class="email-label" for="draftTo">Кому</label><div class="email-cell"><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата, якщо він відомий" value="${escapeHtml(form.emailDraft.to)}">${suggestedRecipient ? '<div class="email-hint"><span id="recipientHintWarning">Шаблонна адреса постачальника не підтверджена Jira — перевір отримувача.</span><button id="useRecipientHint" class="quiet" aria-describedby="recipientHintWarning">Вставити адресу зі шаблону</button></div>' : ''}</div>
+      <label class="email-label" for="draftTo">Кому</label><div class="email-cell"><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата, якщо він відомий" value="${escapeHtml(form.emailDraft.to)}">${suggestedRecipient ? '<div class="email-hint"><span id="recipientHintWarning">Шаблонна адреса постачальника не підтверджена Jira — перевір отримувача.</span><button id="useRecipientHint" class="quiet" aria-describedby="recipientHintWarning">Адреса з шаблону</button></div>' : ''}</div>
       <label class="email-label" for="draftSubject">Тема</label><div class="email-cell"><input id="draftSubject" maxlength="2000" placeholder="Тема листа" value="${escapeHtml(form.emailDraft.subject)}"></div>
       <label class="email-label" for="draftBody">Текст</label><div class="email-cell"><textarea id="draftBody" maxlength="50000" placeholder="Чернетка за описом, коментарями та відкритими питаннями задачі…">${escapeHtml(form.emailDraft.body)}</textarea></div>
       <span class="email-label">Логи</span><section id="emailLogs" class="email-cell email-logs" aria-label="Логи до листа"><p class="muted" role="status">Перевіряю архіви задачі…</p></section>

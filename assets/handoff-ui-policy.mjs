@@ -4,11 +4,11 @@ export function handoffCopyPolicy({description='',readyForCopy=false,qualityStat
   const exists=typeof description==='string'&&!!description.trim();
   return {
     showFastCopy:exists,
-    fastLabel:'Скопіювати структурно перевірену чернетку',
+    fastLabel:'Скопіювати чернетку',
     fastEnabled:exists&&readyForCopy,
     showFallbackCopy:exists&&!readyForCopy,
-    fallbackLabel:'Скопіювати для доопрацювання (неперевірено)',
-    approvalLabel:'Схвалити BA-опис локально',
+    fallbackLabel:'Скопіювати чернетку (неперевірено)',
+    approvalLabel:'Схвалити опис локально',
     warning:qualityState==='BLOCKED'?
       'Quality Gate блокує чернетку. Копія лише для ручного доопрацювання, не для передачі.':
       'Чернетка не підтверджена Quality Gate. Перевір зміст перед будь-якою передачею.'

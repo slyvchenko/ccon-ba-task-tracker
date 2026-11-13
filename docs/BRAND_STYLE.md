@@ -86,3 +86,15 @@ v2 changes only the visual layer (colour, type, borders, radii, shadows, control
 - **Fields:** neutral border; on focus, an accent border plus a `--ring` halo.
 - **Chips:** soft tone fill, no outline, 6px `--radius-chip`, 12px / 550.
 - **Focus tiles:** white cards; tone is shown by a dot and the value colour, and the active tile gets an accent ring.
+
+## Design system v3 (2026-11-13) — analyst feedback pass
+
+Feedback: too much noise, unclear hierarchy, dated look; button labels, buttons on the dark card, the font, sizes and weights, grey meta text, badges, the queue, fields and background. Changes (visual only):
+
+- **Font:** Inter (variable, bundled in `assets/fonts`, OFL), weights 400/500/600 only, 14px base, `cv11`/`ss03`.
+- **Hierarchy:** task title 24/600 > section titles 15/600 > body 14 > labels 11.5 uppercase. Meta text is 12.5px in `--n-600`.
+- **Noise:** no rules under section titles or between "Ситуація" rows; flat cards (no shadow); the delta strip is plain text.
+- **Buttons:** short labels ("Скопіювати чернетку", "Зберегти й далі", "Jira ↗", "Адреса з шаблону", "Пакет листів · 3"); `.quiet` is a ghost button; on the dark card the first action is solid white and the rest are glass.
+- **Badges:** one pill shape with a neutral fill; tone is shown only by a dot.
+- **Queue:** no coloured bar on each row; status is shown by a dot; the selected row has a light fill and a 2px accent edge; group headers are small uppercase labels.
+- **Fields:** white fields on a near-white page, accent ring on focus, thin scrollbars.

@@ -39,7 +39,7 @@
   --accent-deep-2:#332452;
   --accent-glow:#4b337a;
   --surface:#fff;
-  --font-ui:"Segoe UI Variable Text","Segoe UI Variable","Segoe UI",Inter,system-ui,-apple-system,sans-serif;
+  --font-ui:"Inter Var",Inter,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
   --control-h:36px;
   --control-h-lg:40px;
   --radius-control:8px;
@@ -52,9 +52,10 @@
   --n-300:#d6d4de;
   --n-400:#bdbac8;
   --n-500:#676477;
+  --n-600:#55525f;
   --n-700:#3b3848;
   --n-900:#18161f;
-  --font-display:"Segoe UI Variable Display","Segoe UI Variable","Segoe UI",Inter,system-ui,-apple-system,sans-serif;
+  --font-display:"Inter Var",Inter,"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,sans-serif;
   --radius-card:14px;
   --radius-chip:6px;
   --shadow-card:0 1px 2px #18161f0a, 0 1px 3px #18161f08;
@@ -2656,5 +2657,147 @@ input::placeholder, textarea::placeholder { color:var(--n-500); opacity:1; }
   border-radius:var(--radius-control);
 }
 .work-state .state-actions #done { font-weight:600; }
+/* ==========================================================================
+   Design system v3 (2026-11-13) — analyst feedback pass:
+   less noise, clearer hierarchy, Inter, short button labels, pill badges,
+   quieter queue, lighter fields. Visual only; layout untouched.
+   ========================================================================== */
+@font-face {
+  font-family:"Inter Var"; font-style:normal; font-weight:100 900; font-display:swap;
+  src:url(/assets/fonts/inter-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family:"Inter Var"; font-style:normal; font-weight:100 900; font-display:swap;
+  src:url(/assets/fonts/inter-cyrillic.woff2) format("woff2");
+  unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+@font-face {
+  font-family:"Inter Var"; font-style:normal; font-weight:100 900; font-display:swap;
+  src:url(/assets/fonts/inter-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* --- Type: one family, 400/500/600 only, 14px base, Inter stylistic set. */
+body, button, input, select, textarea, option, h1, h2, h3, h4,
+.focus-title, .secondary-title, .manual-status-label label, .email-summary > span:first-child {
+  font-family:var(--font-ui);
+}
+body { font-size:14px; font-feature-settings:"cv11","ss03","calt"; letter-spacing:-.003em; }
+b, strong, h3, h4, .row-title, .brief-overview { font-weight:600; }
+.row-signal, .row-flag, .brief-grid > .brief-label, .email-label, .work-state label,
+.sub-heading, .focus-panel-title, .queue-group, .sec-title, .tile-label { font-weight:500; }
+
+/* Hierarchy: task title > section title > body > labels/meta. */
+main h2 { font-size:24px; font-weight:600; letter-spacing:-.022em; line-height:1.25; }
+.focus-title, .secondary-title, .manual-status-label label, .email-summary > span:first-child {
+  font-size:15px; font-weight:600; letter-spacing:-.006em; line-height:1.35;
+}
+.brief-grid > .brief-text { font-size:14px; line-height:1.6; color:var(--n-900); }
+.brief-grid > .brief-text.brief-overview { font-size:15px; font-weight:500; line-height:1.55; }
+/* Field labels: small, quiet, uppercase — read as labels, not as content. */
+.brief-grid > .brief-label, .email-label, .work-state > label, .work-state label[for="note"],
+.work-state .manual-status-label + label, .sec-row .sec-tag-label {
+  font-size:11.5px; font-weight:500; letter-spacing:.04em; text-transform:uppercase; color:var(--n-500);
+}
+/* Meta lines: one notch larger and darker so they read without straining. */
+.muted, .task-toolbar .task-date, .task-meta-compact, .filters .count, .statusbar {
+  color:var(--n-600); font-size:12.5px;
+}
+
+/* --- Less noise: no rules under titles or between brief rows; flat cards. */
+body { background:var(--n-25); }
+aside, main, .panel { box-shadow:none; border-color:var(--n-200); }
+.panel > .focus-title, .ba-brief > .panel-title,
+.work-state > .manual-status-label, .email-panel > .email-summary {
+  border-bottom:0; padding-bottom:0; margin-bottom:14px;
+}
+.brief-grid > .brief-label:not(:first-child),
+.brief-grid > .brief-label:not(:first-child) + .brief-text { border-top:0; }
+.brief-grid > .brief-label, .brief-grid > .brief-text { padding-top:7px; padding-bottom:7px; }
+.quick-handoff.do-now > .focus-title { border-bottom:0; padding-bottom:0; }
+.state-actions.card-foot, .quick-handoff .card-foot { border-top-color:var(--n-100); }
+.quick-handoff.do-now .card-foot { border-top-color:#ffffff1a; }
+#deltaStrip { background:transparent; border:0; padding-left:2px; color:var(--n-600); }
+
+/* --- Buttons: quieter secondary, ghost "quiet", one filled primary. */
+button:not(.row):not(.focus-tile), .data-menu > summary, a.jira-button, a.file-button, .tools > a {
+  font-weight:500; border-color:var(--n-200); box-shadow:0 1px 2px #18161f0d;
+}
+button.quiet:not(.row):not(.focus-tile) {
+  background:transparent; border-color:transparent; box-shadow:none; color:var(--accent);
+}
+button.quiet:not(.row):not(.focus-tile):hover:not(:disabled) { background:var(--accent-soft); border-color:transparent; color:var(--accent-strong); }
+/* "Jira ↗" is navigation, not the page's main action. */
+a.jira-button, #detail a.jira-button {
+  background:var(--n-0); border-color:var(--n-200); color:var(--n-900); font-weight:500;
+}
+a.jira-button:hover { background:var(--n-50); border-color:var(--n-300); color:var(--n-900); }
+
+/* Dark hero card: first action solid white, the rest glass. */
+.quick-handoff.do-now button:not(.row) {
+  background:transparent; border:1px solid #ffffff38; color:#fff; font-weight:500;
+}
+.quick-handoff.do-now button:not(.row):hover:not(:disabled) { background:#ffffff1a; border-color:#ffffff66; }
+.quick-handoff.do-now #copyNext {
+  background:#fff; border-color:#fff; color:var(--accent-deep); font-weight:600;
+}
+.quick-handoff.do-now #copyNext:hover:not(:disabled) { background:#f1ecfb; border-color:#f1ecfb; color:var(--accent-deep); }
+.quick-handoff.do-now button:not(.row):disabled { color:#ffffff80; border-color:#ffffff24; }
+.quick-handoff.do-now { color:#f3eefb; }
+.quick-handoff.do-now p, .quick-handoff.do-now .focus-cell { font-size:15px; line-height:1.6; }
+
+/* --- Badges: one pill shape, neutral fill, colour lives in the dot only. */
+.badge, .badge.tone-green, .badge.tone-blue, .badge.tone-red, .badge.tone-amber, .badge.tone-gray {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--n-0); color:var(--n-700); border:1px solid var(--n-200);
+  border-radius:999px; padding:2px 9px 2px 8px; font-size:12px; font-weight:500; line-height:1.4;
+}
+.badge.tone-green { --tone:#1f9d68; } .badge.tone-blue { --tone:var(--accent-bright); }
+.badge.tone-red { --tone:#d33a4a; } .badge.tone-amber { --tone:#e39223; } .badge.tone-gray { --tone:var(--n-400); }
+.badge .dot { background:var(--tone, currentColor); width:6px; height:6px; }
+.badge:not(:has(.dot))::before {
+  content:""; width:6px; height:6px; border-radius:50%; background:var(--tone, var(--n-400)); flex:none;
+}
+.focus-panel .focus-status .badge { display:none; }
+.sec-count, .queue-group-count { background:var(--n-100); color:var(--n-600); border-radius:999px; font-weight:500; }
+
+/* --- Queue: no coloured bar on every row; the dot carries the status. */
+#list .row::before, #list .row.row-tone-green::before, #list .row.row-tone-blue::before,
+#list .row.row-tone-red::before, #list .row.row-tone-amber::before { background:transparent; }
+#list .row.selected { background:var(--n-50); box-shadow:inset 2px 0 0 var(--accent); }
+#list .row.selected::before { background:transparent !important; }
+#list .row:hover:not(.selected) { background:var(--n-25); }
+#list .row.selected .row-title { color:var(--n-900); }
+.row-title { font-size:14px; color:var(--n-900); }
+.row-head, .row-head .rank, .row .task-key { color:var(--n-500); font-size:12px; font-variant-numeric:tabular-nums; }
+.row-signal { font-size:12.5px; color:var(--n-700); }
+.row-signal-label { color:var(--n-700); }
+.row-signal-label i { width:6px; height:6px; }
+.tone-text-green i { background:#1f9d68; } .tone-text-blue i { background:var(--accent-bright); }
+.tone-text-red i { background:#d33a4a; } .tone-text-amber i { background:#e39223; } .tone-text-gray i { background:var(--n-400); }
+.row-flag { color:#b4232f; font-size:12px; }
+.queue-group {
+  background:var(--n-25); color:var(--n-600); font-size:11.5px; font-weight:600;
+  letter-spacing:.04em; text-transform:uppercase; border-bottom:1px solid var(--n-100);
+}
+
+/* --- Fields and surfaces: white fields on a near-white page, ring on focus. */
+.filters input[type=search], .filters select, .work-state select, .work-state .status-select,
+.email-cell > input, .email-cell > textarea, .work-state textarea {
+  background:var(--n-0); border:1px solid var(--n-200); box-shadow:0 1px 2px #18161f08;
+}
+.filters input[type=search]:hover, .filters select:hover, .work-state select:hover,
+.email-cell > input:hover, .email-cell > textarea:hover, .work-state textarea:hover { border-color:var(--n-300); }
+.filters { background:var(--n-0); }
+* { scrollbar-width:thin; scrollbar-color:var(--n-300) transparent; }
+
+/* v3 fine-tuning: one weight for list titles, one size for every section title. */
+#list .row-title, .row-title { font-weight:500; }
+#list .row.selected .row-title { font-weight:600; }
+.email-panel > .email-summary > .email-title, .email-panel > .email-summary .email-title,
+.email-summary > span:first-child { font-size:15px; font-weight:600; letter-spacing:-.006em; }
+.quick-handoff.do-now p, .quick-handoff.do-now .focus-cell, .quick-handoff.do-now .next-action-text { font-weight:400; }
+
 /* Keep native hidden semantics above every display rule (cloud hides local-only actions). */
 [hidden] { display:none !important; }
