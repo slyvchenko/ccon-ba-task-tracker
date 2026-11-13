@@ -36,11 +36,20 @@ def pending_questions_for_gate(root, key, analysis):
         return [{"status":"OPEN", "source":"UNVERIFIED_QUESTION_STATE"}]
 
 
-def apply(path,root=ROOT,focus_issue=None):
+def apply(path,root=ROOT,focus_issue=None,only=None):
     with pipeline_lock(root):
-        return _apply(path,root,focus_issue)
+        return _apply(path,root,focus_issue,only)
 
-def _apply(path,root,focus_issue=None):
+def _apply(path,root,focus_issue=None,only=None):
+    """Import model analyses into the snapshot.
+
+    only: optional collection of issue keys for a PARTIAL import. The file must
+    contain exactly these analyses; they are validated, quality-gated and
+    imported, while every other task keeps its current snapshot analysis
+    untouched (stale ones stay visibly stale, never re-stamped as fresh).
+    A partial import does not rewrite the daily review report and does not
+    run prompt calibration: both describe a complete daily run.
+    """
     root=Path(root)
     source=json.loads(Path(path).read_text(encoding='utf-8-sig'))
     analyses=source.get('analyses')
@@ -59,10 +68,22 @@ def _apply(path,root,focus_issue=None):
         raise ValueError('Focus issue not in current personal task scope.')
     if set(context.get('issues',{}))!=keys:
         raise ValueError('Snapshot and Jira context cover different tasks; run Jira sync again.')
-    if set(analyses)!=keys:
+    if only is not None:
+        only=set(only)
+        if not only:
+            raise ValueError('Partial import needs at least one issue key.')
+        if not only<=keys:
+            raise ValueError('Partial import keys must be current tasks: '+', '.join(sorted(only-keys)))
+        if focus_issue is not None:
+            raise ValueError('Use either a focus issue or a partial import, not both.')
+        if set(analyses)!=only:
+            raise ValueError('Partial import file must contain exactly the requested issues.')
+    elif set(analyses)!=keys:
         raise ValueError(f'Coverage mismatch: {len(keys-analyses.keys())} missing, {len(analyses.keys()-keys)} extra.')
     stamp=utc_now()
     for task in snapshot['tasks']:
+        if only is not None and task['key'] not in only:
+            continue  # partial import: leave this task's analysis exactly as it is
         analysis=analyses[task['key']]
         if not isinstance(analysis,dict):
             raise ValueError('Analysis must be an object for '+task['key'])
@@ -127,12 +148,20 @@ def _apply(path,root,focus_issue=None):
     snapshot['generatedAt']=stamp
     desk=Desk(root)
     previous = {item['key']: item for item in desk.view()['tasks']}
-    report = build_report(previous, snapshot['tasks'], stamp,
-                          context.get('leftScope', []), context.get('issues', {}))
+    reported = snapshot['tasks']
+    if only is not None:
+        # Report only on the imported tasks: others may lack an analysis and
+        # must not be counted as changed or as having left the JQL scope.
+        previous = {key: item for key, item in previous.items() if key in only}
+        reported = [task for task in snapshot['tasks'] if task['key'] in only]
+    report = build_report(previous, reported, stamp,
+                          [] if only is not None else context.get('leftScope', []),
+                          context.get('issues', {}))
     # Preflight nested types before replacing the import file.
     if hasattr(desk,'validate_analysis'):
         for task in snapshot['tasks']:
-            desk.validate_analysis(task['analysis'])
+            if task.get('analysis'):
+                desk.validate_analysis(task['analysis'])
     raw=json.dumps(snapshot,ensure_ascii=False,indent=2)
     if len(raw.encode('utf-8'))>LIMIT:
         raise ValueError('Analyzed snapshot exceeds the import size limit; no files changed.')
@@ -145,13 +174,15 @@ def _apply(path,root,focus_issue=None):
     result=desk.import_snapshot()
     report_path = None
     report_error = None
-    try:
-        report_path = str(write_report(report, root))
-    except OSError as error:
-        report_error = str(error)
+    if only is None:
+        try:
+            report_path = str(write_report(report, root))
+        except OSError as error:
+            report_error = str(error)
     question_errors = []
     for task in snapshot['tasks']:
-        if focus_issue is not None and task['key'] != focus_issue:
+        if ((focus_issue is not None and task['key'] != focus_issue)
+                or (only is not None and task['key'] not in only)):
             continue
         try:
             sync_questions(root, task['key'], task['analysis'],
@@ -162,7 +193,8 @@ def _apply(path,root,focus_issue=None):
             question_errors.append({'key': task['key'], 'error': str(error)[:180]})
     decision_errors = []
     for task in snapshot['tasks']:
-        if focus_issue is not None and task['key'] != focus_issue:
+        if ((focus_issue is not None and task['key'] != focus_issue)
+                or (only is not None and task['key'] not in only)):
             continue
         try:
             sync_decision_proposals(root, task['key'], task['analysis'])
@@ -170,13 +202,15 @@ def _apply(path,root,focus_issue=None):
             decision_errors.append({'key': task['key'], 'error': str(error)[:180]})
     calibration_error = None
     calibration = None
-    try:
-        review_file = root / 'data/evaluation/results.json'
-        review_metrics = json.loads(review_file.read_text(encoding='utf-8')) if review_file.exists() else None
-        calibration = update_daily(report, root, reviews=review_metrics)
-    except (ValueError, TypeError, OSError, KeyError) as error:
-        calibration_error = str(error)
-    print(json.dumps({'analyzed':len(keys), 'message':result['message'],
+    if only is None:  # calibration belongs to the complete daily run
+        try:
+            review_file = root / 'data/evaluation/results.json'
+            review_metrics = json.loads(review_file.read_text(encoding='utf-8')) if review_file.exists() else None
+            calibration = update_daily(report, root, reviews=review_metrics)
+        except (ValueError, TypeError, OSError, KeyError) as error:
+            calibration_error = str(error)
+    print(json.dumps({'analyzed':len(only) if only is not None else len(keys),
+                      'partial':only is not None, 'message':result['message'],
                       'dailyReport':report_path, 'reportError':report_error,
                       'changes':report['summary'], 'qualityWarnings':report['warnings'],
                       'promptCalibrationDate':calibration['date'] if calibration else None,
@@ -187,9 +221,12 @@ def _apply(path,root,focus_issue=None):
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('analysis_file',type=Path)
+    parser.add_argument('--issues',
+                        help='Comma-separated CCON keys for a partial import; other tasks stay untouched.')
     args=parser.parse_args()
+    only=[key.strip() for key in args.issues.split(',') if key.strip()] if args.issues else None
     try:
-        apply(args.analysis_file)
+        apply(args.analysis_file, only=only)
     except (ValueError,OSError) as error:
         print('Analysis import failed: '+str(error),file=sys.stderr)
         raise SystemExit(1)

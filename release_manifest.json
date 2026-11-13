@@ -194,6 +194,7 @@
   "tests/task-perf.test.mjs",
   "tests/test_action_history.py",
   "tests/test_apply_analysis.py",
+  "tests/test_partial_import.py",
   "tests/test_approved_draft.py",
   "tests/test_ba_briefing.py",
   "tests/test_ba_output_checks.py",
