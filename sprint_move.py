@@ -54,7 +54,15 @@ def open_sprints(client, board):
 
 
 def load_plan(path):
-    plan = json.loads(Path(path).read_text(encoding='utf-8'))['moves']
+    raw = json.loads(Path(path).read_text(encoding='utf-8'))['moves']
+    plan = {}
+    for name, keys in raw.items():
+        clean = ' '.join(str(name).split())
+        if not clean:
+            raise ValueError('Sprint name must not be empty.')
+        if clean in plan:
+            raise ValueError(f'Sprint "{clean}" is listed twice in the plan.')
+        plan[clean] = keys
     seen = {}
     for sprint, keys in plan.items():
         for key in keys:
@@ -75,7 +83,14 @@ def main():
     plan = load_plan(args.plan)
     board = load_board_id(ROOT)
     client = JiraWriteClient(*load_credentials(ROOT))
-    sprints = {s['name']: s for s in open_sprints(client, board)}
+    by_name = {}
+    for sprint in open_sprints(client, board):
+        by_name.setdefault(' '.join(sprint['name'].split()), []).append(sprint)
+    ambiguous = {name: [s['id'] for s in by_name.get(name, [])] for name in plan if len(by_name.get(name, [])) > 1}
+    if ambiguous:
+        raise ValueError('Ambiguous sprint names (rename in Jira first): ' +
+                         '; '.join(f'"{n}" -> ids {ids}' for n, ids in ambiguous.items()))
+    sprints = {name: items[0] for name, items in by_name.items()}
 
     for name, keys in plan.items():
         sprint = sprints.get(name)

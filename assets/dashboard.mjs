@@ -378,7 +378,7 @@ function taskVersion(task) { return detailContentFingerprint(task); }
 
 
 function qualityGateFocusMarkup(gate) {
-  if (!gate) return '<p class="muted">Перевірки ще немає.</p>';
+  if (!gate) return '<p class="focus-status"><span class="badge tone-gray">Немає</span> Перевірки QA ще немає</p>';
   const names = {BLOCKED:['Потрібне підтвердження','tone-amber'], NEEDS_REVIEW:['Перевірити опис','tone-amber'],
     STRUCTURALLY_VERIFIED:['Структура перевірена','tone-green']};
   const [label, tone] = names[gate.state] || ['Недостатньо даних','tone-gray'];
@@ -399,20 +399,36 @@ function qualityGateFocusMarkup(gate) {
 // Each panel's first status badge is the tile's value and tone.
 const focusTabs = new Map();
 const ATTENTION_TONES = ['tone-red', 'tone-amber'];
-function setupFocusTiles(key) {
-  const root = document.querySelector('.focus-table');
-  if (!root) return;
-  const tiles = [...root.querySelectorAll('.focus-tile')];
-  for (const tile of tiles) {
+const TILE_TONES = ['tone-gray', 'tone-green', 'tone-amber', 'tone-red', 'tone-blue'];
+// Value and tone come from the panel's first status badge. A panel without a badge
+// is "loading" until its loaders settle, then shown as "—" (never stuck on loading).
+function refreshFocusTiles(root, settled) {
+  for (const tile of root.querySelectorAll('.focus-tile')) {
     const panel = root.querySelector(`[data-focus-panel="${tile.dataset.focus}"]`);
     const badge = panel?.querySelector('.focus-status .badge');
     const tone = badge ? [...badge.classList].find(c => c.startsWith('tone-')) || 'tone-gray' : 'tone-gray';
-    tile.className = 'focus-tile ' + tone;
-    tile.querySelector('.tile-value').textContent = badge ? badge.textContent.trim() : 'Завантаження…';
+    tile.classList.remove(...TILE_TONES);
+    tile.classList.add(tone);
+    tile.querySelector('.tile-value').textContent = badge ? badge.textContent.trim() : settled ? '—' : 'Завантаження…';
+  }
+}
+function setupFocusTiles(key, settled = false) {
+  const root = document.querySelector('.focus-table');
+  if (!root) return;
+  const tiles = [...root.querySelectorAll('.focus-tile')];
+  refreshFocusTiles(root, settled);
+  for (const tile of tiles) {
     if (!tile.dataset.bound) {
       tile.dataset.bound = '1';
       tile.addEventListener('click', () => { focusTabs.set(key, tile.dataset.focus); showFocusPanel(root, tile.dataset.focus); });
     }
+  }
+  if (!root.dataset.observed) {
+    // Panels re-hydrate on their own (e.g. a decision is confirmed): keep tiles in sync.
+    root.dataset.observed = '1';
+    // Observe the panels only: tiles live outside them, so refreshing a tile never re-triggers this.
+    const observer = new MutationObserver(() => refreshFocusTiles(root, true));
+    for (const panel of root.querySelectorAll('.focus-panel')) observer.observe(panel, {childList:true, subtree:true});
   }
   const chosen = focusTabs.get(key) ||
     tiles.find(tile => ATTENTION_TONES.some(tone => tile.classList.contains(tone)))?.dataset.focus || 'questions';
@@ -581,7 +597,7 @@ function renderDetail() {
         <button type="button" class="focus-tile" role="tab" data-focus="qa" aria-controls="focus-panel-qa" aria-selected="false"><span class="tile-label">Перевірка QA</span><span class="tile-value">…</span></button>
         <button type="button" class="focus-tile" role="tab" data-focus="description" aria-controls="focus-panel-description" aria-selected="false"><span class="tile-label">Опис для Jira</span><span class="tile-value">…</span></button>
       </div>
-      <div class="focus-panel" role="tabpanel" id="focus-panel-questions" data-focus-panel="questions" hidden><h4 class="sub-heading focus-panel-title">Відкриті питання</h4>${openPoints.length ? '<p class="focus-status"><span class="badge tone-amber">' + openPoints.length + ' ' + (openPoints.length === 1 ? 'питання' : 'питання(нь)') + '</span> Потрібна відповідь, щоб рухатися далі</p><ul class="focus-items">' + openPoints.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>' : `<p class="focus-status"><span class="badge tone-green">Немає</span> ${analyzed ? 'Відкритих питань немає' : 'Аналізу ще немає — питання з’являться після нього'}</p>`}</div>
+      <div class="focus-panel" role="tabpanel" id="focus-panel-questions" data-focus-panel="questions" hidden><h4 class="sub-heading focus-panel-title">Відкриті питання</h4>${openPoints.length ? '<p class="focus-status"><span class="badge tone-amber">' + openPoints.length + ' ' + (openPoints.length === 1 ? 'питання' : 'питання(нь)') + '</span> Потрібна відповідь, щоб рухатися далі</p><ul class="focus-items">' + openPoints.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>' : (analyzed ? '<p class="focus-status"><span class="badge tone-green">Немає</span> Відкритих питань немає</p>' : '<p class="focus-status"><span class="badge tone-gray">Не визначено</span> Аналізу ще немає — питання з’являться після нього</p>')}</div>
       <div class="focus-panel" role="tabpanel" id="focus-panel-decisions" data-focus-panel="decisions" hidden><h4 class="sub-heading focus-panel-title">Рішення</h4><div id="decisionTracker" class="muted">Завантажую рішення…</div></div>
       <div class="focus-panel" role="tabpanel" id="focus-panel-logs" data-focus-panel="logs" hidden><h4 class="sub-heading focus-panel-title">Логи<span class="focus-sub">REST · Supplier · Errors</span></h4><div id="evidenceSummary" class="muted">Завантажую…</div></div>
       <div class="focus-panel" role="tabpanel" id="focus-panel-qa" data-focus-panel="qa" hidden><h4 class="sub-heading focus-panel-title">Перевірка QA</h4>${qualityGateFocusMarkup(analysis.qualityGate)}</div>
@@ -697,13 +713,15 @@ function renderDetail() {
   });
   $('email').addEventListener('click', openEmail);
   if (cloudMode) $('email').textContent = mailActionLabels(true).open;
-  $('emailDetails').addEventListener('toggle', () => { if ($('emailDetails').open) expandedEmails.add(task.key); else expandedEmails.delete(task.key); });
+  // The email draft is a primary block: it stays open (keyboard/pointer cannot collapse it).
+  $('emailDetails').addEventListener('toggle', () => { if (!$('emailDetails').open) $('emailDetails').open = true; expandedEmails.add(task.key); });
+  $('emailDetails').querySelector('summary').addEventListener('click', event => event.preventDefault());
   updateFormStatus();
   showManualConflict();
   setupFocusTiles(task.key);
   Promise.allSettled([loadTaskEvidence(task.key, api, escapeHtml, currentDetail),
     loadTaskDecisions(task.key, api, escapeHtml, message, currentDetail, ()=>detailRequests.current())])
-    .then(() => { if (currentDetail() === task.key) setupFocusTiles(task.key); });
+    .then(() => { if (currentDetail() === task.key) setupFocusTiles(task.key, true); });
   loadApprovedDescription(task.key,currentDetail);
   loadLogs(task.key);
   updateStickyNextAction();

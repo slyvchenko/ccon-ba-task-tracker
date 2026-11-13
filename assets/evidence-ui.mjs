@@ -176,7 +176,7 @@ export async function loadTaskEvidence(key, api, escape, current) {
     }).join('') + investigationMarkup(data.investigation, escape) +
       evidenceHealthMarkup(data.health, escape);
   } catch (error) {
-    if (current() === key) destination.textContent = 'Evidence недоступні: ' + error.message;
+    if (current() === key) destination.innerHTML = '<p class="focus-status"><span class="badge tone-red">Помилка</span> Логи недоступні: ' + escape(error.message) + '</p>';
   }
 }
 
