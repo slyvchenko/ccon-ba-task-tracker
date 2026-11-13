@@ -50,7 +50,9 @@ jobs:
       # No CI artifact upload of .coverage, source files, runtime inbox or user payloads.
 
   browser-e2e:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moves to Ubuntu 26 (from 2026-10-19), where the pinned
+    # Playwright 1.56 `install --with-deps` cannot resolve Chromium system packages.
+    runs-on: ubuntu-24.04
     timeout-minutes: 14
     permissions:
       contents: read

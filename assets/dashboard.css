@@ -27,7 +27,22 @@
   --kicker:#635179;
   --paper:#fff;
   --canvas:var(--brand-canvas);
-  --card-shadow:0 4px 15px #392a530b
+  --card-shadow:0 4px 15px #392a530b;
+  /* Design system v1: one accent family, shared control metrics. */
+  --accent:var(--brand-blue);
+  --accent-strong:#4b2a89;
+  --accent-bright:#7c4ddb;
+  --accent-soft:#f3edfa;
+  --accent-border:#d9cdee;
+  --accent-ink:#3f2a66;
+  --accent-deep:#241a3d;
+  --accent-deep-2:#332452;
+  --accent-glow:#4b337a;
+  --surface:#fff;
+  --font-ui:system-ui,-apple-system,"Segoe UI",sans-serif;
+  --control-h:36px;
+  --control-h-lg:40px;
+  --radius-control:10px
 }
 * {
   box-sizing:border-box
@@ -1915,7 +1930,7 @@ label { font-size:13px; }
 .ba-brief > .panel-title .focus-title { margin:0; padding:0; border:0; }
 .quick-handoff.do-now > .focus-title { border-bottom:1px solid #ffffff2e; padding-bottom:10px; margin-bottom:12px; }
 .email-toggle { display:none; }
-.email-panel > .email-summary { cursor:default; pointer-events:none; }
+.email-panel > .email-summary { cursor:default; }
 .email-panel > .email-summary::-webkit-details-marker { display:none; }
 .email-panel > .email-summary { list-style:none; }
 
@@ -2389,3 +2404,134 @@ label { font-size:13px; }
 .filters .filter-row.filter-main { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
 .filters .filter-row.filter-main > #priorityFilter { grid-column:1 / -1; }
 .filters .filter-row.filter-main > select { width:100%; min-width:0; padding-left:10px; padding-right:24px; text-overflow:ellipsis; }
+
+/* ==========================================================================
+   Design system v1 (2026-11-13) — one accent, one button scale, one chip scale.
+   Tokens live in the canonical :root. This layer is appended last on purpose:
+   it is the single source for controls, chips, titles and selection states.
+   See docs/DESIGN_SYSTEM.md.
+   ========================================================================== */
+
+/* --- Buttons: every action control shares metrics; only the variant changes. */
+button:not(.row):not(.focus-tile),
+.data-menu > summary,
+a.jira-button,
+a.file-button,
+.tools > a {
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  height:var(--control-h); min-height:var(--control-h); padding:0 14px;
+  border-radius:var(--radius-control); border:1px solid var(--accent-border);
+  background:var(--surface); color:var(--accent-ink);
+  font:600 13.5px/1 var(--font-ui); letter-spacing:0;
+  text-decoration:none; white-space:nowrap; cursor:pointer;
+  transition:background-color .12s ease, border-color .12s ease, color .12s ease;
+}
+button:not(.row):not(.focus-tile):hover:not(:disabled),
+.data-menu > summary:hover,
+a.file-button:hover,
+.tools > a:hover {
+  background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong);
+}
+button:not(.row):not(.focus-tile):disabled { opacity:.5; cursor:default; }
+
+/* Primary: the one filled accent action per area. */
+button.primary:not(.row):not(.focus-tile),
+a.jira-button,
+.state-actions #done {
+  font-weight:600;
+  background:var(--accent); border-color:var(--accent); color:#fff;
+}
+button.primary:not(.row):not(.focus-tile):hover:not(:disabled),
+a.jira-button:hover,
+.state-actions #done:hover:not(:disabled) {
+  background:var(--accent-strong); border-color:var(--accent-strong); color:#fff;
+}
+
+/* Small size: toolbar and inline row actions. */
+#detail a.jira-button,
+#detail .email-hint button,
+#detail .logs-folder-actions button,
+#detail .log-actions a.file-button,
+#detail .sec-body button {
+  --control-h:32px; height:32px; min-height:32px; padding:0 12px; font-size:12.5px;
+}
+
+/* On the dark accent card. */
+.quick-handoff.do-now button:not(.row) {
+  background:#ffffff14; border-color:#ffffff40; color:#f6efff;
+}
+.quick-handoff.do-now button:not(.row):hover:not(:disabled) {
+  background:#ffffff26; border-color:#ffffff70; color:#fff;
+}
+
+/* --- Focus ring: same accent everywhere, visible on light and dark cards. */
+button:focus-visible, a:focus-visible, summary:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline:2px solid var(--accent); outline-offset:2px;
+}
+.quick-handoff.do-now :focus-visible { outline-color:#d9c6ff; }
+
+/* --- Form controls share the button height and radius. */
+.filters input[type=search], .filters select, .work-state select,
+.email-cell > input {
+  height:var(--control-h-lg); border-radius:var(--radius-control);
+  border:1px solid var(--line-strong);
+}
+.filters select:hover, .work-state select:hover, .email-cell > input:hover,
+.email-cell > textarea:hover, .work-state textarea:hover { border-color:var(--accent-border); }
+
+/* --- Chips: one scale for status/tone badges and counters. */
+.badge {
+  border-radius:999px; font-size:11.5px; font-weight:650; line-height:1.2;
+  padding:3px 10px; letter-spacing:0;
+}
+.sec-count, .queue-group-count {
+  background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent-border);
+  border-radius:999px; font-weight:700; font-variant-numeric:tabular-nums;
+}
+
+/* --- Section titles: the accent marker ties every card to the same system. */
+.focus-title, .secondary-title, .email-panel > .email-summary > .email-title {
+  display:inline-flex; align-items:center; gap:10px;
+}
+.focus-title::before, .secondary-title::before, .email-panel > .email-summary > .email-title::before {
+  content:""; flex:none; width:4px; height:1.05em; border-radius:4px;
+  background:linear-gradient(180deg, var(--accent-bright), var(--accent));
+}
+.quick-handoff.do-now .focus-title::before { background:linear-gradient(180deg, #d9c6ff, var(--accent-bright)); }
+
+/* --- Selection states use the accent, not ad-hoc lavender. */
+#list .row.selected {
+  background:var(--accent-soft); box-shadow:inset 0 0 0 1.5px var(--accent-border);
+}
+#list .row.selected::before { background:var(--accent) !important; }
+.focus-tile.active { box-shadow:0 0 0 2px var(--accent); background:var(--accent-soft); }
+.focus-tile.active .tile-label { color:var(--accent); }
+.queue-group { color:var(--accent-ink); }
+
+/* --- Links read as accent text, never default blue. */
+#detail a:not(.jira-button):not(.file-button), .sec-link { color:var(--accent); }
+#detail a:not(.jira-button):not(.file-button):hover, .sec-link:hover { color:var(--accent-strong); }
+
+/* --- Hero card keeps the signature gradient, built from the same tokens. */
+.quick-handoff.do-now {
+  background:radial-gradient(at 88% 8%, var(--accent-glow), #0000 60%),
+             linear-gradient(130deg, var(--accent-deep), var(--accent-deep-2));
+}
+
+@media (forced-colors:active) {
+  .focus-title::before, .secondary-title::before, .email-panel > .email-summary > .email-title::before { background:CanvasText; }
+  .focus-tile.active { outline:2px solid Highlight; }
+}
+@media (prefers-reduced-motion:reduce) {
+  button:not(.row):not(.focus-tile), .data-menu > summary, a.file-button, .tools > a { transition:none; }
+}
+.filters select, .work-state select { padding:0 34px 0 12px; line-height:normal; font-size:13.5px; }
+/* Legacy container rules re-stated against the system metrics (they out-rank the base). */
+.work-state .state-actions button, .work-state .state-actions #done, .email-panel .actions button {
+  font-weight:600; font-size:13.5px; line-height:1; white-space:nowrap;
+  min-height:var(--control-h); height:var(--control-h); padding:0 14px;
+  border-radius:var(--radius-control);
+}
+/* Keep native hidden semantics above every display rule (cloud hides local-only actions). */
+[hidden] { display:none !important; }

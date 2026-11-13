@@ -61,9 +61,9 @@ def config(root=ROOT):
     return url, data.get('elasticsearchIndex') or DEFAULT_INDEX
 
 
-def _search(url, index, body, timeout=90):
+def _request(url, path, body, method='POST', timeout=90):
     request = urllib.request.Request(
-        f'{url}/{index}/_search', data=json.dumps(body).encode(), method='POST',
+        f'{url}{path}', data=json.dumps(body).encode(), method=method,
         headers={'Content-Type': 'application/json', 'Accept': 'application/json'})
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -74,25 +74,63 @@ def _search(url, index, body, timeout=90):
         raise ValueError(f'Elasticsearch unreachable ({url}); VPN/office network required: {error}') from None
 
 
+def _complete(result, flow):
+    """A timed-out or shard-partial page must never become an archive."""
+    shards = result.get('_shards') or {}
+    if result.get('timed_out') or shards.get('failed') or (
+            shards.get('total') is not None and shards.get('successful') != shards.get('total')):
+        raise ValueError(f'Elasticsearch returned an incomplete result for flow {flow} '
+                         '(timeout or shard failure); try again later.')
+    return result
+
+
+def _total(result):
+    total = (result.get('hits') or {}).get('total')
+    return total.get('value') if isinstance(total, dict) else total
+
+
 def fetch_flow(flow, root=ROOT):
-    """All documents of one cconFlowId, oldest first, whitelisted fields only."""
+    """All documents of one cconFlowId, oldest first, whitelisted fields only.
+
+    Uses the scroll API: one consistent snapshot, so no document is skipped or
+    duplicated at page boundaries (ES 7.2 has no point-in-time/_shard_doc).
+    """
     if not isinstance(flow, str) or not UUID.fullmatch(flow):
         raise ValueError('Invalid cconFlowId.')
     url, index = config(root)
     body = {'size': PAGE, '_source': {'includes': FIELDS},
             'query': {'bool': {'filter': [{'term': {'cconFlowId.keyword': flow}}]}},
-            'sort': [{'time': 'asc'}, {'log.offset': 'asc'}], 'track_total_hits': True}
+            'sort': ['_doc'], 'track_total_hits': True}
+    result = _complete(_request(url, f'/{index}/_search?scroll=2m', body), flow)
+    total = _total(result)
+    scroll_id = result.get('_scroll_id')
     docs = []
-    while True:
-        result = _search(url, index, body)
-        hits = result.get('hits', {}).get('hits', [])
-        docs.extend(hit['_source'] for hit in hits)
-        if len(docs) > MAX_DOCS:
-            raise ValueError(f'Flow {flow} has more than {MAX_DOCS} log documents; '
+    try:
+        if total is not None and total > MAX_DOCS:
+            raise ValueError(f'Flow {flow} has {total} log documents (limit {MAX_DOCS}); '
                              'refusing to build an incomplete archive.')
-        if len(hits) < PAGE:
-            return docs
-        body['search_after'] = hits[-1]['sort']
+        while True:
+            hits = (result.get('hits') or {}).get('hits') or []
+            docs.extend(hit['_source'] for hit in hits)
+            if len(docs) > MAX_DOCS:
+                raise ValueError(f'Flow {flow} has more than {MAX_DOCS} log documents; '
+                                 'refusing to build an incomplete archive.')
+            if not hits or not scroll_id:
+                break
+            result = _complete(_request(url, '/_search/scroll', {'scroll': '2m', 'scroll_id': scroll_id}), flow)
+            scroll_id = result.get('_scroll_id') or scroll_id
+    finally:
+        if scroll_id:
+            try:
+                _request(url, '/_search/scroll', {'scroll_id': [scroll_id]}, method='DELETE', timeout=15)
+            except ValueError:
+                pass  # the scroll context expires on its own after 2 minutes
+    if total is not None and len(docs) != total:
+        raise ValueError(f'Flow {flow}: received {len(docs)} of {total} log documents; '
+                         'refusing to build an incomplete archive.')
+    docs.sort(key=lambda d: (str(d.get('time') or d.get('@timestamp') or ''),
+                             (d.get('log') or {}).get('offset') or 0))
+    return docs
 
 
 def _micro(value):
@@ -109,24 +147,91 @@ def _slug(value, pattern=r'[^A-Za-z0-9\-]+'):
     return re.sub(pattern, '-', str(value or '')).strip('-')[:60]
 
 
+# Any key/element/attribute whose NAME contains one of these words is a credential.
+# Exact credential words only: e.g. 'Passenger' or 'Author' must NOT match.
+SECRET_WORD = r'(?:password|passwd|passphrase|pwd|secret|token|nonce|api[-_]?key|authorization|auth[-_]?token|auth[-_]?key|credentials?|cookie|session[-_]?id|signaturevalue)'
+SECRET_NAME = re.compile(r'(?:[\w.\-]+:)?[\w.\-]*' + SECRET_WORD + r'[\w.\-]*', re.I)
+# Value of a credential-named element (plain text or CDATA); self-closing elements are skipped.
 SECRET_XML = re.compile(
-    r'(<(?:[\w.\-]+:)?(?:Password|Nonce|BinarySecurityToken|ClientSecret|ApiKey|AccessToken)\b[^>]*>)(.*?)(</)', re.S | re.I)
+    r'(<(?:[\w.\-]+:)?[\w.\-]*' + SECRET_WORD + r'[\w.\-]*\b[^>]*(?<!/)>)(<!\[CDATA\[.*?\]\]>|[^<]*)(</)', re.I | re.S)
+# JSON-looking fragments inside free text (bodies that are not valid JSON on their own).
 SECRET_JSON = re.compile(
-    r'("(?:password|passwd|pwd|apikey|api_key|x-api-key|token|access_token|refresh_token|secret|client_secret|authorization)"\s*:\s*)"(?:[^"\\]|\\.)*"', re.I)
-SECRET_ATTR = re.compile(r'((?:password|apikey|token|secret)\s*=\s*)("[^"]*"|\'[^\']*\')', re.I)
+    r'("[\w.\-]*' + SECRET_WORD + r'[\w.\-]*"\s*:\s*)("(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?)', re.I)
+SECRET_PAIR = re.compile(r'(\b[\w.\-]*' + SECRET_WORD + r'[\w.\-]*\s*=\s*)(?:"([^"]*)"|\'([^\']*)\'|([^\s&"\'<>]+))', re.I)
+SECRET_SCHEME = re.compile(r'\b(Bearer|Basic|Digest|Token)\s+[A-Za-z0-9._~+/=\-]{6,}', re.I)
+# Applied only to isolated plain-text segments (never to serialized JSON or markup), so it may run to end of line.
+SECRET_HEADER = re.compile(r'(?i)\b((?:proxy-)?authorization|set-cookie|cookie|x-api-key|apikey)(\s*:)[^\r\n]*')
+MARKUP = re.compile(r'(<!\[CDATA\[.*?\]\]>|<!--.*?-->|<[^<>]*>)', re.S)
+ATTRIBUTE = re.compile(r'(\s)([\w.:\-]+)(\s*=\s*)(?:"([^"]*)"|\'([^\']*)\')')
+
+
+def _redact_plain(text):
+    """Free text without markup: JSON fragments, header lines, auth schemes, key=value pairs."""
+    text = SECRET_JSON.sub(lambda m: m.group(1) + '"***"', text)
+    text = SECRET_HEADER.sub(lambda m: m.group(1) + m.group(2) + ' ***', text)
+    text = SECRET_SCHEME.sub(lambda m: m.group(1) + ' ***', text)
+    return SECRET_PAIR.sub(lambda m: m.group(1) + ('"***"' if m.group(2) is not None else
+                                                   "'***'" if m.group(3) is not None else '***'), text)
+
+
+def _redact_tag(tag):
+    """Inside a start tag only attribute values change; quotes and markup stay intact."""
+    def attribute(m):
+        quote = '"' if m.group(4) is not None else "'"
+        value = m.group(4) if m.group(4) is not None else m.group(5)
+        value = '***' if SECRET_NAME.fullmatch(m.group(2)) else _redact_plain(value).replace(quote, '')
+        return m.group(1) + m.group(2) + m.group(3) + quote + value + quote
+    return ATTRIBUTE.sub(attribute, tag)
+
+
+def _redact_markup(text):
+    text = SECRET_XML.sub(lambda m: m.group(1) + '***' + m.group(3), text)
+    parts = MARKUP.split(text)
+    for i, part in enumerate(parts):
+        if i % 2 == 0:
+            parts[i] = _redact_plain(part)
+        elif part.startswith('<![CDATA['):
+            parts[i] = '<![CDATA[' + _redact_plain(part[9:-3]) + ']]>'
+        elif not part.startswith('<!--'):
+            parts[i] = _redact_tag(part)
+    return ''.join(parts)
+
+
+def _redact_values(value):
+    """Structured data: credential keys are masked, strings redacted, serialized once by the caller."""
+    if isinstance(value, dict):
+        return {k: '***' if isinstance(k, str) and SECRET_NAME.fullmatch(k) else _redact_values(v)
+                for k, v in value.items()}
+    if isinstance(value, list):
+        return [_redact_values(v) for v in value]
+    if isinstance(value, str):
+        return redact(value)
+    return value
 
 
 def redact(text):
-    """Mask credentials inside bodies before anything is written to disk."""
-    text = SECRET_XML.sub(lambda m: m.group(1) + '***' + m.group(3), text)
-    text = SECRET_JSON.sub(lambda m: m.group(1) + '"***"', text)
-    return SECRET_ATTR.sub(lambda m: m.group(1) + '"***"', text)
+    """Mask credentials before anything is written to disk, without breaking JSON or XML.
+
+    Valid JSON is parsed and re-serialized once; XML/markup is split into tags and text so a
+    substitution can never cross a quote, a tag boundary or an escape sequence.
+    """
+    stripped = text.lstrip()
+    if stripped[:1] in ('{', '['):
+        try:
+            data = json.loads(text)
+        except ValueError:
+            pass
+        else:
+            return json.dumps(_redact_values(data), ensure_ascii=False, indent=2 if '\n' in text else None)
+    return _redact_markup(text) if '<' in text else _redact_plain(text)
 
 
 def _text(value):
     if value in (None, ''):
         return ''
-    return redact(value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, indent=2))
+    if isinstance(value, str):
+        return redact(value)
+    return json.dumps(_redact_values(value), ensure_ascii=False, indent=2)
 
 
 def build_zip(docs):
@@ -180,8 +285,8 @@ def save_flow_zip(flow, target, root=ROOT):
 
 def fetch_for_plan(root=ROOT, issue=None):
     """Prepare the evidence plan, fill each job's ZIP from Elasticsearch, then process."""
-    from local_downloads import prepare, process
-    with _PLAN_LOCK:
+    from local_downloads import prepare, process, handoff_lock
+    with _PLAN_LOCK, handoff_lock(root):
         return _fetch_for_plan_locked(root, issue, prepare, process)
 
 
@@ -197,7 +302,8 @@ def _fetch_for_plan_locked(root, issue, prepare, process):
         except ValueError as error:
             row = {'flowId': job['flowId'], 'saved': False, 'error': str(error)}
         fetched.append({'issueKey': job['issueKey'], **row})
-    return {'fetched': fetched, 'skipped': handoff.get('skipped', []), 'processed': process(root, issue)}
+    processed = process(root, issue) if handoff['jobs'] else {'processed': 0, 'results': []}
+    return {'fetched': fetched, 'skipped': handoff.get('skipped', []), 'processed': processed}
 
 
 def main():

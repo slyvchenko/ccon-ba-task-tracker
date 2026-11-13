@@ -19,6 +19,13 @@ UUID = re.compile(r"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$")
 MAX_SIZE = 100 * 1024 * 1024
 
 
+def handoff_lock(root):
+    """Cross-process guard: data/log_plan.json is shared by prepare(), process() and ingest()."""
+    from pipeline_lock import pipeline_lock
+    return pipeline_lock(Path(root) / "data" / "log-handoff",
+                         busy_message="Логи для іншої задачі вже готуються. Спробуй ще раз за хвилину.")
+
+
 def inbox(root):
     return Path(root) / "downloads" / "ccon"
 
@@ -96,6 +103,9 @@ def process(root=ROOT, issue=None, strict=False):
         raise ValueError("Complete Jira sync required.")
     if issue and not KEY.fullmatch(issue):
         raise ValueError("Invalid issue key.")
+    if issue and not any(job.get("key") == issue for job in plan.get("jobs", [])):
+        raise ValueError(f"The current log plan has no job for {issue}. "
+                         "Run local_downloads.py prepare --issue " + issue + " again.")
     rows = []
     for job in plan.get("jobs", []):
         key, flow = job["key"], job["flowId"]
@@ -157,9 +167,10 @@ def main():
     parser.add_argument("--issue", default=None)
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args()
-    result = prepare(args.root, args.issue) if args.action == "prepare" else process(
-        args.root, args.issue, args.strict
-    )
+    with handoff_lock(args.root):
+        result = prepare(args.root, args.issue) if args.action == "prepare" else process(
+            args.root, args.issue, args.strict
+        )
     if args.action == "prepare":
         result = {"jobs": len(result["jobs"]),
                   "handoffFile": str(Path(args.root) / "data/browser_handoff.json"),

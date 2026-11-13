@@ -69,6 +69,6 @@ export async function loadTaskDecisions(key, api, escape, notify, current, getAc
       }
     });
   } catch (error) {
-    if (current() === key) node.textContent = 'Рішення недоступні: ' + error.message;
+    if (current() === key) node.innerHTML = '<p class="focus-status"><span class="badge tone-red">Помилка</span> Рішення недоступні: ' + escape(error.message) + '</p>';
   }
 }
