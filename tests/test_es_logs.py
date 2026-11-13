@@ -90,6 +90,24 @@ class EsLogsTest(unittest.TestCase):
         self.assertNotIn('abcdef', masked)
         self.assertNotIn('SID=zz', masked)
 
+    def test_review_cases_stay_parseable_without_leaks(self):
+        import xml.dom.minidom
+        quoted_cookie = es_logs._text({'message': 'Cookie: SID="abc123"; x=1'})
+        self.assertNotIn('abc123', quoted_cookie)
+        json.loads(quoted_cookie)
+        attr_header = es_logs.redact('<r><E Note="Authorization: Bearer abcdefgh" Code="E1">x</E></r>')
+        self.assertNotIn('abcdefgh', attr_header)
+        self.assertIn('Code="E1"', attr_header)
+        xml.dom.minidom.parseString(attr_header)
+        nested_xml = es_logs._text({'details': '<r token="abc"/>'})
+        self.assertNotIn('"abc', nested_xml.replace('\\"', '"'))
+        json.loads(nested_xml)
+        json_body = es_logs.redact('{"msg":"Cookie: S=\\"q\\"","password":"p","passengerCount":2}')
+        data = json.loads(json_body)
+        self.assertEqual(data['password'], '***')
+        self.assertEqual(data['passengerCount'], 2)
+        self.assertNotIn('q', data['msg'].replace('Cookie', ''))
+
     def test_cookie_inside_serialized_metadata_is_masked_in_archive(self):
         data, _ = es_logs.build_zip([{'time': '2026-10-09T12:54:48', 'domain': 'error',
                                       'requestorMethodName': 'pnrs',

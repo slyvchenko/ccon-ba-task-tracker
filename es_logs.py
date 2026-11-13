@@ -147,40 +147,83 @@ def _slug(value, pattern=r'[^A-Za-z0-9\-]+'):
     return re.sub(pattern, '-', str(value or '')).strip('-')[:60]
 
 
-# Any key/element whose NAME contains one of these words is treated as a credential.
+# Any key/element/attribute whose NAME contains one of these words is a credential.
 # Exact credential words only: e.g. 'Passenger' or 'Author' must NOT match.
 SECRET_WORD = r'(?:password|passwd|passphrase|pwd|secret|token|nonce|api[-_]?key|authorization|auth[-_]?token|auth[-_]?key|credentials?|cookie|session[-_]?id|signaturevalue)'
+SECRET_NAME = re.compile(r'(?:[\w.\-]+:)?[\w.\-]*' + SECRET_WORD + r'[\w.\-]*', re.I)
+# Value of a credential-named element (plain text or CDATA); self-closing elements are skipped.
 SECRET_XML = re.compile(
     r'(<(?:[\w.\-]+:)?[\w.\-]*' + SECRET_WORD + r'[\w.\-]*\b[^>]*(?<!/)>)(<!\[CDATA\[.*?\]\]>|[^<]*)(</)', re.I | re.S)
+# JSON-looking fragments inside free text (bodies that are not valid JSON on their own).
 SECRET_JSON = re.compile(
     r'("[\w.\-]*' + SECRET_WORD + r'[\w.\-]*"\s*:\s*)("(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?)', re.I)
-SECRET_ATTR = re.compile(r'(\b[\w.\-]*' + SECRET_WORD + r'[\w.\-]*\s*=\s*)(?:"([^"]*)"|\'([^\']*)\'|([^\s&"\'<>]+))', re.I)
+SECRET_PAIR = re.compile(r'(\b[\w.\-]*' + SECRET_WORD + r'[\w.\-]*\s*=\s*)(?:"([^"]*)"|\'([^\']*)\'|([^\s&"\'<>]+))', re.I)
 SECRET_SCHEME = re.compile(r'\b(Bearer|Basic|Digest|Token)\s+[A-Za-z0-9._~+/=\-]{6,}', re.I)
-# Header-like credentials anywhere in a string (e.g. inside a log message), up to end of line
-# a JSON quote or XML markup, so serialized metadata stays valid JSON and supplier XML stays well-formed.
-SECRET_HEADER = re.compile(r'(?i)\b((?:proxy-)?authorization|set-cookie|cookie|x-api-key|apikey)(\s*:)[^\r\n"<]*')
+# Applied only to isolated plain-text segments (never to serialized JSON or markup), so it may run to end of line.
+SECRET_HEADER = re.compile(r'(?i)\b((?:proxy-)?authorization|set-cookie|cookie|x-api-key|apikey)(\s*:)[^\r\n]*')
+MARKUP = re.compile(r'(<!\[CDATA\[.*?\]\]>|<!--.*?-->|<[^<>]*>)', re.S)
+ATTRIBUTE = re.compile(r'(\s)([\w.:\-]+)(\s*=\s*)(?:"([^"]*)"|\'([^\']*)\')')
 
 
-def redact(text):
-    """Mask credentials inside bodies and free text before anything is written to disk."""
-    text = SECRET_XML.sub(lambda m: m.group(1) + '***' + m.group(3), text)
+def _redact_plain(text):
+    """Free text without markup: JSON fragments, header lines, auth schemes, key=value pairs."""
     text = SECRET_JSON.sub(lambda m: m.group(1) + '"***"', text)
     text = SECRET_HEADER.sub(lambda m: m.group(1) + m.group(2) + ' ***', text)
     text = SECRET_SCHEME.sub(lambda m: m.group(1) + ' ***', text)
-    # Keep the original quoting so masked XML attributes stay well-formed.
-    return SECRET_ATTR.sub(lambda m: m.group(1) + ('"***"' if m.group(2) is not None else
+    return SECRET_PAIR.sub(lambda m: m.group(1) + ('"***"' if m.group(2) is not None else
                                                    "'***'" if m.group(3) is not None else '***'), text)
 
 
+def _redact_tag(tag):
+    """Inside a start tag only attribute values change; quotes and markup stay intact."""
+    def attribute(m):
+        quote = '"' if m.group(4) is not None else "'"
+        value = m.group(4) if m.group(4) is not None else m.group(5)
+        value = '***' if SECRET_NAME.fullmatch(m.group(2)) else _redact_plain(value).replace(quote, '')
+        return m.group(1) + m.group(2) + m.group(3) + quote + value + quote
+    return ATTRIBUTE.sub(attribute, tag)
+
+
+def _redact_markup(text):
+    text = SECRET_XML.sub(lambda m: m.group(1) + '***' + m.group(3), text)
+    parts = MARKUP.split(text)
+    for i, part in enumerate(parts):
+        if i % 2 == 0:
+            parts[i] = _redact_plain(part)
+        elif part.startswith('<![CDATA['):
+            parts[i] = '<![CDATA[' + _redact_plain(part[9:-3]) + ']]>'
+        elif not part.startswith('<!--'):
+            parts[i] = _redact_tag(part)
+    return ''.join(parts)
+
+
 def _redact_values(value):
-    """Redact every string before JSON serialization (escaping would hide header patterns)."""
-    if isinstance(value, str):
-        return redact(value)
+    """Structured data: credential keys are masked, strings redacted, serialized once by the caller."""
     if isinstance(value, dict):
-        return {k: _redact_values(v) for k, v in value.items()}
+        return {k: '***' if isinstance(k, str) and SECRET_NAME.fullmatch(k) else _redact_values(v)
+                for k, v in value.items()}
     if isinstance(value, list):
         return [_redact_values(v) for v in value]
+    if isinstance(value, str):
+        return redact(value)
     return value
+
+
+def redact(text):
+    """Mask credentials before anything is written to disk, without breaking JSON or XML.
+
+    Valid JSON is parsed and re-serialized once; XML/markup is split into tags and text so a
+    substitution can never cross a quote, a tag boundary or an escape sequence.
+    """
+    stripped = text.lstrip()
+    if stripped[:1] in ('{', '['):
+        try:
+            data = json.loads(text)
+        except ValueError:
+            pass
+        else:
+            return json.dumps(_redact_values(data), ensure_ascii=False, indent=2 if '\n' in text else None)
+    return _redact_markup(text) if '<' in text else _redact_plain(text)
 
 
 def _text(value):
@@ -188,7 +231,7 @@ def _text(value):
         return ''
     if isinstance(value, str):
         return redact(value)
-    return redact(json.dumps(_redact_values(value), ensure_ascii=False, indent=2))
+    return json.dumps(_redact_values(value), ensure_ascii=False, indent=2)
 
 
 def build_zip(docs):
