@@ -157,8 +157,8 @@ SECRET_JSON = re.compile(
 SECRET_ATTR = re.compile(r'(\b[\w.\-]*' + SECRET_WORD + r'[\w.\-]*\s*=\s*)(?:"([^"]*)"|\'([^\']*)\'|([^\s&"\'<>]+))', re.I)
 SECRET_SCHEME = re.compile(r'\b(Bearer|Basic|Digest|Token)\s+[A-Za-z0-9._~+/=\-]{6,}', re.I)
 # Header-like credentials anywhere in a string (e.g. inside a log message), up to end of line
-# or a JSON quote, so serialized metadata stays valid JSON.
-SECRET_HEADER = re.compile(r'(?i)\b((?:proxy-)?authorization|set-cookie|cookie|x-api-key|apikey)(\s*:)[^\r\n"]*')
+# a JSON quote or XML markup, so serialized metadata stays valid JSON and supplier XML stays well-formed.
+SECRET_HEADER = re.compile(r'(?i)\b((?:proxy-)?authorization|set-cookie|cookie|x-api-key|apikey)(\s*:)[^\r\n"<]*')
 
 
 def redact(text):

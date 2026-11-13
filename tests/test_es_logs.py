@@ -81,6 +81,15 @@ class EsLogsTest(unittest.TestCase):
         self.assertIn('Code="705"', masked)
         self.assertIn('<Created>T</Created>', masked)
 
+    def test_header_text_inside_xml_keeps_markup(self):
+        import xml.dom.minidom
+        masked = es_logs.redact('<Errors><Error Code="E1">Invalid Authorization: Bearer abcdef</Error>'
+                                '<Warning>Cookie: SID=zz</Warning></Errors>')
+        xml.dom.minidom.parseString(masked)
+        self.assertIn('Code="E1"', masked)
+        self.assertNotIn('abcdef', masked)
+        self.assertNotIn('SID=zz', masked)
+
     def test_cookie_inside_serialized_metadata_is_masked_in_archive(self):
         data, _ = es_logs.build_zip([{'time': '2026-10-09T12:54:48', 'domain': 'error',
                                       'requestorMethodName': 'pnrs',
