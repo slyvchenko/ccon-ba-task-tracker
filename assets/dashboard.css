@@ -2533,3 +2533,5 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   min-height:var(--control-h); height:var(--control-h); padding:0 14px;
   border-radius:var(--radius-control);
 }
+/* Keep native hidden semantics above every display rule (cloud hides local-only actions). */
+[hidden] { display:none !important; }

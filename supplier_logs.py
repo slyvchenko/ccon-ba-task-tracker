@@ -418,7 +418,9 @@ def main():
     process.add_argument('--source', type=Path, required=True)
     args = parser.parse_args()
     try:
-        result = make_plan(args.root, args.analysis_file, args.issue, args.mode) if args.command == 'plan' else ingest(args.root, args.issue, args.flow_id, args.source)
+        from local_downloads import handoff_lock  # same lock as prepare/process and the Kibana fetch
+        with handoff_lock(args.root):
+            result = make_plan(args.root, args.analysis_file, args.issue, args.mode) if args.command == 'plan' else ingest(args.root, args.issue, args.flow_id, args.source)
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (ValueError, OSError, BadZipFile) as error:
         print('Log preparation failed: ' + str(error), file=sys.stderr)

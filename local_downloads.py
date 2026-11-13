@@ -103,6 +103,9 @@ def process(root=ROOT, issue=None, strict=False):
         raise ValueError("Complete Jira sync required.")
     if issue and not KEY.fullmatch(issue):
         raise ValueError("Invalid issue key.")
+    if issue and not any(job.get("key") == issue for job in plan.get("jobs", [])):
+        raise ValueError(f"The current log plan has no job for {issue}. "
+                         "Run local_downloads.py prepare --issue " + issue + " again.")
     rows = []
     for job in plan.get("jobs", []):
         key, flow = job["key"], job["flowId"]

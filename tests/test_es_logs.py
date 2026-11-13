@@ -70,6 +70,41 @@ class EsLogsTest(unittest.TestCase):
         self.assertNotIn('zz', text)
         self.assertIn('Author: Bob', text)
 
+    def test_masking_keeps_xml_well_formed_and_covers_cdata(self):
+        import xml.dom.minidom
+        masked = es_logs.redact('<r><Error token="abc" Code="705">x</Error><a secret=\'s\'/>'
+                                '<ns:Password xmlns:ns="n"><![CDATA[p<a>ss]]></ns:Password>'
+                                '<ns:Password xmlns:ns="n" Type="t"/><Created>T</Created></r>')
+        xml.dom.minidom.parseString(masked)
+        for secret in ('abc', "'s'", 'p<a>ss'):
+            self.assertNotIn(secret, masked)
+        self.assertIn('Code="705"', masked)
+        self.assertIn('<Created>T</Created>', masked)
+
+    def test_cookie_inside_serialized_metadata_is_masked_in_archive(self):
+        data, _ = es_logs.build_zip([{'time': '2026-10-09T12:54:48', 'domain': 'error',
+                                      'requestorMethodName': 'pnrs',
+                                      'message': 'login failed, Cookie: SID=secret-value; x=1'}])
+        archive = ZipFile(io.BytesIO(data))
+        text = archive.read(archive.namelist()[0]).decode()
+        self.assertNotIn('secret-value', text)
+        json.loads(text)
+
+    def test_hidden_controls_stay_hidden(self):
+        css = (Path(__file__).resolve().parents[1] / 'assets/dashboard.css').read_text(encoding='utf-8')
+        self.assertIn('[hidden] { display:none !important; }', css)
+
+    def test_process_rejects_plan_without_the_issue(self):
+        import local_downloads
+        with tempfile.TemporaryDirectory() as root:
+            data = Path(root) / 'data'
+            data.mkdir()
+            (data / 'log_plan.json').write_text(json.dumps({'mode': 'evidence', 'jobs': [
+                {'key': 'CCON-2', 'flowId': FLOW, 'contextFingerprint': 'x'}]}), encoding='utf-8')
+            (data / 'jira_context.json').write_text(json.dumps({'complete': True, 'issues': {}}), encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'no job for CCON-1'):
+                local_downloads.process(Path(root), 'CCON-1')
+
     def test_headers_are_not_requested(self):
         self.assertFalse([f for f in es_logs.FIELDS if 'header' in f.lower()])
 

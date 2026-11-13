@@ -151,27 +151,44 @@ def _slug(value, pattern=r'[^A-Za-z0-9\-]+'):
 # Exact credential words only: e.g. 'Passenger' or 'Author' must NOT match.
 SECRET_WORD = r'(?:password|passwd|passphrase|pwd|secret|token|nonce|api[-_]?key|authorization|auth[-_]?token|auth[-_]?key|credentials?|cookie|session[-_]?id|signaturevalue)'
 SECRET_XML = re.compile(
-    r'(<(?:[\w.\-]+:)?[\w.\-]*' + SECRET_WORD + r'[\w.\-]*\b[^>]*>)([^<]*)(</)', re.I)
+    r'(<(?:[\w.\-]+:)?[\w.\-]*' + SECRET_WORD + r'[\w.\-]*\b[^>]*(?<!/)>)(<!\[CDATA\[.*?\]\]>|[^<]*)(</)', re.I | re.S)
 SECRET_JSON = re.compile(
     r'("[\w.\-]*' + SECRET_WORD + r'[\w.\-]*"\s*:\s*)("(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?)', re.I)
-SECRET_ATTR = re.compile(r'(\b[\w.\-]*' + SECRET_WORD + r'[\w.\-]*\s*=\s*)("[^"]*"|\'[^\']*\'|[^\s&"\'<>]+)', re.I)
+SECRET_ATTR = re.compile(r'(\b[\w.\-]*' + SECRET_WORD + r'[\w.\-]*\s*=\s*)(?:"([^"]*)"|\'([^\']*)\'|([^\s&"\'<>]+))', re.I)
 SECRET_SCHEME = re.compile(r'\b(Bearer|Basic|Digest|Token)\s+[A-Za-z0-9._~+/=\-]{6,}', re.I)
-SECRET_HEADER = re.compile(r'(?im)^(\s*(?:\d+:\s*)?(?:authorization|proxy-authorization|cookie|set-cookie|x-api-key|apikey)\s*:).*$')
+# Header-like credentials anywhere in a string (e.g. inside a log message), up to end of line
+# or a JSON quote, so serialized metadata stays valid JSON.
+SECRET_HEADER = re.compile(r'(?i)\b((?:proxy-)?authorization|set-cookie|cookie|x-api-key|apikey)(\s*:)[^\r\n"]*')
 
 
 def redact(text):
     """Mask credentials inside bodies and free text before anything is written to disk."""
     text = SECRET_XML.sub(lambda m: m.group(1) + '***' + m.group(3), text)
     text = SECRET_JSON.sub(lambda m: m.group(1) + '"***"', text)
-    text = SECRET_HEADER.sub(lambda m: m.group(1) + ' ***', text)
+    text = SECRET_HEADER.sub(lambda m: m.group(1) + m.group(2) + ' ***', text)
     text = SECRET_SCHEME.sub(lambda m: m.group(1) + ' ***', text)
-    return SECRET_ATTR.sub(lambda m: m.group(1) + '***', text)
+    # Keep the original quoting so masked XML attributes stay well-formed.
+    return SECRET_ATTR.sub(lambda m: m.group(1) + ('"***"' if m.group(2) is not None else
+                                                   "'***'" if m.group(3) is not None else '***'), text)
+
+
+def _redact_values(value):
+    """Redact every string before JSON serialization (escaping would hide header patterns)."""
+    if isinstance(value, str):
+        return redact(value)
+    if isinstance(value, dict):
+        return {k: _redact_values(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_redact_values(v) for v in value]
+    return value
 
 
 def _text(value):
     if value in (None, ''):
         return ''
-    return redact(value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, indent=2))
+    if isinstance(value, str):
+        return redact(value)
+    return redact(json.dumps(_redact_values(value), ensure_ascii=False, indent=2))
 
 
 def build_zip(docs):
@@ -242,7 +259,8 @@ def _fetch_for_plan_locked(root, issue, prepare, process):
         except ValueError as error:
             row = {'flowId': job['flowId'], 'saved': False, 'error': str(error)}
         fetched.append({'issueKey': job['issueKey'], **row})
-    return {'fetched': fetched, 'skipped': handoff.get('skipped', []), 'processed': process(root, issue)}
+    processed = process(root, issue) if handoff['jobs'] else {'processed': 0, 'results': []}
+    return {'fetched': fetched, 'skipped': handoff.get('skipped', []), 'processed': processed}
 
 
 def main():
