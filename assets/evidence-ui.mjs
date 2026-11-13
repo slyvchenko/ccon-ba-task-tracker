@@ -148,7 +148,10 @@ export async function loadTaskEvidence(key, api, escape, current) {
         evidenceHealthMarkup(data.health, escape);
       return;
     }
-    destination.innerHTML = reports.map((report, index) => {
+    const partial = reports.some(report => (report.status || 'PARTIAL') === 'PARTIAL');
+    destination.innerHTML = '<p class="focus-status"><span class="badge ' + (partial ? 'tone-amber' : 'tone-green') + '">' +
+      (partial ? 'Логи частково' : 'Логи є') + '</span> ' + escape(reports.length) + ' ' +
+      (reports.length === 1 ? 'звіт' : 'звіти') + ' з REST / Supplier / Errors</p>' + reports.map((report, index) => {
       const viewKey = evidenceReportViewKey(report, index);
       const counts = report.counts || {};
       const codes = (report.errorCodes || []).slice(0, 20)

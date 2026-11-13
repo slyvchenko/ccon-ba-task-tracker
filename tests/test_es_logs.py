@@ -59,6 +59,30 @@ class EsLogsTest(unittest.TestCase):
         self.assertEqual(len(docs), es_logs.PAGE + 1)
         self.assertEqual(calls[1]['search_after'], [es_logs.PAGE - 1])
 
+    def test_oversized_flow_is_rejected_not_truncated(self):
+        full = {'hits': {'hits': [{'_source': {'i': i}, 'sort': [i]} for i in range(es_logs.PAGE)]}}
+        with mock.patch.object(es_logs, 'MAX_DOCS', es_logs.PAGE + 10), \
+                mock.patch.object(es_logs, '_search', return_value=full):
+            with self.assertRaisesRegex(ValueError, 'more than'):
+                es_logs.fetch_flow('dfd2ab53-0ee2-4c78-ae86-42a42e549af8', Path('.'))
+
+    def test_plan_fetches_are_serialized(self):
+        active, peak = [0], [0]
+
+        def slow(root, issue, prepare, process):
+            active[0] += 1
+            peak[0] = max(peak[0], active[0])
+            import time
+            time.sleep(0.05)
+            active[0] -= 1
+            return {}
+        import threading
+        with mock.patch.object(es_logs, '_fetch_for_plan_locked', side_effect=slow):
+            threads = [threading.Thread(target=es_logs.fetch_for_plan, args=(Path('.'), f'CCON-{i}')) for i in range(3)]
+            [t.start() for t in threads]
+            [t.join() for t in threads]
+        self.assertEqual(peak[0], 1)
+
     def test_rejects_invalid_flow(self):
         with self.assertRaises(ValueError):
             es_logs.fetch_flow('not-a-uuid')

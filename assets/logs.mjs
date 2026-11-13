@@ -64,13 +64,22 @@ export function createLogsController({api, escapeHtml, message, getSelected, get
         const button = $('fetchEsLogs'); button.disabled = true; button.textContent = 'Отримую з Kibana…';
         try {
           const result = await api('/api/logs/' + encodeURIComponent(key) + '/fetch', {});
-          const docs = (result.fetched || []).reduce((sum, row) => sum + (row.documents || 0), 0);
-          const failed = (result.fetched || []).filter(row => row.error);
+          const rows = result.fetched || [];
+          const docs = rows.reduce((sum, row) => sum + (row.documents || 0), 0);
+          const failed = rows.filter(row => row.error);
+          const empty = rows.filter(row => !row.cached && !row.error && !row.saved);
+          const processed = result.processed || {};
+          const invalid = (processed.results || []).filter(row => row.state === 'FAILED' || row.state === 'STALE');
+          const review = (processed.results || []).filter(row => row.state === 'NEEDS_REVIEW');
           const skipped = (result.skipped || []).map(row => row.reason);
-          message(failed.length ? 'Kibana: ' + failed[0].error
-            : !(result.fetched || []).length ? 'У задачі немає cconFlowId або постачальника' + (skipped.length ? ' (' + skipped.join(', ') + ')' : '') + '.'
-            : (result.fetched || []).every(row => row.cached) ? 'Архів для цього контексту Jira вже підготовлено — повторно не завантажую.'
-            : 'Kibana: отримано ' + docs + ' записів, архів підготовлено.', failed.length > 0);
+          const text = failed.length ? 'Kibana: ' + failed[0].error
+            : !rows.length ? 'У задачі немає cconFlowId або постачальника' + (skipped.length ? ' (' + skipped.join(', ') + ')' : '') + '.'
+            : invalid.length ? 'Архів не пройшов перевірку: ' + invalid.map(row => row.reasonCode).join(', ') + '.'
+            : empty.length === rows.length ? 'Kibana: для flow цієї задачі записів не знайдено — архів не створено.'
+            : rows.every(row => row.cached) ? 'Архів для цього контексту Jira вже підготовлено — повторно не завантажую.'
+            : 'Kibana: отримано ' + docs + ' записів' + (empty.length ? ' (' + empty.length + ' flow без записів)' : '') +
+              (review.length ? ', архів готовий, але потребує перевірки.' : ', архів підготовлено.');
+          message(text, failed.length > 0 || invalid.length > 0 || empty.length === rows.length);
         } catch (error) { message(error.message, true); }
         finally { logSignatures.delete(target); loadLogs(key); }
       });

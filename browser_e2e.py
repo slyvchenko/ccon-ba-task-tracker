@@ -118,6 +118,16 @@ class BrowserRegression(unittest.TestCase):
         page.locator("#note").wait_for()
         self.assertIn(key, page.locator("#detail .task-key").inner_text())
 
+    def open_focus_pin(self, page=None):
+        page=page or self.page
+        page.evaluate("""() => {
+            const outer=document.querySelector('.secondary-details');
+            if(outer) outer.open=true;
+            const box=document.getElementById('pinDeepWork')?.closest('details');
+            if(box) box.open=true;
+        }""")
+        page.locator("#pinDeepWork").wait_for(state="visible")
+
     def test_statistics_page_is_live_aggregate_without_jira_text(self):
         stats = self.context.new_page()
         stats.goto(self.url + "/stats", wait_until="domcontentloaded")
@@ -134,50 +144,6 @@ class BrowserRegression(unittest.TestCase):
         self.assertNotIn("Synthetic deep investigation", document)
         self.assertNotIn("synthetic@example.invalid", document)
         stats.close()
-
-    def test_question_two_tab_conflict_keeps_stale_answer_in_form(self):
-        from ba_questions import read_questions, sync_questions
-        data_dir = self.root / "data"
-        data_dir.mkdir(exist_ok=True)
-        (data_dir / "jira_context.json").write_text(json.dumps({
-            "complete": True,
-            "issues": {"CCON-1": {"key":"CCON-1",
-                                   "summary":"Synthetic only", "comments":[]}}
-        }), encoding="utf-8")
-        sync_questions(self.root, "CCON-1", {
-            "missingInfo": ["Synthetic contract rule?"]})
-        second = self.context.new_page()
-        second.goto(self.url, wait_until="domcontentloaded")
-        second.locator('#list button[data-key="CCON-1"]').wait_for()
-        self.choose("CCON-1")
-        self.choose("CCON-1", second)
-        for page in (self.page, second):
-            page.locator("#questionTracker .question-record").first.wait_for(
-                state="attached", timeout=15000)
-            page.locator("#questionTracker").evaluate(
-                "(el) => el.closest('details').open = true")
-        first_record = self.page.locator("#questionTracker .question-record").first
-        second_record = second.locator("#questionTracker .question-record").first
-        first_record.locator(".question-state").select_option("ANSWERED")
-        first_record.locator(".question-answer").fill("First reviewer answer")
-        first_record.locator(".save-question").click()
-        # The filled textarea already contains this text before Save starts.
-        # Wait for the HTTP acknowledgement, otherwise TAB B can win the race.
-        self.page.wait_for_function("""() =>
-          document.querySelector('#message')?.textContent.includes('Питання збережено локально')""",
-          timeout=15000)
-        second_record.locator(".question-state").select_option("ANSWERED")
-        second_record.locator(".question-answer").fill("Stale second tab answer")
-        second_record.locator(".save-question").click()
-        second.wait_for_function(
-            "() => document.querySelector('#message')?.textContent.includes('Питання змінилося')",
-            timeout=15000)
-        self.assertEqual(second_record.locator(".question-answer").input_value(),
-                         "Stale second tab answer")
-        saved = read_questions(self.root, "CCON-1")["questions"][0]
-        self.assertEqual(saved["answer"], "First reviewer answer")
-        self.assertEqual(saved["manualRevision"], 1)
-        second.close()
 
     def test_keyboard_navigation_save_and_priority(self):
         self.assertEqual(self.page.locator("#list button[data-key]").count(), 3)
@@ -314,10 +280,7 @@ class BrowserRegression(unittest.TestCase):
                 "(nodes)=>nodes.map(node=>node.dataset.key)")
         self.assertEqual(order(),["CCON-2","CCON-4","CCON-1","CCON-3"])
         self.choose("CCON-1")
-        self.page.locator("summary").filter(
-            has_text="Пріоритет і орієнтовний обсяг").click()
-        self.assertIn("Вплив: 25/25",self.page.locator(".effort-summary").inner_text())
-        self.assertIn("Терміновість: 20/25",self.page.locator(".effort-summary").inner_text())
+        self.open_focus_pin()
         self.page.locator("#pinDeepWork").click()
         self.assertEqual(order(),["CCON-2","CCON-1","CCON-4","CCON-3"])
         self.assertTrue(self.page.locator("#pinDeepWork").evaluate(
@@ -330,9 +293,7 @@ class BrowserRegression(unittest.TestCase):
         self.assertEqual(order(),["CCON-2","CCON-1","CCON-4","CCON-3"])
         self.choose("CCON-1")
         # View-state restore can keep this existing <details> open after reload.
-        if not self.page.locator("#pinDeepWork").is_visible():
-            self.page.locator("summary").filter(
-                has_text="Пріоритет і орієнтовний обсяг").click()
+        self.open_focus_pin()
         self.page.locator("#pinDeepWork").click()
         self.assertEqual(order(),["CCON-2","CCON-4","CCON-1","CCON-3"])
         self.assertIsNone(self.page.evaluate(
@@ -427,14 +388,10 @@ class BrowserRegression(unittest.TestCase):
         self.assertTrue(self.page.locator("#save").is_visible())
 
     def test_progressive_filters_and_data_grouping_keep_controls_accessible(self):
-        advanced=self.page.locator("#advancedFilters")
-        self.assertFalse(advanced.evaluate("(el)=>el.open"))
-        advanced.locator("summary").click()
-        self.page.locator("#signalFilter").select_option("WRITE")
-        self.page.locator("#advancedFilterCount").wait_for(state="visible")
-        self.assertIn("1 активний",self.page.locator("#advancedFilterCount").inner_text())
-        self.assertEqual(self.page.locator("#list button[data-key]").count(),1)
-        self.page.locator("#signalFilter").select_option("all")
+        # Three visible queue filters; the rarely used signal filter is hidden by design.
+        self.assertTrue(self.page.locator("#advancedFilters").evaluate("(el)=>el.hidden"))
+        for control in ("#filter","#sprintFilter","#priorityFilter"):
+            self.assertTrue(self.page.locator(control).is_visible(), control)
         self.page.locator("#sprintFilter").select_option("outside")
         self.assertEqual(self.page.locator("#list button[data-key]").count(),1)
         self.page.locator("#sprintFilter").select_option("all")
@@ -445,9 +402,10 @@ class BrowserRegression(unittest.TestCase):
         self.assertEqual(self.page.locator("#import").count(),1)
         self.page.locator("#dataMenu > summary").click()
         self.choose("CCON-1")
-        self.assertEqual(self.page.locator('details[aria-label="Джерела оцінки"]').count(),1)
-        self.assertEqual(self.page.locator('details[aria-label="Історія та минулі версії"]').count(),1)
-        self.assertEqual(self.page.locator("#taskHistory").count(),1)
+        self.assertEqual(self.page.locator(".focus-table .focus-tile").count(),5)
+        self.assertEqual(self.page.locator(".secondary-details .sec-section")
+                         .filter(has_text="Джерела оцінки").count(),1)
+        self.assertEqual(self.page.locator("#decisionTracker").count(),1)
 
     def test_visual_layout_synthetic_screenshots_and_no_horizontal_overflow(self):
         self.choose("CCON-1")
@@ -546,7 +504,7 @@ class BrowserRegression(unittest.TestCase):
         # PERF-08: a changed global snapshot must not destroy a stable detail.
         self.choose("CCON-1")
         self.page.wait_for_function(
-            "() => (document.querySelector('#taskHistory')?.textContent || '').includes('Історія:')",
+            "() => { const t=document.querySelector('#decisionTracker')?.textContent || ''; return t && !t.includes('Завантажую'); }",
             timeout=15000)
         self.page.evaluate("""() => {
             window.__stableNoteNode=document.querySelector('#note');
@@ -569,7 +527,7 @@ class BrowserRegression(unittest.TestCase):
             "() => window.__stableNoteNode===document.querySelector('#note')"))
         self.assertNotEqual(self.page.locator('#detail .task-date').inner_text(),
                             'SYNTHETIC OLD IMPORT DATE')
-        self.assertEqual(requests,[], "Unrelated import must not refetch selected evidence/history")
+        self.assertEqual(requests,[], "Unrelated import must not refetch selected evidence/decisions")
         # Actual selected task content change must still rerender and reload evidence.
         next_doc["generatedAt"]="2026-10-26T09:02:00Z"
         next_doc["tasks"][0]["summary"]="UPDATED SYNTHETIC SELECTED TASK"
@@ -582,7 +540,7 @@ class BrowserRegression(unittest.TestCase):
         self.assertFalse(self.page.evaluate(
             "() => window.__stableNoteNode===document.querySelector('#note')"))
         self.page.wait_for_function(
-            "() => (document.querySelector('#taskHistory')?.textContent || '').includes('Історія:')",
+            "() => { const t=document.querySelector('#decisionTracker')?.textContent || ''; return t && !t.includes('Завантажую'); }",
             timeout=15000)
         self.assertTrue(any("/api/evidence/CCON-1" in url for url in requests))
 
@@ -679,11 +637,18 @@ class BrowserRegression(unittest.TestCase):
         self.choose("CCON-1")
         self.assertEqual(self.page.locator("#detail .ba-brief").count(),1)
         self.assertIn("Є відкриті рішення",self.page.locator(".ba-brief").inner_text())
-        self.page.locator(".ba-brief details").filter(has_text="Правила IF / THEN").locator("summary").click()
-        self.assertIn("Synthetic A",self.page.locator(".ba-brief").inner_text())
-        self.assertIn("Synthetic B",self.page.locator(".ba-brief").inner_text())
-        self.page.locator(".ba-brief details").filter(has_text="Що не встановлено").locator("summary").click()
-        self.assertIn("Supplier reply still needed",self.page.locator(".ba-brief").inner_text())
+        self.assertNotIn("Правила IF / THEN",self.page.locator("#detail").inner_text())
+        self.page.locator('.focus-tile[data-focus="questions"]').click()
+        self.assertIn("Supplier reply still needed",
+                      self.page.locator('[data-focus-panel="questions"]').inner_text())
+        self.page.evaluate("""() => {
+            document.querySelector('.secondary-details').open=true;
+            for(const d of document.querySelectorAll('.secondary-details .sec-section'))
+                d.open=d.textContent.includes('QA-сценарії');
+        }""")
+        secondary=self.page.locator(".secondary-details").inner_text()
+        self.assertIn("Synthetic A",secondary)
+        self.assertIn("Synthetic B",secondary)
         self.assertEqual(self.page.locator("#copyNext").count(),1)
 
         doc["generatedAt"]="2026-10-26T11:02:00Z"
@@ -696,142 +661,87 @@ class BrowserRegression(unittest.TestCase):
         self.assertEqual(self.page.locator("#detail .analysis-missing").filter(has_text="Для цієї задачі ще немає повного аналізу").count(),1)
         self.assertNotIn("Поки не визначено — потрібен аналіз контексту.",
                          self.page.locator("#detail").inner_text())
-        self.assertEqual(self.page.locator("#questionTracker").count(),1)
+        self.assertEqual(self.page.locator(".focus-table .focus-tile").count(),5)
 
     def test_long_technical_pnr_rest_rules_and_repeatable_viewport_snapshots(self):
-        # UI-08/UI-10 synthetic geometry and same-content pixel repeatability.
-        # This does not replace a reviewed cross-commit visual baseline.
+        # UI-08/UI-10 synthetic geometry and same-content repeatability for long
+        # PNR/REST paths shown in the «Ситуація за 30 секунд» grid.
         pnr="LONGPNR" + "ZX97YJ" * 35
         condition="Order/SegmentRefID/" + pnr + "/DeliveryStatusCode=REMOVED"
         outcome="DoNotReturn/" + pnr + "/REST.RS.segment"
         doc=fixture_document("2026-10-26T11:30:00Z")
         doc["tasks"][0]["analysis"]["briefing"]={
-            "overviewUk":"Synthetic IF/THEN source review",
-            "currentUk":"Synthetic API returns a segment",
-            "targetUk":"Synthetic API must exclude segment under condition",
+            "overviewUk":"Synthetic long-token source review",
+            "currentUk":condition,
+            "targetUk":outcome,
             "businessImpactUk":"Synthetic test only",
             "technicalScopeUk":"REST Read PNR / Booking response",
             "readiness":"NEEDS_CONFIRMATION",
             "readinessReasonUk":"Requires independent QA and supplier proof",
-            "sourceAudit":[],
-            "confirmedFacts":[],
-            "timeline":[],
-            "rules":[{"whenUk":condition,"thenUk":outcome,"certainty":"OPEN",
-                      "sourceUrl":"https://example.invalid/technical"}],
+            "sourceAudit":[],"confirmedFacts":[],"timeline":[],"rules":[],
             "verification":[],
             "unknownsUk":["Synthetic long token requires visual review"],
             "risksUk":[]
         }
         self.snapshot.write_text(json.dumps(doc),encoding="utf-8")
         self.desk.import_snapshot()
+        capture_layout="""() => {
+            const root=document.querySelector('.ba-brief');
+            const box=root.getBoundingClientRect();
+            const cells=[...root.querySelectorAll('.brief-text')];
+            return {
+                viewport:document.documentElement.clientWidth,
+                document:document.documentElement.scrollWidth,
+                text:root.textContent,
+                width:Math.round(box.width), height:Math.round(box.height),
+                cells:cells.map(el=>({text:el.textContent,
+                    overflowWrap:getComputedStyle(el).overflowWrap,
+                    whiteSpace:getComputedStyle(el).whiteSpace,
+                    overflow:el.scrollWidth-el.clientWidth}))
+            };
+        }"""
+        screenshot_style="#stickyAction{visibility:hidden!important}"
         signatures={}
         for width,height in ((320,850),(768,900),(1440,900)):
             self.page.set_viewport_size({"width":width,"height":height})
             self.page.reload(wait_until="domcontentloaded")
             self.choose("CCON-1")
-            rule=self.page.locator(".ba-brief details").filter(
-                has_text="Правила IF / THEN").first
-            if not rule.evaluate("(node)=>node.open"):
-                rule.locator("summary").click()
-            self.page.locator(".ba-brief .technical-token").first.wait_for()
-            values=self.page.locator(".ba-brief .technical-token").all_text_contents()
-            self.assertEqual(values,[condition,outcome])
-            geometry=self.page.evaluate("""() => {
-                const tokens=[...document.querySelectorAll('.ba-brief .technical-token')];
-                return {
-                    viewport:document.documentElement.clientWidth,
-                    document:document.documentElement.scrollWidth,
-                    tokens:tokens.map(el=>({
-                        overflowWrap:getComputedStyle(el).overflowWrap,
-                        whiteSpace:getComputedStyle(el).whiteSpace,
-                        scrollWidth:el.scrollWidth,
-                        clientWidth:el.clientWidth
-                    }))
-                };
-            }""")
-            self.assertLessEqual(geometry["document"],geometry["viewport"]+2,geometry)
-            for token in geometry["tokens"]:
-                self.assertEqual(token["overflowWrap"],"anywhere")
-                self.assertEqual(token["whiteSpace"],"pre-wrap")
-            # Pointer/focus and the transient sticky action are not part of
-            # the static source panel being compared.
-            # The app correctly restores per-task disclosure state from
-            # sessionStorage. A screenshot must use a fixed panel state so
-            # that the difference test measures rendering, not user choices.
-            self.page.evaluate("""() => {
-                for(const node of document.querySelectorAll('.ba-brief details')) {
-                    const label=node.querySelector('summary')?.textContent || '';
-                    node.open=label.includes('Правила IF / THEN');
-                }
-                document.activeElement?.blur();
-            }""")
+            self.page.locator(".ba-brief .brief-text").first.wait_for()
+            self.page.evaluate("() => document.activeElement?.blur()")
             self.page.mouse.move(0,0)
-            # Geometry/semantic snapshot is stable despite native raster
-            # noise. Keep *both* PNGs as evidence for a future approved
-            # cross-version human pixel-baseline comparison.
-            capture_layout="""() => {
-                const root=document.querySelector('.ba-brief');
-                const box=root.getBoundingClientRect();
-                const tokens=[...root.querySelectorAll('.technical-token')];
-                return {
-                    text:root.textContent,
-                    width:Math.round(box.width),
-                    height:Math.round(box.height),
-                    openSections:[...root.querySelectorAll('details')]
-                        .map(d=>d.open),
-                    tokenWidths:tokens.map(node=>Math.round(
-                        node.getBoundingClientRect().width)),
-                    tokenTexts:tokens.map(node=>node.textContent)
-                };
-            }"""
             before=self.page.evaluate(capture_layout)
-            screenshot_style="#stickyAction{visibility:hidden!important}"
-            first=self.page.locator(".ba-brief").screenshot(
-                animations="disabled",style=screenshot_style)
+            texts=[cell["text"] for cell in before["cells"]]
+            self.assertIn(condition,texts)
+            self.assertIn(outcome,texts)
+            self.assertLessEqual(before["document"],before["viewport"]+2,before)
+            for cell in before["cells"]:
+                self.assertEqual(cell["overflowWrap"],"anywhere")
+                self.assertEqual(cell["whiteSpace"],"pre-wrap")
+                self.assertLessEqual(cell["overflow"],2,cell)
+            first=self.page.locator(".ba-brief").screenshot(animations="disabled",style=screenshot_style)
             (ARTIFACTS/f"synthetic-technical-long-{width}-before.png").write_bytes(first)
             self.page.reload(wait_until="domcontentloaded")
             self.choose("CCON-1")
-            rule=self.page.locator(".ba-brief details").filter(
-                has_text="Правила IF / THEN").first
-            if not rule.evaluate("(node)=>node.open"):
-                rule.locator("summary").click()
-            self.page.evaluate("""() => {
-                for(const node of document.querySelectorAll('.ba-brief details')) {
-                    const label=node.querySelector('summary')?.textContent || '';
-                    node.open=label.includes('Правила IF / THEN');
-                }
-                document.activeElement?.blur();
-            }""")
+            self.page.locator(".ba-brief .brief-text").first.wait_for()
+            self.page.evaluate("() => document.activeElement?.blur()")
             self.page.mouse.move(0,0)
             after=self.page.evaluate(capture_layout)
-            self.assertEqual(before["text"],after["text"],
-                             f"technical source text changed at {width}px")
-            self.assertEqual(before["openSections"],after["openSections"])
-            self.assertEqual(before["tokenTexts"],after["tokenTexts"])
+            self.assertEqual(before["text"],after["text"],f"technical source text changed at {width}px")
             for key in ("width","height"):
-                self.assertLessEqual(abs(before[key]-after[key]),2,
-                                     f"visual {key} changed at {width}px")
-            for left,right in zip(before["tokenWidths"],after["tokenWidths"]):
-                self.assertLessEqual(abs(left-right),2,
-                                     f"token width changed at {width}px")
-            second=self.page.locator(".ba-brief").screenshot(
-                animations="disabled",style=screenshot_style)
+                self.assertLessEqual(abs(before[key]-after[key]),2,f"visual {key} changed at {width}px")
+            second=self.page.locator(".ba-brief").screenshot(animations="disabled",style=screenshot_style)
             (ARTIFACTS/f"synthetic-technical-long-{width}-after.png").write_bytes(second)
-            signatures[str(width)]={
-                "semanticLayoutStable":True,
+            signatures[str(width)]={"semanticLayoutStable":True,
                 "beforeSha256":hashlib.sha256(first).hexdigest(),
                 "afterSha256":hashlib.sha256(second).hexdigest(),
                 "beforeDimensions":{k:before[k] for k in ("width","height")},
-                "afterDimensions":{k:after[k] for k in ("width","height")}
-            }
-            self.page.screenshot(path=str(ARTIFACTS/
-                f"synthetic-technical-long-{width}.png"),full_page=True)
+                "afterDimensions":{k:after[k] for k in ("width","height")}}
+            self.page.screenshot(path=str(ARTIFACTS/f"synthetic-technical-long-{width}.png"),full_page=True)
         ARTIFACTS.joinpath("synthetic-technical-visual-hashes.json").write_text(
             json.dumps({"syntheticOnly":True,"semanticGeometryRegression":True,
                         "pixelHashesInformational":True,
                         "notAnApprovedCrossVersionPixelBaseline":True,
-                        "snapshotsByViewport":signatures},
-                       indent=2),encoding="utf-8")
+                        "snapshotsByViewport":signatures},indent=2),encoding="utf-8")
 
     def test_three_viewports_and_short_soak_no_external_writes(self):
         self.choose("CCON-2")

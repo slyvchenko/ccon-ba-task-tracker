@@ -22,6 +22,7 @@ import io
 import json
 import re
 import sys
+import threading
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -37,6 +38,9 @@ DEFAULT_INDEX = 'filebeat_booking_data-*'
 UUID = re.compile(r'^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
 PAGE = 500
 MAX_DOCS = 10000
+# The evidence plan lives in one shared data/log_plan.json: serialize the whole
+# prepare -> download -> process sequence so overlapping requests cannot swap plans.
+_PLAN_LOCK = threading.Lock()
 FIELDS = [  # whitelist; headers are deliberately absent
     'time', '@timestamp', 'domain', 'supplier', 'requestorMethodName', 'request_action',
     'request_method', 'request_url', 'response_code', 'response_time',
@@ -83,8 +87,11 @@ def fetch_flow(flow, root=ROOT):
         result = _search(url, index, body)
         hits = result.get('hits', {}).get('hits', [])
         docs.extend(hit['_source'] for hit in hits)
-        if len(hits) < PAGE or len(docs) >= MAX_DOCS:
-            return docs[:MAX_DOCS]
+        if len(docs) > MAX_DOCS:
+            raise ValueError(f'Flow {flow} has more than {MAX_DOCS} log documents; '
+                             'refusing to build an incomplete archive.')
+        if len(hits) < PAGE:
+            return docs
         body['search_after'] = hits[-1]['sort']
 
 
@@ -174,6 +181,11 @@ def save_flow_zip(flow, target, root=ROOT):
 def fetch_for_plan(root=ROOT, issue=None):
     """Prepare the evidence plan, fill each job's ZIP from Elasticsearch, then process."""
     from local_downloads import prepare, process
+    with _PLAN_LOCK:
+        return _fetch_for_plan_locked(root, issue, prepare, process)
+
+
+def _fetch_for_plan_locked(root, issue, prepare, process):
     handoff = prepare(root, issue)
     fetched = []
     for job in handoff['jobs']:
