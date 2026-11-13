@@ -74,3 +74,15 @@ Values are a product palette, **not a sourced official AERTiCKET brand palette**
 - Never render unescaped Jira body/HTML; source links are HTTP(S) only.
 - Cloud version must include sign-in identity and "last successful sync" indicator.
 - Use approved official logo only after confirming reuse rights and correct file.
+
+## Design system v2 (2026-11-13) — visual refinement
+
+v2 changes only the visual layer (colour, type, borders, radii, shadows, controls); the layout from v1 is unchanged.
+
+- **Neutral scale** `--n-0 … --n-900` for surfaces, borders and secondary text. Lavender is no longer used for borders; the accent is reserved for primary actions, selection, focus and links.
+- **Type:** `--font-ui` (Segoe UI Variable Text) for UI, `--font-display` (Segoe UI Variable Display) for headings. Section titles are 18px / 600 with slight negative tracking, with no decorative marker bar. Numbers use tabular figures.
+- **Surfaces:** cards have a 1px `--n-200` border, a 14px `--radius-card` and a soft `--shadow-card`. The dark "Що зробити зараз" card keeps the signature accent gradient.
+- **Buttons:** the secondary button is neutral (white, `--n-300` border); the primary button is filled accent with an inset highlight; both are 36px, with small variants at 30px and an 8px `--radius-control`. On the dark card buttons are glassy, and the disabled state stays readable.
+- **Fields:** neutral border; on focus, an accent border plus a `--ring` halo.
+- **Chips:** soft tone fill, no outline, 6px `--radius-chip`, 12px / 550.
+- **Focus tiles:** white cards; tone is shown by a dot and the value colour, and the active tile gets an accent ring.

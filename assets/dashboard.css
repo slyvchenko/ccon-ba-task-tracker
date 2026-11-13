@@ -39,10 +39,26 @@
   --accent-deep-2:#332452;
   --accent-glow:#4b337a;
   --surface:#fff;
-  --font-ui:system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-ui:"Segoe UI Variable Text","Segoe UI Variable","Segoe UI",Inter,system-ui,-apple-system,sans-serif;
   --control-h:36px;
   --control-h-lg:40px;
-  --radius-control:10px
+  --radius-control:8px;
+  /* Design system v2: neutral scale, type families, surfaces. */
+  --n-0:#fff;
+  --n-25:#fbfbfc;
+  --n-50:#f6f6f8;
+  --n-100:#efeef3;
+  --n-200:#e5e4eb;
+  --n-300:#d6d4de;
+  --n-400:#bdbac8;
+  --n-500:#676477;
+  --n-700:#3b3848;
+  --n-900:#18161f;
+  --font-display:"Segoe UI Variable Display","Segoe UI Variable","Segoe UI",Inter,system-ui,-apple-system,sans-serif;
+  --radius-card:14px;
+  --radius-chip:6px;
+  --shadow-card:0 1px 2px #18161f0a, 0 1px 3px #18161f08;
+  --ring:0 0 0 3px #7c4ddb2e
 }
 * {
   box-sizing:border-box
@@ -2406,13 +2422,64 @@ label { font-size:13px; }
 .filters .filter-row.filter-main > select { width:100%; min-width:0; padding-left:10px; padding-right:24px; text-overflow:ellipsis; }
 
 /* ==========================================================================
-   Design system v1 (2026-11-13) — one accent, one button scale, one chip scale.
-   Tokens live in the canonical :root. This layer is appended last on purpose:
-   it is the single source for controls, chips, titles and selection states.
-   See docs/DESIGN_SYSTEM.md.
+   Design system v2 (2026-11-13) — calm surfaces, one accent, crisp type.
+   Visual layer only: colour, type, borders, radii, shadows and controls.
+   Layout (grids, block order, spacing between blocks) is owned by the rules
+   above and is intentionally untouched. Tokens live in the canonical :root.
+   See docs/BRAND_STYLE.md.
    ========================================================================== */
 
-/* --- Buttons: every action control shares metrics; only the variant changes. */
+/* --- Base: neutral canvas, one UI family, antialiased text. */
+body {
+  font-family:var(--font-ui); color:var(--n-900);
+  background:var(--n-50);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+header { background:#ffffffcc; border-bottom:1px solid var(--n-200); }
+.muted, .brand-desk .muted, .task-toolbar .task-date { color:var(--n-500); }
+.task-key, .task-toolbar .task-key, .task-toolbar .task-date, .sec-count, .queue-group-count,
+.statusbar { font-variant-numeric:tabular-nums; }
+
+/* --- Type scale: display face for headings, lighter weights, tight tracking. */
+h1, main h2, .focus-title, .secondary-title,
+.manual-status-label label, .email-summary > span:first-child {
+  font-family:var(--font-display); color:var(--n-900);
+}
+h1 { font-weight:650; letter-spacing:-.02em; }
+main h2 { font-weight:650; letter-spacing:-.022em; }
+.focus-title, .secondary-title,
+.manual-status-label label, .email-summary > span:first-child {
+  font-size:18px; font-weight:600; letter-spacing:-.012em;
+}
+.quick-handoff.do-now .focus-title { color:#fff; }
+
+/* --- Surfaces: hairline neutral border, soft shadow, one radius. */
+aside, main {
+  border:1px solid var(--n-200); border-radius:var(--radius-card);
+  box-shadow:var(--shadow-card); background:var(--n-0);
+}
+.panel {
+  border:1px solid var(--n-200); border-radius:var(--radius-card);
+  box-shadow:var(--shadow-card); background:var(--n-0);
+}
+.panel > .focus-title, .ba-brief > .panel-title,
+.work-state > .manual-status-label, .email-panel > .email-summary { border-bottom-color:var(--n-100); }
+.brief-grid > .brief-label { color:var(--n-500); font-weight:600; }
+.brief-grid > .brief-label:not(:first-child),
+.brief-grid > .brief-label:not(:first-child) + .brief-text { border-top-color:var(--n-100); }
+.filters { border-bottom-color:var(--n-200); }
+.row { border-bottom-color:var(--n-100); }
+
+/* Hero card: the signature accent moment, deeper and quieter. */
+.quick-handoff.do-now {
+  border:0;
+  background:radial-gradient(120% 90% at 100% 0, #6a40c233, #0000 55%),
+             linear-gradient(160deg, var(--accent-deep-2), var(--accent-deep));
+  box-shadow:0 1px 2px #1d153333, 0 10px 28px -8px #2a1d4859;
+}
+.quick-handoff.do-now > .focus-title { border-bottom-color:#ffffff1f; }
+
+/* --- Buttons: neutral secondary, accent primary, one size scale. */
 button:not(.row):not(.focus-tile),
 .data-menu > summary,
 a.jira-button,
@@ -2420,19 +2487,21 @@ a.file-button,
 .tools > a {
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
   height:var(--control-h); min-height:var(--control-h); padding:0 14px;
-  border-radius:var(--radius-control); border:1px solid var(--accent-border);
-  background:var(--surface); color:var(--accent-ink);
-  font:600 13.5px/1 var(--font-ui); letter-spacing:0;
+  border-radius:var(--radius-control); border:1px solid var(--n-300);
+  background:var(--n-0); color:var(--n-900);
+  font:550 13.5px/1 var(--font-ui); letter-spacing:0;
+  box-shadow:0 1px 1px #17151f0d;
   text-decoration:none; white-space:nowrap; cursor:pointer;
-  transition:background-color .12s ease, border-color .12s ease, color .12s ease;
+  transition:background-color .12s ease, border-color .12s ease, color .12s ease, box-shadow .12s ease;
 }
 button:not(.row):not(.focus-tile):hover:not(:disabled),
 .data-menu > summary:hover,
 a.file-button:hover,
 .tools > a:hover {
-  background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong);
+  background:var(--n-50); border-color:var(--n-400); color:var(--n-900);
 }
-button:not(.row):not(.focus-tile):disabled { opacity:.5; cursor:default; }
+button:not(.row):not(.focus-tile):active:not(:disabled) { box-shadow:none; background:var(--n-100); }
+button:not(.row):not(.focus-tile):disabled { opacity:.45; cursor:default; box-shadow:none; }
 
 /* Primary: the one filled accent action per area. */
 button.primary:not(.row):not(.focus-tile),
@@ -2440,6 +2509,7 @@ a.jira-button,
 .state-actions #done {
   font-weight:600;
   background:var(--accent); border-color:var(--accent); color:#fff;
+  box-shadow:inset 0 1px 0 #ffffff29, 0 1px 2px #2a1d4840;
 }
 button.primary:not(.row):not(.focus-tile):hover:not(:disabled),
 a.jira-button:hover,
@@ -2453,75 +2523,127 @@ a.jira-button:hover,
 #detail .logs-folder-actions button,
 #detail .log-actions a.file-button,
 #detail .sec-body button {
-  --control-h:32px; height:32px; min-height:32px; padding:0 12px; font-size:12.5px;
+  --control-h:30px; height:30px; min-height:30px; padding:0 11px; font-size:12.5px;
 }
 
-/* On the dark accent card. */
+/* On the dark hero card: glassy secondary, readable disabled state. */
 .quick-handoff.do-now button:not(.row) {
-  background:#ffffff14; border-color:#ffffff40; color:#f6efff;
+  background:#ffffff14; border-color:#ffffff33; color:#fff; box-shadow:none;
 }
 .quick-handoff.do-now button:not(.row):hover:not(:disabled) {
-  background:#ffffff26; border-color:#ffffff70; color:#fff;
+  background:#ffffff24; border-color:#ffffff59; color:#fff;
+}
+.quick-handoff.do-now button:not(.row):disabled {
+  opacity:1; background:transparent; border-color:#ffffff24; color:#ffffff8c;
 }
 
-/* --- Focus ring: same accent everywhere, visible on light and dark cards. */
+/* --- Focus: one visible ring on light and dark surfaces. */
 button:focus-visible, a:focus-visible, summary:focus-visible,
 input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline:2px solid var(--accent); outline-offset:2px;
+  outline:2px solid var(--accent-bright); outline-offset:2px;
 }
 .quick-handoff.do-now :focus-visible { outline-color:#d9c6ff; }
 
-/* --- Form controls share the button height and radius. */
+/* --- Form fields: neutral border, accent ring on focus. */
 .filters input[type=search], .filters select, .work-state select,
 .email-cell > input {
   height:var(--control-h-lg); border-radius:var(--radius-control);
-  border:1px solid var(--line-strong);
+  border:1px solid var(--n-300); background:var(--n-0); color:var(--n-900);
 }
-.filters select:hover, .work-state select:hover, .email-cell > input:hover,
-.email-cell > textarea:hover, .work-state textarea:hover { border-color:var(--accent-border); }
+.email-cell > textarea, .work-state textarea {
+  border:1px solid var(--n-300); border-radius:var(--radius-control); background:var(--n-0);
+}
+.filters input[type=search]:hover, .filters select:hover, .work-state select:hover,
+.email-cell > input:hover, .email-cell > textarea:hover, .work-state textarea:hover { border-color:var(--n-400); }
+.filters input[type=search]:focus, .filters select:focus, .work-state select:focus,
+.email-cell > input:focus, .email-cell > textarea:focus, .work-state textarea:focus {
+  border-color:var(--accent-bright); box-shadow:var(--ring); outline:none;
+}
+input::placeholder, textarea::placeholder { color:var(--n-500); opacity:1; }
 
-/* --- Chips: one scale for status/tone badges and counters. */
+/* --- Chips: soft fill, no outline, square-ish corners, one scale. */
 .badge {
-  border-radius:999px; font-size:11.5px; font-weight:650; line-height:1.2;
-  padding:3px 10px; letter-spacing:0;
+  border:1px solid transparent; border-radius:var(--radius-chip);
+  font-size:12px; font-weight:550; line-height:1.25; padding:3px 8px; letter-spacing:0;
 }
+.tone-green { background:#e8f5ee; color:#17603f; }
+.tone-blue { background:#f1ebfb; color:#4d2d8c; }
+.tone-red { background:#fdecee; color:#a1202c; }
+.tone-amber { background:#fdf2df; color:#7a4a0c; }
+.tone-gray { background:var(--n-100); color:var(--n-700); }
+.badge.tone-green, .badge.tone-blue, .badge.tone-red, .badge.tone-amber, .badge.tone-gray { border-color:transparent; }
 .sec-count, .queue-group-count {
-  background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent-border);
-  border-radius:999px; font-weight:700; font-variant-numeric:tabular-nums;
+  background:var(--n-100); color:var(--n-700); border:0;
+  border-radius:var(--radius-chip); font-weight:600;
 }
 
-/* --- Section titles: the accent marker ties every card to the same system. */
+/* --- Section titles: hierarchy from type alone, no decorative marker. */
 .focus-title, .secondary-title, .email-panel > .email-summary > .email-title {
   display:inline-flex; align-items:center; gap:10px;
 }
 .focus-title::before, .secondary-title::before, .email-panel > .email-summary > .email-title::before {
-  content:""; flex:none; width:4px; height:1.05em; border-radius:4px;
-  background:linear-gradient(180deg, var(--accent-bright), var(--accent));
+  content:none;
 }
-.quick-handoff.do-now .focus-title::before { background:linear-gradient(180deg, #d9c6ff, var(--accent-bright)); }
 
-/* --- Selection states use the accent, not ad-hoc lavender. */
+/* --- Status select keeps its tone fill but uses the neutral border. */
+.work-state .status-select { border-color:var(--n-300); border-radius:var(--radius-control); }
+/* --- Daily delta strip: quiet neutral note, not a coloured banner. */
+#deltaStrip { background:var(--n-0); border:1px solid var(--n-200); color:var(--n-700); box-shadow:none; }
+
+/* --- "Важливо для мене" tiles: white cards, tone shown by a dot + value colour. */
+.focus-tile, .focus-tile.tone-amber, .focus-tile.tone-red, .focus-tile.tone-green, .focus-tile.tone-gray, .focus-tile.tone-blue {
+  background:var(--n-0); border:1px solid var(--n-200); border-top:1px solid var(--n-200);
+  border-radius:12px; box-shadow:var(--shadow-card);
+}
+.focus-tile:hover:not(:disabled) { background:var(--n-25); border-color:var(--n-300); }
+.focus-tile .tile-label {
+  display:inline-flex; align-items:center; gap:7px; color:var(--n-500); font-weight:550;
+}
+.focus-tile .tile-label::before {
+  content:""; width:7px; height:7px; border-radius:50%; background:var(--n-400); flex:none;
+}
+.focus-tile.tone-amber .tile-label::before { background:#e09a2d; }
+.focus-tile.tone-red .tile-label::before { background:#d04452; }
+.focus-tile.tone-green .tile-label::before { background:#2f9a6c; }
+.focus-tile .tile-value { font-family:var(--font-display); font-weight:600; letter-spacing:-.01em; }
+.focus-tile.tone-amber .tile-value { color:#7a4a0c; }
+.focus-tile.tone-red .tile-value { color:#a1202c; }
+.focus-tile.tone-green .tile-value { color:#17603f; }
+.focus-tile.tone-gray .tile-value { color:var(--n-700); }
+.focus-tile.active, .focus-tile.active.tone-amber, .focus-tile.active.tone-red,
+.focus-tile.active.tone-green, .focus-tile.active.tone-gray {
+  background:var(--accent-soft); border-color:var(--accent); border-top-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent);
+}
+.focus-tile.active .tile-label { color:var(--accent); }
+.focus-panel { background:var(--n-25); border:1px solid var(--n-200); }
+.focus-items > li, .focus-panel .focus-items > li, .focus-panel .decision-line {
+  background:var(--n-0); border:1px solid var(--n-200); border-left:2px solid var(--accent-border);
+}
+
+/* --- Selection: accent edge + tint, no extra outline. */
+.row:hover { background:var(--n-25); }
 #list .row.selected {
-  background:var(--accent-soft); box-shadow:inset 0 0 0 1.5px var(--accent-border);
+  background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent);
 }
 #list .row.selected::before { background:var(--accent) !important; }
-.focus-tile.active { box-shadow:0 0 0 2px var(--accent); background:var(--accent-soft); }
+#list .row.selected .row-content { color:var(--n-900); }
+.focus-tile.active { box-shadow:0 0 0 1.5px var(--accent); background:var(--accent-soft); }
 .focus-tile.active .tile-label { color:var(--accent); }
-.queue-group { color:var(--accent-ink); }
+.queue-group { color:var(--n-700); }
 
-/* --- Links read as accent text, never default blue. */
-#detail a:not(.jira-button):not(.file-button), .sec-link { color:var(--accent); }
-#detail a:not(.jira-button):not(.file-button):hover, .sec-link:hover { color:var(--accent-strong); }
-
-/* --- Hero card keeps the signature gradient, built from the same tokens. */
-.quick-handoff.do-now {
-  background:radial-gradient(at 88% 8%, var(--accent-glow), #0000 60%),
-             linear-gradient(130deg, var(--accent-deep), var(--accent-deep-2));
+/* --- Links: accent text with a quiet underline. */
+#detail a:not(.jira-button):not(.file-button), .sec-link {
+  color:var(--accent); text-decoration:underline; text-decoration-color:#5d37a04d;
+  text-underline-offset:2px;
+}
+#detail a:not(.jira-button):not(.file-button):hover, .sec-link:hover {
+  color:var(--accent-strong); text-decoration-color:currentColor;
 }
 
 @media (forced-colors:active) {
-  .focus-title::before, .secondary-title::before, .email-panel > .email-summary > .email-title::before { background:CanvasText; }
   .focus-tile.active { outline:2px solid Highlight; }
+  .badge { border-color:CanvasText; }
 }
 @media (prefers-reduced-motion:reduce) {
   button:not(.row):not(.focus-tile), .data-menu > summary, a.file-button, .tools > a { transition:none; }
@@ -2529,9 +2651,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .filters select, .work-state select { padding:0 34px 0 12px; line-height:normal; font-size:13.5px; }
 /* Legacy container rules re-stated against the system metrics (they out-rank the base). */
 .work-state .state-actions button, .work-state .state-actions #done, .email-panel .actions button {
-  font-weight:600; font-size:13.5px; line-height:1; white-space:nowrap;
+  font-weight:550; font-size:13.5px; line-height:1; white-space:nowrap;
   min-height:var(--control-h); height:var(--control-h); padding:0 14px;
   border-radius:var(--radius-control);
 }
+.work-state .state-actions #done { font-weight:600; }
 /* Keep native hidden semantics above every display rule (cloud hides local-only actions). */
 [hidden] { display:none !important; }
