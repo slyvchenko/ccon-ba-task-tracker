@@ -161,7 +161,8 @@ SECRET_PAIR = re.compile(r'(\b[\w.\-]*' + SECRET_WORD + r'[\w.\-]*\s*=\s*)(?:"([
 SECRET_SCHEME = re.compile(r'\b(Bearer|Basic|Digest|Token)\s+[A-Za-z0-9._~+/=\-]{6,}', re.I)
 # Applied only to isolated plain-text segments (never to serialized JSON or markup), so it may run to end of line.
 SECRET_HEADER = re.compile(r'(?i)\b((?:proxy-)?authorization|set-cookie|cookie|x-api-key|apikey)(\s*:)[^\r\n]*')
-MARKUP = re.compile(r'(<!\[CDATA\[.*?\]\]>|<!--.*?-->|<[^<>]*>)', re.S)
+# Quote-aware: a '>' inside a quoted attribute value does not end the tag.
+MARKUP = re.compile(r'(<!\[CDATA\[.*?\]\]>|<!--.*?-->|<(?:[^<>"\']|"[^"]*"|\'[^\']*\')*>)', re.S)
 ATTRIBUTE = re.compile(r'(\s)([\w.:\-]+)(\s*=\s*)(?:"([^"]*)"|\'([^\']*)\')')
 
 
@@ -192,7 +193,10 @@ def _redact_markup(text):
             parts[i] = _redact_plain(part)
         elif part.startswith('<![CDATA['):
             parts[i] = '<![CDATA[' + _redact_plain(part[9:-3]) + ']]>'
-        elif not part.startswith('<!--'):
+        elif part.startswith('<!--'):
+            # Diagnostics in comments can carry credentials too; keep the delimiters.
+            parts[i] = '<!--' + _redact_plain(part[4:-3]) + '-->'
+        else:
             parts[i] = _redact_tag(part)
     return ''.join(parts)
 

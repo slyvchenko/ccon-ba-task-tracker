@@ -108,6 +108,19 @@ class EsLogsTest(unittest.TestCase):
         self.assertEqual(data['passengerCount'], 2)
         self.assertNotIn('q', data['msg'].replace('Cookie', ''))
 
+    def test_gt_inside_attribute_and_comments_are_masked_in_archive(self):
+        import xml.dom.minidom
+        body = ('<r><Login password="abc>def"/><!-- retry with Authorization: Bearer zzzzzzzz -->'
+                '<!-- password=hunter2 --><Ok/></r>')
+        data, _ = es_logs.build_zip([{'time': '2026-10-09T12:54:46', 'domain': 'supplier', 'supplier': 'AirFranceKLM',
+                                      'requestorMethodName': 'pnrs', 'request_action': 'OrderRetrieve',
+                                      'request_body': body, 'response_body': RS}])
+        archive = ZipFile(io.BytesIO(data))
+        text = archive.read([n for n in archive.namelist() if n.endswith('request-body.xml')][0]).decode()
+        for secret in ('abc>def', 'def"', 'zzzzzzzz', 'hunter2'):
+            self.assertNotIn(secret, text)
+        xml.dom.minidom.parseString(text)
+
     def test_cookie_inside_serialized_metadata_is_masked_in_archive(self):
         data, _ = es_logs.build_zip([{'time': '2026-10-09T12:54:48', 'domain': 'error',
                                       'requestorMethodName': 'pnrs',
