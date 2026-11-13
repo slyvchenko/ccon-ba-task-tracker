@@ -3,20 +3,30 @@ export function decisionsMarkup(data, escape) {
   const entries = (data.decisions || []).slice(-75).reverse();
   const states = {PROPOSED:'Пропозиція',CONFIRMED:'Підтверджено аналітиком',
     SUPERSEDED:'Замінено',DISPUTED:'Оскаржено'};
-  const list = entries.map(d =>
-    '<div class="question-record"><b>' + escape(states[d.status] || d.status) +
-      '</b> · ' + escape(d.id) +
-      '<p>' + escape(d.text) + '</p>' +
-      (d.impact ? '<p><b>Вплив на задачу:</b> ' + escape(d.impact) + '</p>' : '') +
-      (d.supersedes ? '<p>Замінює ' + escape(d.supersedes) + '</p>' : '') +
-      (d.supersededBy ? '<p>Замінене рішенням ' + escape(d.supersededBy) + '</p>' : '') +
-      '<p><a href="' + escape(d.sourceUrl) + '" rel="noopener noreferrer" target="_blank">Джерело / контекст</a>' +
-      ' · ' + escape(d.origin || 'HUMAN') + '</p></div>').join('');
-  return '<p class="muted">AI може лише запропонувати рішення. Підтвердження, оскарження і заміна виконуються тільки вручну. ' +
-    'Посилання на джерело не означає автоматичної перевірки його змісту. ' +
+  const tones = {PROPOSED:'tone-amber',CONFIRMED:'tone-green',SUPERSEDED:'tone-gray',DISPUTED:'tone-red'};
+  const link = d => d.sourceUrl ? ' <a href="' + escape(d.sourceUrl) + '" rel="noopener noreferrer" target="_blank">джерело ↗</a>' : '';
+  const line = d => '<li class="decision-line"><span class="badge ' + (tones[d.status] || 'tone-gray') + '">' +
+    escape(states[d.status] || d.status) + '</span><span>' + escape(d.text) +
+    (d.impact ? ' <span class="muted">· Вплив на задачу: ' + escape(d.impact) + '</span>' : '') + link(d) + '</span></li>';
+  const current = entries.filter(d => d.status !== 'SUPERSEDED');
+  const replaced = entries.filter(d => d.status === 'SUPERSEDED');
+  const confirmed = current.filter(d => d.status === 'CONFIRMED').length;
+  const status = current.length
+    ? '<p class="focus-status"><span class="badge ' + (confirmed === current.length ? 'tone-green' : 'tone-amber') + '">' +
+      escape(confirmed) + ' з ' + escape(current.length) + ' підтверджено</span> ' +
+      (confirmed === current.length ? 'Усі рішення підтверджені' : 'Пропозиції AI чекають на твоє рішення') + '</p>'
+    : '';
+  const compact = current.length
+    ? status + '<ul class="decision-list">' + current.map(line).join('') + '</ul>'
+    : '<p class="focus-status"><span class="badge tone-gray">Немає</span> Історія рішень поки порожня.</p>';
+  return compact +
+    '<details class="decision-manage"><summary>Керувати рішеннями та історія</summary>' +
+    '<p class="muted">AI може лише запропонувати рішення. Підтвердження, оскарження і заміна виконуються тільки вручну. ' +
     'Зміни не переписують Jira та готовий опис.</p>' +
-    (list || '<p>Історія рішень поки порожня.</p>') +
-    '<div class="question-record"><div class="section-label">Керування рішенням</div>' +
+    (replaced.length ? '<div class="section-label">Замінені рішення</div><ul class="decision-list">' +
+      replaced.map(d => line(d).replace('</li>', (d.supersededBy ? ' <span class="muted">→ ' + escape(d.supersededBy) + '</span>' : '') + '</li>')).join('') + '</ul>' : '') +
+    (entries.length ? '<div class="section-label">ID рішень</div><p class="muted">' + entries.map(d => escape(d.id) + ' — ' + escape(states[d.status] || d.status)).join('<br>') + '</p>' : '') +
+    '<div class="question-record">' +
     '<label>Дія<select id="decisionAction"><option value="propose">Нова пропозиція</option>' +
     '<option value="confirm">Підтвердити пропозицію</option>' +
     '<option value="dispute">Оскаржити рішення</option><option value="supersede">Замінити рішення</option></select></label>' +
@@ -31,7 +41,7 @@ export function decisionsMarkup(data, escape) {
        '<li>' + escape(e.at) + ' · ' + escape(e.id) + ': ' +
         escape(e.from || 'NEW') + ' → ' + escape(e.to) +
         ' (' + escape(e.actor) + '), ' + escape(e.reason) + '</li>').join('') +
-    '</ol></details>';
+    '</ol></details></details>';
 }
 export async function loadTaskDecisions(key, api, escape, notify, current, getActiveScope=()=>current) {
   const node = document.getElementById('decisionTracker');

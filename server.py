@@ -282,6 +282,12 @@ def handler(desk, cloud=None, error_budget=None):
                 if re.fullmatch(r'/api/logs/CCON-\d+/folder', path):
                     from log_attachments import open_task_folder
                     return self.send(200, open_task_folder(desk, path.split('/')[3]))
+                if re.fullmatch(r'/api/logs/CCON-\d+/fetch', path):
+                    if cloud:
+                        return self.send(403, {'error': 'Windows-local workflow disabled in cloud.'})
+                    # Read the task's flows straight from Elasticsearch (Kibana backend).
+                    from es_logs import fetch_for_plan
+                    return self.send(200, fetch_for_plan(desk.root, path.split('/')[3]))
                 if path == '/api/email/open-batch':
                     return self.send(200, open_email_batch(data.get('items')))
                 if path == '/api/import':

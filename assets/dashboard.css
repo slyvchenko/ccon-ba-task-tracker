@@ -2,21 +2,32 @@
    Keep canonical task-meta-compact with independent Jira/manual provenance.
    Do not alter core grid, AERTiCKET branding, evidence, email or focus styles. */
 :root {
-  font-family:Aptos,"Segoe UI",Arial,sans-serif;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
   font-size:15px;
-  color:#1e2c36;
-  background:var(--brand-canvas);
+  color:var(--ink);
+  background:var(--canvas);
   font-synthesis:none;
-  --line:#dbe3e9;
-  --muted:#64717b;
+  --line:#e6e0ed;
+  --muted:#5e576d;
   --blue:var(--brand-blue);
-  --green:#126b48;
-  --red:#a53837;
-  --amber:#916016;
-  --brand-blue:#0879b6;
-  --brand-ink:#161f27;
-  --brand-canvas:#f4f7f9;
-  --brand-blue-light:#e7f3f9
+  --green:#155640;
+  --red:#9b1e2a;
+  --amber:#744209;
+  --brand-blue:#5d37a0;
+  --brand-ink:#211b31;
+  --brand-canvas:#f8f6fb;
+  --brand-blue-light:#eee7f8;
+  --ink:var(--brand-ink);
+  --line-strong:#ddd4e9;
+  --purple:#58339b;
+  --purple-strong:var(--brand-blue);
+  --purple-hover:#4b2a89;
+  --purple-soft:#f3edfa;
+  --purple-tint:var(--brand-blue-light);
+  --kicker:#635179;
+  --paper:#fff;
+  --canvas:var(--brand-canvas);
+  --card-shadow:0 4px 15px #392a530b
 }
 * {
   box-sizing:border-box
@@ -214,10 +225,10 @@ textarea {
   -webkit-line-clamp:2;
   -webkit-box-orient:vertical;
   overflow:hidden;
-  font-size:13px;
+  font-size:13.5px;
   font-weight:400;
   margin:3px 0 4px;
-  line-height:1.35;
+  line-height:1.4;
   overflow-wrap:anywhere
 }
 .rank {
@@ -1504,3 +1515,877 @@ a:focus-visible {
 @media (forced-colors:active) {
   .technical-token {background:Canvas;color:CanvasText;border:1px solid CanvasText}
 }
+/* ==========================================================================
+   Radar theme (2026-11-13): light lavender workspace, white rounded cards,
+   uppercase kickers, dark purple hero for "Що зробити зараз".
+   Appended last so it overrides earlier rules without touching layout logic.
+   ========================================================================== */
+/* Radar palette tokens live in the canonical :root at the top of this file. */
+body {
+  background:radial-gradient(at 92% 0, #ece3fa 0, #0000 42rem), var(--canvas);
+  color:var(--ink);
+  min-height:100dvh;
+}
+
+/* Header */
+header {
+  background:transparent;
+  border-bottom:1px solid var(--line);
+}
+h1 { color:var(--ink); letter-spacing:-.04em; font-weight:740; }
+.brand-wordmark { letter-spacing:-.05em; }
+.brand-aer { color:var(--purple); }
+.brand-desk .muted { color:var(--kicker); font-size:12px; }
+
+/* Buttons */
+button, .data-menu>summary {
+  color:#4d3969;
+  background:#fff;
+  border:1px solid var(--line-strong);
+  border-radius:10px;
+  font-weight:700;
+  font-size:13px;
+  min-height:38px;
+}
+button:hover:not(:disabled), .data-menu>summary:hover { background:var(--purple-soft); }
+/* .primary colours come from the canonical rule via --brand-blue (radar purple). */
+.primary:hover:not(:disabled), button.primary:hover:not(:disabled) { background:var(--purple-hover); }
+.quiet { min-height:34px; }
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline:2px solid var(--purple);
+  outline-offset:1px;
+}
+.jira-button {
+  background:var(--purple-strong);
+  border-color:var(--purple-strong);
+  border-radius:10px;
+  font-weight:700;
+}
+.jira-button:hover { background:var(--purple-hover); }
+.data-menu-items {
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:0 13px 34px #3f26562a;
+}
+
+/* Inputs */
+input, select, textarea {
+  color:var(--ink);
+  background:#fff;
+  border:1px solid #dcd1e9;
+  border-radius:8px;
+}
+label { color:#382b4c; font-weight:700; }
+
+/* Status bar + delta strip */
+.statusbar {
+  background:transparent;
+  color:var(--muted);
+}
+.statusbar.error { color:var(--red); }
+.delta-strip {
+  color:#4d4160;
+  background:#f2edf8;
+  border:1px solid #e3d9ef;
+  border-radius:10px;
+  margin:0 28px 4px;
+}
+
+/* Cards: queue + detail */
+aside, main {
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:15px;
+  box-shadow:var(--card-shadow);
+}
+.filters { background:transparent; border-bottom:1px solid var(--line); }
+.row { border-bottom:1px solid var(--line); background:transparent; }
+.row:hover { background:#f8f2fc; }
+.row.selected { background:var(--purple-tint); border-left-color:var(--purple); }
+.row.selected .row-content { color:#472582; }
+.row-number { background:#f8f4fa; border-right:1px solid var(--line); color:var(--muted); }
+.rank { color:#674a92; font-weight:650; font-variant-numeric:tabular-nums; }
+
+/* Headings & labels */
+h2 { color:var(--ink); letter-spacing:-.035em; font-weight:740; }
+h3 { color:var(--ink); letter-spacing:-.02em; font-weight:740; }
+.section-label, .logs-heading h4 {
+  color:var(--kicker);
+  font-size:10px;
+  font-weight:750;
+  letter-spacing:.105em;
+  text-transform:uppercase;
+}
+.task-key, .task-date { color:var(--muted); }
+.muted { color:var(--muted); }
+
+/* Panels */
+.panel {
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:15px;
+  box-shadow:var(--card-shadow);
+}
+.description { border-top:1px solid var(--line); }
+.description summary, .secondary-details > summary { color:#4c3371; font-weight:700; }
+.email-summary { color:var(--ink); }
+
+/* Badges as pills */
+.badge {
+  border-radius:999px;
+  font-weight:650;
+  font-size:11px;
+  padding:3px 9px;
+  background:#f2edf8;
+  color:#4d4160;
+}
+.tone-green { background:#edf7f2; color:#155640; }
+.tone-blue { background:var(--purple-tint); color:#472582; }
+.tone-red { background:#fbeaec; color:#9b1e2a; }
+.tone-amber { background:#fff4e6; color:#744209; }
+.tone-gray { background:#f1eef5; color:#5b526a; }
+.status-select.tone-green { background:#edf7f2; border-color:#cfe7df; }
+.status-select.tone-blue { background:var(--purple-tint); border-color:#d6c8ef; }
+.status-select.tone-red { background:#fbeaec; border-color:#efc9ce; }
+.status-select.tone-amber { background:#fff4e6; border-color:#f1d7b3; }
+.status-select.tone-gray { background:#f8f6fb; }
+
+/* Callouts */
+.analysis-missing, .saved-note {
+  color:#744209;
+  background:#fff4e6;
+  border:1px solid #f1d7b3;
+  border-radius:10px;
+}
+.missing-info li::marker { color:var(--purple); font-weight:700; }
+
+/* Hero: "Що зробити зараз" */
+.quick-handoff.do-now {
+  color:#fff;
+  background:radial-gradient(at 88% 8%, #4b337a, #0000 60%), linear-gradient(130deg, #241a3d, #332452);
+  border:0;
+  border-radius:19px;
+  padding:22px 26px;
+  box-shadow:0 13px 34px #3f26562a;
+}
+.quick-handoff.do-now .section-label { color:#e1d5f7; margin-top:0; }
+.quick-handoff.do-now .next-action {
+  color:#fff;
+  font-size:clamp(16px, 1.6vw, 19px);
+  font-weight:650;
+  letter-spacing:-.01em;
+  line-height:1.45;
+  max-width:80ch;
+}
+.quick-handoff.do-now .quick-proof-note { color:#d9c8f5; }
+.quick-handoff.do-now button {
+  color:#f4ecff;
+  background:#fffdff12;
+  border:1px solid #bfa5ee6b;
+}
+.quick-handoff.do-now button:hover:not(:disabled) { background:#ffffff24; }
+.quick-handoff.do-now button:disabled { opacity:.55; }
+
+/* "Ситуація за 30 секунд" */
+.ba-brief { border-left:0; }
+.ba-brief .brief-overview { color:var(--ink); font-size:15px; }
+
+/* Secondary group */
+.secondary-details { background:#fbf9fd; }
+.email-column { min-width:0; }
+.secondary-details { margin-top:16px; }
+.secondary-details > summary { cursor:pointer; }
+.secondary-details[open] > summary { margin-bottom:10px; }
+
+/* Dialog */
+dialog {
+  border:1px solid var(--line);
+  border-radius:15px;
+  box-shadow:0 13px 34px #3f26562a;
+  color:var(--ink);
+}
+kbd {
+  background:#f3edf8;
+  border:1px solid #e5dbef;
+  border-radius:6px;
+}
+@media (max-width:760px) {
+  .delta-strip { margin:0 12px 4px; }
+  .quick-handoff.do-now { border-radius:15px; padding:16px; }
+}
+
+/* Focus layout (2026-11-13): large section titles + one "Важливо для мене" table. */
+.focus-title {
+  margin:0 0 8px;
+  font-size:clamp(20px, 1.9vw, 24px);
+  font-weight:760;
+  letter-spacing:-.035em;
+  line-height:1.2;
+  color:var(--ink);
+}
+.quick-handoff.do-now .focus-title { color:#fff; }
+.ba-brief .panel-title { align-items:center; }
+.ba-brief .panel-title .focus-title { margin:0; }
+.focus-table { padding:18px 20px; }
+.focus-row {
+  display:grid;
+  grid-template-columns:minmax(150px, 210px) minmax(0, 1fr);
+  gap:8px 18px;
+  padding:12px 0;
+  border-top:1px solid var(--line);
+}
+.focus-row:first-of-type { border-top:0; }
+.focus-label {
+  color:#4c3371;
+  font-size:13px;
+  font-weight:740;
+  line-height:1.4;
+}
+.focus-cell { min-width:0; font-size:14px; line-height:1.5; }
+.focus-cell .missing-info { margin:0; padding-left:20px; }
+.focus-cell > details.description { margin-top:0; border-top:0; padding-top:0; }
+.focus-cell .evidence-report { margin:0 0 8px; }
+.focus-draft > summary { cursor:pointer; color:#4c3371; font-weight:700; }
+.focus-draft[open] > summary { margin-bottom:8px; }
+.decision-list { margin:0; padding:0; list-style:none; display:grid; gap:6px; }
+.decision-line { line-height:1.5; overflow-wrap:anywhere; }
+.decision-manage { margin-top:8px; }
+.decision-manage > summary { cursor:pointer; color:var(--muted); font-size:12px; font-weight:650; }
+@media (max-width:760px) {
+  .focus-row { grid-template-columns:minmax(0, 1fr); gap:4px; }
+}
+
+/* Larger collapsible headings (secondary group and all similar summaries). */
+.secondary-details > summary {
+  font-size:18px;
+  font-weight:740;
+  letter-spacing:-.02em;
+  color:#4c3371;
+}
+.description summary,
+.focus-draft > summary,
+.secondary-details details > summary,
+.focus-cell details > summary {
+  font-size:15px;
+  font-weight:700;
+}
+.focus-label { font-size:14px; }
+
+/* ==========================================================================
+   Layout + heading hierarchy (2026-11-13)
+   L1 task title (h2)        26px / 760
+   L2 block title            20px / 740  (.focus-title, "Мій статус", "Чернетка листа")
+   L3 sub-heading            15px / 700  (.sub-heading, collapsible summaries)
+   L4 label                  13px / 700  (.section-label, form labels)
+   Body                      14.5px / 400
+   ========================================================================== */
+.split-row {
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:16px;
+  align-items:stretch;
+  margin-bottom:16px;
+}
+.split-col { min-width:0; display:flex; flex-direction:column; }
+.split-col > .panel { flex:1; margin-bottom:0; }
+@media (max-width:1150px) {
+  .split-row { grid-template-columns:minmax(0, 1fr); }
+}
+
+/* L1 */
+main h2 { font-size:26px; font-weight:760; letter-spacing:-.04em; line-height:1.2; margin:8px 0 14px; }
+
+/* L2 */
+.focus-title,
+.manual-status-label label,
+.email-summary > span:first-child {
+  font-size:20px;
+  font-weight:740;
+  letter-spacing:-.03em;
+  line-height:1.25;
+  color:var(--ink);
+  text-transform:none;
+  margin:0 0 10px;
+}
+.manual-status-label label { margin:0; }
+.manual-status-label { margin-bottom:10px; }
+.email-summary { margin-bottom:4px; }
+.quick-handoff.do-now .focus-title { color:#fff; margin-bottom:8px; }
+
+/* L3 */
+.sub-heading {
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:-.01em;
+  color:#382b4c;
+  margin:16px 0 4px;
+  text-transform:none;
+}
+.ba-brief .sub-heading { color:#382b4c; }
+
+/* L4 */
+.section-label, .logs-heading h4 {
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:0;
+  text-transform:none;
+  color:#4c3371;
+  margin:14px 0 6px;
+}
+label { font-size:13px; }
+
+/* Body */
+.pre, .focus-cell, .ba-brief .brief-overview { font-size:14.5px; line-height:1.55; }
+.ba-brief .brief-overview { color:var(--ink); }
+
+/* Hero body text: smaller, regular weight, under the large title */
+.quick-handoff.do-now .next-action {
+  font-size:15px;
+  font-weight:400;
+  line-height:1.55;
+  letter-spacing:0;
+  color:#f0e9fa;
+  margin:0 0 10px;
+}
+
+/* Simplified queue (2026-11-13): search + two filters, compact rows
+   (key + status on one line, title max two lines), lane-only group headings. */
+.filters { gap:8px; padding:14px; }
+.filter-main {
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:8px;
+}
+.filter-main select, .filters input[type=search] { min-height:38px; font-size:13px; }
+.queue-count { font-size:12px; color:var(--muted); }
+#list .row {
+  display:block;
+  padding:10px 14px 10px 12px;
+  border-left:3px solid transparent;
+}
+#list .row.selected { border-left-color:var(--purple); }
+.row-content { display:grid; gap:4px; min-width:0; }
+.row-head {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+.row-head .rank { font-size:12px; color:var(--muted); font-weight:650; flex:none; }
+.row-head .row-statuses { display:flex; gap:4px; margin-left:auto; min-width:0; flex-wrap:nowrap; }
+.row-head .row-statuses .badge { margin:0; font-size:10.5px; padding:2px 8px; white-space:nowrap; }
+.row-head .row-statuses .badge .dot { display:none; }
+.queue-group {
+  position:sticky;
+  top:0;
+  z-index:1;
+  padding:10px 14px 6px;
+  font-size:12px;
+  font-weight:740;
+  letter-spacing:0;
+  text-transform:none;
+  color:#4c3371;
+  background:#fbf9fd;
+  border-bottom:1px solid var(--line);
+}
+
+/* ==========================================================================
+   Focus layout v2 (2026-11-13)
+   Row 1: "Що зробити зараз" | "Мій статус"; then full-width blocks.
+   Stronger section bubbles, titled panel headers, uniform accordions.
+   ========================================================================== */
+.panel {
+  border:1.5px solid #d6c8ea;
+  border-radius:16px;
+  box-shadow:0 1px 0 #ffffff inset, 0 6px 20px #392a5314;
+  margin-bottom:18px;
+}
+.split-row { margin-bottom:18px; }
+.split-col > .panel { margin-bottom:0; }
+
+/* Panel header: title with a divider under it */
+.panel > .focus-title,
+.ba-brief > .panel-title,
+.work-state > .manual-status-label,
+.email-panel > .email-summary {
+  padding-bottom:10px;
+  margin-bottom:12px;
+  border-bottom:1px solid var(--line);
+}
+.ba-brief > .panel-title .focus-title { margin:0; padding:0; border:0; }
+.quick-handoff.do-now > .focus-title { border-bottom:1px solid #ffffff2e; padding-bottom:10px; margin-bottom:12px; }
+.email-toggle { display:none; }
+.email-panel > .email-summary { cursor:default; pointer-events:none; }
+.email-panel > .email-summary::-webkit-details-marker { display:none; }
+.email-panel > .email-summary { list-style:none; }
+
+/* Hero sits next to status: fill height */
+.split-col > .quick-handoff.do-now { display:flex; flex-direction:column; }
+.quick-handoff.do-now .quick-proof-note { margin-top:auto; padding-top:8px; }
+
+/* Focus table */
+.focus-table { padding:18px 22px 8px; }
+.focus-row {
+  grid-template-columns:minmax(150px, 190px) minmax(0, 1fr);
+  padding:14px 0;
+  border-top:1px solid var(--line);
+}
+.focus-table > .focus-title + .focus-row { border-top:0; padding-top:4px; }
+.focus-label {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;
+  font-size:14px;
+  font-weight:740;
+  color:#382b4c;
+}
+.focus-sub { font-size:11.5px; font-weight:600; color:var(--muted); }
+.count-chip {
+  display:inline-grid;
+  place-items:center;
+  min-width:22px;
+  height:22px;
+  padding:0 6px;
+  border-radius:999px;
+  background:var(--purple-strong);
+  color:#fff;
+  font-size:11px;
+  font-weight:750;
+}
+.focus-label .count-chip { margin-top:2px; }
+.focus-strong { margin:0 0 6px; font-weight:700; color:var(--ink); }
+.focus-list { margin:6px 0 0; padding-left:20px; display:grid; gap:4px; }
+.focus-cell p { margin:0 0 6px; }
+.focus-cell .missing-info li + li { margin-top:6px; }
+
+/* Collapsible "more" links inside focus rows: quiet, uniform */
+.focus-more, .focus-cell details, .decision-manage { margin-top:8px; }
+.focus-more > summary, .focus-cell details > summary, .decision-manage > summary {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  list-style:none;
+  font-size:13px;
+  font-weight:700;
+  color:var(--purple);
+}
+.focus-more > summary::-webkit-details-marker,
+.focus-cell details > summary::-webkit-details-marker,
+.decision-manage > summary::-webkit-details-marker { display:none; }
+.focus-more > summary::before, .focus-cell details > summary::before, .decision-manage > summary::before {
+  content:"›";
+  font-size:16px;
+  line-height:1;
+  transition:transform .15s ease;
+}
+.focus-more[open] > summary::before, .focus-cell details[open] > summary::before, .decision-manage[open] > summary::before { transform:rotate(90deg); }
+.focus-more[open] > summary, .focus-cell details[open] > summary { margin-bottom:8px; }
+
+/* Secondary: header + accordion list */
+.secondary-details { background:#fbf9fd; padding:0; overflow:hidden; }
+.secondary-details > summary {
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:16px 22px;
+  cursor:pointer;
+  list-style:none;
+}
+.secondary-details > summary::-webkit-details-marker { display:none; }
+.secondary-details > summary::after {
+  content:"›";
+  margin-left:auto;
+  font-size:22px;
+  color:var(--purple);
+  transition:transform .15s ease;
+}
+.secondary-details[open] > summary::after { transform:rotate(90deg); }
+.secondary-details[open] > summary { border-bottom:1px solid var(--line); margin:0; }
+.secondary-title { font-size:20px; font-weight:740; letter-spacing:-.03em; color:var(--ink); }
+.secondary-sub { font-size:13px; font-weight:500; color:var(--muted); letter-spacing:0; }
+.accordion { padding:10px 22px 18px; background:#fff; }
+.accordion > details.description {
+  margin:0;
+  padding:0;
+  border:0;
+  border-bottom:1px solid var(--line);
+}
+.accordion > details.description > summary {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:13px 2px;
+  list-style:none;
+  font-size:15px;
+  font-weight:700;
+  color:#382b4c;
+}
+.accordion > details.description > summary::-webkit-details-marker { display:none; }
+.accordion > details.description > summary::before {
+  content:"›";
+  font-size:18px;
+  color:var(--purple);
+  width:12px;
+  transition:transform .15s ease;
+}
+.accordion > details.description[open] > summary::before { transform:rotate(90deg); }
+.accordion > details.description[open] { padding-bottom:12px; }
+.accordion > .muted { margin:12px 0 0; }
+
+@media (prefers-reduced-motion:reduce) {
+  .focus-more > summary::before, .secondary-details > summary::after, .accordion > details.description > summary::before { transition:none; }
+}
+@media (max-width:760px) {
+  .focus-table, .accordion { padding-left:14px; padding-right:14px; }
+  .secondary-details > summary { padding:14px; }
+}
+
+/* Focus table v3: one pattern per row — status line, clean aligned items, "›" more. */
+.focus-cell { font-size:14px; line-height:1.55; color:var(--ink); }
+.focus-cell ul, .focus-cell ol { margin:0; padding:0; }
+.focus-cell li { margin:0; }
+.focus-status {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0 0 8px !important;
+  color:var(--muted);
+  font-size:13px;
+}
+.focus-status .badge { margin:0; }
+.focus-items {
+  list-style:none;
+  display:grid;
+  gap:6px;
+}
+.focus-items > li {
+  position:relative;
+  padding:8px 12px 8px 14px;
+  background:#faf8fd;
+  border:1px solid var(--line);
+  border-left:3px solid #c4a9ed;
+  border-radius:8px;
+}
+.decision-list { list-style:none; display:grid; gap:6px; padding:0; margin:0; }
+.decision-line {
+  display:grid;
+  grid-template-columns:auto minmax(0, 1fr);
+  align-items:baseline;
+  gap:10px;
+  padding:8px 12px;
+  background:#faf8fd;
+  border:1px solid var(--line);
+  border-radius:8px;
+}
+.decision-line > .badge { margin:0; justify-self:start; }
+.focus-cell .evidence-report { border-left:3px solid #c4a9ed; background:#faf8fd; border-radius:8px; padding:10px 12px; }
+.focus-cell .muted { font-size:13px; }
+.focus-row { align-items:start; }
+.focus-label { padding-top:3px; }
+
+/* ==========================================================================
+   "Важливо для мене" v4: five equal status tiles + one detail panel.
+   ========================================================================== */
+.focus-tiles {
+  display:grid;
+  grid-template-columns:repeat(5, minmax(0, 1fr));
+  gap:10px;
+  margin:0 0 16px;
+}
+.focus-tile {
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:6px;
+  min-height:76px;
+  padding:12px 14px;
+  text-align:left;
+  background:#fff;
+  border:1.5px solid var(--line);
+  border-top:4px solid #cfc6dc;
+  border-radius:12px;
+  box-shadow:none;
+  font-weight:400;
+}
+.focus-tile:hover:not(:disabled) { background:#faf7fd; }
+.focus-tile .tile-label { font-size:12px; font-weight:650; color:var(--muted); line-height:1.2; }
+.focus-tile .tile-value { font-size:15px; font-weight:740; line-height:1.25; color:var(--ink); }
+.focus-tile.tone-amber { border-top-color:#e0a24a; }
+.focus-tile.tone-amber .tile-value { color:#8a4b00; }
+.focus-tile.tone-red { border-top-color:#c94b56; }
+.focus-tile.tone-red .tile-value { color:#9b1e2a; }
+.focus-tile.tone-green { border-top-color:#3f9a77; }
+.focus-tile.tone-green .tile-value { color:#155640; }
+.focus-tile.tone-gray .tile-value { color:#5b526a; }
+.focus-tile.active {
+  background:var(--purple-tint);
+  border-color:#b9a1e2;
+  box-shadow:0 0 0 1px #b9a1e2 inset;
+}
+.focus-tile.active .tile-label { color:#472582; }
+.focus-panel {
+  padding:16px 18px;
+  background:#fbf9fd;
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+.focus-panel-title {
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  margin:0 0 10px;
+}
+.focus-panel-title .focus-sub { font-size:12px; }
+.focus-panel .focus-status .badge { display:none; }
+.focus-panel .focus-status { font-size:13.5px; color:var(--muted); }
+.focus-panel .focus-items > li, .focus-panel .decision-line { background:#fff; }
+.focus-table { padding-bottom:18px; }
+@media (max-width:1150px) {
+  .focus-tiles { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width:640px) {
+  .focus-tiles { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
+
+/* ==========================================================================
+   Queue rows v2: tone bar on the left, key, title, status always on the
+   same left edge under the title.
+   ========================================================================== */
+#list .row {
+  position:relative;
+  padding:11px 14px 11px 18px;
+  border-left:0;
+}
+#list .row::before {
+  content:"";
+  position:absolute;
+  left:6px;
+  top:12px;
+  bottom:12px;
+  width:3px;
+  border-radius:3px;
+  background:#d9d2e4;
+}
+#list .row.row-tone-green::before { background:#3f9a77; }
+#list .row.row-tone-blue::before { background:#7448c8; }
+#list .row.row-tone-red::before { background:#c94b56; }
+#list .row.row-tone-amber::before { background:#e0a24a; }
+#list .row.selected { background:var(--purple-tint); box-shadow:inset 0 0 0 1.5px #b9a1e2; }
+.row-content { gap:3px; }
+.row-head .rank { font-size:11.5px; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
+.row-signal {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:12px;
+  font-weight:650;
+  line-height:1.3;
+}
+.row-signal-label { display:inline-flex; align-items:center; gap:6px; }
+.row-signal-label i { width:7px; height:7px; border-radius:50%; background:currentColor; flex:none; }
+.tone-text-green { color:#155640; }
+.tone-text-blue { color:#5d37a0; }
+.tone-text-red { color:#9b1e2a; }
+.tone-text-amber { color:#8a4b00; }
+.tone-text-gray { color:#6b6479; }
+.row-flag { color:#9b1e2a; font-weight:700; }
+.row-flag::before { content:"· "; color:var(--muted); font-weight:400; }
+
+/* Group headings: label + count, aligned with rows */
+.queue-group {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 14px 8px 18px;
+  font-size:12.5px;
+  font-weight:740;
+  color:#382b4c;
+  background:#f6f2fa;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+.queue-group-count {
+  min-width:24px;
+  height:20px;
+  display:inline-grid;
+  place-items:center;
+  padding:0 7px;
+  border-radius:999px;
+  background:#fff;
+  border:1px solid var(--line-strong);
+  font-size:11px;
+  font-weight:700;
+  color:#4c3371;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Tiles/panel alignment fixes */
+.focus-tile { justify-content:flex-start; }
+.focus-tile .tile-label { min-height:15px; }
+.focus-tile.active {
+  border-color:var(--line);
+  box-shadow:0 0 0 2px #b9a1e2;
+}
+.focus-tile.active.tone-amber { border-top-color:#e0a24a; }
+.focus-tile.active.tone-red { border-top-color:#c94b56; }
+.focus-tile.active.tone-green { border-top-color:#3f9a77; }
+.focus-tile.active.tone-gray { border-top-color:#cfc6dc; }
+.focus-panel { font-size:14px; line-height:1.55; color:var(--ink); }
+.focus-panel ul, .focus-panel ol { margin:0; padding:0; }
+.focus-panel li { margin:0; }
+.focus-panel p { margin:0 0 8px; }
+.focus-panel .focus-items { list-style:none; display:grid; gap:6px; }
+
+/* ===== «Другорядне»: even rows — chevron · title · count; [tag][text][source] grid ===== */
+.accordion { padding:6px 22px 14px; }
+.accordion > details.sec-section > summary { gap:10px; padding:13px 0; }
+.accordion > details.sec-section > summary::before { width:14px; flex:0 0 14px; text-align:center; }
+.sec-title { flex:1; }
+.sec-count {
+  min-width:28px; padding:2px 8px; border-radius:999px; text-align:center;
+  font-size:12px; font-weight:700; font-variant-numeric:tabular-nums;
+  background:#efe8f8; color:var(--purple); border:1px solid #ddd0ef;
+}
+.sec-count.empty { background:#f3f2f5; color:#8a8496; border-color:#e4e2e8; }
+.sec-list { list-style:none; margin:0 0 4px; padding:0 0 0 24px; }
+.panel .sec-list li, .sec-list li { margin:0; padding:9px 0; }
+.sec-row {
+  display:grid; grid-template-columns:1fr 84px; column-gap:16px; align-items:baseline;
+  border-top:1px solid #f0ecf5; font-size:14px; line-height:1.5; color:var(--ink);
+}
+.sec-row:first-child { border-top:0; }
+.sec-row.has-tag, .sec-row.sec-field { grid-template-columns:120px 1fr 84px; }
+.sec-tagcol { display:flex; }
+.sec-tag { width:100%; justify-content:center; text-align:center; font-size:11.5px; white-space:nowrap; }
+.sec-text { min-width:0; overflow-wrap:anywhere; }
+.sec-meta { display:block; font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.sec-text > .sec-meta:first-child { margin-bottom:1px; }
+.sec-text > .sec-meta:last-child:not(:first-child) { margin-top:3px; }
+.sec-link { justify-self:end; font-size:12.5px; white-space:nowrap; }
+.sec-label { font-size:12.5px; font-weight:700; color:var(--muted); text-transform:none; }
+.sec-empty { margin:0 0 12px 24px; color:var(--muted); font-size:14px; }
+@media (max-width:760px) {
+  .sec-list { padding-left:0; }
+  .sec-row, .sec-row.has-tag, .sec-row.sec-field { grid-template-columns:1fr; row-gap:4px; }
+  .sec-link { justify-self:start; }
+}
+
+/* ===== «Чернетка листа»: title + badge row, then label | field grid ===== */
+#emailDetails.email-panel { padding:18px 22px; }
+.email-panel > .email-summary { display:flex; align-items:center; gap:12px; margin:0 0 6px; }
+.email-panel > .email-summary > .email-title { font-size:20px; font-weight:740; letter-spacing:-.03em; color:var(--ink); }
+.email-panel > .email-summary > .email-badge { margin-left:auto; }
+.email-panel .email-meta { display:none; }
+.email-panel .email-intro { margin:0 0 16px; font-size:13.5px; color:var(--muted); }
+.email-grid {
+  display:grid; grid-template-columns:96px minmax(0,1fr);
+  column-gap:16px; row-gap:14px; align-items:start;
+}
+.email-grid > .email-label {
+  margin:0; padding-top:12px; font-size:13px; font-weight:700; color:var(--muted);
+}
+.email-cell { min-width:0; margin:0; }
+.email-cell > input, .email-cell > textarea { width:100%; margin:0; box-sizing:border-box; }
+.email-cell > textarea { min-height:170px; }
+.email-hint {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  margin-top:6px; font-size:12.5px; color:var(--muted);
+}
+.email-hint button { flex:0 0 auto; margin:0; }
+/* Logs as a cell: same left edge as the inputs. */
+.email-grid > .email-logs { margin:0; padding:10px 0 0; border:0; background:none; }
+.email-logs .logs-status { display:flex; align-items:baseline; gap:10px; margin:0; }
+.email-logs .logs-badge { flex:0 0 auto; }
+.email-logs .logs-reason { font-size:13.5px; color:var(--ink); }
+.email-logs .logs-flows { display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:6px; font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.email-logs > p, .email-logs .footer-note { margin:6px 0 0; font-size:12.5px; }
+.email-logs .logs-folder { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:6px; font-size:12.5px; }
+.email-logs .log-file { margin-top:10px; padding:10px 0 0; border-top:1px solid #f0ecf5; }
+.email-grid > .actions {
+  display:flex; justify-content:flex-end; gap:10px; margin:2px 0 0; padding-top:14px;
+  border-top:1px solid var(--line);
+}
+@media (max-width:760px) {
+  .email-grid { grid-template-columns:1fr; row-gap:6px; }
+  .email-grid > .email-label { padding-top:6px; }
+  .email-hint { flex-direction:column; align-items:flex-start; }
+}
+
+/* ===== «Ситуація за 30 секунд»: same frame as the email block — title row, then label | text grid ===== */
+.ba-brief.panel { padding:18px 22px; }
+.ba-brief > .brief-head {
+  display:flex; align-items:center; gap:12px; margin:0 0 14px; padding-bottom:12px;
+  border-bottom:1px solid var(--line);
+}
+.ba-brief > .brief-head > .focus-title { margin:0; }
+.ba-brief > .brief-head > .badge { margin-left:auto; }
+.brief-grid { display:grid; grid-template-columns:96px minmax(0,1fr); column-gap:16px; align-items:baseline; }
+.brief-grid > .brief-label { font-size:13px; font-weight:700; color:var(--muted); padding:10px 0; }
+.brief-grid > .brief-text {
+  margin:0; padding:10px 0; font-size:15px; line-height:1.55; font-weight:400; color:var(--ink);
+}
+.brief-grid > .brief-label:not(:first-child), .brief-grid > .brief-label:not(:first-child) + .brief-text { border-top:1px solid #f0ecf5; }
+.brief-grid > .brief-label:first-child, .brief-grid > .brief-label:first-child + .brief-text { padding-top:0; }
+.brief-grid > .brief-text.brief-overview { font-weight:500; }
+@media (max-width:760px) {
+  .brief-grid { grid-template-columns:1fr; }
+  .brief-grid > .brief-label { padding-bottom:0; }
+  .brief-grid > .brief-label + .brief-text { border-top:0 !important; padding-top:4px; }
+}
+
+/* ===== Top pair «Що зробити зараз» | «Мій статус»: identical frame =====
+   same padding, same title row with divider, content, footer pinned to bottom. */
+.split-row { align-items:stretch; }
+.split-col { display:flex; }
+.split-col > .panel.quick-handoff.do-now,
+.split-col > .panel.work-state {
+  flex:1; display:flex; flex-direction:column; margin:0; padding:18px 22px; min-width:0;
+}
+.split-col > .panel .card-head {
+  display:flex; align-items:center; gap:12px; min-height:30px;
+  margin:0 0 14px; padding:0 0 12px; border-bottom:1px solid var(--line);
+}
+.quick-handoff.do-now .card-head { border-bottom-color:#ffffff2e; }
+.split-col > .panel .card-head > .focus-title { margin:0; padding:0; border:0; }
+.split-col > .panel .card-head > .status-help { margin-left:auto; position:relative; }
+.quick-handoff.do-now > .next-action { margin:0; font-size:15px; line-height:1.55; font-weight:400; }
+.quick-handoff.do-now > .quick-proof-note { margin:10px 0 0; padding:0; font-size:12.5px; }
+.work-state > .card-label {
+  display:block; margin:0 0 6px; font-size:13px; font-weight:700; color:var(--muted);
+}
+.work-state > .card-label[for="note"] { margin-top:14px; }
+.work-state > .status-select, .work-state > #note { width:100%; box-sizing:border-box; margin:0; }
+.work-state > #note { min-height:64px; }
+/* Footers: same height, same divider, pinned to the card bottom so both lines align. */
+.split-col > .panel > .card-foot {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin:auto 0 0; padding-top:14px; min-height:40px;
+}
+.split-col > .panel > .card-foot::before {
+  content:""; flex:0 0 100%; height:1px; margin:-14px 0 13px; background:var(--line);
+}
+.quick-handoff.do-now > .card-foot::before { background:#ffffff2e; }
+.split-col > .panel > .next-action + .quick-proof-note,
+.split-col > .panel > .quick-proof-note { margin-bottom:16px; }
+.work-state > #note { margin-bottom:16px; }
+.work-state > .state-actions #done { margin-left:auto; }
+.split-col > .panel > .card-foot > button { height:36px; min-height:36px; margin:0; padding-top:0; padding-bottom:0; }
+.split-col > .panel > .card-foot > #savedIndicator { line-height:36px; }
+.email-logs .logs-folder-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.email-grid > .email-logs .log-file { padding:10px 14px; border-radius:10px; }
+.email-grid > .email-logs .log-file > * { margin:0 0 4px; }
+.email-grid > .email-logs .log-file .log-actions { margin:6px 0 0; }
+.sec-section > .sec-body { padding:0 0 12px 24px; display:grid; gap:8px; justify-items:start; }
+.sec-section > .sec-body > select, .sec-section > .sec-body > pre { width:100%; }
+.work-state > .card-help { margin:6px 0 0; font-size:12.5px; color:var(--muted); }
+.work-state > .card-label[for="manualPriority"] { margin-top:14px; }
+.row-flag-focus { color:var(--purple); }
+/* Queue filters: list | sprint on one row, work priority full width below — no truncated labels. */
+.filters .filter-row.filter-main { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.filters .filter-row.filter-main > #priorityFilter { grid-column:1 / -1; }
+.filters .filter-row.filter-main > select { width:100%; min-width:0; padding-left:10px; padding-right:24px; text-overflow:ellipsis; }
