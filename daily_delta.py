@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 from app_config import ROOT
-from apply_analysis import prepare_and_gate
+from apply_analysis import prepare_and_gate, validate_import_fields
 from review_report import diagnostics
 
 VERIFIED = 'STRUCTURALLY_VERIFIED'
@@ -101,10 +101,11 @@ def errors(phrases, root=ROOT, days=90):
         body = {'size': 1, '_source': ['cconFlowId', '@timestamp'], 'sort': [{'@timestamp': 'desc'}],
                 'track_total_hits': True,
                 'query': {'bool': {'filter': [{'term': {'domain.keyword': 'error'}},
-                                              {'range': {'@timestamp': {'gte': f'now-{days}d'}}},
+                                              {'range': {'@timestamp': {'gte': f'now-{max(days, 30)}d'}}},
                                               {'match_phrase': {'error': phrase}}]}},
                 'aggs': {'supplier': {'terms': {'field': 'supplier.keyword', 'size': 6}},
                          'method': {'terms': {'field': 'requestorMethodName.keyword', 'size': 6}},
+                         'window': {'filter': {'range': {'@timestamp': {'gte': f'now-{days}d'}}}},
                          'last30': {'filter': {'range': {'@timestamp': {'gte': 'now-30d'}}}},
                          'last7': {'filter': {'range': {'@timestamp': {'gte': 'now-7d'}}}}}}
         data = _request(url, f'/{index}/_search', body)
@@ -116,7 +117,8 @@ def errors(phrases, root=ROOT, days=90):
             continue
         aggs, hits = data['aggregations'], data['hits']['hits']
         result[phrase] = {
-            f'{days}d': data['hits']['total']['value'], '30d': aggs['last30']['doc_count'],
+            # The query spans max(days, 30) so the fixed 30d/7d windows are never truncated.
+            f'{days}d': aggs['window']['doc_count'], '30d': aggs['last30']['doc_count'],
             '7d': aggs['last7']['doc_count'],
             'suppliers': {b['key']: b['doc_count'] for b in aggs['supplier']['buckets']},
             'methods': {b['key']: b['doc_count'] for b in aggs['method']['buckets']},
@@ -134,6 +136,12 @@ def check(path, root=ROOT):
     for key, analysis in analyses.items():
         if key not in issues:
             rows.append({'key': key, 'state': 'UNKNOWN_TASK'}); ok = False; continue
+        try:
+            validate_import_fields(key, analysis)
+        except ValueError as error:
+            rows.append({'key': key, 'state': 'IMPORT_SCHEMA_INVALID', 'error': str(error)[:300]})
+            ok = False
+            continue
         fresh = analysis.get('contextFingerprint') == issues[key]['fingerprint']
         # Same evidence inputs as the import (persisted questions, attachments,
         # verified supplier method, linked issues, local sources), on a copy.

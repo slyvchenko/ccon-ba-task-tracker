@@ -40,6 +40,20 @@ def apply(path,root=ROOT,focus_issue=None,only=None):
     with pipeline_lock(root):
         return _apply(path,root,focus_issue,only)
 
+def validate_import_fields(key, analysis):
+    """Required fields, Ukrainian texts and schema, exactly as the import enforces them."""
+    for field in ('reasonUk','nextActionUk'):
+        value=analysis.get(field)
+        if not isinstance(value,str) or not value.strip():
+            raise ValueError(field+' required for '+key)
+        if not any('\u0400'<=char<='\u04ff' for char in value):
+            raise ValueError(field+' must be Ukrainian for '+key)
+    required={'signal','missingInfo','waitingRequired','waitingOnUk','needsEmail','queueScore','evidence','standardDescription','emailDraft'}
+    if not required.issubset(analysis):
+        raise ValueError('Incomplete analysis fields for '+key)
+    Desk.validate_analysis(analysis)
+
+
 def prepare_and_gate(root, context, key, current, analysis):
     """Normalize a fresh analysis exactly as import does and run the quality gate.
 
@@ -125,16 +139,7 @@ def _apply(path,root,focus_issue=None,only=None):
                              '; run Jira sync again.')
         if analysis.get('contextFingerprint')!=current['fingerprint']:
             raise ValueError('Stale or missing context fingerprint for '+task['key'])
-        for field in ('reasonUk','nextActionUk'):
-            value=analysis.get(field)
-            if not isinstance(value,str) or not value.strip():
-                raise ValueError(field+' required for '+task['key'])
-            if not any('\u0400'<=char<='\u04ff' for char in value):
-                raise ValueError(field+' must be Ukrainian for '+task['key'])
-        required={'signal','missingInfo','waitingRequired','waitingOnUk','needsEmail','queueScore','evidence','standardDescription','emailDraft'}
-        if not required.issubset(analysis):
-            raise ValueError('Incomplete analysis fields for '+task['key'])
-        Desk.validate_analysis(analysis)
+        validate_import_fields(task['key'], analysis)
         if focus_issue is not None and task['key'] != focus_issue:
             # Verified untouched analysis: do not normalize, retimestamp,
             # run quality checks, or rewrite the existing optional email.

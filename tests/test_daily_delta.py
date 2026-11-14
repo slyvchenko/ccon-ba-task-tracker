@@ -114,5 +114,37 @@ class DailyDelta(unittest.TestCase):
         self.assertEqual(result, {'Unable to reserve services': {'unverifiable': 'INCOMPLETE_ES_RESPONSE'}})
 
 
+    def test_check_rejects_what_the_import_schema_rejects(self):
+        kit = Kit(self.root)
+        analysis = self.build(kit)
+        del analysis['nextActionUk']
+        path = self.root / 'data/partial.json'
+        path.write_text(json.dumps({'analyses': {'CCON-3': analysis}}), encoding='utf-8')
+        ok, rows = check(path, self.root)
+        self.assertFalse(ok)
+        self.assertEqual(rows[0]['state'], 'IMPORT_SCHEMA_INVALID')
+
+    def test_short_window_does_not_truncate_fixed_30_and_7_day_counts(self):
+        from unittest import mock
+        import es_logs
+        from daily_delta import errors
+        seen = []
+        response = {'timed_out': False, '_shards': {'total': 1, 'successful': 1, 'failed': 0},
+                    'hits': {'total': {'value': 9}, 'hits': []},
+                    'aggregations': {'window': {'doc_count': 2}, 'last30': {'doc_count': 5},
+                                     'last7': {'doc_count': 2}, 'supplier': {'buckets': []},
+                                     'method': {'buckets': []}}}
+        def request(url, path, body):
+            seen.append(body)
+            return response
+        with mock.patch.object(es_logs, 'config', return_value=('https://es.invalid', 'idx')), \
+                mock.patch.object(es_logs, '_request', side_effect=request):
+            result = errors(['Unable to reserve services'], self.root, days=7)
+        ranges = [f['range'] for f in seen[0]['query']['bool']['filter'] if 'range' in f]
+        self.assertEqual(ranges[0]['@timestamp']['gte'], 'now-30d')
+        self.assertEqual(result['Unable to reserve services']['7d'], 2)
+        self.assertEqual(result['Unable to reserve services']['30d'], 5)
+
+
 if __name__ == '__main__':
     unittest.main()
