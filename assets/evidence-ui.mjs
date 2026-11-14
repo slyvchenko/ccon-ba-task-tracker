@@ -144,7 +144,7 @@ export async function loadTaskEvidence(key, api, escape, current) {
     if (current() !== key) return;
     const reports = data.reports || [];
     if (!reports.length) {
-      destination.innerHTML = '<p class="focus-status"><span class="badge tone-amber">Логів немає</span> Потрібні ZIP-логи — запусти Evidence Flow у локальному Codex</p>' +
+      destination.innerHTML = '<p class="focus-status"><span class="badge tone-amber">Логів немає</span> Потрібні ZIP-логи – запусти Evidence Flow у локальному Codex</p>' +
         evidenceHealthMarkup(data.health, escape);
       return;
     }

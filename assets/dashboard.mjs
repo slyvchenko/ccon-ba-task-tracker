@@ -23,7 +23,7 @@ import {loadTaskDecisions} from './decisions-ui.mjs';
 
 
 const $ = id => document.getElementById(id);
-const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const escapeHtml = value => String(value ?? '').replace(/\u2014/g, '\u2013').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const recoveryStore=createDraftRecoveryStore({
   local:safeBrowserStorage(()=>window.localStorage),
   session:safeBrowserStorage(()=>window.sessionStorage),
@@ -243,6 +243,7 @@ function renderList() {
     unverified:current.length-verified});
   $('count').textContent=summary.primary;
   $('countDetails').textContent=summary.diagnostics;
+  renderSummaryChips({visible:items.length,sprint:sprintCount,write:mailCount});
   $('advancedFilterCount').textContent=advancedFilterSummary({
     signal:$('signalFilter').value,sprint:$('sprintFilter').value,
      priority:$('priorityFilter').value});
@@ -312,7 +313,8 @@ const ATTACHMENT_STATES = {
   DOWNLOAD_UNAVAILABLE: 'Не вдалося отримати файл через Jira API',
   LOCAL_FILE_MISMATCH: 'Локальна копія не пройшла перевірку',
   PDF_PARSER_NOT_INSTALLED: 'Потрібен локальний обробник PDF',
-  PDF_TEXT_NOT_EXTRACTED: 'Текст PDF не вдалося прочитати'
+  PDF_TEXT_NOT_EXTRACTED: 'Текст PDF не вдалося прочитати',
+  INSPECTION_UNAVAILABLE: 'Файл отримано. Вміст не пройшов локальну перевірку'
 };
 function briefingMarkup(briefing, stale) {
   if (!shouldRenderBriefing(briefing)) return '';
@@ -340,12 +342,12 @@ function briefingSecondaryMarkup(briefing, attachments) {
     secSection('Підтверджені факти', briefing.confirmedFacts, item => secRow({text:item.textUk, url:item.sourceUrl})),
     secSection('Джерела: прочитані й недоступні', [...(briefing.sourceAudit || []), ...(attachments || []).map(a => ({attachment:a}))], item => item.attachment
       ? secRow({tag:item.attachment.state === 'LOCAL_TEXT_VERIFIED' ? secTag('Прочитано', 'tone-green') : secTag('Вкладення', 'tone-amber'),
-          text:`${item.attachment.format || 'Файл'} #${item.attachment.attachmentId} — ${ATTACHMENT_STATES[item.attachment.state] || 'Текст недоступний'}`})
+          text:`${item.attachment.format || 'Файл'} #${item.attachment.attachmentId} – ${ATTACHMENT_STATES[item.attachment.state] || 'Текст недоступний'}`})
       : secRow({tag:secTag(...(SOURCE_TAGS[item.status] || [item.status, 'tone-gray'])), text:item.descriptionUk, url:item.sourceUrl})),
     secSection('Історія рішень', briefing.timeline, item => secRow({
       tag:secTag(...(DECISION_TAGS[item.status] || [item.status, 'tone-gray'])),
       meta:item.date || 'Дата невідома', text:item.eventUk, url:item.sourceUrl})),
-    secSection('QA-сценарії', briefing.verification, item => secRow({text:item.scenarioUk, meta:'Очікування: ' + (item.expectedUk || '—'), metaBelow:true, url:item.sourceUrl})),
+    secSection('QA-сценарії', briefing.verification, item => secRow({text:item.scenarioUk, meta:'Очікування: ' + (item.expectedUk || '–'), metaBelow:true, url:item.sourceUrl})),
     secSection('Scope, вплив і ризики', [
       {label:'Технічні межі', value:briefing.technicalScopeUk},
       {label:'Бізнес-вплив', value:briefing.businessImpactUk},
@@ -362,7 +364,7 @@ const DECISION_TAGS = {CONFIRMED:['Підтверджено','tone-green'], PROP
 function secTag(label, tone) { return `<span class="badge sec-tag ${tone}">${escapeHtml(label)}</span>`; }
 function secRow({tag = '', text, meta = '', metaBelow = false, url}) {
   const safe = safeUrl(url);
-  const link = safe ? `<a class="sec-link" href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer">Джерело ↗</a>` : '<span class="sec-link muted">—</span>';
+  const link = safe ? `<a class="sec-link" href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer">Джерело ↗</a>` : '<span class="sec-link muted">–</span>';
   const metaHtml = meta ? `<span class="sec-meta">${escapeHtml(meta)}</span>` : '';
   return `<li class="sec-row${tag ? ' has-tag' : ''}">${tag ? `<span class="sec-tagcol">${tag}</span>` : ''}<span class="sec-text">${metaBelow ? '' : metaHtml}${escapeHtml(text || '')}${metaBelow ? metaHtml : ''}</span>${link}</li>`;
 }
@@ -401,7 +403,7 @@ const focusTabs = new Map();
 const ATTENTION_TONES = ['tone-red', 'tone-amber'];
 const TILE_TONES = ['tone-gray', 'tone-green', 'tone-amber', 'tone-red', 'tone-blue'];
 // Value and tone come from the panel's first status badge. A panel without a badge
-// is "loading" until its loaders settle, then shown as "—" (never stuck on loading).
+// is "loading" until its loaders settle, then shown as "–" (never stuck on loading).
 function refreshFocusTiles(root, settled) {
   for (const tile of root.querySelectorAll('.focus-tile')) {
     const panel = root.querySelector(`[data-focus-panel="${tile.dataset.focus}"]`);
@@ -409,7 +411,7 @@ function refreshFocusTiles(root, settled) {
     const tone = badge ? [...badge.classList].find(c => c.startsWith('tone-')) || 'tone-gray' : 'tone-gray';
     tile.classList.remove(...TILE_TONES);
     tile.classList.add(tone);
-    tile.querySelector('.tile-value').textContent = badge ? badge.textContent.trim() : settled ? '—' : 'Завантаження…';
+    tile.querySelector('.tile-value').textContent = badge ? badge.textContent.trim() : settled ? '–' : 'Завантаження…';
   }
 }
 function setupFocusTiles(key, settled = false) {
@@ -553,7 +555,7 @@ function renderDetail() {
         <label class="card-label" for="manual">Статус</label><select id="manual" class="status-select tone-${statusTone(form.manualStatus, task)}">${['AUTO','IN PROGRESS','NEEDS DECISION','WAITING INPUT','WAITING DEPENDENCY','DONE'].map(value => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(STATUS_LABELS[value])}</option>`).join('')}</select>
         <label class="card-label" for="manualPriority">Пріоритет</label><select id="manualPriority" aria-describedby="manualPriorityHelp">${Object.entries(MANUAL_PRIORITY_LABELS).map(([key,label]) =>
           `<option value="${key}" ${form.manualPriority === key ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
-        <p id="manualPriorityHelp" class="card-help">P1 — щоденний бізнес-фокус · P2 — терміново. P3 ставиться автоматично за Jira label.</p>
+        <p id="manualPriorityHelp" class="card-help">P1 – щоденний бізнес-фокус · P2 – терміново. P3 ставиться автоматично за Jira label.</p>
         <label class="card-label" for="note">Нотатки</label><textarea id="note" maxlength="20000" placeholder="Додай домовленість або наступний контакт…">${escapeHtml(form.note)}</textarea>
         <div class="actions state-actions card-foot"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Виконано й далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
         <div id="saved" class="save-state" role="status"></div>
@@ -573,14 +575,14 @@ function renderDetail() {
       </div>
     </div>
     <div id="staleNotice" class="saved-note" hidden></div>
-    ${stale ? '<div class="analysis-missing"><b>Контекст Jira змінився — попередній аналіз застарів.</b><br>Черга й сигнали потребують нового аналізу опису, коментарів та залежностей. Твій ручний стан і збережена чернетка залишаються чинними.</div>' : !analyzed ? '<div class="analysis-missing"><b>Для цієї задачі ще немає повного аналізу українською.</b><br>Потрібно прочитати опис, коментарі й залежності. Попередній snapshot не дає достатніх підстав для нової оцінки.</div>' : ''}
+    ${stale ? '<div class="analysis-missing"><b>Контекст Jira змінився – попередній аналіз застарів.</b><br>Черга й сигнали потребують нового аналізу опису, коментарів та залежностей. Твій ручний стан і збережена чернетка залишаються чинними.</div>' : !analyzed ? '<div class="analysis-missing"><b>Для цієї задачі ще немає повного аналізу українською.</b><br>Потрібно прочитати опис, коментарі й залежності. Попередній snapshot не дає достатніх підстав для нової оцінки.</div>' : ''}
     ${briefingMarkup(analyzed ? analysis.briefing : undefined, stale)}
     <details id="emailDetails" class="panel email-panel ${email === true || form.emailDraft.body ? 'email-first' : ''}" open>
     <summary class="email-summary"><span class="email-title">${email === false && !form.emailDraft.body && !form.emailDraft.subject ? 'Лист зараз не потрібен' : 'Чернетка листа'}</span><span class="badge email-badge ${staleGeneratedDraft ? 'tone-amber' : email === true ? 'tone-blue' : 'tone-gray'}">${staleGeneratedDraft ? 'Зі старого аналізу' : savedDraft && stale ? 'Моя збережена чернетка' : email === true ? 'Потрібна' : email === false ? 'За потреби' : 'Потребу ще не визначено'}</span><span class="email-toggle">Підготувати лист</span></summary>
     <div class="email-fields" role="region" aria-label="Редагована чернетка листа">
     <p class="email-intro">${stale && form.emailDraft.body ? savedDraft ? 'Твоя збережена чернетка залишилася без змін. Аналіз застарів: перевір лист за новим контекстом перед використанням.' : 'Новий контекст ще не проаналізовано. Ця чернетка збережена зі старого аналізу або твоїх незбережених правок; перевір її актуальність перед використанням.' : form.emailDraft.body ? 'Перевір адресата й текст. Усі поля можна відредагувати.' : email === false && analyzed ? 'За поточним аналізом лист зараз не потрібен. За потреби можеш підготувати власну чернетку.' : email === true ? 'Потрібен лист, але готової чернетки ще немає. Підготуй текст за конкретними відкритими питаннями задачі.' : 'Потребу в листі ще не визначено. Спочатку перевір контекст і наступну дію.'}</p>
     <div class="email-grid">
-      <label class="email-label" for="draftTo">Кому</label><div class="email-cell"><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата, якщо він відомий" value="${escapeHtml(form.emailDraft.to)}">${suggestedRecipient ? '<div class="email-hint"><span id="recipientHintWarning">Шаблонна адреса постачальника не підтверджена Jira — перевір отримувача.</span><button id="useRecipientHint" class="quiet" aria-describedby="recipientHintWarning">Адреса з шаблону</button></div>' : ''}</div>
+      <label class="email-label" for="draftTo">Кому</label><div class="email-cell"><input id="draftTo" maxlength="2000" autocomplete="off" placeholder="Email адресата, якщо він відомий" value="${escapeHtml(form.emailDraft.to)}">${suggestedRecipient ? '<div class="email-hint"><button id="useRecipientHint" class="quiet" title="Шаблонна адреса постачальника – перевір отримувача">Адреса з шаблону</button></div>' : ''}</div>
       <label class="email-label" for="draftSubject">Тема</label><div class="email-cell"><input id="draftSubject" maxlength="2000" placeholder="Тема листа" value="${escapeHtml(form.emailDraft.subject)}"></div>
       <label class="email-label" for="draftBody">Текст</label><div class="email-cell"><textarea id="draftBody" maxlength="50000" placeholder="Чернетка за описом, коментарями та відкритими питаннями задачі…">${escapeHtml(form.emailDraft.body)}</textarea></div>
       <span class="email-label">Логи</span><section id="emailLogs" class="email-cell email-logs" aria-label="Логи до листа"><p class="muted" role="status">Перевіряю архіви задачі…</p></section>
@@ -597,7 +599,7 @@ function renderDetail() {
         <button type="button" class="focus-tile" role="tab" data-focus="qa" aria-controls="focus-panel-qa" aria-selected="false"><span class="tile-label">Перевірка QA</span><span class="tile-value">…</span></button>
         <button type="button" class="focus-tile" role="tab" data-focus="description" aria-controls="focus-panel-description" aria-selected="false"><span class="tile-label">Опис для Jira</span><span class="tile-value">…</span></button>
       </div>
-      <div class="focus-panel" role="tabpanel" id="focus-panel-questions" data-focus-panel="questions" hidden><h4 class="sub-heading focus-panel-title">Відкриті питання</h4>${openPoints.length ? '<p class="focus-status"><span class="badge tone-amber">' + openPoints.length + ' ' + (openPoints.length === 1 ? 'питання' : 'питання(нь)') + '</span> Потрібна відповідь, щоб рухатися далі</p><ul class="focus-items">' + openPoints.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>' : (analyzed ? '<p class="focus-status"><span class="badge tone-green">Немає</span> Відкритих питань немає</p>' : '<p class="focus-status"><span class="badge tone-gray">Не визначено</span> Аналізу ще немає — питання з’являться після нього</p>')}</div>
+      <div class="focus-panel" role="tabpanel" id="focus-panel-questions" data-focus-panel="questions" hidden><h4 class="sub-heading focus-panel-title">Відкриті питання</h4>${openPoints.length ? '<p class="focus-status"><span class="badge tone-amber">' + openPoints.length + ' ' + (openPoints.length === 1 ? 'питання' : 'питання(нь)') + '</span> Потрібна відповідь, щоб рухатися далі</p><ul class="focus-items">' + openPoints.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>' : (analyzed ? '<p class="focus-status"><span class="badge tone-green">Немає</span> Відкритих питань немає</p>' : '<p class="focus-status"><span class="badge tone-gray">Не визначено</span> Аналізу ще немає – питання з’являться після нього</p>')}</div>
       <div class="focus-panel" role="tabpanel" id="focus-panel-decisions" data-focus-panel="decisions" hidden><h4 class="sub-heading focus-panel-title">Рішення</h4><div id="decisionTracker" class="muted">Завантажую рішення…</div></div>
       <div class="focus-panel" role="tabpanel" id="focus-panel-logs" data-focus-panel="logs" hidden><h4 class="sub-heading focus-panel-title">Логи<span class="focus-sub">REST · Supplier · Errors</span></h4><div id="evidenceSummary" class="muted">Завантажую…</div></div>
       <div class="focus-panel" role="tabpanel" id="focus-panel-qa" data-focus-panel="qa" hidden><h4 class="sub-heading focus-panel-title">Перевірка QA</h4>${qualityGateFocusMarkup(analysis.qualityGate)}</div>
@@ -1186,7 +1188,7 @@ function renderContext(context) {
     context.links.forEach(link => {
       const issue = link.issue || {key:link.linkedKey, summary:link.summary, jiraStatus:link.jiraStatus};
       const url = safeUrl(issue.url || (issue.key ? 'https://aerticket.atlassian.net/browse/' + encodeURIComponent(issue.key) : ''));
-      const label = [issue.key, issue.summary].filter(Boolean).join(' — ');
+      const label = [issue.key, issue.summary].filter(Boolean).join(' – ');
       output.push('<li>' + escapeHtml(link.relationship || link.type || 'Зв’язок') + ': ' + (url ? '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(label) + '</a>' : escapeHtml(label)) + (issue.jiraStatus ? ' · ' + escapeHtml(issue.jiraStatus) : '') + '</li>');
     });
     output.push('</ul>');
@@ -1269,8 +1271,23 @@ async function load() {
     return false;
   }
 }
+function chipNode(value, label, className = '') {
+  const chip = document.createElement('span');
+  chip.className = ('chip ' + className).trim();
+  const strong = document.createElement('b');
+  strong.textContent = String(value);
+  chip.append(strong, document.createTextNode(' ' + label));
+  return chip;
+}
+function renderSummaryChips({visible = 0, sprint = 0, write = 0} = {}) {
+  const target = $('summaryChips');
+  if (!target) return;
+  target.replaceChildren(chipNode(visible, 'у списку', 'chip-strong'), chipNode(sprint, 'у спринті', 'chip-sprint'),
+    chipNode(write, write === 1 ? 'лист' : 'листів', 'chip-mail'));
+}
 async function loadDeltaStrip() {
-  const target = $('deltaStrip');
+  const target = $('deltaChips');
+  if (!target) return;
   try {
     const result = await api('/api/daily-report');
     if (result.available === false || !result.summary) {
@@ -1278,22 +1295,26 @@ async function loadDeltaStrip() {
       return;
     }
     const summary = result.summary;
-    target.replaceChildren();
-    const label = document.createElement('span');
-    label.textContent = 'Зміни останнього аналізу: ' +
-      'нові ' + (summary.NEW ?? 0) +
-      ' · змінені ' + (summary.UPDATED ?? 0) +
-      ' · Done у Jira ' + (summary.JIRA_DONE ?? 0) +
-      ' · поза JQL ' + (summary.LEFT_SCOPE ?? 0) +
-      ' · +питання ' + (summary.questionsAdded ?? 0) +
-      ' · −питання ' + (summary.questionsRemoved ?? 0) +
-      ' · попереджень ' + (summary.warnings ?? 0);
+    const parts = [['NEW', 'нових', 'chip-new'], ['UPDATED', 'змінено', 'chip-changed'],
+      ['JIRA_DONE', 'Done у Jira', 'chip-done'], ['LEFT_SCOPE', 'поза JQL', 'chip-left'],
+      ['questionsAdded', '+питань', 'chip-q'], ['questionsRemoved', '−питань', 'chip-q'],
+      ['warnings', 'попереджень', 'chip-warn']];
+    const chips = parts.filter(([key]) => (summary[key] ?? 0) > 0)
+      .map(([key, label, cls]) => chipNode(summary[key], label, 'chip-delta ' + cls));
+    if (!chips.length) {
+      const none = document.createElement('span');
+      none.className = 'chip chip-delta';
+      none.textContent = 'Без змін з останнього аналізу';
+      chips.push(none);
+    }
     const link = document.createElement('a');
+    link.className = 'chip chip-link';
     link.href = '/api/daily-report.md';
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.textContent = 'Повний звіт ↗';
-    target.append(label, link);
+    link.textContent = 'Звіт ↗';
+    target.title = 'Зміни останнього аналізу';
+    target.replaceChildren(...chips, link);
     target.hidden = false;
   } catch {
     target.hidden = true;
@@ -1519,3 +1540,24 @@ function visibleTasks() {
     sprint:$('sprintFilter').value, priority:$('priorityFilter').value
   });
 }
+
+// Theme toggle: system -> light -> dark (state lives in theme-init.js / localStorage).
+const THEME_ORDER = ['system', 'light', 'dark'];
+const THEME_LABEL = {system: 'як у системі', light: 'світла', dark: 'темна'};
+function renderThemeToggle() {
+  const button = document.getElementById('themeToggle');
+  if (!button || !window.cconTheme) return;
+  const pref = window.cconTheme.get();
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(pref) + 1) % THEME_ORDER.length];
+  button.dataset.pref = pref;
+  const label = `Тема: ${THEME_LABEL[pref]}. Натисни – ${THEME_LABEL[next]}`;
+  button.title = label;
+  button.setAttribute('aria-label', label);
+}
+document.getElementById('themeToggle')?.addEventListener('click', () => {
+  if (!window.cconTheme) return;
+  const pref = window.cconTheme.get();
+  window.cconTheme.set(THEME_ORDER[(THEME_ORDER.indexOf(pref) + 1) % THEME_ORDER.length]);
+  renderThemeToggle();
+});
+renderThemeToggle();

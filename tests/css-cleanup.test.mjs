@@ -40,7 +40,7 @@ test('technical REST/PNR snippets can wrap without ellipsis or text truncation',
 });
 test('legacy overridden row density rules stay consolidated',()=>{
  assert.equal((css.match(/\.row-title\s*\{\s*margin:/g)||[]).length,0);
- assert.ok(css.includes('margin:3px 0 4px;'));
+ assert.match(css.match(/\.row-title\s*\{([^}]+)\}/)?.[1]||'',/margin:0;/);
  assert.ok(!css.includes('font-size:11px;\n  font-weight:400;\n  padding:3px 6px;'));
 });
 

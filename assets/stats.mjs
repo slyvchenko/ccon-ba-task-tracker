@@ -39,7 +39,7 @@ const el = id => document.getElementById(id);
 const number = n => safeCount(n).toLocaleString('uk-UA');
 
 function metric(id, value, available = true) {
-  el(id).textContent = available ? number(value) : '—';
+  el(id).textContent = available ? number(value) : '–';
 }
 
 function renderBars(id, counts, labels, {includeEmpty = true} = {}) {
