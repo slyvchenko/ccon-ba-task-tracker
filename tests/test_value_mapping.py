@@ -282,6 +282,57 @@ class ValueMappingTests(unittest.TestCase):
         self.assertEqual(result["coverage"][0]["supplierExchanges"], 2)
         self.assertNotIn(flow, json.dumps(result))
 
+    def test_rejected_exchange_exports_its_non_repeated_ids_too(self):
+        raw = zip_bytes([
+            ("rest/20-request.json",
+             json.dumps({"requestId": "REQUEST-12345678", "Amount": "200.99"})),
+            ("supplier/AirFranceKLM/20-request.xml",
+             b"<Req><requestId>REQUEST-12345678</requestId>"
+             b"<correlationId>FLOW-00000002</correlationId>"
+             b"<correlationId>FLOW-00000003</correlationId></Req>"),
+            ("supplier/AirFranceKLM/21-request.xml",
+             b"<Req><requestId>REQUEST-12345678</requestId>"
+             b"<Amount>200.99</Amount></Req>"),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"], [])
+        self.assertIn("AMBIGUOUS_PAIRING", result["issues"])
+        self.assertNotIn("REQUEST-12345678", json.dumps(result))
+
+    def test_field_limit_rejection_still_vetoes_its_observed_ids(self):
+        many = "".join("<Field{0}>Value{0:04d}</Field{0}>".format(i) for i in range(230))
+        raw = zip_bytes([
+            ("rest/22-request.json",
+             json.dumps({"correlationId": "FLOW-00000001", "Amount": "200.99"})),
+            ("supplier/AirFranceKLM/22-request.xml",
+             ("<Req><correlationId>FLOW-00000001</correlationId>" + many + "</Req>").encode()),
+            ("supplier/AirFranceKLM/23-request.xml",
+             b"<Req><correlationId>FLOW-00000001</correlationId>"
+             b"<Amount>200.99</Amount></Req>"),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"], [])
+        self.assertIn("XML_FIELD_LIMIT_INCOMPLETE", result["issues"])
+        self.assertIn("AMBIGUOUS_PAIRING", result["issues"])
+
+    def test_exclusion_veto_cannot_manufacture_reverse_uniqueness(self):
+        raw = zip_bytes([
+            ("rest/24-request.json",
+             json.dumps({"correlationId": "FLOW-0000000A", "Amount": "200.99"})),
+            ("rest/25-request.json",
+             json.dumps({"correlationId": "FLOW-0000000A", "requestId": "FLOW-0000000B",
+                         "Amount": "200.99"})),
+            ("supplier/AirFranceKLM/24-request.xml",
+             b"<Req><correlationId>FLOW-0000000A</correlationId>"
+             b"<Amount>200.99</Amount></Req>"),
+            ("supplier/AirFranceKLM/26-request.xml",
+             b"<Req><requestId>FLOW-0000000B</requestId>"
+             b"<requestId>FLOW-0000000B</requestId></Req>"),
+        ])
+        result = compare_zip_bytes(raw, AF["aliases"])
+        self.assertEqual(result["comparisons"], [])
+        self.assertIn("AMBIGUOUS_PAIRING", result["issues"])
+
     def test_repeated_terminal_names_block_false_difference_checkpoint(self):
         raw = zip_bytes([
             ("rest/19-request.json", b'{"Name":"RestDemo"}'),

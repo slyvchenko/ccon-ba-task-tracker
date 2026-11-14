@@ -104,6 +104,11 @@ def leaf_values(data, suffix, *, warnings=None, ambiguous_values=None, ambiguous
             warnings.append("REPEATED_XML_PATH_SKIPPED")
         if ambiguous_values is not None:
             ambiguous_values.update(ambiguity)
+        if (ambiguous_identity or field_limit_hit) and ambiguous_ids is not None:
+            # A rejected exchange still proves its identifiers are in use.
+            # Export every inspected ID (not only the repeated ones) so the
+            # caller can veto any other pairing that shares one of them.
+            ambiguous_ids.update(correlation_tokens(result))
         if ambiguous_identity:
             return {}, "AMBIGUOUS_CORRELATION_ID"
         if field_limit_hit:
@@ -233,7 +238,7 @@ def compare_zip_bytes(raw, aliases):
             if problem:
                 issues.append(problem)
                 omitted[(layer, kind)] += 1
-                if problem == "AMBIGUOUS_CORRELATION_ID":
+                if problem in ("AMBIGUOUS_CORRELATION_ID", "XML_FIELD_LIMIT_INCOMPLETE"):
                     excluded_ids[(layer, kind)].update(ambiguous_ids)
                 continue
             if len(samples) >= MAX_CASES * 3:
@@ -268,12 +273,14 @@ def compare_zip_bytes(raw, aliases):
             # REST/supplier exchange sharing any excluded identifier.
             excluded = (excluded_ids[("rest", rest_kind)] |
                         excluded_ids[("supplier", supplier_kind)])
+            # Uniqueness is decided on the UNFILTERED identity-sharing graph;
+            # exclusions are only an additional veto. Filtering first could
+            # drop a competing edge and make the remaining one look unique.
             edges = {}
             for i, r in enumerate(rests):
                 edges[i] = [j for j, supplier in enumerate(suppliers)
                             if r["ids"] and supplier["ids"] and
-                            r["ids"] & supplier["ids"] and
-                            not ((r["ids"] | supplier["ids"]) & excluded)]
+                            r["ids"] & supplier["ids"]]
                 if r["ids"] & excluded:
                     issues.append("AMBIGUOUS_PAIRING")
             if any(supplier["ids"] & excluded for supplier in suppliers):
@@ -287,7 +294,8 @@ def compare_zip_bytes(raw, aliases):
                     j = candidates[0]
                     # Reverse uniqueness: two REST exchanges with one shared
                     # supplier trace are NOT two independently proven pairs.
-                    if sum(j in xs for xs in edges.values()) != 1:
+                    if (sum(j in xs for xs in edges.values()) != 1 or
+                            (rest["ids"] | suppliers[j]["ids"]) & excluded):
                         issues.append("AMBIGUOUS_PAIRING")
                         continue
                     basis = "SHARED_CORRELATION_ID"
