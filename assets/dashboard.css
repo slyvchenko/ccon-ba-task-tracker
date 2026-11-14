@@ -2812,6 +2812,14 @@ aside .filters input[type=search] {
 /* --- Hidden import date (kept in the DOM for refresh checks and screen readers). */
 .task-toolbar .task-date { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 
+/* --- Top bar takes no space: the status row shows only a message or the undo button;
+   the daily report is a header link. */
+.statusbar:has(#message:empty):has(#undoLastDone[hidden]) { display:none; }
+header .tools a.chip-report { height:36px; padding:0 14px; color:#6d28d9; font-weight:600; }
+header .tools a.chip-report::before { --chip-dot:var(--c-violet); }
+header .tools a.chip-report:hover { color:#5b21b6; text-decoration:underline; }
+[data-theme="dark"] header .tools a.chip-report { color:#c4b5fd; }
+
 /* ==========================================================================
    Dark theme. Resolved by assets/theme-init.js into <html data-theme="dark">
    (user choice or the system setting). Same structure and accents as the light
