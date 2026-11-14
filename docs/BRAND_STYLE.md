@@ -16,7 +16,7 @@ should be used before company deployment.
 
 ## Current design system
 
-All styles live in `assets/dashboard.css`. The file is layered: base tokens in the single canonical `:root`, then the design-system layers in cascade order. The latest layer wins, so add new rules at the end of the matching layer, not as one-off overrides.
+All styles live in `assets/dashboard.css`. The file is layered: base tokens in the single canonical `:root` (the soft-pastel layer tokens `--soft-*`, `--ink-btn*`, `--pastel*` and `--card-radius` are defined on `:is(body)`, so change them there, not in `:root`), then the design-system layers in cascade order. The latest layer wins, so add new rules at the end of the matching layer, not as one-off overrides.
 
 ### Tokens
 
