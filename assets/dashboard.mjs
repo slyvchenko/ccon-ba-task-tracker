@@ -401,7 +401,6 @@ function qualityGateFocusMarkup(gate) {
 // "Важливо для мене": status tiles on top, one detail panel below.
 // Each panel's first status badge is the tile's value and tone.
 const focusTabs = new Map();
-const ATTENTION_TONES = ['tone-red', 'tone-amber'];
 const TILE_TONES = ['tone-gray', 'tone-green', 'tone-amber', 'tone-red', 'tone-blue'];
 // Value and tone come from the panel's first status badge. A panel without a badge
 // is "loading" until its loaders settle, then shown as "–" (never stuck on loading).
@@ -423,7 +422,12 @@ function setupFocusTiles(key, settled = false) {
   for (const tile of tiles) {
     if (!tile.dataset.bound) {
       tile.dataset.bound = '1';
-      tile.addEventListener('click', () => { focusTabs.set(key, tile.dataset.focus); showFocusPanel(root, tile.dataset.focus); });
+      // Collapsible: a tile opens its panel, the active tile closes it again.
+      tile.addEventListener('click', () => {
+        const name = tile.classList.contains('active') ? '' : tile.dataset.focus;
+        focusTabs.set(key, name);
+        showFocusPanel(root, name);
+      });
     }
   }
   if (!root.dataset.observed) {
@@ -433,14 +437,14 @@ function setupFocusTiles(key, settled = false) {
     const observer = new MutationObserver(() => refreshFocusTiles(root, true));
     for (const panel of root.querySelectorAll('.focus-panel')) observer.observe(panel, {childList:true, subtree:true});
   }
-  const chosen = focusTabs.get(key) ||
-    tiles.find(tile => ATTENTION_TONES.some(tone => tile.classList.contains(tone)))?.dataset.focus || 'questions';
-  showFocusPanel(root, chosen);
+  // Collapsed until the analyst picks a tile; the choice is kept per task.
+  showFocusPanel(root, focusTabs.get(key) || '');
 }
 function showFocusPanel(root, name) {
   for (const tile of root.querySelectorAll('.focus-tile')) {
     const active = tile.dataset.focus === name;
     tile.setAttribute('aria-selected', String(active));
+    tile.setAttribute('aria-expanded', String(active));
     tile.classList.toggle('active', active);
   }
   for (const panel of root.querySelectorAll('.focus-panel')) panel.hidden = panel.dataset.focusPanel !== name;
@@ -607,7 +611,7 @@ function renderDetail() {
       <div class="focus-panel" role="tabpanel" id="focus-panel-description" data-focus-panel="description" hidden><h4 class="sub-heading focus-panel-title">Опис для Jira</h4>${analysis.standardDescription ? '<p class="focus-status"><span class="badge ' + (handoff.fastEnabled ? 'tone-green' : 'tone-amber') + '">' + (handoff.fastEnabled ? 'Готова до передачі' : 'Чернетка') + '</span> ' + (handoff.fastEnabled ? 'Перевір і скопіюй у Jira' : 'Потребує перевірки перед передачею в Jira') + '</p>' : '<p class="focus-status"><span class="badge tone-gray">Немає</span> Чернетку не підготовлено</p>'}${analysis.descriptionTitle ? '<p class="focus-strong">' + escapeHtml(analysis.descriptionTitle) + '</p>' : ''}<details class="focus-more"><summary>${analysis.standardDescription ? 'Показати повний опис' : 'Чернетку не підготовлено'}</summary><p class="pre">${escapeHtml(analysis.standardDescription || 'Чернетку не підготовлено. Перевір причину в поясненні аналізу.')}</p>${analysis.standardDescription ? (handoff.showFallbackCopy ? '<button id="copyDescription" class="quiet" aria-describedby="fallbackCopyWarning">'+escapeHtml(handoff.fallbackLabel)+'</button><p id="fallbackCopyWarning" class="analysis-missing">'+escapeHtml(handoff.warning)+'</p> ' : '') + '<button id="approveDescription" class="quiet">'+escapeHtml(handoff.approvalLabel)+'</button>' : ''}<div id="approvedReview" class="muted">Перевіряю схвалену версію…</div></details></div>
     </section>
     <details class="panel secondary-details" aria-label="Другорядні деталі аналізу">
-      <summary><span class="secondary-title">Другорядне</span><span class="secondary-sub">факти, джерела, історія рішень, QA-сценарії, scope</span></summary>
+      <summary><span class="secondary-title">Другорядне</span></summary>
       <div class="accordion">
       ${briefingSecondaryMarkup(analyzed ? analysis.briefing : undefined, analysis.qualityGate?.sourceAudit?.attachments)}
       ${secSection('Джерела оцінки', analysis.evidence, item => secRow({text:item.text || 'Джерело', url:item.url}))}

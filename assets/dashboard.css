@@ -2723,6 +2723,21 @@ main h2 { letter-spacing:-.025em; }
 .secondary-details[open] > summary { border-radius:20px 20px 0 0; border-bottom:1px solid #cdf1e2; }
 .secondary-title { background:transparent; padding:0; }
 
+/* --- Alignment fixes (2026-11-14):
+   a bare section title (h3 directly in the card) keeps its text next to the icon and
+   spans the full card width like the other header bands; the "Другорядне" title and
+   its subtitle share one centre line; the sticky next-action strip is not shown
+   (the action is already the first card). */
+#detail .panel > .focus-title.focus-title {
+  justify-content:flex-start; margin:-18px -22px 18px; width:auto; align-self:stretch;
+}
+.secondary-details > summary { align-items:center; }
+.secondary-details > summary .secondary-sub { line-height:1.3; }
+.sticky-next-action { display:none !important; }
+/* «Другорядне»: every section body starts on the same 22px line as its list rows. */
+.secondary-details .sec-empty { padding-left:22px; }
+.secondary-details .sec-body { padding-left:22px; }
+
 /* --- Animated, highlighted card edges (light: one gradient sliding slowly). */
 #detail .panel { position:relative; }
 #detail .panel::after {
@@ -2969,8 +2984,8 @@ header .tools a.chip-report:hover { color:#5b21b6; text-decoration:underline; }
 
 /* Plain labels and the "Дані" menu buttons. */
 :where([data-theme="dark"]) label { color:var(--n-700); }
-[data-theme="dark"] .data-menu-items button { background:var(--soft-fill); color:var(--n-900); border-color:transparent; }
-[data-theme="dark"] .data-menu-items button:hover { background:var(--soft-fill-2); }
+[data-theme="dark"] .data-menu-items button, [data-theme="dark"] header .tools .data-menu-items button:not(.row):not(.focus-tile) { background:var(--soft-fill); color:var(--n-900); border-color:transparent; }
+[data-theme="dark"] header .tools .data-menu-items button:not(.row):not(.focus-tile):hover { background:var(--soft-fill-2); }
 
 /* Edges: a touch brighter so they read on the dark canvas. */
 [data-theme="dark"] #detail .panel::after, [data-theme="dark"] aside::after { opacity:.75; }
