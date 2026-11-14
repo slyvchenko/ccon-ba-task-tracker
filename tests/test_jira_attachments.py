@@ -157,6 +157,13 @@ class JiraAttachmentIntakeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ZIP_UNPACKED_LIMIT"):
             inspect_bytes(zip_bytes({"huge.json": "A" * (9 * 1024 * 1024)}), ".zip")
 
+    def test_corrupt_deflate_member_is_an_invalid_zip_not_a_crash(self):
+        payload = bytearray(zip_bytes({"flow.json": "{" + '"a": 1, ' * 200 + '"b": 2}'}))
+        start = 30 + len("flow.json")
+        payload[start] = 0xFF  # invalid DEFLATE block type in the member stream
+        with self.assertRaisesRegex(ValueError, "INVALID_ZIP"):
+            inspect_bytes(bytes(payload), ".zip")
+
     def test_xml_rejects_declarations_with_utf16_encoding(self):
         source = '<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE a [<!ENTITY x "EXPAND">]><a>&x;</a>'
         for encoding in ("utf-16", "utf-16-le", "utf-16-be"):

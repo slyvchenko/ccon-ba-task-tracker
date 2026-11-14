@@ -165,6 +165,10 @@ class Desk:
                         manualRevision=row['manual_revision'],
                         manualEffort=row['manual_effort'], manualPriority=row['manual_priority'])
             task['localCompletionEnabled'] = self.local_completion_enabled
+            if not self.local_completion_enabled and task['manualStatus'] == 'DONE':
+                # Personal mode: a legacy local DONE stays stored (history) but is not effective for any consumer.
+                task['manualStatus'] = 'AUTO'
+                task['legacyLocalDone'] = True
             tasks.append(task)
         if revision is None:
             revision = c.execute('SELECT revision FROM state_revision WHERE id=1').fetchone()[0]

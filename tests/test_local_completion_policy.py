@@ -26,5 +26,20 @@ class LocalCompletionPolicyTests(unittest.TestCase):
             self.assertEqual(after['manualRevision'],before['manualRevision'])
 
 
+    def test_legacy_done_is_not_effective_when_local_completion_is_disabled(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            desk=Desk(root)
+            snapshot={'generatedAt':'2026-10-26T12:00:00Z','tasks':[{'key':'CCON-1','summary':'Synthetic'}]}
+            (desk.inbox/'CCON_BA_Snapshot.json').write_text(json.dumps(snapshot),encoding='utf-8')
+            desk.import_snapshot()
+            desk.save('CCON-1',{'manualStatus':'DONE','note':'Legacy'})
+            (root/'.desk-preferences.json').write_text('{"localCompletion":false}',encoding='utf-8')
+            task=Desk(root).view()['tasks'][0]
+            self.assertEqual(task['manualStatus'],'AUTO')
+            self.assertTrue(task['legacyLocalDone'])
+            self.assertEqual(task['note'],'Legacy')
+
+
 if __name__=='__main__':
     unittest.main()

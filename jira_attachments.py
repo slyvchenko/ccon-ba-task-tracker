@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import re
+import zlib
 import xml.etree.ElementTree as ET
 from xml.parsers import expat
 from collections import Counter
@@ -216,7 +217,8 @@ def _zip_shape(payload):
                 if len(rows) >= 30:
                     warnings.append("ZIP_SHAPE_SAMPLE_CAPPED")
                     break
-    except (BadZipFile, RuntimeError, EOFError, OSError):
+    except (BadZipFile, RuntimeError, EOFError, OSError, zlib.error, NotImplementedError):
+        # A corrupt DEFLATE stream or unsupported method is one bad attachment, not a failed daily cycle.
         raise ValueError("INVALID_ZIP") from None
     return {"type": "ZIP", "parsedEntries": rows, "warnings": sorted(set(warnings))}
 
