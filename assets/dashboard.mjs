@@ -1281,7 +1281,7 @@ async function loadDeltaStrip() {
       return;
     }
     const summary = result.summary;
-    const parts = [['NEW', 'нових'], ['UPDATED', 'змінено'], ['JIRA_DONE', 'Done у Jira'], ['LEFT_SCOPE', 'поза JQL'],
+    const parts = [['NEW', 'нових'], ['UPDATED', 'змінено'], ['COMPLETED', 'завершено'], ['REOPENED', 'перевідкрито'], ['JIRA_DONE', 'Done у Jira'], ['LEFT_SCOPE', 'поза JQL'],
       ['questionsAdded', '+питань'], ['questionsRemoved', '−питань'], ['warnings', 'попереджень']]
       .filter(([key]) => (summary[key] ?? 0) > 0).map(([key, label]) => summary[key] + ' ' + label);
     const fresh = (summary.NEW ?? 0) + (summary.UPDATED ?? 0);
