@@ -164,7 +164,7 @@ def _shape(payload, suffix):
     if suffix == ".json":
         try:
             obj = json.loads(payload)
-        except (UnicodeDecodeError, ValueError):
+        except (UnicodeDecodeError, ValueError, RecursionError):
             raise ValueError("INVALID_JSON") from None
         return {"type": "JSON", "rootType": type(obj).__name__,
                 "rootFields": sorted(filter(None, (
@@ -273,6 +273,10 @@ def fetch_attachments(root, issues, client):
             try:
                 path = attachment_path(root, key, ident, suffix)
                 inside(root, path.relative_to(root))
+                if _unsafe_download_directory(root, key):
+                    # Same guard as prepare/process: a redirected directory could
+                    # make this write overwrite unrelated files elsewhere in root.
+                    raise ValueError("UNSAFE_DOWNLOAD_DIRECTORY")
                 record_path = evidence_path(root, key, ident)
                 size = item.get("size")
                 if type(size) is not int or size < 1 or size > MAX_FILE:

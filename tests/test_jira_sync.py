@@ -156,7 +156,27 @@ class JiraSyncTests(unittest.TestCase):
         self.assertEqual((self.root/'inbox'/'CCON_BA_Snapshot.json').read_bytes(),snapshot)
         self.assertEqual((self.root/'data'/'jira_context.json').read_bytes(),context)
 
+class AttachmentTransportTests(unittest.TestCase):
+    def test_incomplete_read_is_a_connection_failure(self):
+        import http.client
+        from unittest import mock
+        import jira_sync
+
+        class Response:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def read(self, n): raise http.client.IncompleteRead(b"partial", 10)
+
+        class Opener:
+            def open(self, request, timeout): return Response()
+
+        client = jira_sync.JiraClient.__new__(jira_sync.JiraClient)
+        client.authorization = "Basic synthetic"
+        with mock.patch.object(jira_sync.urllib.request, "build_opener", return_value=Opener()):
+            with self.assertRaisesRegex(ValueError, "JIRA_CONNECTION_FAILED"):
+                client.get_attachment("1001", 100)
+
 
 if __name__ == '__main__':
     unittest.main()
-
