@@ -180,16 +180,20 @@ class JiraSyncTests(unittest.TestCase):
         context = json.loads((self.root / 'data' / 'jira_context.json').read_text(encoding='utf-8'))
         contexts = {**context['issues'], **context['linkedIssues']}
         legacy = fingerprint(contexts['CCON-1'], contexts, LEGACY_FINGERPRINT_VOLATILE)
-        evidence = self.root / 'data/attachment_evidence/CCON-1'
-        evidence.mkdir(parents=True)
-        (evidence / '1001.json').write_text(json.dumps({'contextFingerprint': legacy}), encoding='utf-8')
-        self.analysed_snapshot(fingerprint=legacy,
-                               gate={'state': 'STRUCTURALLY_VERIFIED', 'isReadyForReview': True})
-        sync(self.root, self.client)
-        analysis = self.snapshot()['tasks'][0]['analysis']
-        self.assertFalse(analysis['stale'])
-        self.assertEqual(analysis['qualityGate']['state'], 'NEEDS_RECHECK')
-        self.assertFalse(analysis['qualityGate']['isReadyForReview'])
+        import shutil
+        for store in ('data/attachment_evidence', 'data/wiki_evidence', 'data/evidence'):
+            with self.subTest(store=store):
+                evidence = self.root / store / 'CCON-1'
+                evidence.mkdir(parents=True)
+                (evidence / '1001.json').write_text(json.dumps({'contextFingerprint': legacy}), encoding='utf-8')
+                self.analysed_snapshot(fingerprint=legacy,
+                                       gate={'state': 'STRUCTURALLY_VERIFIED', 'isReadyForReview': True})
+                sync(self.root, self.client)
+                analysis = self.snapshot()['tasks'][0]['analysis']
+                self.assertFalse(analysis['stale'])
+                self.assertEqual(analysis['qualityGate']['state'], 'NEEDS_RECHECK')
+                self.assertFalse(analysis['qualityGate']['isReadyForReview'])
+                shutil.rmtree(evidence)
 
     def test_incomplete_search_does_not_replace_complete_files(self):
         sync(self.root, self.client)

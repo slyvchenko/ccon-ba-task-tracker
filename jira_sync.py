@@ -342,6 +342,9 @@ def read_existing(root):
     return existing
 
 
+EVIDENCE_STORES = ('data/attachment_evidence', 'data/wiki_evidence', 'data/evidence')
+
+
 def legacy_bound_evidence(root, legacy):
     """Keys whose local supplier logs or attachment manifests are bound to the legacy fingerprint.
 
@@ -360,18 +363,21 @@ def legacy_bound_evidence(root, legacy):
             key = identity.partition('/')[0] if isinstance(identity, str) else None
             if key in legacy and isinstance(entry, dict) and entry.get('contextFingerprint') == legacy[key]:
                 bound.add(key)
+    # Per-task local manifests that are revalidated against the Jira fingerprint:
+    # Jira attachments, Confluence pages and supplier evidence reviews.
     for key, value in legacy.items():
-        folder = root / 'data/attachment_evidence' / key
-        if key in bound or not folder.is_dir():
-            continue
-        for manifest in folder.glob('*.json'):
-            try:
-                if json.loads(manifest.read_text(encoding='utf-8')).get('contextFingerprint') == value:
+        for store in EVIDENCE_STORES:
+            folder = root / store / key
+            if key in bound or not folder.is_dir():
+                continue
+            for manifest in folder.glob('*.json'):
+                try:
+                    if json.loads(manifest.read_text(encoding='utf-8')).get('contextFingerprint') == value:
+                        bound.add(key)
+                        break
+                except (OSError, ValueError, AttributeError):
                     bound.add(key)
                     break
-            except (OSError, ValueError, AttributeError):
-                bound.add(key)
-                break
     return bound
 
 
