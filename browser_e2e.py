@@ -581,19 +581,14 @@ class BrowserRegression(unittest.TestCase):
         self.assertEqual(state,{"rowUnchanged":True,"changedReplaced":True,
                                 "focused":True,"count":500})
 
-    def test_sticky_next_action_only_after_scrolling_existing_detail(self):
+    def test_sticky_next_action_strip_is_never_shown(self):
+        # The next action is the first card; the sticky strip is intentionally hidden (#140).
         self.choose("CCON-2")
-        self.assertTrue(self.page.locator("#stickyAction").is_hidden())
+        self.assertFalse(self.page.locator("#stickyAction").is_visible())
         self.page.locator("#detail").evaluate("(el)=>el.scrollTop=900")
-        self.page.wait_for_function(
-            "() => document.querySelector('#stickyAction')?.hidden===false",
-            timeout=10000)
-        self.assertEqual(self.page.locator("#stickyCopyNext").count(),1)
-        self.assertTrue(self.page.locator("#stickyCopyNext").is_visible())
-        self.page.locator("#detail").evaluate("(el)=>el.scrollTop=0")
-        self.page.wait_for_function(
-            "() => document.querySelector('#stickyAction')?.hidden===true",
-            timeout=10000)
+        self.page.wait_for_timeout(300)
+        self.assertFalse(self.page.locator("#stickyAction").is_visible())
+        self.assertFalse(self.page.locator("#stickyCopyNext").is_visible())
 
     def test_lean_ui_skips_only_empty_briefing_but_keeps_proof_and_warning(self):
         # Source-free synthetic visual dedup, never business readiness signoff.
