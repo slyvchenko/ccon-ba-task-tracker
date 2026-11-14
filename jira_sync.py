@@ -302,14 +302,21 @@ def normalize_issue(issue, comments, stamp):
     return context
 
 
-def fingerprint(context, all_contexts):
-    own = {k: v for k, v in context.items() if k not in ('retrievedAt', 'fingerprint')}
+# Fields that never change what an analysis says. jiraUpdatedAt moves on every
+# sprint move or rank drag; content changes (status, comments, description,
+# attachments, links) are still part of the fingerprint.
+FINGERPRINT_VOLATILE = ('retrievedAt', 'fingerprint', 'jiraUpdatedAt')
+LEGACY_FINGERPRINT_VOLATILE = ('retrievedAt', 'fingerprint')
+
+
+def fingerprint(context, all_contexts, volatile=FINGERPRINT_VOLATILE):
+    own = {k: v for k, v in context.items() if k not in volatile}
     dependencies = {}
     for link in context['links']:
         linked = all_contexts.get(link['linkedKey'])
         if linked:
             dependencies[link['linkedKey']] = {k: v for k, v in linked.items()
-                                              if k not in ('retrievedAt', 'fingerprint')}
+                                              if k not in volatile}
     raw = json.dumps({'issue': own, 'immediateLinkedIssues': dependencies}, ensure_ascii=False,
                      sort_keys=True, separators=(',', ':')).encode('utf-8')
     return hashlib.sha256(raw).hexdigest()
@@ -335,9 +342,62 @@ def read_existing(root):
     return existing
 
 
-def make_task(context, prior, sprint=None):
+EVIDENCE_STORES = ('data/attachment_evidence', 'data/wiki_evidence', 'data/evidence')
+
+
+def legacy_bound_evidence(root, legacy):
+    """Keys whose local supplier logs or attachment manifests are bound to the legacy fingerprint.
+
+    Such evidence becomes stale once the fingerprint formula changes, so a
+    migrated analysis that relied on it must not keep a verified gate.
+    """
+    root = Path(root)
+    bound = set()
+    try:
+        from supplier_logs import logs_root
+        index = json.loads((logs_root(root) / 'index.json').read_text(encoding='utf-8-sig'))
+    except (OSError, ValueError, ImportError):
+        index = {}
+    if isinstance(index, dict):
+        for identity, entry in index.items():
+            key = identity.partition('/')[0] if isinstance(identity, str) else None
+            if key in legacy and isinstance(entry, dict) and entry.get('contextFingerprint') == legacy[key]:
+                bound.add(key)
+    # Per-task local manifests that are revalidated against the Jira fingerprint:
+    # Jira attachments, Confluence pages and supplier evidence reviews.
+    for key, value in legacy.items():
+        for store in EVIDENCE_STORES:
+            folder = root / store / key
+            if key in bound or not folder.is_dir():
+                continue
+            for manifest in folder.glob('*.json'):
+                try:
+                    if json.loads(manifest.read_text(encoding='utf-8')).get('contextFingerprint') == value:
+                        bound.add(key)
+                        break
+                except (OSError, ValueError, AttributeError):
+                    bound.add(key)
+                    break
+    return bound
+
+
+def make_task(context, prior, sprint=None, legacy_fingerprint=None, evidence_bound=False):
     task = {key: copy.deepcopy(value) for key, value in prior.items() if key not in MANUAL_FIELDS}
     same = prior.get('contextFingerprint') == context['fingerprint']
+    # One-time migration from the pre-v2.49 formula: if the prior fingerprint equals the
+    # legacy formula over *today's* data, the content is provably unchanged, so the
+    # analysis is re-stamped instead of being marked stale.
+    if (not same and legacy_fingerprint and prior.get('contextFingerprint') == legacy_fingerprint):
+        same = True
+        analysis = task.get('analysis')
+        if isinstance(analysis, dict) and analysis.get('contextFingerprint') == legacy_fingerprint:
+            analysis['contextFingerprint'] = context['fingerprint']
+            gate = analysis.get('qualityGate')
+            if evidence_bound and isinstance(gate, dict):
+                # Supporting logs/attachments still carry the legacy fingerprint and now
+                # read as stale: keep the analysis visible but require a fresh gate.
+                analysis['qualityGate'] = dict(gate, state='NEEDS_RECHECK', isReadyForReview=False,
+                                               recheckReason='FINGERPRINT_MIGRATED_WITH_LOCAL_EVIDENCE')
     has_analysis = bool(prior.get('analysis')) or prior.get('aiStatus') not in (None, '', 'NOT ANALYZED')
     task.update({key: context[key] for key in ('key', 'summary', 'url', 'jiraStatus', 'priority', 'jiraUpdatedAt', 'labels')})
     task['statusCategory'] = context.get('statusCategory', '')
@@ -470,10 +530,14 @@ def _sync(root, client):
             else:
                 raise
     all_contexts = {**contexts, **linked_contexts}
+    legacy = {key: fingerprint(context, all_contexts, LEGACY_FINGERPRINT_VOLATILE)
+              for key, context in contexts.items()}
     for context in all_contexts.values():
         context['fingerprint'] = fingerprint(context, all_contexts)
     generated = now()
-    tasks = [make_task(context, prior.get(key, {}), sprint) for key, context in contexts.items()]
+    bound = legacy_bound_evidence(root, legacy)
+    tasks = [make_task(context, prior.get(key, {}), sprint, legacy.get(key), key in bound)
+             for key, context in contexts.items()]
     snapshot = {'generatedAt': generated, 'source': 'Jira API — read-only full context sync',
                 'jql': jql, 'complete': True, 'retrievedCount': len(tasks),
                 'sprint': {key: val for key, val in sprint.items() if key != 'members'},

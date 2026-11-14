@@ -125,6 +125,76 @@ class JiraSyncTests(unittest.TestCase):
         self.assertEqual(saved['manualStatus'], 'WAITING INPUT')
         self.assertEqual(saved['note'], 'Чекати відповідь')
 
+    def analysed_snapshot(self, fingerprint=None, gate=None):
+        doc = self.snapshot()
+        task = doc['tasks'][0]
+        if fingerprint is not None:
+            task['contextFingerprint'] = fingerprint
+        task.update(aiStatus='ACTIONABLE NOW', statusReason='Українське пояснення', nextAction='Перевірити приклад',
+                    analysis={'signal': 'READY', 'stale': False, 'reasonUk': 'Є дані.',
+                              'nextActionUk': 'Перевірити приклад', 'queueScore': 80,
+                              'contextFingerprint': task['contextFingerprint']})
+        if gate is not None:
+            task['analysis']['qualityGate'] = gate
+        (self.root / 'inbox' / 'CCON_BA_Snapshot.json').write_text(json.dumps(doc), encoding='utf-8')
+        Desk(self.root).import_snapshot()
+
+    def test_sprint_move_or_rank_change_does_not_make_analysis_stale(self):
+        sync(self.root, self.client)
+        self.analysed_snapshot()
+        # A sprint move / rank drag only bumps "updated" on the issue and on its links.
+        self.client.first['fields']['updated'] = '2026-11-13T09:00:00Z'
+        self.client.second['fields']['updated'] = '2026-11-13T09:00:00Z'
+        sync(self.root, self.client)
+        task = self.snapshot()['tasks'][0]
+        self.assertFalse(task['analysis']['stale'])
+        self.assertEqual(task['aiStatus'], 'ACTIONABLE NOW')
+        self.assertEqual(task['jiraUpdatedAt'][:10], '2026-11-13')
+        # A real content change (status) still invalidates the analysis.
+        self.client.first['fields']['status'] = {'name': 'Test', 'statusCategory': {'key': 'indeterminate'}}
+        sync(self.root, self.client)
+        self.assertTrue(self.snapshot()['tasks'][0]['analysis']['stale'])
+
+    def test_legacy_fingerprint_analysis_is_restamped_not_stale(self):
+        from jira_sync import fingerprint, LEGACY_FINGERPRINT_VOLATILE
+        sync(self.root, self.client)
+        context = json.loads((self.root / 'data' / 'jira_context.json').read_text(encoding='utf-8'))
+        contexts = {**context['issues'], **context['linkedIssues']}
+        legacy = fingerprint(contexts['CCON-1'], contexts, LEGACY_FINGERPRINT_VOLATILE)
+        current = contexts['CCON-1']['fingerprint']
+        self.assertNotEqual(legacy, current)
+        self.analysed_snapshot(fingerprint=legacy)
+        sync(self.root, self.client)
+        task = self.snapshot()['tasks'][0]
+        self.assertFalse(task['analysis']['stale'])
+        self.assertEqual(task['analysis']['contextFingerprint'], current)
+        self.assertEqual(task['contextFingerprint'], current)
+        # An unrelated old fingerprint is not migrated.
+        self.analysed_snapshot(fingerprint='something-else')
+        sync(self.root, self.client)
+        self.assertTrue(self.snapshot()['tasks'][0]['analysis']['stale'])
+
+    def test_legacy_migration_with_bound_local_evidence_requires_recheck(self):
+        from jira_sync import fingerprint, LEGACY_FINGERPRINT_VOLATILE
+        sync(self.root, self.client)
+        context = json.loads((self.root / 'data' / 'jira_context.json').read_text(encoding='utf-8'))
+        contexts = {**context['issues'], **context['linkedIssues']}
+        legacy = fingerprint(contexts['CCON-1'], contexts, LEGACY_FINGERPRINT_VOLATILE)
+        import shutil
+        for store in ('data/attachment_evidence', 'data/wiki_evidence', 'data/evidence'):
+            with self.subTest(store=store):
+                evidence = self.root / store / 'CCON-1'
+                evidence.mkdir(parents=True)
+                (evidence / '1001.json').write_text(json.dumps({'contextFingerprint': legacy}), encoding='utf-8')
+                self.analysed_snapshot(fingerprint=legacy,
+                                       gate={'state': 'STRUCTURALLY_VERIFIED', 'isReadyForReview': True})
+                sync(self.root, self.client)
+                analysis = self.snapshot()['tasks'][0]['analysis']
+                self.assertFalse(analysis['stale'])
+                self.assertEqual(analysis['qualityGate']['state'], 'NEEDS_RECHECK')
+                self.assertFalse(analysis['qualityGate']['isReadyForReview'])
+                shutil.rmtree(evidence)
+
     def test_incomplete_search_does_not_replace_complete_files(self):
         sync(self.root, self.client)
         snapshot = (self.root / 'inbox' / 'CCON_BA_Snapshot.json').read_bytes()
