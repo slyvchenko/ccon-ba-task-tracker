@@ -8,6 +8,7 @@ import base64
 import copy
 import ctypes
 import hashlib
+import http.client
 import json
 import os
 import re
@@ -127,7 +128,8 @@ class JiraClient:
                 payload = response.read(maximum + 1)
         except urllib.error.HTTPError as error:
             raise ValueError('HTTP_' + str(error.code)) from None
-        except (OSError, TimeoutError):
+        except (OSError, TimeoutError, http.client.HTTPException):
+            # IncompleteRead (truncated chunked body) is an HTTPException, not an OSError.
             raise ValueError('JIRA_CONNECTION_FAILED') from None
         if len(payload) > maximum:
             raise ValueError('ATTACHMENT_TOO_LARGE')

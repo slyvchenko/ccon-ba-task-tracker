@@ -244,6 +244,30 @@ class JiraAttachmentIntakeTests(unittest.TestCase):
                          {"reused": 1, "unavailable": 1})
         self.assertEqual(client.calls, [("1001", len(payload)), ("1004", 100), ("1004", 100)])
 
+    def test_deeply_nested_json_is_invalid_not_a_crash(self):
+        with self.assertRaisesRegex(ValueError, "INVALID_JSON"):
+            inspect_bytes(b"[" * 100000 + b"]" * 100000, ".json")
+
+    def test_api_fetch_refuses_redirected_download_directory(self):
+        payload = b'{"rule":"Synthetic"}'
+        self.attachments[:] = [dict(self.attachments[0], size=len(payload))]
+        elsewhere = self.root / "elsewhere"
+        elsewhere.mkdir()
+        (elsewhere / "1001.json").write_bytes(b"unrelated")
+        (self.root / "downloads/jira").mkdir(parents=True)
+        try:
+            (self.root / "downloads/jira/CCON-5").symlink_to(elsewhere, target_is_directory=True)
+        except OSError:
+            self.skipTest("symlinks unavailable")
+
+        class Client:
+            def get_attachment(self, ident, maximum):
+                return payload
+
+        self.assertEqual(fetch_attachments(self.root, {"CCON-5": self.issue}, Client()),
+                         {"unavailable": 1})
+        self.assertEqual((elsewhere / "1001.json").read_bytes(), b"unrelated")
+
     def test_old_attachment_manifest_is_not_reused_after_source_change(self):
         prepare(self.root)
         self.save("1001", ".json", b'{"TypeCode":"TO"}')
