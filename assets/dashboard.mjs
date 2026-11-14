@@ -243,7 +243,6 @@ function renderList() {
     unverified:current.length-verified});
   $('count').textContent=summary.primary;
   $('countDetails').textContent=summary.diagnostics;
-  renderSummaryChips({visible:items.length,sprint:sprintCount,write:mailCount});
   $('advancedFilterCount').textContent=advancedFilterSummary({
     signal:$('signalFilter').value,sprint:$('sprintFilter').value,
      priority:$('priorityFilter').value});
@@ -1271,22 +1270,9 @@ async function load() {
     return false;
   }
 }
-function chipNode(value, label, className = '') {
-  const chip = document.createElement('span');
-  chip.className = ('chip ' + className).trim();
-  const strong = document.createElement('b');
-  strong.textContent = String(value);
-  chip.append(strong, document.createTextNode(' ' + label));
-  return chip;
-}
-function renderSummaryChips({visible = 0, sprint = 0, write = 0} = {}) {
-  const target = $('summaryChips');
-  if (!target) return;
-  target.replaceChildren(chipNode(visible, 'у списку', 'chip-strong'), chipNode(sprint, 'у спринті', 'chip-sprint'),
-    chipNode(write, write === 1 ? 'лист' : 'листів', 'chip-mail'));
-}
+// Daily delta lives in the header "Звіт" link (count badge + tooltip), not in a row of chips.
 async function loadDeltaStrip() {
-  const target = $('deltaChips');
+  const target = $('reportLink');
   if (!target) return;
   try {
     const result = await api('/api/daily-report');
@@ -1295,26 +1281,12 @@ async function loadDeltaStrip() {
       return;
     }
     const summary = result.summary;
-    const parts = [['NEW', 'нових', 'chip-new'], ['UPDATED', 'змінено', 'chip-changed'],
-      ['JIRA_DONE', 'Done у Jira', 'chip-done'], ['LEFT_SCOPE', 'поза JQL', 'chip-left'],
-      ['questionsAdded', '+питань', 'chip-q'], ['questionsRemoved', '−питань', 'chip-q'],
-      ['warnings', 'попереджень', 'chip-warn']];
-    const chips = parts.filter(([key]) => (summary[key] ?? 0) > 0)
-      .map(([key, label, cls]) => chipNode(summary[key], label, 'chip-delta ' + cls));
-    if (!chips.length) {
-      const none = document.createElement('span');
-      none.className = 'chip chip-delta';
-      none.textContent = 'Без змін з останнього аналізу';
-      chips.push(none);
-    }
-    const link = document.createElement('a');
-    link.className = 'chip chip-link';
-    link.href = '/api/daily-report.md';
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.textContent = 'Звіт ↗';
-    target.title = 'Зміни останнього аналізу';
-    target.replaceChildren(...chips, link);
+    const parts = [['NEW', 'нових'], ['UPDATED', 'змінено'], ['COMPLETED', 'завершено'], ['REOPENED', 'перевідкрито'], ['JIRA_DONE', 'Done у Jira'], ['LEFT_SCOPE', 'поза JQL'],
+      ['questionsAdded', '+питань'], ['questionsRemoved', '−питань'], ['warnings', 'попереджень']]
+      .filter(([key]) => (summary[key] ?? 0) > 0).map(([key, label]) => summary[key] + ' ' + label);
+    const fresh = (summary.NEW ?? 0) + (summary.UPDATED ?? 0);
+    target.textContent = fresh ? `Звіт · ${fresh} змін ↗` : 'Звіт ↗';
+    target.title = 'Зміни останнього аналізу: ' + (parts.length ? parts.join(', ') : 'без змін') + '. Відкрити повний звіт';
     target.hidden = false;
   } catch {
     target.hidden = true;
