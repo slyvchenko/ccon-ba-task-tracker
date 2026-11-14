@@ -243,7 +243,7 @@ class BrowserRegression(unittest.TestCase):
         self.choose("CCON-2")
         self.assertEqual(self.page.locator("#draftTo").input_value(),"")
         self.assertTrue(self.page.locator("#useRecipientHint").is_visible())
-        self.assertIn("не підтверджена",self.page.locator("#recipientHintWarning").inner_text())
+        self.assertIn("перевір отримувача",self.page.locator("#useRecipientHint").get_attribute("title"))
         self.page.locator("#useRecipientHint").click()
         self.assertIn("@airfrance.fr",self.page.locator("#draftTo").input_value())
         self.page.locator("#save").click()

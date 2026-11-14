@@ -25,7 +25,7 @@ export function decisionsMarkup(data, escape) {
     'Зміни не переписують Jira та готовий опис.</p>' +
     (replaced.length ? '<div class="section-label">Замінені рішення</div><ul class="decision-list">' +
       replaced.map(d => line(d).replace('</li>', (d.supersededBy ? ' <span class="muted">→ ' + escape(d.supersededBy) + '</span>' : '') + '</li>')).join('') + '</ul>' : '') +
-    (entries.length ? '<div class="section-label">ID рішень</div><p class="muted">' + entries.map(d => escape(d.id) + ' — ' + escape(states[d.status] || d.status)).join('<br>') + '</p>' : '') +
+    (entries.length ? '<div class="section-label">ID рішень</div><p class="muted">' + entries.map(d => escape(d.id) + ' – ' + escape(states[d.status] || d.status)).join('<br>') + '</p>' : '') +
     '<div class="question-record">' +
     '<label>Дія<select id="decisionAction"><option value="propose">Нова пропозиція</option>' +
     '<option value="confirm">Підтвердити пропозицію</option>' +

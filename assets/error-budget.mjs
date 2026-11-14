@@ -5,12 +5,12 @@ export function describeMetrics(data) {
   if (!data || data.localOnly !== true || data.remoteTelemetry !== false) {
     throw new Error('Local-only metrics contract missing');
   }
-  const n = value => Number.isFinite(value) ? String(value) : '—';
+  const n = value => Number.isFinite(value) ? String(value) : '–';
   return {
     total:n(data.sampledApiResponses), failures:n(data.server5xx),
-    client:n(data.client4xx), rate:Number.isFinite(data.successPercent) ? n(data.successPercent)+'%' : '—',
+    client:n(data.client4xx), rate:Number.isFinite(data.successPercent) ? n(data.successPercent)+'%' : '–',
     remaining:n(data.errorBudgetRemaining),
-    latency:Number.isFinite(data.serverTimeToStatusP95Ms) ? n(data.serverTimeToStatusP95Ms)+' ms' : '—',
+    latency:Number.isFinite(data.serverTimeToStatusP95Ms) ? n(data.serverTimeToStatusP95Ms)+' ms' : '–',
     state:data.insufficientSamples
       ? 'Недостатньо даних для надійного висновку (менше 100 відповідей).'
       : data.sampleTruncated

@@ -10,7 +10,7 @@ export const zipReasonLabels = {
   SUPPLIER_ONLY_ZIP_READY: 'Архів постачальника готовий до завантаження.',
   SOME_FLOWS_NOT_READY: 'Не всі приклади оброблені.',
   ZIP_REQUIRES_REVIEW: 'У ZIP є зауваження щодо методу або цілісності обмінів.',
-  BROWSER_ZIP_NOT_SAVED: 'Логи ще не отримано — натисни «Отримати з Kibana».',
+  BROWSER_ZIP_NOT_SAVED: 'Логи ще не отримано – натисни «Отримати з Kibana».',
   NO_CCON_FLOW: 'Немає підтвердженого cconFlowId у Jira.',
   SUPPLIER_UNKNOWN: 'Постачальник не визначений.',
   JIRA_SOURCE_UNAVAILABLE: 'Актуальний Jira-контекст недоступний.',
@@ -33,7 +33,7 @@ export function zipStatusText(data, escapeHtml) {
   const reason = zipReasonLabels[data?.reasonCode] || '';
   const flows = (data?.flows || []).slice(0, 100).map(flow =>
     '<span title="' + escapeHtml(flow.flowId || '') + '">flow ' +
-    escapeHtml((flow.flowId || '').slice(0, 8)) + '… — ' +
+    escapeHtml((flow.flowId || '').slice(0, 8)) + '… – ' +
     escapeHtml(zipStatusLabels[flow.state] || 'Невідомо') + '</span>').join('');
   return '<div class="logs-status" role="status"><span class="badge logs-badge ' + (ZIP_TONES[data?.state] || 'tone-gray') + '">' +
     escapeHtml(state) + '</span><span class="logs-reason">' + escapeHtml(reason) + '</span></div>' +
@@ -56,7 +56,7 @@ export function createLogsController({api, escapeHtml, message, getSelected, get
       logSignatures.set(target, nextSignature);
       const items = data.items || [];
       target.innerHTML = zipStatusText(data, escapeHtml) +
-        (items.length ? items.map(item => `<div class="log-file ${item.stale || item.needsReview ? 'log-review' : ''}"><div class="log-file-name">${escapeHtml(item.filename)}</div><p class="muted">${escapeHtml(item.method || item.supplier || 'Метод потребує перевірки')} · ${escapeHtml(item.fileCount ?? '?')} XML · <span title="${escapeHtml(item.flowId)}">flow ${escapeHtml(item.flowId.slice(0, 8))}…</span></p>${item.stale || item.needsReview ? `<div class="log-review-note">${item.stale ? 'З попереднього контексту — перевір актуальність перед відправленням.' : 'Є зауваження до логів — перевір перед відправленням.'}</div>` : ''}<div class="log-actions"><a class="file-button" href="${escapeHtml(item.downloadUrl)}" download>Завантажити ZIP</a></div></div>`).join('') : '<p class="muted">' + escapeHtml(data.emptyMessage) + '</p>') +
+        (items.length ? items.map(item => `<div class="log-file ${item.stale || item.needsReview ? 'log-review' : ''}"><div class="log-file-name">${escapeHtml(item.filename)}</div><p class="muted">${escapeHtml(item.method || item.supplier || 'Метод потребує перевірки')} · ${escapeHtml(item.fileCount ?? '?')} XML · <span title="${escapeHtml(item.flowId)}">flow ${escapeHtml(item.flowId.slice(0, 8))}…</span></p>${item.stale || item.needsReview ? `<div class="log-review-note">${item.stale ? 'З попереднього контексту – перевір актуальність перед відправленням.' : 'Є зауваження до логів – перевір перед відправленням.'}</div>` : ''}<div class="log-actions"><a class="file-button" href="${escapeHtml(item.downloadUrl)}" download>Завантажити ZIP</a></div></div>`).join('') : '<p class="muted">' + escapeHtml(data.emptyMessage) + '</p>') +
         (items.length && data.pendingCount ? `<p class="muted">Ще ${escapeHtml(data.pendingCount)} прикладів очікують підготовки.</p>` : '') +
         `<div class="logs-folder"><span class="muted" title="${escapeHtml(data.folder)}">Папка: CCON-Logs / ${escapeHtml(key)}</span><span class="logs-folder-actions"><button id="fetchEsLogs" class="file-button" title="Прочитати логи flow прямо з Elasticsearch (Kibana) за cconFlowId">Отримати з Kibana</button>${data.folderAvailable ? '<button id="openLogsFolder" class="file-button">Відкрити папку</button>' : ''}</span></div>` +
         (items.length ? '<p class="footer-note">Прикріпи ZIP до цього листа в Outlook.</p>' : '');
@@ -75,8 +75,8 @@ export function createLogsController({api, escapeHtml, message, getSelected, get
           const text = failed.length ? 'Kibana: ' + failed[0].error
             : !rows.length ? 'У задачі немає cconFlowId або постачальника' + (skipped.length ? ' (' + skipped.join(', ') + ')' : '') + '.'
             : invalid.length ? 'Архів не пройшов перевірку: ' + invalid.map(row => row.reasonCode).join(', ') + '.'
-            : empty.length === rows.length ? 'Kibana: для flow цієї задачі записів не знайдено — архів не створено.'
-            : rows.every(row => row.cached) ? 'Архів для цього контексту Jira вже підготовлено — повторно не завантажую.'
+            : empty.length === rows.length ? 'Kibana: для flow цієї задачі записів не знайдено – архів не створено.'
+            : rows.every(row => row.cached) ? 'Архів для цього контексту Jira вже підготовлено – повторно не завантажую.'
             : 'Kibana: отримано ' + docs + ' записів' + (empty.length ? ' (' + empty.length + ' flow без записів)' : '') +
               (review.length ? ', архів готовий, але потребує перевірки.' : ', архів підготовлено.');
           message(text, failed.length > 0 || invalid.length > 0 || empty.length === rows.length);
