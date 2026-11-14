@@ -14,53 +14,49 @@ look and feel, but is not advertised as an exact corporate reproduction.
 Official internal brand guidelines, original SVG and typography approvals
 should be used before company deployment.
 
-## Design system v1 (2026-11-13)
+## Current design system
 
-One accent family, one control scale, one chip scale. Tokens live in the
-single canonical `:root` of `assets/dashboard.css`; the "Design system v1"
-layer at the end of that file is the only place that styles controls,
-chips, section titles and selection states.
+All styles live in `assets/dashboard.css`. The file is layered: base tokens in the single canonical `:root` (the soft-pastel layer tokens `--soft-*`, `--ink-btn*`, `--pastel*` and `--card-radius` are defined on `:is(body)`, so change them there, not in `:root`), then the design-system layers in cascade order. The latest layer wins, so add new rules at the end of the matching layer, not as one-off overrides.
 
 ### Tokens
 
-| Role | Token | Value | Use |
-| --- | --- | --- | --- |
-| Accent | `--accent` (= `--brand-blue`) | `#5d37a0` | Primary action, selection, links, focus ring |
-| Accent hover | `--accent-strong` | `#4b2a89` | Hover/pressed of accent |
-| Accent bright | `--accent-bright` | `#7c4ddb` | Title marker gradient only |
-| Accent soft | `--accent-soft` | `#f3edfa` | Hover of secondary, selected row/tile fill, counters |
-| Accent border | `--accent-border` | `#d9cdee` | Secondary button border, counters, selected outline |
-| Accent ink | `--accent-ink` | `#3f2a66` | Secondary button text, group headings |
-| Deep accent | `--accent-deep`, `--accent-deep-2`, `--accent-glow` | `#241a3d`, `#332452`, `#4b337a` | «Що зробити зараз» hero gradient |
-| Text | `--ink` | `#211b31` | Body text |
-| Muted | `--muted` | `#5e576d` | Labels, help text |
-| Canvas | `--canvas` | `#f8f6fb` | Page background |
-| Divider | `--line` / `--line-strong` | `#e6e0ed` / `#ddd4e9` | Separators / control borders |
-| Status tones | `--green`, `--amber`, `--red` | `#155640`, `#744209`, `#9b1e2a` | Status chips and tile bars only |
-| Control | `--control-h`, `--control-h-lg`, `--radius-control` | `36px`, `40px`, `10px` | Buttons / inputs |
+| Role | Token | Value |
+| --- | --- | --- |
+| Accent | `--accent` (= `--brand-blue`) | `#5d37a0` (primary action, selection, links, focus) |
+| Accent hover / bright | `--accent-strong` / `--accent-bright` | `#4b2a89` / `#7c4ddb` |
+| Accent soft / border / ink | `--accent-soft` / `--accent-border` / `--accent-ink` | `#f3edfa` / `#d9cdee` / `#3f2a66` |
+| Neutral scale | `--n-0 … --n-900` | `#fff` … `#18161f` (surfaces, borders, secondary text) |
+| Page canvas / soft fill | `--soft-canvas` / `--soft-fill` | `#f3f3f6` / `#f4f4f7` |
+| Ink button | `--ink-btn` / `--ink-btn-hover` | `#10121f` / `#262a3d` |
+| Active-state gradient | `--pastel` / `--pastel-soft` | lavender → pink → peach |
+| Radii | `--card-radius` / `--radius-control` / `--radius-chip` | `20px` / `8px` / `6px` |
+| Focus ring | `--ring` | `0 0 0 3px #7c4ddb2e` |
 
-Values are a product palette, **not a sourced official AERTiCKET brand palette**.
+These values are a product palette, **not a sourced official AERTiCKET brand palette**.
 
-### Components
+### Type
 
-- **Buttons** — same metrics everywhere (36px high, radius 10px, 13.5px/600):
-  - *Primary* (filled accent): one per area — «Виконано → Далі», «Відкрити в пошті», «Відкрити Jira».
-  - *Secondary* (white, accent text, accent-border): everything else, including header tools.
-  - *On dark* (translucent white): only inside the «Що зробити зараз» hero.
-  - *Small* (32px, 12.5px): inline/row actions (Jira link, template address, logs folder, Kibana).
-  - Never green/blue one-off buttons; status colour belongs to chips, not to actions.
-- **Chips** — pill, 11.5px/650; tone = meaning (green ok, amber needs action, red blocked, gray no data).
-  Counters (`.sec-count`, `.queue-group-count`) use the accent-soft pill.
-- **Section titles** — L2 `.focus-title` 20px with a 4px accent gradient marker; L3 `.sub-heading` 15px; L4 labels 13px muted.
-- **Selection** — queue row and active «Важливо для мене» tile: accent-soft fill + accent outline.
-- **Focus** — 2px accent outline (light lilac on the dark hero).
-- **Forms** — inputs/selects 40px, radius 10px, `--line-strong` border, accent border on hover.
+- **Onest** (variable, Cyrillic-first, bundled in `assets/fonts`, OFL) for body, controls and headings; Inter and system UI fonts are fallbacks.
+- Weights 400/500/600. Hierarchy: task title > section titles > body > small uppercase labels; meta text uses the muted neutral.
+
+### Layout and components
+
+- **Header:** tools on the right; the daily report is a link «Звіт · N змін ↗» next to «Оновлено». Its tooltip lists the breakdown (new, changed, completed, reopened, Done in Jira, out of JQL, questions, warnings). The status row appears only for a message or the undo button.
+- **Queue column:** a tinted header band with the filters, card-like rows, status as a tinted pill, and a subtle animated edge. The animation is disabled for `prefers-reduced-motion`, and `forced-colors` gets a plain outline.
+- **Task card:** «Що зробити зараз» is the first card, and there is no sticky next-action strip. «Важливо для мене» tiles stay collapsed until one is chosen. The active tile closes its panel again (`aria-expanded`), and the choice is kept per task. Section titles are full-width header bands with an icon.
+- **Buttons:** one primary action per area; secondary buttons are grey-filled. Status colour belongs to pills and chips, never to actions.
+- **Pills/chips:** one pill shape; tone = meaning (ok, needs action, blocked, no data), always with text.
+
+### Themes
+
+`assets/theme-init.js` runs before first paint and sets `<html data-theme="light|dark">` from the user's choice (`system`, `light`, `dark`, stored in `localStorage` as `ccon-theme`) or the system setting. The header toggle switches it. The dark layer reuses the same structure and accents under `[data-theme="dark"]`.
 
 ### Rules
 
-- The accent is for *interaction and selection*; status is expressed with tone chips plus text.
-- Add new controls with existing classes (`primary`, default button, small contexts) — no per-feature button CSS.
+- The accent is for interaction and selection; status is expressed with tone pills plus text.
+- Add new controls with existing classes (`primary`, default button, small contexts). Don't add per-feature button CSS.
 - Do not add a second `:root`, `.primary {` or `.row-title {` rule (guarded by `tests/css-cleanup.test.mjs`).
+- Any new colour must work in both themes.
 
 ## Product UI constraints
 
@@ -74,27 +70,3 @@ Values are a product palette, **not a sourced official AERTiCKET brand palette**
 - Never render unescaped Jira body/HTML; source links are HTTP(S) only.
 - Cloud version must include sign-in identity and "last successful sync" indicator.
 - Use approved official logo only after confirming reuse rights and correct file.
-
-## Design system v2 (2026-11-13) — visual refinement
-
-v2 changes only the visual layer (colour, type, borders, radii, shadows, controls); the layout from v1 is unchanged.
-
-- **Neutral scale** `--n-0 … --n-900` for surfaces, borders and secondary text. Lavender is no longer used for borders; the accent is reserved for primary actions, selection, focus and links.
-- **Type:** `--font-ui` (Segoe UI Variable Text) for UI, `--font-display` (Segoe UI Variable Display) for headings. Section titles are 18px / 600 with slight negative tracking, with no decorative marker bar. Numbers use tabular figures.
-- **Surfaces:** cards have a 1px `--n-200` border, a 14px `--radius-card` and a soft `--shadow-card`. The dark "Що зробити зараз" card keeps the signature accent gradient.
-- **Buttons:** the secondary button is neutral (white, `--n-300` border); the primary button is filled accent with an inset highlight; both are 36px, with small variants at 30px and an 8px `--radius-control`. On the dark card buttons are glassy, and the disabled state stays readable.
-- **Fields:** neutral border; on focus, an accent border plus a `--ring` halo.
-- **Chips:** soft tone fill, no outline, 6px `--radius-chip`, 12px / 550.
-- **Focus tiles:** white cards; tone is shown by a dot and the value colour, and the active tile gets an accent ring.
-
-## Design system v3 (2026-11-13) — analyst feedback pass
-
-Feedback: too much noise, unclear hierarchy, dated look; button labels, buttons on the dark card, the font, sizes and weights, grey meta text, badges, the queue, fields and background. Changes (visual only):
-
-- **Font:** Inter (variable, bundled in `assets/fonts`, OFL), weights 400/500/600 only, 14px base, `cv11`/`ss03`.
-- **Hierarchy:** task title 24/600 > section titles 15/600 > body 14 > labels 11.5 uppercase. Meta text is 12.5px in `--n-600`.
-- **Noise:** no rules under section titles or between "Ситуація" rows; flat cards (no shadow); the delta strip is plain text.
-- **Buttons:** short labels ("Скопіювати чернетку", "Зберегти й далі", "Jira ↗", "Адреса з шаблону", "Пакет листів · 3"); `.quiet` is a ghost button; on the dark card the first action is solid white and the rest are glass.
-- **Badges:** one pill shape with a neutral fill; tone is shown only by a dot.
-- **Queue:** no coloured bar on each row; status is shown by a dot; the selected row has a light fill and a 2px accent edge; group headers are small uppercase labels.
-- **Fields:** white fields on a near-white page, accent ring on focus, thin scrollbars.

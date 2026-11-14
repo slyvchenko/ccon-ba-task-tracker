@@ -33,6 +33,15 @@
 
 Для ручного отримання Jira: `python jira_sync.py`. Це завантажує контекст, але **не виконує інтелектуальний аналіз** — його виконує агент Work за `DAILY_REVIEW.md`. Результат аналізу застосовується командою `python apply_analysis.py data/daily_analysis.json`.
 
+**Швидкий щоденний цикл `/daily-ba`** (Claude Code, `.claude/commands/daily-ba.md`) аналізує лише те, що змінилося:
+
+- `python daily_delta.py list` — задачі NEW, CHANGED (змінився зміст Jira; переміщення між спринтами й ранг не враховуються) або з непройденою перевіркою якості, активний спринт першим;
+- `python daily_delta.py dump CCON-1 CCON-2` — опис, усі коментарі й попередній результат;
+- `python daily_delta.py errors "точний текст помилки" [--days 90]` — кількість у PROD за вибраний період, 30 і 7 днів та останній flow; неповна відповідь Elasticsearch повертається як `INCOMPLETE_ES_RESPONSE`, а не як нуль;
+- `analysis_kit.Kit().build(...)` — збирає запис аналізу лише з дослівних фрагментів джерел;
+- `python daily_delta.py check FILE` — до імпорту застосовує ту саму схему й ті самі джерела перевірки якості, що й імпорт; код 0 означає, що файл пройде;
+- `python apply_analysis.py FILE --issues CCON-1,CCON-2` — частковий імпорт: решта задач і їхні питання не змінюються, щоденний звіт не перезаписується.
+
 Щоденний аналіз за `BA_ANALYSIS_RULES.md` перевіряє вимоги, суперечності, мапінг, доречні винятки та приймання. У картці «Відкриті питання BA» показується, кому адресувати питання й яке рішення залежить від відповіді. «Чернетка опису задачі» містить англомовний CCON Task за `TASK_DESCRIPTION_RULES.md`; текст можна скопіювати для перевірки. Частково відомі вимоги відділяються від відкритих питань. Уже надані відповіді враховуються в наступному огляді.
 
 Для підключення цих правил до **наявної локальної щоденної таски** онови файли застосунку й заміни її prompt текстом із `DAILY_AUTOMATION_PROMPT.md`. Збережи робочу папку й чинний розклад. Зміни репозиторію самі не оновлюють встановлені файли або prompt таски на комп'ютері. Окремий API ключ для аналізу не потрібен: його виконує агент Work/Codex. Реальний результат слід перевірити після першого запуску з доступом до Jira.
@@ -98,7 +107,7 @@ Rovo не читає локальну SQLite автоматично. За пот
 ## Щоденний звіт змін та перевірки якості (v2.3)
 
 Після успішного застосування `apply_analysis.py` формується файл `data/daily_review_report.json`.
-Звіт доступний у меню **Дані → Щоденний звіт змін і якості**, а також за
+Звіт відкривається посиланням «Звіт · N змін ↗» у шапці (підказка показує розбивку змін), у меню **Дані → Щоденний звіт змін і якості**, а також за
 `/api/daily-report` (JSON) та `/api/daily-report.md` (читабельний текст).
 Якщо аналіз ще не виконано, JSON API повертає `available: false`.
 
@@ -299,9 +308,11 @@ The daily review records 0–100 score changes (and changes to the five underlyi
 
 Defence in depth before the optional company-approved AI request: recursively drop credential-named fields (including camelCase/HTTP headers), strip URL query/fragment and reject URL userinfo, redact identifiable emails/phone labels, common access token formats and embedded private-key blocks. Synthetic payload tests inspect exactly what is handed to the HTTP client. Technical field names like TypeCode remain unchanged. This is **not formal DLP or authorization for real corporate-data egress**. Company permission and endpoint allowlist remain mandatory; no Jira writes or outgoing email.
 
-## v2.21: Jira attachment browser handoff and local structural inspection (EVD-13 partial)
+## Jira attachments: API sync and local structural inspection (EVD-13 partial)
 
-`python jira_attachments.py prepare --issue CCON-123` creates `data/jira_attachment_handoff.json` with **explicit Jira attachment IDs** and local `downloads/jira/` save targets. The already-authorized local browser must download each listed file to `saveAs`; Python does **not** open Jira URLs or extract credentials. Then `python jira_attachments.py process --issue CCON-123` inspects already-downloaded JSON/XML/ZIP with strict size, XML DTD, archive path/encryption and decompression checks. Source bytes stay private; only local hash-bound shape metadata can reach an approved model, and only while the Jira fingerprint and downloaded file hash still match.
+`python jira_sync.py` also downloads supported attachments (JSON, XML, ZIP, PDF) of in-scope tasks through the read-only Jira API into `downloads/jira/<KEY>/`, within per-file and per-sync size limits; at most the first 30 attachments of an issue are considered, and the rest are not downloaded. Unchanged files are reused by hash. Every attachment is handled on its own: a refused download, a truncated response, a corrupt ZIP or deeply nested JSON is recorded as `DOWNLOAD_UNAVAILABLE` / `INSPECTION_UNAVAILABLE` with a reason code, and the sync continues. A redirected (symlinked) download directory is refused. To refetch one task: `python jira_attachments.py fetch --issue CCON-123`.
+
+Manual browser path (when the API is not available): `python jira_attachments.py prepare --issue CCON-123` creates `data/jira_attachment_handoff.json` with **explicit Jira attachment IDs** and local `downloads/jira/` save targets. The already-authorized local browser must download each listed file to `saveAs`; Python does **not** open Jira URLs or extract credentials. Then `python jira_attachments.py process --issue CCON-123` inspects already-downloaded JSON/XML/ZIP with strict size, XML DTD, archive path/encryption and decompression checks. ZIP inspection stops after 30 parsed JSON/XML members (warning `ZIP_SHAPE_SAMPLE_CAPPED`); later members are not checked or read. Source bytes stay private; only local hash-bound shape metadata can reach an approved model, and only while the Jira fingerprint and downloaded file hash still match.
 
 PDF contents are **not extracted** in this version (explicit `PDF_TEXT_NOT_EXTRACTED`). Confluence/wiki and any unsupported file are likewise **not read**, so no verified content claims may be made from them. Shape data is not evidence of business-correct field values or root cause; human Jira/CCON UAT still required. Neither Jira attachment contents nor customer logs belong in public GitHub.
 
