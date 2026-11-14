@@ -83,5 +83,36 @@ class DailyDelta(unittest.TestCase):
         self.assertFalse(rows[0]['fresh'])
 
 
+    def test_check_uses_persisted_question_state_like_the_import(self):
+        kit = Kit(self.root)
+        analysis = self.build(kit)
+        analysis['briefing']['readiness'] = 'READY_FOR_REVIEW'
+        for rule in analysis['briefing']['rules']:
+            rule['certainty'] = 'CONFIRMED'
+        path = kit.write({'CCON-3': analysis}, self.root / 'data/partial.json')
+        ok, rows = check(path, self.root)
+        self.assertTrue(ok, rows)
+        # Unreadable private question state counts as an OPEN question during
+        # import; the preflight must not approve what the import would block.
+        (self.root / 'data/questions').mkdir(parents=True)
+        (self.root / 'data/questions/CCON-3.json').write_text('{broken', encoding='utf-8')
+        ok, rows = check(path, self.root)
+        self.assertFalse(ok, rows)
+        self.assertNotEqual(rows[0]['state'], 'STRUCTURALLY_VERIFIED')
+
+    def test_incomplete_es_response_is_unverifiable_not_zero(self):
+        from unittest import mock
+        import es_logs
+        from daily_delta import errors
+        partial = {'timed_out': False, '_shards': {'total': 3, 'successful': 2, 'failed': 1},
+                   'hits': {'total': {'value': 0}, 'hits': []},
+                   'aggregations': {'last30': {'doc_count': 0}, 'last7': {'doc_count': 0},
+                                    'supplier': {'buckets': []}, 'method': {'buckets': []}}}
+        with mock.patch.object(es_logs, 'config', return_value=('https://es.invalid', 'idx')), \
+                mock.patch.object(es_logs, '_request', return_value=partial):
+            result = errors(['Unable to reserve services'], self.root)
+        self.assertEqual(result, {'Unable to reserve services': {'unverifiable': 'INCOMPLETE_ES_RESPONSE'}})
+
+
 if __name__ == '__main__':
     unittest.main()

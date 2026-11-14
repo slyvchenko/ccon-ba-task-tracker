@@ -40,6 +40,38 @@ def apply(path,root=ROOT,focus_issue=None,only=None):
     with pipeline_lock(root):
         return _apply(path,root,focus_issue,only)
 
+def prepare_and_gate(root, context, key, current, analysis):
+    """Normalize a fresh analysis exactly as import does and run the quality gate.
+
+    Shared by _apply and the daily_delta preflight so both evaluate the same
+    evidence: persisted questions, attachment readiness, the verified supplier
+    method, linked issues and hash-verified local sources. Mutates analysis.
+    """
+    compacted, compactness = compact_generated(analysis['standardDescription'])
+    analysis['standardDescription'] = compacted
+    analysis['descriptionCompactness'] = compactness
+    verified_supplier_method = verified_method(root, key, current['fingerprint'])
+    attachment_ready = supplier_zip_ready(root, key)
+    original_email_draft = analysis.get('emailDraft')
+    analysis['emailDraft'] = make_ready_draft(
+        key, analysis, method=verified_supplier_method,
+        attachment_ready=attachment_ready)
+    related = {ref['linkedKey']: context.get('issues', {}).get(ref['linkedKey'])
+               or context.get('linkedIssues', {}).get(ref['linkedKey'])
+               for ref in current.get('links', []) if isinstance(ref, dict)
+               and isinstance(ref.get('linkedKey'), str)}
+    # The local source registry is revalidated against Jira fingerprint
+    # and exact on-disk bytes on every import, never copied into model data.
+    doc_sources, doc_audit = local_sources(root, key, current)
+    gate = quality_gate(analysis, current, related,
+                        attachment_ready=attachment_ready,
+                        supplier_method=verified_supplier_method,
+                        local_sources=doc_sources,
+                        original_email_draft=original_email_draft,
+                        persisted_questions=pending_questions_for_gate(root, key, analysis))
+    return gate, doc_audit
+
+
 def _apply(path,root,focus_issue=None,only=None):
     """Import model analyses into the snapshot.
 
@@ -109,28 +141,7 @@ def _apply(path,root,focus_issue=None,only=None):
             continue
         # Normalize only freshly generated descriptions. User-approved drafts,
         # manually edited emails and untouched focus siblings are never modified.
-        compacted, compactness = compact_generated(analysis['standardDescription'])
-        analysis['standardDescription'] = compacted
-        analysis['descriptionCompactness'] = compactness
-        verified_supplier_method = verified_method(root, task['key'], current['fingerprint'])
-        attachment_ready = supplier_zip_ready(root, task['key'])
-        original_email_draft = analysis.get('emailDraft')
-        analysis['emailDraft']=make_ready_draft(
-            task['key'], analysis, method=verified_supplier_method,
-            attachment_ready=attachment_ready)
-        related = {ref['linkedKey']: context.get('issues', {}).get(ref['linkedKey'])
-                   or context.get('linkedIssues', {}).get(ref['linkedKey'])
-                   for ref in current.get('links', []) if isinstance(ref, dict)
-                   and isinstance(ref.get('linkedKey'), str)}
-        # The local source registry is revalidated against Jira fingerprint
-        # and exact on-disk bytes on every import, never copied into model data.
-        doc_sources, doc_audit = local_sources(root, task['key'], current)
-        gate = quality_gate(analysis, current, related,
-                            attachment_ready=attachment_ready,
-                            supplier_method=verified_supplier_method,
-                            local_sources=doc_sources,
-                             original_email_draft=original_email_draft,
-                             persisted_questions=pending_questions_for_gate(root, task['key'], analysis))
+        gate, doc_audit = prepare_and_gate(root, context, task['key'], current, analysis)
         gate['sourceAudit'] = doc_audit
         analysis['qualityGate'] = gate
         # A machine-verified link/excerpt is not semantic correctness.

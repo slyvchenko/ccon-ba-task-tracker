@@ -13,12 +13,13 @@ not STRUCTURALLY_VERIFIED. The agent analyses only these tasks and imports them
 with `apply_analysis.py FILE --issues KEY,...`.
 """
 import argparse
+import copy
 import json
 import sys
 from pathlib import Path
 
 from app_config import ROOT
-from ba_quality_gate import quality_gate
+from apply_analysis import prepare_and_gate
 from review_report import diagnostics
 
 VERIFIED = 'STRUCTURALLY_VERIFIED'
@@ -93,7 +94,7 @@ def dump(keys, root=ROOT, comment_limit=2500):
 
 def errors(phrases, root=ROOT, days=90):
     """PROD error counts per phrase (field `error`, domain error). Counts only, no bodies."""
-    from es_logs import config, _request
+    from es_logs import config, _request, _complete
     url, index = config(root)
     result = {}
     for phrase in phrases:
@@ -107,6 +108,12 @@ def errors(phrases, root=ROOT, days=90):
                          'last30': {'filter': {'range': {'@timestamp': {'gte': 'now-30d'}}}},
                          'last7': {'filter': {'range': {'@timestamp': {'gte': 'now-7d'}}}}}}
         data = _request(url, f'/{index}/_search', body)
+        try:
+            _complete(data, 'error search')
+        except ValueError:
+            # Timed-out or shard-partial counts are not evidence of absence.
+            result[phrase] = {'unverifiable': 'INCOMPLETE_ES_RESPONSE'}
+            continue
         aggs, hits = data['aggregations'], data['hits']['hits']
         result[phrase] = {
             f'{days}d': data['hits']['total']['value'], '30d': aggs['last30']['doc_count'],
@@ -128,7 +135,9 @@ def check(path, root=ROOT):
         if key not in issues:
             rows.append({'key': key, 'state': 'UNKNOWN_TASK'}); ok = False; continue
         fresh = analysis.get('contextFingerprint') == issues[key]['fingerprint']
-        gate = quality_gate(analysis, issues[key])
+        # Same evidence inputs as the import (persisted questions, attachments,
+        # verified supplier method, linked issues, local sources), on a copy.
+        gate, _ = prepare_and_gate(root, context, key, issues[key], copy.deepcopy(analysis))
         findings = [f['code'] for f in gate['findings']]
         notes = [d['code'] for d in diagnostics(key, analysis)]
         passed = fresh and gate['state'] == VERIFIED and not notes
