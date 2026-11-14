@@ -38,7 +38,11 @@ def dossier_checks(analysis, *, persisted_questions=None):
     briefing = analysis.get("briefing") or {}
     if not isinstance(briefing, dict):
         return findings
-    if briefing.get("readiness") != "READY_FOR_REVIEW":
+    preparation = analysis.get("preparation")
+    claims_ready = (briefing.get("readiness") == "READY_FOR_REVIEW"
+                    or analysis.get("descriptionState") == "READY"
+                    or (isinstance(preparation, dict) and preparation.get("status") == "READY"))
+    if not claims_ready:
         return findings
     pending = (analysis.get("missingInfo") or [])
     unknowns = briefing.get("unknownsUk") or []

@@ -8,7 +8,8 @@ export function quickHandoff(task) {
   const description = current && typeof analysis.standardDescription === 'string'
     ? analysis.standardDescription.trim() : '';
   const state = analysis.qualityGate?.state || 'UNVERIFIED';
-  const readyForCopy = Boolean(description) && state === 'STRUCTURALLY_VERIFIED' &&
+  const needsConfirmation = ['NEEDS_CONFIRMATION', 'INSUFFICIENT_CONTEXT'].includes(analysis.briefing?.readiness);
+  const readyForCopy = Boolean(description) && state === 'STRUCTURALLY_VERIFIED' && !needsConfirmation &&
     effectiveSignal(task) !== 'DONE' && task.active !== false;
   const nextAction = current && effectiveSignal(task) !== 'DONE' &&
     task.active !== false && typeof analysis.nextActionUk === 'string'
@@ -17,6 +18,7 @@ export function quickHandoff(task) {
   if (!current) evidenceNote = 'Аналіз відсутній або застарів. Перевір джерела перед передачею.';
   else if (!description) evidenceNote = 'Готової Jira-чернетки немає. Визнач вимоги та критерії.';
   else if (state === 'BLOCKED') evidenceNote = 'Quality Gate блокує чернетку. Спочатку виправ зауваження.';
+  else if (needsConfirmation) evidenceNote = 'Чернетка потребує уточнення відкритих умов перед передачею.';
   else if (state === 'STRUCTURALLY_VERIFIED')
     evidenceNote = 'Структуру перевірено автоматично, але факти й передачу має підтвердити BA.';
   else evidenceNote = 'Чернетка потребує перевірки Quality Gate перед швидким копіюванням.';

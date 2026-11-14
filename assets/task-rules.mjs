@@ -29,13 +29,22 @@ function analysisIsStale(task) {
 function hasAnalysis(task) { const a = analysisOf(task); return !analysisIsStale(task) && !!SIGNALS[a.signal] && !!a.reasonUk && !!a.nextActionUk; }
 
 function effectiveSignal(task) {
+  if (task.localCompletionEnabled === false) {
+    if (task.statusCategory === 'done') return 'DONE';
+    if (task.manualStatus && task.manualStatus !== 'AUTO' && task.manualStatus !== 'DONE')
+      return MANUAL_SIGNALS[task.manualStatus] || 'REVIEW';
+    const signal = hasAnalysis(task) ? task.analysis.signal : 'REVIEW';
+    return signal === 'DONE' ? 'REVIEW' : signal;
+  }
   if (task.manualStatus && task.manualStatus !== 'AUTO') return MANUAL_SIGNALS[task.manualStatus] || 'REVIEW';
   return hasAnalysis(task) ? task.analysis.signal : 'REVIEW';
 }
 
 function signalInfo(task) {
   const info = SIGNALS[effectiveSignal(task)];
-  return task.manualStatus && task.manualStatus !== 'AUTO' ? {...info, label:STATUS_LABELS[task.manualStatus], tone:statusTone(task.manualStatus)} : info;
+  const manual = task.manualStatus && task.manualStatus !== 'AUTO' &&
+    !(task.localCompletionEnabled === false && (task.manualStatus === 'DONE' || task.statusCategory === 'done'));
+  return manual ? {...info, label:STATUS_LABELS[task.manualStatus], tone:statusTone(task.manualStatus)} : info;
 }
 
 function statusTone(status) { return STATUS_TONES[status] || 'gray'; }

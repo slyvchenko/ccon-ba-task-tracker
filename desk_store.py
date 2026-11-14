@@ -23,6 +23,9 @@ class Desk:
 
     def __init__(self, root):
         self.root = Path(root)
+        preference_path = self.root / '.desk-preferences.json'
+        preferences = json.loads(preference_path.read_text(encoding='utf-8-sig')) if preference_path.exists() else {}
+        self.local_completion_enabled = preferences.get('localCompletion', True) is not False
         self.inbox = self.root / 'inbox'
         self.inbox.mkdir(parents=True, exist_ok=True)
         self.db = self.root / 'ba_state.db'
@@ -161,6 +164,11 @@ class Desk:
                         savedEmailDraft=json.loads(row['email_draft']) if row['email_draft'] else None,
                         manualRevision=row['manual_revision'],
                         manualEffort=row['manual_effort'], manualPriority=row['manual_priority'])
+            task['localCompletionEnabled'] = self.local_completion_enabled
+            if not self.local_completion_enabled and task['manualStatus'] == 'DONE':
+                # Personal mode: a legacy local DONE stays stored (history) but is not effective for any consumer.
+                task['manualStatus'] = 'AUTO'
+                task['legacyLocalDone'] = True
             tasks.append(task)
         if revision is None:
             revision = c.execute('SELECT revision FROM state_revision WHERE id=1').fetchone()[0]
@@ -204,6 +212,8 @@ class Desk:
 
     def save(self, key, data):
         status, note = data.get('manualStatus'), data.get('note')
+        if status == 'DONE' and not self.local_completion_enabled:
+            raise ValueError('Local completion is disabled. Completion is determined by Jira.')
         expected = data.get('expectedManualRevision')
         if 'expectedManualRevision' in data and (type(expected) is not int or expected < 0):
             raise ValueError('expectedManualRevision must be a nonnegative integer.')

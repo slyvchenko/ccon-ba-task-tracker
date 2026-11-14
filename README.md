@@ -485,6 +485,10 @@ ZIP review більше не прирівнює єдині RQ/RS із **різн
 
 `python release_readiness.py --check` перевіряє узгодженість обліку й не стверджує release readiness; `python release_readiness.py --require-ready` має завершитися помилкою до незалежної приватної UAT-атестації. Сам факт злиття GitHub PR не оновлює Windows Task Scheduler або локальну інсталяцію. Інструкція з контрольованого випуску: `docs/LOCAL_RELEASE_GATE_v2_48.md`.
 
+## Особистий режим без локального завершення
+
+У цьому встановленні `.desk-preferences.json` містить `{"localCompletion": false}`. Ручне «Завершено» та відповідний фільтр вимкнені; «Зберегти → Далі» зберігає правки й переходить до наступної задачі без завершення. Backend відхиляє спроби виставити DONE зі старої вкладки. Завершеність визначає лише Jira statusCategory=done; AI-висновок DONE не приховує відкриту Jira-задачу. Старі локальні DONE скинуто в AUTO з резервною копією та історією; нотатки й листи збережено. Пошук і фільтри дій/спринту залишаються доступними.
+
 ## Manual BA work priority (P1 / P2 / P3)
 
 The queue now supports a separate human decision in each task's **Мій

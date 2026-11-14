@@ -48,6 +48,7 @@ const manualConflicts = new Map();
 const taskViews = new Map(Object.entries(restoredFocusView.views));
 const saveFailures = new Map();
 let lastDoneToken = null;
+let localCompletionEnabled = true;
 const expandedEmails = new Set();
 const recoveredForms = recoveryStore.load();
 const {loadLogs} = createLogsController({api, escapeHtml, message, getSelected: () => selected});
@@ -155,7 +156,7 @@ function savedForm(task) {
   // Never infer supplier recipient from a task title. In particular, a
   // deliberately cleared "To" field must stay empty after Save/Reload.
   const emailDraft = normalizedDraft(task.savedEmailDraft ?? task.analysis?.emailDraft);
-  return {manualStatus:STATUS_LABELS[task.manualStatus] ? task.manualStatus : 'AUTO',
+  return {manualStatus:STATUS_LABELS[task.manualStatus] && !(task.localCompletionEnabled === false && task.manualStatus === 'DONE') ? task.manualStatus : 'AUTO',
     manualEffort:EFFORT_LABELS[task.manualEffort] ? task.manualEffort : 'UNKNOWN',
     manualPriority:MANUAL_PRIORITY_LABELS[task.manualPriority] ? task.manualPriority : 'NONE',
     note:task.note || '', emailDraft};
@@ -164,7 +165,7 @@ function formFor(task) {
   if (!forms.has(task.key)) {
     const base = savedForm(task), recovered = recoveredForms[task.key];
     const value = recovered && STATUS_LABELS[recovered.manualStatus] && typeof recovered.note === 'string'
-      ? {manualStatus:recovered.manualStatus, note:recovered.note,
+      ? {manualStatus:task.localCompletionEnabled === false && recovered.manualStatus === 'DONE' ? 'AUTO' : recovered.manualStatus, note:recovered.note,
         manualEffort:EFFORT_LABELS[recovered.manualEffort] ? recovered.manualEffort : base.manualEffort,
         manualPriority:MANUAL_PRIORITY_LABELS[recovered.manualPriority] ? recovered.manualPriority : base.manualPriority,
         emailDraft:normalizedDraft(recovered.emailDraft)} : base;
@@ -217,6 +218,7 @@ function priorityBadge(task) {
   return `<span class="badge tone-${config.tone}" title="${escapeHtml(source)}">${escapeHtml(config.label)}</span>`;
 }
 function updateUndoControl() {
+  if (!localCompletionEnabled) { lastDoneToken=null; $('undoLastDone').hidden=true; return; }
   const token=lastDoneToken;
   const task=token ? tasks.find(x=>x.key===token.key) : null;
   if(token && !canUndoLocalDone(token,task)) lastDoneToken=null;
@@ -551,12 +553,12 @@ function renderDetail() {
       <div class="split-col">
         <section class="panel work-state" aria-label="Мій робочий стан">
         <div class="card-head"><h3 class="focus-title">Мій статус</h3><details class="status-help"><summary aria-label="Як працює мій статус">ⓘ</summary><p>«Автоматично» використовує оцінку щоденного аналізу. Ручний вибір фіксує твій власний статус і має пріоритет. Вибір статусу зберігається автоматично.</p></details></div>
-        <label class="card-label" for="manual">Статус</label><select id="manual" class="status-select tone-${statusTone(form.manualStatus, task)}">${['AUTO','IN PROGRESS','NEEDS DECISION','WAITING INPUT','WAITING DEPENDENCY','DONE'].map(value => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(STATUS_LABELS[value])}</option>`).join('')}</select>
+        <label class="card-label" for="manual">Статус</label><select id="manual" class="status-select tone-${statusTone(form.manualStatus, task)}">${['AUTO','IN PROGRESS','NEEDS DECISION','WAITING INPUT','WAITING DEPENDENCY','DONE'].filter(value => localCompletionEnabled || value !== 'DONE').map(value => `<option value="${value}" ${form.manualStatus === value ? 'selected' : ''}>${escapeHtml(STATUS_LABELS[value])}</option>`).join('')}</select>
         <label class="card-label" for="manualPriority">Пріоритет</label><select id="manualPriority" aria-describedby="manualPriorityHelp">${Object.entries(MANUAL_PRIORITY_LABELS).map(([key,label]) =>
           `<option value="${key}" ${form.manualPriority === key ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
         <p id="manualPriorityHelp" class="card-help">P1 – щоденний бізнес-фокус · P2 – терміново. P3 ставиться автоматично за Jira label.</p>
         <label class="card-label" for="note">Нотатки</label><textarea id="note" maxlength="20000" placeholder="Додай домовленість або наступний контакт…">${escapeHtml(form.note)}</textarea>
-        <div class="actions state-actions card-foot"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">Виконано й далі</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
+        <div class="actions state-actions card-foot"><span id="savedIndicator" role="status">✓ Збережено</span><button id="save">Зберегти все</button><button id="done" class="primary">${localCompletionEnabled ? 'Виконано й далі' : 'Зберегти й далі'}</button><button id="discard" class="quiet" title="Скинути незбережене">Скинути</button></div>
         <div id="saved" class="save-state" role="status"></div>
         <div id="manualConflict" class="analysis-missing" role="alert" hidden>
         <b>Конфлікт ручних правок</b>
@@ -966,14 +968,15 @@ async function saveTask(done = false) {
   if (busy) return false;
   const task = tasks.find(item => item.key === selected);
   if (!task) return false;
-  if (done && !confirm(completionPrompt(task))) return false;
+  if (done && localCompletionEnabled && !confirm(completionPrompt(task))) return false;
+  const nextKey = adjacentTaskKey(visibleTasks().map(item => item.key), task.key, 1);
   const editingBeforeSave = isTextEditingTarget(document.activeElement);
   let restoreAfterSave = false;
   captureForm();
   const form = formFor(task);
   const value = structuredClone(form.value);
   const previousStatus=task.manualStatus;
-  if (done) value.manualStatus = 'DONE';
+  if (done && localCompletionEnabled) value.manualStatus = 'DONE';
   setBusy(true);
   try {
     if (!Number.isSafeInteger(form.baseRevision)) {
@@ -986,7 +989,7 @@ async function saveTask(done = false) {
       manualPriority:value.manualPriority, note:value.note,
       savedEmailDraft:value.emailDraft, manualRevision:saved.manualRevision,
       modifiedAt:new Date().toISOString()});
-    if (done) lastDoneToken=makeUndoToken(task,previousStatus,saved.manualRevision);
+    if (done && localCompletionEnabled) lastDoneToken=makeUndoToken(task,previousStatus,saved.manualRevision);
     else if(lastDoneToken?.key===task.key) lastDoneToken=null;
     queueModel.invalidate();
     forms.delete(task.key);
@@ -995,7 +998,7 @@ async function saveTask(done = false) {
     delete recoveredForms[task.key];
     rememberEdits();
     signature = '';
-    if (done) selected = visibleTasks().find(item => item.key !== task.key)?.key || null;
+    if (done) selected = localCompletionEnabled ? visibleTasks().find(item => item.key !== task.key)?.key || null : nextKey || task.key;
     renderList();
     renderDetail();
     // The original Save button is replaced and hidden once the form is clean.
@@ -1214,6 +1217,12 @@ async function load() {
     currentRevisionError = data.error || '';
     if (changed) {
       tasks = data.tasks;
+      localCompletionEnabled = !tasks.some(task => task.localCompletionEnabled === false);
+      if (!localCompletionEnabled) {
+        [...$('filter').options].filter(option => ['done','all'].includes(option.value)).forEach(option => option.remove());
+        if (!$('filter').value) $('filter').value='open';
+        $('filter').querySelector('option[value="open"]').textContent='Мої задачі';
+      }
       queueModel.invalidate();
       searchRefresh.cancel();
       signature = nextSignature;
