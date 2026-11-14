@@ -1,9 +1,4 @@
-"""Local read-only Jira attachment handoff and bounded structural inspection.
-
-The authenticated local browser downloads files; Python never requests Jira
-attachment URLs or credentials. Only source-independent structural metadata is
-saved locally. PDF contents, ZIP entry values and wiki pages are NOT verified.
-"""
+"""Read-only Jira attachment intake and bounded local inspection."""
 import argparse
 import hashlib
 import io
@@ -14,11 +9,13 @@ from xml.parsers import expat
 from collections import Counter
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
+from uuid import uuid4
 from zipfile import ZipFile, BadZipFile
 
 from app_config import ROOT, utc_now
-from storage import read_json, write_json
-from jira_sync import JIRA_URL
+from pipeline_lock import pipeline_lock, replace_file
+from storage import inside, read_json, write_json
+from jira_sync import JiraClient, load_credentials
 
 KEY_RE = re.compile(r"^CCON-\d+$")
 ID_RE = re.compile(r"^\d{1,20}$")
@@ -26,6 +23,7 @@ ALLOWED = {".json", ".xml", ".zip", ".pdf"}
 MAX_FILE = 8 * 1024 * 1024
 MAX_UNPACKED = 16 * 1024 * 1024
 MAX_ENTRIES = 60
+MAX_SYNC_BYTES = 64 * 1024 * 1024
 
 
 def _safe_field(value):
@@ -48,6 +46,8 @@ def _metadata(root, key):
 
 
 def _attachment_spec(item):
+    if not isinstance(item, dict):
+        return None
     ident = str(item.get("id", ""))
     if not ID_RE.fullmatch(ident):
         return None
@@ -238,6 +238,89 @@ def inspect_bytes(payload, suffix):
             "shape": _shape(payload, suffix)}
 
 
+def evidence_path(root, key, ident):
+    return inside(root, Path("data/attachment_evidence") / key / (ident + ".json"))
+
+
+def save_manifest(root, issue, ident, payload, result):
+    write_json(evidence_path(root, issue["key"], ident), {
+        "issueKey": issue["key"], "attachmentId": ident,
+        "contextFingerprint": issue["fingerprint"],
+        "sourceSha256": hashlib.sha256(payload).hexdigest(),
+        "status": result["status"], "format": result["type"],
+        "shape": result["shape"], "inspectedAt": utc_now(),
+        "limitations": ["STRUCTURE_IS_NOT_VALUE_MAPPING_OR_BUSINESS_PROOF"],
+    }, 250000)
+
+
+def fetch_attachments(root, issues, client):
+    """Fetch supported attachments from current in-scope Jira metadata."""
+    root = Path(root)
+    remaining = MAX_SYNC_BYTES
+    counts = Counter()
+    for key, issue in issues.items():
+        if not KEY_RE.fullmatch(key):
+            continue
+        for item in (issue.get("attachments") or [])[:30]:
+            spec = _attachment_spec(item)
+            if not spec:
+                continue
+            ident, suffix = spec
+            reason = None
+            failure_state = "DOWNLOAD_UNAVAILABLE"
+            try:
+                path = attachment_path(root, key, ident, suffix)
+                inside(root, path.relative_to(root))
+                record_path = evidence_path(root, key, ident)
+                size = item.get("size")
+                if type(size) is not int or size < 1 or size > MAX_FILE:
+                    raise ValueError("ATTACHMENT_SIZE_UNSUPPORTED")
+                if not _download_url(item):
+                    raise ValueError("ATTACHMENT_LINK_INVALID")
+                try:
+                    cached = read_json(record_path, {}) or {}
+                except (ValueError, OSError):
+                    cached = {}
+                if (isinstance(cached, dict) and cached.get("issueKey") == key and cached.get("attachmentId") == ident
+                        and cached.get("contextFingerprint") == issue["fingerprint"]
+                        and cached.get("sourceSha256") and path.is_file() and not path.is_symlink()
+                        and path.stat().st_size == size
+                        and hashlib.sha256(path.read_bytes()).hexdigest() == cached["sourceSha256"]):
+                    counts["reused"] += 1
+                    continue
+                if size > remaining:
+                    raise ValueError("SYNC_ATTACHMENT_LIMIT")
+                remaining -= size
+                payload = client.get_attachment(ident, size)
+                if len(payload) != size:
+                    raise ValueError("JIRA_METADATA_SIZE_MISMATCH")
+                failure_state = "INSPECTION_UNAVAILABLE"
+                result = inspect_bytes(payload, suffix)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                temporary = path.with_name(path.name + "." + uuid4().hex + ".pending")
+                try:
+                    with temporary.open("xb") as file:
+                        file.write(payload)
+                    replace_file(temporary, path)
+                finally:
+                    temporary.unlink(missing_ok=True)
+                save_manifest(root, issue, ident, payload, result)
+                counts["downloaded"] += 1
+            except (ValueError, OSError) as error:
+                reason = str(error) if re.fullmatch(r"[A-Z][A-Z_0-9]{2,60}", str(error)) else "LOCAL_ATTACHMENT_ERROR"
+                counts["unavailable"] += 1
+            if reason:
+                try:
+                    write_json(evidence_path(root, key, ident), {
+                        "issueKey": key, "attachmentId": ident,
+                        "contextFingerprint": issue["fingerprint"],
+                        "status": failure_state, "reasonCode": reason,
+                    })
+                except (OSError, ValueError):
+                    counts["statusWriteErrors"] += 1
+    return dict(counts)
+
+
 def process(root=ROOT, key=None):
     root = Path(root)
     plan = read_json(root / "data/jira_attachment_handoff.json", {})
@@ -283,16 +366,7 @@ def process(root=ROOT, key=None):
             if type(metadata_size) is int and metadata_size >= 0 and metadata_size != len(payload):
                 raise ValueError("JIRA_METADATA_SIZE_MISMATCH")
             result = inspect_bytes(payload, suffix)
-            manifest = {
-                "issueKey": issue_key, "attachmentId": ident,
-                "contextFingerprint": issue["fingerprint"],
-                "sourceSha256": hashlib.sha256(payload).hexdigest(),
-                "status": result["status"], "format": result["type"],
-                "shape": result["shape"], "inspectedAt": utc_now(),
-                "limitations": ["STRUCTURE_IS_NOT_VALUE_MAPPING_OR_BUSINESS_PROOF"],
-            }
-            write_json(root / "data/attachment_evidence" / issue_key / (ident + ".json"),
-                       manifest, 250000)
+            save_manifest(root, issue, ident, payload, result)
             rows.append({"issueKey": issue_key, "attachmentId": ident,
                          "state": result["status"]})
         except (ValueError, OSError) as error:
@@ -342,11 +416,19 @@ def evidence_for_model(root, key, issue):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "process"))
+    parser.add_argument("action", choices=("prepare", "process", "fetch"))
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--issue", default=None)
     args = parser.parse_args()
-    outcome = prepare(args.root, args.issue) if args.action == "prepare" else process(args.root, args.issue)
+    if args.action == "fetch":
+        with pipeline_lock(args.root):
+            context = read_json(args.root / "data/jira_context.json", {})
+            if context.get("complete") is not True:
+                parser.error("Complete Jira sync required.")
+            issues = {args.issue: _metadata(args.root, args.issue)} if args.issue else context["issues"]
+            outcome = fetch_attachments(args.root, issues, JiraClient(*load_credentials(args.root)))
+    else:
+        outcome = prepare(args.root, args.issue) if args.action == "prepare" else process(args.root, args.issue)
     print(json.dumps(outcome, ensure_ascii=False, indent=2))
 
 

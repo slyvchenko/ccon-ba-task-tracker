@@ -114,6 +114,25 @@ class JiraClient:
         self.authorization = 'Basic ' + base64.b64encode((email + ':' + token).encode()).decode()
         self.opener = urllib.request.build_opener()
 
+    def get_attachment(self, ident, maximum):
+        if not re.fullmatch(r'[0-9]{1,20}', ident):
+            raise ValueError('INVALID_ATTACHMENT_ID')
+        url = JIRA_URL + '/rest/api/3/attachment/content/' + ident + '?redirect=false'
+        request = urllib.request.Request(url, headers={'Accept': '*/*'})
+        request.add_unredirected_header('Authorization', self.authorization)
+        try:
+            with urllib.request.build_opener(_NoRedirect()).open(request, timeout=15) as response:
+                if response.status != 200:
+                    raise ValueError('HTTP_' + str(response.status))
+                payload = response.read(maximum + 1)
+        except urllib.error.HTTPError as error:
+            raise ValueError('HTTP_' + str(error.code)) from None
+        except (OSError, TimeoutError):
+            raise ValueError('JIRA_CONNECTION_FAILED') from None
+        if len(payload) > maximum:
+            raise ValueError('ATTACHMENT_TOO_LARGE')
+        return payload
+
     def get(self, path, params=None):
         if not path.startswith(('/rest/api/3/', '/rest/agile/1.0/', '/rest/software/1.0/')):
             raise ValueError('Unexpected Jira API path.')
@@ -144,6 +163,11 @@ class JiraClient:
                     time.sleep(2 ** attempt)
                     continue
                 raise ValueError('Jira connection failed; no snapshot was imported.') from None
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 
 def adf_text(value):
@@ -314,6 +338,7 @@ def make_task(context, prior, sprint=None):
     same = prior.get('contextFingerprint') == context['fingerprint']
     has_analysis = bool(prior.get('analysis')) or prior.get('aiStatus') not in (None, '', 'NOT ANALYZED')
     task.update({key: context[key] for key in ('key', 'summary', 'url', 'jiraStatus', 'priority', 'jiraUpdatedAt', 'labels')})
+    task['statusCategory'] = context.get('statusCategory', '')
     task.update(contextFingerprint=context['fingerprint'], contextRetrievedAt=context['retrievedAt'],
                 contextAvailable=True)
     if sprint is not None:
@@ -461,10 +486,14 @@ def _sync(root, client):
              'leftScope': left_scope}
     atomic_json(root / 'data' / 'jira_context.json', cache)
     atomic_json(root / 'inbox' / 'CCON_BA_Snapshot.json', snapshot, SNAPSHOT_LIMIT)
+    attachment_summary = {}
+    if hasattr(client, 'get_attachment'):
+        from jira_attachments import fetch_attachments
+        attachment_summary = fetch_attachments(root, contexts, client)
     return {'retrievedCount': len(tasks), 'linkedIssueCount': len(linked_contexts),
             'commentCount': sum(len(issue['comments']) for issue in all_contexts.values()),
             'awaitingAnalysis': sum(task.get('aiStatus') == 'NOT ANALYZED' for task in tasks),
-            'generatedAt': generated, 'complete': True,
+            'generatedAt': generated, 'complete': True, 'attachments': attachment_summary,
             'activeSprintStatus': sprint['status'],
             'activeSprintTaskCount': sum(task.get('activeSprint') is True for task in tasks),
             'leftScopeCount': len(left_scope),

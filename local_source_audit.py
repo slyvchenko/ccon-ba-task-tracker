@@ -7,10 +7,10 @@ import hashlib
 import re
 from pathlib import Path
 
-from jira_attachments import _attachment_spec, _download_url, attachment_path, MAX_FILE
+from jira_attachments import _attachment_spec, _download_url, attachment_path, evidence_path, MAX_FILE
 from local_document_text import extract_text
 from confluence_local import current_sources as wiki_sources, linked_pages
-from storage import read_json
+from storage import inside, read_json
 
 ASSIGNMENT = re.compile(
     r"\b([A-Za-z][A-Za-z0-9]{1,60}Code)\s*(?:==|=|:)\s*[\"']?([A-Z][A-Z0-9_]{1,45}|[a-z][a-z0-9_]{1,45})\b"
@@ -22,36 +22,48 @@ def _attachment_sources(root, key, issue):
     for attachment in (issue.get("attachments") or [])[:30]:
         if not isinstance(attachment, dict):
             continue
+        extension = Path(str(attachment.get("filename", ""))).suffix.lstrip(".").upper()
+        status = {"attachmentId": str(attachment.get("id", "")), "format": extension,
+                  "state": "FORMAT_REQUIRES_MANUAL_REVIEW"}
+        metadata.append(status)
         spec = _attachment_spec(attachment)
         if spec is None:
             continue
         ident, suffix = spec
+        status["state"] = "NOT_DOWNLOADED"
         original = _download_url(attachment)
         if not original:
+            status["state"] = "DOWNLOAD_UNAVAILABLE"
+            status["reasonCode"] = "ATTACHMENT_LINK_INVALID"
             continue
         try:
-            record = read_json(Path(root) / "data/attachment_evidence" / key / (ident + ".json"), {})
+            record = read_json(evidence_path(Path(root), key, ident), {})
         except (ValueError, OSError):
             continue
         if (not isinstance(record, dict) or record.get("issueKey") != key
                 or record.get("attachmentId") != ident
                 or record.get("contextFingerprint") != issue.get("fingerprint")):
             continue
-        target = attachment_path(root, key, ident, suffix)
-        if not target.is_file() or target.is_symlink() or target.stat().st_size > MAX_FILE:
+        if record.get("status") in ("DOWNLOAD_UNAVAILABLE", "INSPECTION_UNAVAILABLE"):
+            status.update(state=record["status"], reasonCode=record.get("reasonCode", ""))
             continue
-        raw = target.read_bytes()
+        try:
+            target = attachment_path(root, key, ident, suffix)
+            inside(Path(root), target.relative_to(root))
+            if not target.is_file() or target.is_symlink() or target.stat().st_size > MAX_FILE:
+                continue
+            raw = target.read_bytes()
+        except (ValueError, OSError):
+            continue
         if hashlib.sha256(raw).hexdigest() != record.get("sourceSha256"):
+            status["state"] = "LOCAL_FILE_MISMATCH"
             continue
         state, parsed, details = extract_text(raw, suffix)
+        status["state"] = state
         if state != "LOCAL_TEXT_EXTRACTED":
-            metadata.append({"attachmentId": ident, "state": state,
-                             "format": suffix.lstrip(".").upper()})
             continue
         sources[original] = parsed
-        metadata.append({"attachmentId": ident, "state": "LOCAL_TEXT_VERIFIED",
-                         "sourceSha256": record["sourceSha256"],
-                         "format": suffix.lstrip(".").upper()})
+        status.update(state="LOCAL_TEXT_VERIFIED", sourceSha256=record["sourceSha256"])
     return sources, metadata
 
 

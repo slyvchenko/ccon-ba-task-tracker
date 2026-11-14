@@ -8,8 +8,9 @@ from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from jira_attachments import (
-    attachment_path, evidence_for_model, inspect_bytes, prepare, process,
+    attachment_path, evidence_for_model, fetch_attachments, inspect_bytes, prepare, process,
 )
+from local_source_audit import local_sources
 from model_analysis import task_source
 from storage import read_json, write_json
 
@@ -204,6 +205,41 @@ class JiraAttachmentIntakeTests(unittest.TestCase):
         self.assertEqual(process(self.root)["results"][0]["state"], "STRUCTURE_ONLY")
         self.save("1001", ".json", b'{"TypeCode":"CHANGED"}')
         self.assertEqual(evidence_for_model(self.root, "CCON-5", self.issue), [])
+
+    def test_api_fetch_verifies_text_reuses_bytes_and_reports_each_format(self):
+        payload = b'{"rule":"Synthetic source text"}'
+        self.attachments[:] = [
+            dict(self.attachments[0], size=len(payload)),
+            dict(self.attachments[3], size=100),
+            {"id": "1005", "filename": "screen.png", "size": 100},
+        ]
+
+        class Client:
+            def __init__(self):
+                self.calls = []
+
+            def get_attachment(self, ident, maximum):
+                self.calls.append((ident, maximum))
+                if ident == "1004":
+                    raise ValueError("HTTP_403")
+                return payload
+
+        client = Client()
+        scope = {"CCON-5": self.issue}
+        self.assertEqual(fetch_attachments(self.root, scope, client),
+                         {"downloaded": 1, "unavailable": 1})
+        sources, audit = local_sources(self.root, "CCON-5", self.issue)
+        self.assertIn("Synthetic source text", sources[self.attachments[0]["content"]])
+        self.assertEqual([x["state"] for x in audit["attachments"]],
+                         ["LOCAL_TEXT_VERIFIED", "DOWNLOAD_UNAVAILABLE", "FORMAT_REQUIRES_MANUAL_REVIEW"])
+        self.assertEqual(audit["attachments"][1]["reasonCode"], "HTTP_403")
+        self.assertEqual(fetch_attachments(self.root, scope, client),
+                         {"reused": 1, "unavailable": 1})
+        self.assertEqual(client.calls, [("1001", len(payload)), ("1004", 100), ("1004", 100)])
+
+    def test_old_attachment_manifest_is_not_reused_after_source_change(self):
+        prepare(self.root)
+        self.save("1001", ".json", b'{"TypeCode":"TO"}')
         self.issue["fingerprint"] = "updated"
         self.save_context()
         self.assertEqual(process(self.root)["results"][0]["state"], "STALE")

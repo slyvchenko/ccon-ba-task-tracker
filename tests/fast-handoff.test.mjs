@@ -142,3 +142,16 @@ test('P0: human WAIT/DONE/DECIDE suppresses obsolete write explanations', () => 
   const working=task('CCON-231','WRITE',{manualStatus:'IN PROGRESS'});
   assert.equal(priorityExplanation(working).write,true);
 });
+
+test('keeps a structurally verified description available as a draft while conditions are open', () => {
+  const item = {
+    active:true, manualStatus:'AUTO',
+    analysis:{signal:'DECIDE', reasonUk:'reason', nextActionUk:'action',
+      standardDescription:'Confirmed portion',
+      qualityGate:{state:'STRUCTURALLY_VERIFIED'},
+      briefing:{readiness:'NEEDS_CONFIRMATION'}}
+  };
+  const handoff = quickHandoff(item);
+  assert.equal(handoff.readyForCopy, false);
+  assert.equal(handoff.description, 'Confirmed portion');
+});

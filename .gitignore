@@ -5,6 +5,7 @@ __pycache__/
 .python-path
 .jira-credentials.json
 .jira-board.json
+.desk-preferences.json
 .env
 .env.*
 !.env.example
